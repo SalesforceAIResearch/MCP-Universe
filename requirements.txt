@@ -1,0 +1,22 @@
+requests==2.32.3
+pydantic==2.10.6
+schema==0.7.7
+mcp==1.4.1
+httpx==0.28.1
+click==8.1.8
+jinja2==3.1.6
+python-dotenv==1.0.1
+anyio==4.9.0
+openai==1.68.2
+anthropic==0.49.0
+mistralai==1.6.0
+pyyaml==6.0.2
+
+# MCP servers
+wikipedia-api==0.8.1
+mcp_server_fetch
+google-auth==2.38.0
+google-auth-oauthlib==1.2.1
+google-api-python-client
+mcp_server_calculator==0.1.1
+blender-mcp==1.1.3

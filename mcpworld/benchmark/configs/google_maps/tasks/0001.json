@@ -1,0 +1,94 @@
+{
+  "category": "general",
+  "question": "Plan a road trip starting from Johor Bahru and passing through 4 Cities before\nreaching Kuala Lumpur. Determine 3 different driving routes, estimate the total\ntravel time, identify 2 possible rest stops within 3 cities, and check the elevation\nof 2 scenic viewpoints located near 2 cities.",
+  "mcp_servers": [
+    {
+      "name": "google-maps"
+    }
+  ],
+  "output_format": {
+    "starting_city": "[Starting City]",
+    "destination_city": "[Destination City]",
+    "routes": [
+      {
+        "route_id": "1",
+        "cities_visited": [
+          "[City 1]",
+          "[City 2]",
+          "[City 3]",
+          "..."
+        ],
+        "total_distance_km": "[Estimated Distance in km]",
+        "total_travel_time_hours": "[Estimated Travel Time in hours]"
+      },
+      {
+        "route_id": "2",
+        "cities_visited": [
+          "[City 1]",
+          "[City 2]",
+          "[City 3]",
+          "..."
+        ],
+        "total_distance_km": "[Estimated Distance in km]",
+        "total_travel_time_hours": "[Estimated Travel Time in hours]"
+      }
+    ],
+    "rest_stops": [
+      {
+        "city": "[Specific City]",
+        "rest_stop_id": "1",
+        "name": "[Rest Stop Name]",
+        "address": "[Rest Stop Address]",
+        "amenities": [
+          "[Amenity 1]",
+          "[Amenity 2]",
+          "..."
+        ]
+      },
+      {
+        "city": "[Specific City]",
+        "rest_stop_id": "2",
+        "name": "[Rest Stop Name]",
+        "address": "[Rest Stop Address]",
+        "amenities": [
+          "[Amenity 1]",
+          "[Amenity 2]",
+          "..."
+        ]
+      }
+    ],
+    "scenic_viewpoints": [
+      {
+        "city": "[Specific City]",
+        "viewpoint_id": "1",
+        "name": "[Viewpoint Name]",
+        "elevation_meters": "[Elevation in meters]",
+        "description": "[Brief Description]"
+      },
+      {
+        "city": "[Specific City]",
+        "viewpoint_id": "2",
+        "name": "[Viewpoint Name]",
+        "elevation_meters": "[Elevation in meters]",
+        "description": "[Brief Description]"
+      }
+    ]
+  },
+  "evaluators": [
+    {
+      "func": "json -> get(starting_city)",
+      "op": "=",
+      "value": "Johor Bahru"
+    },
+    {
+      "func": "json -> get(destination_city)",
+      "op": "=",
+      "value": "Kuala Lumpur"
+    },
+    {
+      "func": "json -> get(routes) -> foreach -> get(cities_visited) -> len",
+      "op": "=",
+      "value": 3
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "category": "general",
+  "question": "What's the weather in San Francisco now?",
+  "mcp_servers": [
+    {
+      "name": "weather"
+    }
+  ],
+  "output_format": {
+    "city": "<CITY>",
+    "weather": "<Weather forecast results>"
+  },
+  "evaluators": [
+    {
+      "func": "json -> get(city)",
+      "op": "=",
+      "value": "San Francisco"
+    }
+  ]
+}
