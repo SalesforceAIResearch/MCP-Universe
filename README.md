@@ -1,14 +1,15 @@
 # MCPUniverse
 
-MCPUniverse is a framework for developing and benchmarking AI agents. It provides tools for creating, testing,
-and evaluating different agent configurations across a variety of task environments.
+MCPUniverse is a comprehensive framework designed for developing, testing, and benchmarking AI agents. 
+It offers a robust platform for building and evaluating both AI agents and LLMs across a wide range of task environments. 
+The framework also supports seamless integration with external MCP servers and facilitates sophisticated agent orchestration workflows.
 
 ## Table of Contents
 
 - [Installation Guide](#installation-guide)
 - [System Architecture](#system-architecture)
 - [How to Run Benchmarks](#how-to-run-benchmarks)
-- [How to Add New Benchmarks](#how-to-add-new-benchmarks)
+- [How to Create New Benchmarks](#how-to-create-new-benchmarks)
     - [Task definition](#task-definition)
     - [Benchmark definition](#benchmark-definition)
     - [Test benchmark](#test-benchmark)
@@ -21,57 +22,65 @@ the [feature branch workflow](https://www.atlassian.com/git/tutorials/comparing-
 in this repo for its simplicity. To ensure code quality, [PyLint](https://pylint.readthedocs.io/en/latest/)
 is integrated into our CI to enforce Python coding standards.
 
-### Setup
+### Prerequisites
 
-1. Clone this repo to your machine:
+* **Python**: Requires version 3.10 or higher.
+* **PostgreSQL** (optional): Used for database storage and persistence.
+* **Redis** (optional): Used for caching and memory management.
 
-``` shell
-git clone https://github.com/SalesforceAIResearch/MCP-Universe.git
-```
+### Quick Installation
 
-2. Install Python and create a virtual environment:
-   MCPUniverse requires Python 3.10 or higher. Install Python 3.10 and set up
-   a [virtual environment](https://virtualenv.pypa.io/en/latest/installation.html).
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/SalesforceAIResearch/MCP-Universe.git
+   cd MCP-Universe
+   ```
 
-``` shell
-pip3 install virtualenv
-virtualenv venv -p python3.10
-source venv/bin/activate
-```
+2. **Create and activate virtual environment**
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate
+   ```
 
-3. Install project dependencies:
+3. **Install dependencies**
+   ```bash
+   pip install -r requirements.txt
+   pip install -r dev-requirements.txt
+   ```
 
-```shell
-pip install -r requirements.txt
-pip install -r dev-requirements.txt
-```
+4. **Platform-specific requirements**
 
-To run unit tests, you also need install postgres. On Linux:
+   **Linux:**
+   ```bash
+   sudo apt-get install libpq-dev
+   ```
 
-```shell
-sudo apt-get install libpq-dev
-```
+   **macOS:**
+   ```bash
+   brew install postgresql
+   ```
 
-On macOS:
+5. **Configure pre-commit hooks**
+   ```bash
+   pre-commit install
+   ```
 
-```shell
-brew install postgresql
-```
-
-4. Setup pre-commit hooks to ensure all the checks are passing before committing the code and pushing to the branch
-
-```shell
-pre-commit install
-```
+6. **Environment configuration**
+   ```bash
+   cp .env.example .env
+   # Edit .env with your API keys and configuration
+   ```
 
 ## System Architecture
 
-The MCPUniverse architecture consists of several key components:
+The MCPUniverse architecture consists of the following key components:
 
-1. Agents and Workflows: YAML configurations that define the agents and workflows.
-2. MCP Servers: External services that agents can interact with to complete tasks.
-3. Benchmark/Task Definitions: Configurations that specify the task, required servers, and evaluation criteria.
-4. Evaluators: Functions that assess the agent's output against predefined criteria.
+- **Agents** (`mcpuniverse/agent/`): Base implementations for different agent types
+- **Workflows** (`mcpuniverse/workflows/`): Orchestration and coordination layer
+- **MCP Servers** (`mcpuniverse/mcp/`): Protocol management and external service integration
+- **LLM Integration** (`mcpuniverse/llm/`): Multi-provider language model support
+- **Benchmarking** (`mcpuniverse/benchmark/`): Evaluation and testing framework
+- **Dashboard** (`mcpuniverse/dashboard/`): Visualization and monitoring interface
 
 The diagram below illustrates the high-level view:
 
@@ -101,8 +110,8 @@ The diagram below illustrates the high-level view:
 │                      Foundation Layer                           │
 ├─────────────────────────────────────────────────────────────────┤
 │   MCP Manager   │   LLM Manager   │  Memory Systems │  Tracers  │
-│   (Servers &    │   (OpenAI,      │   (RAM, Redis)  │           │
-│    Clients)     │   Claude, etc.) │                 │           │
+│   (Servers &    │   (Multi-Model  │   (RAM, Redis)  │ (Logging) │
+│    Clients)     │    Support)     │                 │           │
 └─────────────────┴─────────────────┴─────────────────┴───────────┘
 ```
 
@@ -122,7 +131,6 @@ To execute a benchmark programmatically:
 from mcpuniverse.tracer.collectors import MemoryCollector  # You can also use SQLiteCollector
 from mcpuniverse.benchmark.runner import BenchmarkRunner
 
-
 async def test():
     trace_collector = MemoryCollector()
     # Choose a benchmark config file under the folder "mcpuniverse/benchmark/config"
@@ -134,7 +142,7 @@ async def test():
     trace_records = trace_collector.get(trace_id)
 ```
 
-## How to Add New Benchmarks
+## How to Create New Benchmarks
 
 A benchmark is defined by three main configuration elements: the task definition,
 agent/workflow definition, and the benchmark configuration itself. Below is an example
