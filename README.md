@@ -198,7 +198,7 @@ Then "get(x) -> foreach -> get(y) -> len" will do the followings:
 3. Get the length of each list: [1, 2, 4].
 
 If these predefined funcs are not enough, you can implement customized ones.
-Please check package "mcpuniverse.evaluator.functions".
+For more details, please check this [doc](https://github.com/SalesforceAIResearch/MCP-Universe/blob/main/docs/custom-evaluators-guide.md).
 
 ### Benchmark definition
 
@@ -236,14 +236,13 @@ The benchmark definition mainly contains two parts: One is the definition of the
 and the other is the benchmark configuration. The benchmark configuration is simple where you just need to specify
 the agent to use (by the defined agent name), and a list of tasks to evaluate. Each task entry is the task config file
 path. It can be a full file path or a partial file path. If it is a partial file path (like "dummy/tasks/weather.json"),
-it should be put in the folder "mcpuniverse/benchmark/configs" in this repo.
+it should be put in the folder [mcpuniverse/benchmark/configs](https://github.com/SalesforceAIResearch/MCP-Universe/tree/main/mcpuniverse/benchmark/configs) in this repo.
 
 This framework provides a convenient way to define simple agents like ReAct or complex agent workflows.
 Firstly, you need to specify the LLMs you want to use in the agents. Note that each component has a name, e.g., "llm-1".
 The framework will use these names to link all the components together. Secondly, you can define an agent by specifying
-the agent name and agent class. Agent classes are those defined in the package "mcpuniverse.agent". Some commonly used ones
-are "basic", "function-call" and "react". You also need to specify the LLM used in this agent by setting "llm" in
-spec.config.
+the agent name and agent class. Agent classes are those defined in the package [mcpuniverse.agent](https://github.com/SalesforceAIResearch/MCP-Universe/tree/main/mcpuniverse/agent). 
+Some commonly used ones are "basic", "function-call" and "react". You also need to specify the LLM used in this agent by setting "llm" in spec.config.
 
 Complex workflows (e.g., orchestrated agents) can also be defined. Example:
 
