@@ -35,6 +35,9 @@ jobs:
           mv mcpuniverse/app/.env.example mcpuniverse/app/.env
           for f in dist/*.whl; do pip install $f; done
 
+      - name: Run Pylint
+        run: pylint mcpuniverse
+
       - name: Test with pytest
         env:
           PYTHON_VERSION: ${{ matrix.python-version }}
