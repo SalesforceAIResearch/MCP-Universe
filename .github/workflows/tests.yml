@@ -10,6 +10,11 @@ jobs:
   tests:
 
     runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis:latest
+        ports:
+          - 6379:6379
     strategy:
       matrix:
         python-version: [ "3.10" ]
@@ -27,6 +32,7 @@ jobs:
           python -m pip install --upgrade pip setuptools wheel build
           python -m pip install pytest pytest-asyncio pytest-postgresql pylint
           python -m build
+          mv mcpuniverse/app/.env.example mcpuniverse/app/.env
           for f in dist/*.whl; do pip install $f; done
 
       - name: Test with pytest
