@@ -22,7 +22,7 @@ MCP-Universe follows a carefully designed layered architecture that separates co
 ┌─────────────────────────────────────────────────────────────────┐
 │                      Application Layer                          │
 ├─────────────────────────────────────────────────────────────────┤
-│  Dashboard  │    Web API      │    CLI Tools    │   Benchmarks  │
+│  Dashboard  │    Web API      │    Python Lib   │   Benchmarks  │
 │   (Gradio)  │   (FastAPI)     │                 │               │
 └─────────────┬─────────────────┬─────────────────┬───────────────┘
               │                 │                 │
@@ -36,8 +36,8 @@ MCP-Universe follows a carefully designed layered architecture that separates co
 ┌─────────────▼─────────────────▼─────────────────▼──────────────┐
 │                        Agent Layer                             │
 ├────────────────────────────────────────────────────────────────┤
-│  BaseAgent  │   BasicAgent    │   ReActAgent   │  FunctionCall │
-│             │                 │                │     Agent     │
+│  BasicAgent │   ReActAgent    │  FunctionCall  │     Other     │
+│             │                 │     Agent      │     Agents    │
 └─────────────┬─────────────────┬────────────────┬───────────────┘
               │                 │                │
 ┌─────────────▼─────────────────▼────────────────▼───────────────┐

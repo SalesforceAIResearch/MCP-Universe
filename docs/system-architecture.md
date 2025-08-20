@@ -12,7 +12,7 @@ MCPUniverse is a modular framework designed to facilitate AI agent development, 
 ┌─────────────────────────────────────────────────────────────────┐
 │                      Application Layer                          │
 ├─────────────────────────────────────────────────────────────────┤
-│  Dashboard  │    Web API      │    CLI Tools    │   Benchmarks  │
+│  Dashboard  │    Web API      │    Python Lib   │   Benchmarks  │
 │   (Gradio)  │   (FastAPI)     │                 │               │
 └─────────────┬─────────────────┬─────────────────┬───────────────┘
               │                 │                 │
@@ -26,8 +26,8 @@ MCPUniverse is a modular framework designed to facilitate AI agent development, 
 ┌─────────────▼─────────────────▼─────────────────▼──────────────┐
 │                        Agent Layer                             │
 ├────────────────────────────────────────────────────────────────┤
-│  BaseAgent  │   BasicAgent   │   ReActAgent   │  FunctionCall  │
-│             │                │                │     Agent      │
+│  BasicAgent │   ReActAgent    │  FunctionCall   │     Other    │
+│             │                 │     Agent       │     Agents   │
 └─────────────┬─────────────────┬─────────────────┬──────────────┘
               │                 │                 │
 ┌─────────────▼─────────────────▼─────────────────▼──────────────┐

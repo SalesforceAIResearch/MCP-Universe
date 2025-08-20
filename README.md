@@ -94,7 +94,37 @@ The MCPUniverse architecture consists of several key components:
 3. Benchmark/Task Definitions: Configurations that specify the task, required servers, and evaluation criteria.
 4. Evaluators: Functions that assess the agent's output against predefined criteria.
 
-![alt text](https://github.com/SalesforceAIResearch/MCP-Universe/raw/main/docs/_static/architecture.png)
+The diagram below illustrates the high-level view:
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                      Application Layer                          │
+├─────────────────────────────────────────────────────────────────┤
+│  Dashboard  │    Web API      │   Python Lib   │   Benchmarks   │
+│   (Gradio)  │   (FastAPI)     │                │                │
+└─────────────┬─────────────────┬────────────────┬────────────────┘
+              │                 │                │
+┌─────────────▼─────────────────▼────────────────▼────────────────┐
+│                      Orchestration Layer                        │
+├─────────────────────────────────────────────────────────────────┤
+│           Workflows           │        Benchmark Runner         │
+│    (Chain, Router, etc.)      │      (Evaluation Engine)        │
+└─────────────┬─────────────────┬────────────────┬────────────────┘
+              │                 │                │
+┌─────────────▼─────────────────▼────────────────▼────────────────┐
+│                        Agent Layer                              │
+├─────────────────────────────────────────────────────────────────┤
+│  BasicAgent │   ReActAgent    │  FunctionCall  │     Other      │
+│             │                 │     Agent      │     Agents     │
+└─────────────┬─────────────────┬────────────────┬────────────────┘
+              │                 │                │
+┌─────────────▼─────────────────▼────────────────▼────────────────┐
+│                      Foundation Layer                           │
+├─────────────────────────────────────────────────────────────────┤
+│   MCP Manager   │   LLM Manager   │  Memory Systems │  Tracers  │
+│   (Servers &    │   (OpenAI,      │   (RAM, Redis)  │           │
+│    Clients)     │   Claude, etc.) │                 │           │
+└─────────────────┴─────────────────┴─────────────────┴───────────┘
+```
 
 More information can be found [here](https://github.com/SalesforceAIResearch/MCP-Universe/blob/main/docs).
 
