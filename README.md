@@ -121,11 +121,11 @@ To execute a benchmark programmatically:
 from mcpuniverse.tracer.collectors import MemoryCollector  # You can also use SQLiteCollector
 from mcpuniverse.benchmark.runner import BenchmarkRunner
 
-
 async def test():
     trace_collector = MemoryCollector()
-    # Run a benchmark
-    benchmark = BenchmarkRunner("dummy/benchmark_1.yaml")  # Choose a benchmark config file
+    # Choose a benchmark config file under the folder "mcpuniverse/benchmark/config"
+    benchmark = BenchmarkRunner("dummy/benchmark_1.yaml")
+    # Run the specified benchmark
     results = await benchmark.run(trace_collector=trace_collector)
     # Get traces
     trace_id = results[0].task_trace_ids["dummy/tasks/weather.json"]
