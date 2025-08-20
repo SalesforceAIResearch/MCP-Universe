@@ -16,7 +16,7 @@ class TestBenchmarkRunner(unittest.IsolatedAsyncioTestCase):
         print(results)
 
         from mcpuniverse.benchmark.report import BenchmarkReport
-        report = BenchmarkReport(benchmark)
+        report = BenchmarkReport(benchmark, trace_collector=trace_collector)
         report.dump()
 
         print('=' * 66)

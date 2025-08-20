@@ -14,7 +14,7 @@ spec:
     llm: llm-1
     instruction: You are an agent for web searching. If you don't have enough information to answer the question, you can use the google-search tool. If you want to obtain the information with a specific URL, you can use the fetch tool.
     max_iterations: 20
-    summarize_tool_response: true
+    summarize_tool_response: false
 
 ---
 kind: benchmark

@@ -1,9 +1,9 @@
 kind: llm
 spec:
   name: llm-1
-  type: claude_gateway
+  type: openai
   config:
-    model_name: us.anthropic.claude-3-7-sonnet-20250219-v1:0
+    model_name: gpt-4.1
 
 ---
 kind: agent
@@ -13,7 +13,7 @@ spec:
   config:
     llm: llm-1
     instruction: You are an agent for financial analysis. If you need to calculate the result, you can use the calculator tool.
-    max_iterations: 15
+    max_iterations: 20
     summarize_tool_response: false
     servers:
       - name: yfinance

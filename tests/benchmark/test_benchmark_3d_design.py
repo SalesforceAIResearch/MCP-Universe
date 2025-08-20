@@ -14,7 +14,7 @@ class TestBenchmarkRunner(unittest.IsolatedAsyncioTestCase):
 
         benchmark_results = await benchmark.run(trace_collector=trace_collector, callbacks=get_vprint_callbacks())
         print(benchmark_results)
-        report = BenchmarkReport(benchmark)
+        report = BenchmarkReport(benchmark, trace_collector=trace_collector)
         report.dump()
 
         print('=' * 66)

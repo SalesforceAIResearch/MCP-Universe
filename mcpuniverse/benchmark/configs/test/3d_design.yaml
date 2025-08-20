@@ -13,7 +13,8 @@ spec:
   config:
     llm: llm-1
     instruction: You are an agent for 3D Designing and a Blender expert.
-    max_iterations: 25
+    max_iterations: 20
+    summarize_tool_response: false
     servers:
       - name: blender
 
