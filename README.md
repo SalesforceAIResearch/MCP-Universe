@@ -11,10 +11,10 @@ and evaluating different agent configurations across a variety of task environme
         - [Setup](#setup)
         - [Github MCP Server Installation](#github-mcp-server-installation)
     - [System Architecture](#system-architecture)
+    - [How to Run Benchmarks](#how-to-run-benchmarks)
     - [How to Add New Benchmarks](#how-to-add-new-benchmarks)
         - [Task definition](#task-definition)
         - [Benchmark definition](#benchmark-definition)
-        - [How to run benchmarks](#how-to-run-benchmarks)
         - [Test benchmark](#test-benchmark)
         - [Visualization](#visualization)
 
