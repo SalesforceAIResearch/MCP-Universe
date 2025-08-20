@@ -30,7 +30,7 @@ is integrated into our CI to enforce Python coding standards.
 1. Clone this repo to your machine:
 
 ``` shell
-git clone git@github.com:salesforce-emu/MCPUniverse.git
+git clone https://github.com/SalesforceAIResearch/MCP-Universe.git
 ```
 
 2. Install Python and create a virtual environment:
