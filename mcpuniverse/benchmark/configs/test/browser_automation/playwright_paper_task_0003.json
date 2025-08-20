@@ -1,0 +1,29 @@
+{
+    "category": "general",
+    "question": "I am a first-year PhD student focusing on GUI Grounding. I want to learn about benchmarks in this area, such as OSWorld, ScreenSpot-Pro, and UI-Vision. Please help me find the arXiv IDs of these three works from https://arxiv.org/. Remember to close the browser when you finish the task.",
+    "output_format": {
+        "Name_of_the_paper_1": "2xxx.xxxxx",
+        "Name_of_the_paper_2": "2xxx.xxxxx",
+        "Name_of_the_paper_3": "2xxx.xxxxx"
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "playwright"
+        },
+        {
+            "name": "date"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "json",
+            "op": "playwright.is_dict_equal",
+            "value": {
+                "OSWorld: Benchmarking Multimodal Agents for Open-Ended Tasks in Real Computer Environments": "2404.07972",
+                "ScreenSpot-Pro: GUI Grounding for Professional High-Resolution Computer Use": "2504.07981",
+                "UI-Vision: A Desktop-centric GUI Benchmark for Visual Perception and Interaction": "2503.15661"
+            }
+        }
+    ]
+} 

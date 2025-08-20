@@ -1,0 +1,36 @@
+{
+    "category": "general",
+    "question": "Hey! I'm a curious boy who really wants to learn about Large Multimodal Models and I need help finding two specific papers! For the first paper I'm looking for: It was accepted by ICML 2022, the first author works at Salesforce, the paper has 4 authors, the paper is about VLP, and the first author has published at least 1 paper as NeurIPS 2021 Spotlight. For the second paper: It was accepted by EMNLP 2019, the first author has worked at Adobe, the paper has 2 authors, the paper is about VLP, and the first author has studied in Shanghai. Can you help me find the full titles of these papers so I can read them and learn more about this awesome field? Please create a new page named \"Papers-VLP\" in the parent page {{ NOTION_ROOT_PAGE }} and include your collection of data in the page. The format should be: `The first paper title: xxx, The second paper title: xxx",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "google-search"
+        },
+        {
+            "name": "fetch"
+        },
+        {
+            "name": "notion"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "notion.compare_page_text",
+            "op_args": {
+                "page_title": "Papers-VLP"
+            },
+            "value": "The first paper title: BLIP: Bootstrapping Language-Image Pre-training for Unified Vision-Language Understanding and Generation, The second paper title: LXMERT: Learning Cross-Modality Encoder Representations from Transformers"
+        }
+    ],
+    "cleanups": [
+        {   
+            "server": "notion",
+            "tool": "API-post-page",
+            "cleanup_func": "delete_page",
+            "cleanup_args": {
+                "page":"$return -> get(content) -> array(0) -> get(text) -> json -> get(id)"
+            }   
+        }
+    ]
+}

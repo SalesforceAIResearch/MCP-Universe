@@ -1,0 +1,36 @@
+{
+    "category": "general",
+    "question": "I am a dedicated follower of Lionel Messi's career. I would like to analyze his performance with Inter Miami during the 2024 MLS season. Could you please assist me in creating a Notion page to systematically track his statistics and overall performance? I would appreciate your help in gathering comprehensive data to provide a thorough analysis of his contributions. Please create a new page named \"Performance of My Favorite Football Player\" in the parent page {{ NOTION_ROOT_PAGE }} and include your collection of data in the page. The format should be: `2024 MLS Season: xx Matches, xx Goals, xx Assists, xx Yellow Cards, xx Red Cards`",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "google-search"
+        },
+        {
+            "name": "fetch"
+        },
+        {
+            "name": "notion"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "notion.compare_page_text",
+            "op_args": {
+                "page_title": "Performance of My Favorite Football Player"
+            },
+            "value": "2024 MLS Season: 22 Matches, 21 Goals, 11 Assists, 2 Yellow Cards, 0 Red Cards"
+        }
+    ],
+    "cleanups": [
+        {   
+            "server": "notion",
+            "tool": "API-post-page",
+            "cleanup_func": "delete_page",
+            "cleanup_args": {
+                "page":"$return -> get(content) -> array(0) -> get(text) -> json -> get(id)"
+            }   
+        }
+    ]
+}

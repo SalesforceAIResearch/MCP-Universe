@@ -1,0 +1,43 @@
+{
+    "category": "general",
+    "question": "Hey there! I'm working on a project to analyze Microsoft's repositories and need your help. Could you search for all repositories owned by 'microsoft' that contain 'Air' in their name? For each repository you find, I need to pull the count of closed issues that are tagged with the 'car' label. Once you've gathered that data, please create a new repository called 'microsoft-air-car-issues' under your account (if it doesn't already exist) and upload a JSON report named 'microsoft_air_car_report.json'. The JSON structure should follow this format: {repository_name: closed_car_count, ...}. This will really help me understand the issue patterns across Microsoft's Air-related projects. Thanks for your assistance!",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "github"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "github.check_repository",
+            "op_args": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}/microsoft-air-car-issues" 
+        },
+        {
+            "func": "raw",
+            "op": "github.check_file_content_and_issue_count",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "microsoft-air-car-issues",
+                "path": "microsoft_air_car_report.json",
+                "branch": "main",
+                "search_repo_owner": "microsoft",
+                "search_repo_name": "Air",
+                "issue_labels": ["car"],
+                "issue_state": "closed",
+                "file_type": "json"
+            }
+        }
+    ],
+    "cleanups": [
+        {
+        "server": "github",
+        "tool": "create_repository",
+        "cleanup_func": "delete_repository",
+        "cleanup_args": {
+            "repo": "$name"
+            }
+        }
+    ]
+
+}

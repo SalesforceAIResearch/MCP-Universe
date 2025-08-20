@@ -1,0 +1,29 @@
+{
+    "category": "general",
+    "question": "I am a first-year PhD student focusing on large multimodal models. I want to learn about the famous models in this area, such as Qwen2.5-VL, Aria, and Kimi-VL. Please help me find the arXiv IDs of these three works from https://arxiv.org/. Remember to close the browser when you finish the task.",
+    "output_format": {
+        "Name_of_the_paper_1": "2xxx.xxxxx",
+        "Name_of_the_paper_2": "2xxx.xxxxx",
+        "Name_of_the_paper_3": "2xxx.xxxxx"
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "playwright"
+        },
+        {
+            "name": "date"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "json",
+            "op": "playwright.is_dict_equal",
+            "value": {
+                "Qwen2.5-VL Technical Report": "2502.13923",
+                "Aria: An Open Multimodal Native Mixture-of-Experts Model": "2410.05993",
+                "Kimi-VL Technical Report": "2504.07491"
+            }
+        }
+    ]
+} 

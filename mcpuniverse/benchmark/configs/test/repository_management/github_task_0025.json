@@ -1,0 +1,52 @@
+{
+    "category": "general",
+    "question": "There are two repositories: Salesforce's LAVIS and Salesforce's BLIP. Fork the repository with the fewest open issues, maintaining the same name as the source repository. If LAVIS is forked, add a reference link at the bottom of the README.md file: 'Related project: [BLIP](the link of BLIP repo)'. If BLIP is forked, add a reference link at the bottom of the README.md file: 'Related project: [LAVIS](the link of LAVIS repo)'.",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "github"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "github.check_repository_with_fewest_issues",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repos": [
+                    "salesforce/LAVIS",
+                    "salesforce/BLIP"
+                ],
+                "issue_state": "open"
+            }
+        },
+        {
+            "func": "raw",
+            "op": "github.check_file_content_with_fewest_issues",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repos": [
+                    "salesforce/LAVIS",
+                    "salesforce/BLIP"
+                ],
+                "path": "README.md",
+                "branch": "main",
+                "issue_state": "open",
+                "file_content": [
+                    "Related project: [BLIP](https://github.com/salesforce/BLIP)",
+                    "Related project: [LAVIS](https://github.com/salesforce/LAVIS)"
+                ]
+            }
+        }
+    ],
+    "cleanups": [
+        {
+        "server": "github",
+        "tool": "fork_repository",
+        "cleanup_func": "delete_repository",
+        "cleanup_args": {
+            "repo": "$repo"
+            }
+        }
+    ]
+}

@@ -1,0 +1,31 @@
+{
+    "category": "blender",
+    "question": "Clear the current Blender scene and remove all PolyHaven materials.\nCreate a Cube named 'RustedCube', position it at the world origin (0,0,0), and set its scale factors to (X=5.0, Y=5.0, Z=0.2). Next, using the integrated Polyhaven add-on interface within Blender, search for 'metal' textures that include 'rust' in their description. Select the suitable asset found and download its 2K resolution. Import this asset directly onto the selected 'RustedCube'. Ensure the material applied to 'RustedCube' is named 'RustedMetalMat' (renaming the auto-generated material if needed). Within the Shader Editor for the 'RustedMetalMat' material, verify or establish the following node setup: the downloaded Base Color texture must be connected to the 'Base Color' input of the Principled BSDF shader; the downloaded Roughness map (loaded into an Image Texture node set to 'Non-Color' space) must be connected to the 'Roughness' input; and the downloaded Normal map (also loaded via an Image Texture node set to 'Non-Color') must feed into the 'Color' input of a 'Normal Map' node (suitable for OpenGL), with the output of the 'Normal Map' node connected to the 'Normal' input of the Principled BSDF. Finally, adjust the 'Metallic' property on the Principled BSDF node to a value of 1.0. After finishing all tasks, create a new file and save it as 'tid_6.blend' in the '{{MCPUniverse_DIR}}/mcpuniverse/evaluator/blender/blend_files'.",
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "blender.check_file",
+            "op_args": {
+                "path": "tid_6.blend",
+                "task_id": "6"
+            }
+        },
+        {
+            "func": "raw",
+            "op": "blender.check_file_content",
+            "op_args": {
+                "path": "tid_6.blend",
+                "task_id": "6"
+            }
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "blender",
+            "cleanup_func": "clear_scene_and_polyhaven_materials",
+            "cleanup_args": {
+                "ctx": "$CleanUp"
+            }
+        }
+    ]
+}

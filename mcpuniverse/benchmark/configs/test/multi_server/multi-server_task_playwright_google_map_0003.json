@@ -1,0 +1,33 @@
+{
+    "category": "general",
+    "question": "Please help me find a blog post on the website https://www.asiatours.com/. We want to find the blog post about the famous places to visit in Singapore. Then, please provide only the place with a Google Maps rating higher than 4.3. If no places have a rating higher than 4.3, then please give me the place with the highest rating. If a place has no Google Maps rating, consider its rating as 0. The name of the place should be the same as the name in the blog post.",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "google-maps"
+        },  
+        {
+            "name": "playwright"
+        }
+    ],
+    "output_format": {
+        "PLACE_NAME_1": "[RATING]",    
+        "PLACE_NAME_2": "[RATING]"
+    },
+    "evaluators": [
+        {
+            "func": "json",
+            "op": "google_maps.check_places_and_ratings",
+            "op_args": {
+                "places": [
+                    "Merlion Park",
+                    "Gardens by the Bay",
+                    "Marina Bay Sands",
+                    "Sentosa Island"
+                ],
+                "location": "Singapore",
+                "min_rating": 4.3
+            }
+        }
+    ]
+}

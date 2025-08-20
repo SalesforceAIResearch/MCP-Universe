@@ -1,0 +1,9 @@
+repos:
+-   repo: local
+    hooks:
+    - id: pylint
+      name: PyLint
+      entry: python3 -m pylint.__main__
+      language: system
+      files: \.py$
+      require_serial: true

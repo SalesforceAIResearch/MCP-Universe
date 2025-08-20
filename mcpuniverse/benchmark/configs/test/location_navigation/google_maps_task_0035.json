@@ -1,0 +1,64 @@
+{
+    "category": "general",
+    "question": "Identify 1 'museum' location in Rome, Italy that are south of the latitude of 'Villa Borghese' AND west of the longitude of 'Colosseum'.",
+    "output_format": {
+        "stops": [
+            {
+                "name": "NAME",
+                "place id": "Place ID"
+            }
+        ]
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "google-maps"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "json",
+            "desc": "whether the llm response is json format"
+        },
+        {
+            "func": "json -> get(stops) -> len",
+            "op": "=",
+            "value": 1
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.stop_include_keys",
+            "op_args": {
+                "keys": ["name", "place id"]
+            }
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.is_a_validate_stop"
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.validate_location",
+            "op_args": ["museum", "museo"]
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.places_in_countries",
+            "op_args": ["Rome", "Roma", "RM"]
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.validate_direction_of_two_places",
+            "op_args": [
+                {
+                    "place": "00197 Rome, Metropolitan City of Rome Capital, Italy",
+                    "direction": "south"
+                },
+                {
+                    "place": "Piazza del Colosseo, 1, 00184 Roma RM, Italy",
+                    "direction": "west"
+                }
+            ]
+        }
+    ]
+}

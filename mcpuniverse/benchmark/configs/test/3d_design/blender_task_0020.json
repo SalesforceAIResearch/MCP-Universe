@@ -1,0 +1,31 @@
+{
+    "category": "blender",
+    "question": "Clear the current Blender scene and remove all PolyHaven materials.\nCreate three objects: a Cube named 'Obj_A', a UV Sphere named 'Obj_B', and a Cone named 'Obj_C', all at the world origin initially. Create two new Collections in the scene named 'Group_Red' and 'Group_Blue'. Move 'Obj_A' and 'Obj_C' into the 'Group_Red' collection. Move 'Obj_B' into the 'Group_Blue' collection. Ensure these three objects are not also present in the default 'Collection' (Scene Collection). Add a Custom Property to the 'Obj_B' (Sphere) object: set the Property Name to 'AssetID', its Value to the integer 12345, and its Tooltip to 'Sphere Asset Identifier'. After finishing all tasks, create a new file and save it as 'tid_20.blend' in the '{{MCPUniverse_DIR}}/mcpuniverse/evaluator/blender/blend_files'.",
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "blender.check_file",
+            "op_args": {
+                "path": "tid_20.blend",
+                "task_id": "20"
+            }
+        },
+        {
+            "func": "raw",
+            "op": "blender.check_file_content",
+            "op_args": {
+                "path": "tid_20.blend",
+                "task_id": "20"
+            }
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "blender",
+            "cleanup_func": "clear_scene_and_polyhaven_materials",
+            "cleanup_args": {
+                "ctx": "$CleanUp"
+            }
+        }
+    ]
+}

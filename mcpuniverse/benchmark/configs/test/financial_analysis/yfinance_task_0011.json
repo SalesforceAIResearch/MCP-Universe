@@ -1,0 +1,24 @@
+{
+    "category": "general",
+    "question": "I find myself with considerable leisure time today and am rather curious about my Apple holdings. Would you be so kind as to fetch the institutional holders for AAPL? I'm particularly interested in those astute institutions that have increased their positions by more than 0.02, which I believe represents a 2 percentage point enhancement in their stakes. Once you've identified these discerning investors, I'd appreciate if you could calculate the total market value of shares held by these institutions. It would be quite enlightening to see which of my fellow investors share my confidence in Apple's prospects.",
+    "output_format": {
+        "institutional holders": [
+            {
+                "institution": "[STRING]", 
+                "value": "[NUMBER]", 
+                "pctChange": "[NUMBER]"
+            }
+        ], 
+        "aggregate market value": "[NUMBER]"
+    },
+    "evaluators": [
+        {
+            "func": "json",
+            "op": "yfinance.check_percentage_change",
+            "op_args": {
+                "ticker": "AAPL",
+                "minPctChange": 0.02
+            }
+        }
+    ]
+}

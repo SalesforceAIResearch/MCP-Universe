@@ -1,0 +1,75 @@
+{
+    "question": "I live in the Empire State Building in New York City. My colleague lives in the Willis Tower in Chicago. We need to find a meeting point between our two locations. If tomorrow morning has chance to rain for both New York City and Chicago, find a single 'restaurant' (must be of type 'restaurant') such that the estimated driving time from the Empire State Building to the restaurant is as close as possible to the driving time from the Willis Tower to the restaurant. Otherwise, find a single 'park' (must be of type 'park') such that the estimated driving time from the Empire State Building to the park is as close as possible to the driving time from the Willis Tower to the park. Report the Name, Place ID, and exact driving times from both locations to the park or cafe.",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "google-maps"
+        },  
+        {
+            "name": "weather"
+        }
+    ],
+    "output_format": {
+        "stops": [
+            {
+                "name": "NAME",
+                "place id": "Place ID",
+                "place type": "restaurant or park"
+            }
+        ]
+    },
+    "evaluators": [
+        {
+            "func": "json"
+        },
+        {
+            "func": "json -> get(stops) -> len",
+            "op": "=",
+            "value": 1
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.stop_include_keys",
+            "op_args": {
+                "keys": ["name", "place id", "place type"]
+            }
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.is_a_validate_stop"
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.compare_time_of_middle_point",
+            "op_args": {
+                "place1": {
+                    "place": "20 W 34th St., New York, NY 10001, United States",
+                    "mode": "driving"
+                },
+                "place2":{
+                    "place": "233 S Wacker Dr, Chicago, IL 60606, United States",
+                    "mode": "driving"
+                },
+                "threshold": 0.1
+            }
+        },
+        {
+            "func": "json",
+            "op": "weather.check_place_type_with_multiple_weather",
+            "op_args": {
+                "night_or_not": false,
+                "condition_type": "rain_or_not",
+                "condition_value": "",
+                "options": ["restaurant", "park"],
+                "geocode_1": {
+                    "latitude": 40.7489,
+                    "longitude": -73.9862
+                },
+                "geocode_2": {
+                    "latitude": 41.8787,
+                    "longitude": -87.6360
+                }
+            }
+        }
+    ]
+}

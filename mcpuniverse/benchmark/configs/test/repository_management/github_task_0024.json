@@ -1,0 +1,43 @@
+{
+    "category": "general",
+    "question": "Hi! I'm absolutely thrilled to be working on a research project involving BLIP. It's such an incredible and groundbreaking work from Salesforce! As a huge fan of their vision-language models, I'm really excited to dive deeper into the community engagement around BLIP. Could you please help me search for repositories named 'BLIP' that are owned by 'Salesforce'? For each amazing repository you find, I'd love to know how many open issues are labeled with 'New Features'. I'm so curious to see what innovative features the community is requesting! Then, if you could help me create a CSV file called blip_new_features_report.csv and put it in a new repository called salesforce-blip-issues under my account, that would be fantastic! If the repository doesn't exist yet, please create it for me. The CSV should have two columns: repository_name and open_new_features_count, with each row showing the full repository name and how many open new features issues it has. I'm so excited about this analysis. Thanks so much for your help with exploring the BLIP ecosystem!",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "github"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "github.check_repository",
+            "op_args": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}/salesforce-blip-issues" 
+        },
+        {
+            "func": "raw",
+            "op": "github.check_file_content_and_issue_count",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "salesforce-blip-issues",
+                "path": "blip_new_features_report.csv",
+                "branch": "main",
+                "search_repo_owner": "Salesforce",
+                "search_repo_name": "BLIP",
+                "issue_labels": ["New Features"],
+                "issue_state": "open",
+                "file_type": "csv",
+                "csv_columns": ["repository_name", "open_new_features_count"]
+            }
+        }
+    ],
+    "cleanups": [
+        {
+        "server": "github",
+        "tool": "create_repository",
+        "cleanup_func": "delete_repository",
+        "cleanup_args": {
+            "repo": "$name"
+            }
+        }
+    ]
+}

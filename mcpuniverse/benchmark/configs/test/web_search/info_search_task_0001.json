@@ -1,0 +1,26 @@
+{
+    "category": "general",
+    "question": "I'm looking for someone based on the clues below: - Score 16 goals in 2024-25 season - Score 1 goal in UEFA Champions League 2024-25 season - Score 11 goals in 2021-22 season - Score 2 goals in the EFL Cup of 2020-21 season.",
+    "output_format": {
+        "answer": "[Your answer]"
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "google-search"
+        },
+        {
+            "name": "fetch"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "google_search.llm_as_a_judge",
+            "op_args": {
+                "question": "I'm looking for someone based on the clues below: - Score 16 goals in 2024-25 season - Score 1 goal in UEFA Champions League 2024-25 season - Score 11 goals in 2021-22 season - Score 2 goals in the EFL Cup of 2020-21 season",
+                "correct_answer": "Ollie Watkins"
+            }
+        }
+    ]
+}

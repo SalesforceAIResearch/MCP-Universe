@@ -1,0 +1,21 @@
+{
+    "category": "general",
+    "question": "I'm conducting research for my doctoral dissertation on institutional investment concentration patterns across major technology firms. Could you assist me in identifying institutional holders that maintain significant positions (pctHeld > 0.05, representing holdings exceeding 5% of outstanding shares) across all four of these prominent companies: Microsoft (MSFT), Apple (AAPL), Amazon (AMZN), and Alphabet (GOOGL)? Specifically, I need to compile a comprehensive list of institutional entities ('Holder' field) that satisfy both criteria: (1) appearing in the institutional holdings reports for all four companies, and (2) maintaining the aforementioned 5% threshold in each position. This data will be instrumental for my analysis of cross-portfolio institutional investment strategies in the technology sector.",
+    "output_format": {
+        "holders": [
+            "institution 1", 
+            "institution 2", 
+            "..."
+        ]
+    },
+    "evaluators": [
+        {
+            "func": "json",
+            "op": "yfinance.check_common_significant_holders",
+            "op_args": {
+                "threshold_pct_held": 0.05,
+                "tickers": ["MSFT", "AAPL", "AMZN", "GOOGL"]
+            }
+        }
+    ]
+}

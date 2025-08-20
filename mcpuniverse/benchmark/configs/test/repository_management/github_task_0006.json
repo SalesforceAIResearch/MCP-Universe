@@ -1,0 +1,43 @@
+{
+    "category": "general",
+    "question": "As a Facebook ecosystem analyzer, I need you to conduct a comprehensive analysis of Facebook's React-related repositories. Please search for all repositories owned by 'facebook' that contain 'react' in their name. For each repository discovered, I want you to extract the current count of open issues that are specifically labeled as 'Type: Bug'. This will help us understand the bug landscape across Facebook's React ecosystem. Once you've gathered this data, create a new repository under your account called 'facebook-react-issues' (if it doesn't already exist) and generate a detailed CSV report named 'react_bug_report.csv'. The report should be structured with two columns: 'repository_name' containing the full repository name, and 'open_bug_count' showing the corresponding number of open bug issues. This analysis will provide valuable insights into the maintenance status and potential issues across Facebook's React-related projects.",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "github"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "github.check_repository",
+            "op_args": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}/facebook-react-issues" 
+        },
+        {
+            "func": "raw",
+            "op": "github.check_file_content_and_issue_count",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "facebook-react-issues",
+                "path": "react_bug_report.csv",
+                "branch": "main",
+                "search_repo_owner": "facebook",
+                "search_repo_name": "react",
+                "issue_labels": ["Type: Bug"],
+                "issue_state": "open",
+                "file_type": "csv",
+                "csv_columns": ["repository_name", "open_bug_count"]
+            }
+        }
+    ],
+    "cleanups": [
+        {
+        "server": "github",
+        "tool": "create_repository",
+        "cleanup_func": "delete_repository",
+        "cleanup_args": {
+            "repo": "$name"
+            }
+        }
+    ]
+}

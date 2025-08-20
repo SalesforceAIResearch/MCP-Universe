@@ -1,0 +1,36 @@
+{
+    "category": "general",
+    "question": "As a researcher working on large multimodal models, I need to systematically document the performance of various LMMs across established benchmarks for my research analysis. Based on my literature review, I have identified two key benchmarks where GPT 4.1 achieves 75% accuracy, GPT 4.5 achieves 75% accuracy, and GPT 4o mini achieves 56% accuracy on the first benchmark. On the second benchmark, GPT 4.1 achieves 72% accuracy, GPT 4.5 maintains the same accuracy level, and GPT 4o mini achieves 57% accuracy. I would appreciate assistance in creating a structured Notion page to organize this performance data for my ongoing research documentation. Please create a new page named \"Performance of Different LMMs\" in the parent page {{ NOTION_ROOT_PAGE }} and include your collection of data in the page. The format should be: \"The first benchmark name\": \"MMMU\", \"OpenAI o1 (high)\": \"xx%\", \"GPT-4.1\": \"75%\", \"GPT-4.5\": \"75%\", \"GPT-4o-mini\": \"56%\", \"The second benchmark name\": \"MathVista\", \"OpenAI o1 (high)\": \"xx%\", \"GPT-4.1\": \"72%\", \"GPT-4.5\": \"72%\", \"GPT-4o-mini\": \"57%\"",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "google-search"
+        },
+        {
+            "name": "fetch"
+        },
+        {
+            "name": "notion"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "notion.compare_page_text",
+            "op_args": {
+                "page_title": "Performance of Different LMMs"
+            },
+            "value": "The first benchmark name: MMMU, OpenAI o1 (high): 78%, GPT-4.1: 75%, GPT-4.5: 75%, GPT-4o-mini: 56%\nThe second benchmark name: MathVista, OpenAI o1 (high): 72%, GPT-4.1: 72%, GPT-4.5: 72%, GPT-4o-mini: 57%"
+        }
+    ],
+    "cleanups": [
+        {   
+            "server": "notion",
+            "tool": "API-post-page",
+            "cleanup_func": "delete_page",
+            "cleanup_args": {
+                "page":"$return -> get(content) -> array(0) -> get(text) -> json -> get(id)"
+            }   
+        }
+    ]
+}

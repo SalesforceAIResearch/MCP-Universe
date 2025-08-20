@@ -1,0 +1,26 @@
+{
+    "category": "general",
+    "question": "I'm looking for a city based on the clues below: - The city has a football club that was formed in 1895. - One university in this city has a master's program that teaches Natural Language Processing with 7.5 credits. - One graduated PhD student of this university has published one paper at EACL 2021 and one at EACL 2023 as the first author. - One of the professors in this university is a Fellow of the ACL. You need to find the English name of the city.",
+    "output_format": {
+        "answer": "[Your answer]"
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "google-search"
+        },
+        {
+            "name": "fetch"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "google_search.llm_as_a_judge",
+            "op_args": {
+                "question": "I'm looking for a city based on the clues below: - The city has a football club that was formed in 1895. - One university in this city has a master's program that teaches Natural Language Processing with 7.5 credits. - One graduated PhD student of this university has published one paper at EACL 2021 and one at EACL 2023 as the first author. - One of the professors in this university is a Fellow of the ACL. You need to find the English name of the city.",
+                "correct_answer": "Uppsala"
+            }
+        }
+    ]
+}

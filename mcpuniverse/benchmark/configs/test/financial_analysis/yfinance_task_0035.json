@@ -1,0 +1,17 @@
+{
+    "category": "general",
+    "question": "Hi there! My husband and I have been working really hard to build our retirement savings, and I've been doing some research on dividend stocks. I've read that companies that have been paying dividends consistently for at least 10 years are really reliable and make great long term investments. I want to find 3 solid companies like this that we can add to our portfolio. We're looking for businesses that have been taking good care of their shareholders for a decade or more. Could you help me identify 3 companies that have been paying dividends consistently for 10 years? I think these would be perfect additions to help secure our financial future together.",
+    "output_format": {
+        "tickers": ["ticker1", "ticker2", "ticker3"]
+    },
+    "evaluators": [
+        {
+            "func": "json",
+            "op": "yfinance.check_dividend_consistency_task_output",
+            "op_args": {
+                "num_tickers": 3,
+                "min_years": 10
+            }
+        }
+    ]
+}

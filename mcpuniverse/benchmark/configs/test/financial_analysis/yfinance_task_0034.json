@@ -1,0 +1,17 @@
+{
+    "category": "general",
+    "question": "Hi! My dad has been working really hard for our family, and I want to surprise him by learning about stocks so I can help him save money for when he gets older. I heard that some companies give money back to people who own their stocks, and they call these dividend payments. My teacher said that if a company has been doing it for at least 5 years, that means it's a really good company that takes care of its shareholders. I want to find 3 companies like this so I can show my dad that I'm learning about money and maybe we can invest together. Could you help me find 3 companies that have been giving dividends out for 5 years in a row? I think my dad would be so proud if I could teach him something about investing for once!",
+    "output_format": {
+        "tickers": ["ticker1", "ticker2", "ticker3"]
+    },
+    "evaluators": [
+        {
+            "func": "json",
+            "op": "yfinance.check_dividend_consistency_task_output",
+            "op_args": {
+                "num_tickers": 3,
+                "min_years": 5
+            }
+        }
+    ]
+}

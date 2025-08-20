@@ -1,0 +1,31 @@
+{
+    "category": "general",
+    "question": "I am a first-year PhD student focusing on NLP. I want to learn about the great papers in the top-tier conferences. My first target is about EMNLP 2024. Can you help me find the names of all papers which wins the best paper awards on the offical EMNLP 24 website (https://2024.emnlp.org/), then obtain their arXiv IDs from https://arxiv.org/. Remember to close the browser when you finish the task.",
+    "output_format": {
+        "Name_of_the_paper_1": "2xxx.xxxxx",
+        "Name_of_the_paper_2": "2xxx.xxxxx",
+        "Name_of_the_paper_3": "2xxx.xxxxx"
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "playwright"
+        },
+        {
+            "name": "date"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "json",
+            "op": "playwright.is_dict_equal",
+            "value": {
+                "An image speaks a thousand words, but can everyone listen? On image transcreation for cultural relevance": "2404.01247",
+                "Towards Robust Speech Representation Learning for Thousands of Languages": "2407.00837",
+                "Backward Lens: Projecting Language Model Gradients into the Vocabulary Space": "2402.12865",
+                "Pretraining Data Detection for Large Language Models: A Divergence-based Calibration Method": "2409.14781",
+                "CoGen: Learning from Feedback with Coupled Comprehension and Generation": "2408.15992"
+            }
+        }
+    ]
+}

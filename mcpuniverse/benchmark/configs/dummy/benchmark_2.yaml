@@ -1,0 +1,45 @@
+kind: llm
+spec:
+  name: llm-1
+  type: openai
+  config:
+    model_name: gpt-4o
+
+---
+kind: agent
+spec:
+  name: basic-agent
+  type: basic
+  config:
+    llm: llm-1
+    instruction: Return the latitude and the longitude of a place.
+
+---
+kind: agent
+spec:
+  name: function-call-agent
+  type: function-call
+  config:
+    llm: llm-1
+    instruction: You are an agent for weather forecast. Please return the weather today at the given latitude and longitude.
+    servers:
+      - name: weather
+
+---
+kind: workflow
+spec:
+  name: orchestrator-workflow
+  type: orchestrator
+  config:
+    llm: llm-1
+    agents:
+      - basic-agent
+      - function-call-agent
+
+---
+kind: benchmark
+spec:
+  description: Test the agent for weather forecasting
+  agent: orchestrator-workflow
+  tasks:
+    - dummy/tasks/weather_1.json

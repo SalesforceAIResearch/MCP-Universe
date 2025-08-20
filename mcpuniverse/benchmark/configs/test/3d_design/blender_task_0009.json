@@ -1,0 +1,31 @@
+{
+    "category": "blender",
+    "question": "Clear the current Blender scene and remove all PolyHaven materials.\nCreate a Cube named 'ConcreteCube', position it at the world origin (0,0,0), and set its scale factors to (X=15.0, Y=15.0, Z=2.0). Search Polyhaven for a 'Concrete Floor' texture. Download one result with 1K resolution. Apply it to the default Cube creating a material named 'ConcreteMixMat'. Set up the Base Color, Roughness, and Normal maps correctly in the material. Now, add a 'Noise Texture' node. Connect this Noise Texture's 'Fac' output to the 'Factor' input of a 'Mix Shader' node. Connect the original Principled BSDF (with concrete textures) to the first 'Shader' input of the Mix Shader. Create a second Principled BSDF node, set its Base Color to dark brown (RGB: 0.1, 0.05, 0.02) and its Roughness to 0.9. Connect this second Principled BSDF to the second 'Shader' input of the Mix Shader. Connect the Mix Shader output to the Material Output's Surface input. Adjust the Noise Texture's 'Scale' to 10 and 'Detail' to 5. After finishing all tasks, create a new file and save it as 'tid_9.blend' in the '{{MCPUniverse_DIR}}/mcpuniverse/evaluator/blender/blend_files'.",
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "blender.check_file",
+            "op_args": {
+                "path": "tid_9.blend",
+                "task_id": "9"
+            }
+        },
+        {
+            "func": "raw",
+            "op": "blender.check_file_content",
+            "op_args": {
+                "path": "tid_9.blend",
+                "task_id": "9"
+            }
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "blender",
+            "cleanup_func": "clear_scene_and_polyhaven_materials",
+            "cleanup_args": {
+                "ctx": "$CleanUp"
+            }
+        }
+    ]
+}

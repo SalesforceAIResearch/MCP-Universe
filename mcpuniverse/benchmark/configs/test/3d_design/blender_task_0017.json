@@ -1,0 +1,31 @@
+{
+    "category": "blender",
+    "question": "Clear the current Blender scene and remove all PolyHaven materials.\nEnsure the render engine is Cycles (use CPU). Create a Plane named 'Ground', scale it uniformly by 10. Enable Rigid Body physics for 'Ground', set its Type to 'Passive', and Collision Shape to 'Mesh'. Create a UV Sphere named 'Ball', position it at (X=0, Y=0, Z=5). Enable Rigid Body physics for 'Ball', set its Type to 'Active', Collision Shape to 'Sphere', Mass to 2.1 kg, and Friction to 0.7. Create a Cube named 'Block', position it at (X=1, Y=0, Z=8), and rotate it 30 degrees around the X-axis. Enable Rigid Body physics for 'Block', set its Type to 'Active', Collision Shape to 'Box', Mass to 5.1 kg, and enable 'Deactivation' with 'Start Deactivated' checked. After finishing all tasks, create a new file and save it as 'tid_17.blend' in the '{{MCPUniverse_DIR}}/mcpuniverse/evaluator/blender/blend_files'.",
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "blender.check_file",
+            "op_args": {
+                "path": "tid_17.blend",
+                "task_id": "17"
+            }
+        },
+        {
+            "func": "raw",
+            "op": "blender.check_file_content",
+            "op_args": {
+                "path": "tid_17.blend",
+                "task_id": "17"
+            }
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "blender",
+            "cleanup_func": "clear_scene_and_polyhaven_materials",
+            "cleanup_args": {
+                "ctx": "$CleanUp"
+            }
+        }
+    ]
+}

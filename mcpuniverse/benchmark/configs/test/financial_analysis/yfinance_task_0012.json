@@ -1,0 +1,25 @@
+{
+    "category": "general",
+    "question": "Hello! I'm learning about investing and would love to understand how institutional investors like Blackrock Inc. move their holdings around. Could you help me get the latest institutional holdings data for Microsoft (MSFT), Apple (AAPL), and Alphabet (GOOGL)? I'm particularly curious about the percentage point changes (pctChange) in Blackrock Inc.'s stake for each of these companies. I'd like to see which company had the biggest positive increase in Blackrock's holdings and know both the company ticker and the exact pctChange value. This would really help me understand how major investors adjust their portfolios!",
+    "output_format": {
+        "MSFT": {
+            "pctChange": "[NUMBER]"
+        }, 
+        "AAPL": {
+            "pctChange": "[NUMBER]"
+        }, 
+        "GOOGL": {
+            "pctChange": "[NUMBER]"
+        }, 
+        "company with largest positive increase": "[MSFT or AAPL or GOOGL]"
+    },
+    "evaluators": [
+        {
+            "func": "json",
+            "op": "yfinance.check_largest_positive_increase",
+            "op_args": {
+                "tickers": ["MSFT", "AAPL", "GOOGL"]
+            }
+        }
+    ]
+}

@@ -1,0 +1,20 @@
+{
+    "category": "general",
+    "question": "I absolutely love Pepsi and everything about it! As a devoted Pepsi enthusiast, I find it fascinating how Warren Buffett's Berkshire Hathaway still holds that massive position in The Coca Cola Company (KO) despite Pepsi being clearly superior. Could you help me analyze their latest institutional holdings report for Berkshire Hathaway, Inc? I need you to extract their reported Shares, reported Value, and Date Reported. Then please convert that Date Reported timestamp into an actual calendar date and pull KO's closing stock price for that specific trading day. I want to calculate what Berkshire's position should actually be worth using that historical closing price and see how it compares to their originally reported value. This kind of analysis really excites me as a Pepsi lover studying these market dynamics! Please provide the Date Reported, the originally reported Value from the service, your calculated market value, and the absolute difference between these two figures.",
+    "output_format": {
+        "Date Reported": "[DDMMYYYY]", 
+        "originally reported value": "[NUMBER]", 
+        "calculated market value": "[NUMBER]", 
+        "absolute difference": "[NUMBER]"
+    },
+    "evaluators": [
+        {
+            "func": "json",
+            "op": "yfinance.check_institutional_holding_values",
+            "op_args": {
+                "ticker": "KO",
+                "holder": "Berkshire Hathaway, Inc"
+            }
+        }
+    ]
+}

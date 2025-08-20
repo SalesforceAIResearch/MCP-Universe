@@ -1,0 +1,26 @@
+{
+    "category": "general",
+    "question": "I'm looking for a paper based on the clues below: - Accepted by ICML 2022 - The first author works at Salesforce - The paper has 4 authors - The paper is about VLP - The first author has published at least 1 paper as NeurIPS 2021 Spotlight. You need to find the full title of the paper.",
+    "output_format": {
+        "answer": "[Your answer]"
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "google-search"
+        },
+        {
+            "name": "fetch"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "google_search.llm_as_a_judge",
+            "op_args": {
+                "question": "I'm looking for a paper based on the clues below: - Accepted by ICML 2022 - The first author works at Salesforce - The paper has 4 authors - The paper is about VLP - The first author has published at least 1 paper as NeurIPS 2021 Spotlight. You need to find the full title of the paper.",
+                "correct_answer": "BLIP: Bootstrapping Language-Image Pre-training for Unified Vision-Language Understanding and Generation"
+            }
+        }
+    ]
+}

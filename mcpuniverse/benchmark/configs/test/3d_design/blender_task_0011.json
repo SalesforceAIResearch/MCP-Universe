@@ -1,0 +1,31 @@
+{
+    "category": "blender",
+    "question": "Clear the current Blender scene and remove all PolyHaven materials.\nSet the render engine to Cycles. Set the render device to CPU. Set the Max Samples for rendering to 128 and for the viewport to 64. Change the output resolution to 1920x1080 pixels with 121% scale. In the World properties, add an Environment Texture node using an HDRI. Search Polyhaven for an HDRI in the 'outdoor' category, download the 1K result, and assign it to the Environment Texture node. Set the Background 'Strength' to 1.5. Enable 'Ambient Occlusion' in the Cycles render settings with a distance of 0.5 meters. After finishing all tasks, create a new file and save it as 'tid_11.blend' in the '{{MCPUniverse_DIR}}/mcpuniverse/evaluator/blender/blend_files'.",
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "blender.check_file",
+            "op_args": {
+                "path": "tid_11.blend",
+                "task_id": "11"
+            }
+        },
+        {
+            "func": "raw",
+            "op": "blender.check_file_content",
+            "op_args": {
+                "path": "tid_11.blend",
+                "task_id": "11"
+            }
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "blender",
+            "cleanup_func": "clear_scene_and_polyhaven_materials",
+            "cleanup_args": {
+                "ctx": "$CleanUp"
+            }
+        }
+    ]
+}

@@ -1,0 +1,154 @@
+{
+    "category": "general",
+    "question": "Hi there! I'm leading a research initiative on agent evaluation frameworks and need help setting up a new project repository called `MCP-Universe-Research-0030`, which will support the development of an innovative evaluation framework leveraging the Model Context Protocol (MCP) for assessing LLM capabilities. Please create the repository with two branches: `main` and `dev`. The `main` branch should contain a `README.md` file with the following content: `# MCP-Universe-Research\nA comprehensive evaluation framework for LLMs to use the novel MCP technique.` The `dev` branch should also start with the same `README.md` content but with an additional reference link to the official MCP GitHub repository to help collaborators understand the underlying technology. In the `dev` branch, please set up the project structure with three directories: `benchmark`, `agents`, and `mcp_server`, each containing an `__init__.py` file with a simple comment: `# This is a test comment`. Additionally, I'd like to include a GitHub automation script that listens for newly created issues and posts an automatic comment based on the assigned label: for issues labeled `bug`, comment “Thank you. We will fix it.”; for issues labeled `feature`, comment “Thank you, we will consider to include this feature.”; and for issues labeled `discussion`, comment “Thanks for starting this discussion! We welcome community input.” Please create sample issues titled “Bug in benchmark logic” (with label `bug`), “Feature: New agent scoring metric” (with label `feature`), and “Discussion: Evaluation metrics alignment” (with label `discussion`) with appropriate labels to test the automation. Thank you so much for your assistance!",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "github"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "github.check_repository",
+            "op_args": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}/MCP-Universe-Research-0030" 
+        },
+        {
+            "func": "raw",
+            "op": "github.check_branches_exist",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "MCP-Universe-Research-0030",
+                "path": "README.md",
+                "branches": ["main", "dev"]
+            }
+        },
+        {
+            "func": "raw",
+            "op": "github.check_file_content",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "MCP-Universe-Research-0030",
+                "path": "README.md",
+                "branch": "main"
+            },
+            "value": "# MCP-Universe-Research\nA comprehensive evaluation framework for LLMs to use the novel MCP technique."
+        },
+        {
+            "func": "raw",
+            "op": "github.file_content_include",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "MCP-Universe-Research-0030",
+                "path": "README.md",
+                "branch": "dev"
+            },
+            "value": "# MCP-Universe-Research\nA comprehensive evaluation framework for LLMs to use the novel MCP technique."
+        },
+        {
+            "func": "raw",
+            "op": "github.file_content_include",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "MCP-Universe-Research-0030",
+                "path": "benchmark/__init__.py",
+                "branch": "dev"
+            },
+            "value": "# This is a test comment"
+        },
+        {
+            "func": "raw",
+            "op": "github.file_content_include",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "MCP-Universe-Research-0030",
+                "path": "agents/__init__.py",
+                "branch": "dev"
+            },
+            "value": "# This is a test comment"
+        },
+        {
+            "func": "raw",
+            "op": "github.file_content_include",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "MCP-Universe-Research-0030",
+                "path": "mcp_server/__init__.py",
+                "branch": "dev"
+            },
+            "value": "# This is a test comment"
+        },
+        {
+            "func": "raw",
+            "op": "github.file_content_include",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "MCP-Universe-Research-0030",
+                "path": "README.md",
+                "branch": "dev"
+            },
+            "value": [
+                "https://github.com/modelcontextprotocol/modelcontextprotocol"
+            ]
+        },
+        {
+            "func": "raw",
+            "op": "github.file_content_include",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "MCP-Universe-Research-0030",
+                "path": "README.md",
+                "branch": "dev"
+            },
+            "value": [
+                "https://github.com/github/github-mcp-server"
+            ]
+        },
+        {
+            "func": "raw",
+            "op": "github.check_number_of_issues",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "MCP-Universe-Research-0030",
+                "labels": ["feature"],
+                "title": "Feature: New agent scoring metric",
+                "comment": "Thank you, we will consider to include this feature."
+            },
+            "value": 1
+        },
+        {
+            "func": "raw",
+            "op": "github.check_number_of_issues",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "MCP-Universe-Research-0030",
+                "labels": ["discussion"],
+                "title": "Discussion: Evaluation metrics alignment",
+                "comment": "Thanks for starting this discussion! We welcome community input."
+            },
+            "value": 1
+        },
+        {
+            "func": "raw",
+            "op": "github.check_number_of_issues",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "MCP-Universe-Research-0030",
+                "labels": ["bug"],
+                "title": "Bug in benchmark logic",
+                "comment": "Thank you. We will fix it."
+            },
+            "value": 1
+        }
+    ],
+    "cleanups": [
+        {
+        "server": "github",
+        "tool": "create_repository",
+        "cleanup_func": "delete_repository",
+        "cleanup_args": {
+            "repo": "$name"
+            }
+        }
+    ]
+}

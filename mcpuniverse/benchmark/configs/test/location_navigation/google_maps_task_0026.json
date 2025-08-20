@@ -1,0 +1,139 @@
+{
+    "category": "general",
+    "question": "I'm currently staying at the Sheraton Jumeirah Beach Resort in Dubai. My first colleague is based at the Oryx Hotel in Abu Dhabi, while my second colleague is located at Signature 1 Hotel, Barsha Heights, Dubai. Additionally, our boss is residing at the Royal M Hotel by Gewan Abu Dhabi. We're looking to arrange a convenient meeting location that works well for all four of us. Could you please identify a single 'restaurant' (must be of type 'restaurant') where the estimated driving times from each of our four locations are as balanced and equitable as possible? The establishment should maintain a minimum user rating of 4.2 to ensure quality. Please provide the restaurant's Name and Place ID.",
+    "output_format": {
+        "stops": [
+            {
+                "name": "NAME",
+                "place id": "Place ID"
+            }
+        ]
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "google-maps"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "json"
+        },
+        {
+            "func": "json -> get(stops) -> len",
+            "op": "=",
+            "value": 1
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.stop_include_keys",
+            "op_args": {
+                "keys": ["name", "place id"]
+            }
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.is_a_validate_stop"
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.validate_stop_type",
+            "op_args": ["restaurant"]
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.validate_stop_rating",
+            "op_args": 4.1999
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.compare_time_of_middle_point",
+            "op_args": {
+                "place1": {
+                    "place": "Al Mamsha St - Dubai Marina - Dubai - United Arab Emirates",
+                    "mode": "driving"
+                },
+                "place2":{
+                    "place": "Zayed the First Street, Near Emirates Post Office, Khalidiya Area - Abu Dhabi - United Arab Emirates",
+                    "mode": "driving"
+                },
+                "threshold": 0.1
+            }
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.compare_time_of_middle_point",
+            "op_args": {
+                "place1": {
+                    "place": "Al Mamsha St - Dubai Marina - Dubai - United Arab Emirates",
+                    "mode": "driving"
+                },
+                "place2":{
+                    "place": "Al Thanayah Fourth - 1 2 A St - 1st St - Barsha Heights - Dubai - United Arab Emirates",
+                    "mode": "driving"
+                },
+                "threshold": 0.1
+            }
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.compare_time_of_middle_point",
+            "op_args": {
+                "place1": {
+                    "place": "Zayed the First Street, Near Emirates Post Office, Khalidiya Area - Abu Dhabi - United Arab Emirates",
+                    "mode": "driving"
+                },
+                "place2":{
+                    "place": "Al Thanayah Fourth - 1 2 A St - 1st St - Barsha Heights - Dubai - United Arab Emirates",
+                    "mode": "driving"
+                },
+                "threshold": 0.1
+            }
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.compare_time_of_middle_point",
+            "op_args": {
+                "place1": {
+                    "place": "Al Mamsha St - Dubai Marina - Dubai - United Arab Emirates",
+                    "mode": "driving"
+                },
+                "place2":{
+                    "place": "Al Bateen Marina King Abdullah Bin Abdulaziz Al Saud Street - Abu Dhabi - United Arab Emirates",
+                    "mode": "driving"
+                },
+                "threshold": 0.1
+            }
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.compare_time_of_middle_point",
+            "op_args": {
+                "place1": {
+                    "place": "Zayed the First Street, Near Emirates Post Office, Khalidiya Area - Abu Dhabi - United Arab Emirates",
+                    "mode": "driving"
+                },
+                "place2":{
+                    "place": "Al Bateen Marina King Abdullah Bin Abdulaziz Al Saud Street - Abu Dhabi - United Arab Emirates",
+                    "mode": "driving"
+                },
+                "threshold": 0.1
+            }
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.compare_time_of_middle_point",
+            "op_args": {
+                "place1": {
+                    "place": "Al Thanayah Fourth - 1 2 A St - 1st St - Barsha Heights - Dubai - United Arab Emirates",
+                    "mode": "driving"
+                },
+                "place2":{
+                    "place": "Al Bateen Marina King Abdullah Bin Abdulaziz Al Saud Street - Abu Dhabi - United Arab Emirates",
+                    "mode": "driving"
+                },
+                "threshold": 0.1
+            }
+        }
+    ]
+}

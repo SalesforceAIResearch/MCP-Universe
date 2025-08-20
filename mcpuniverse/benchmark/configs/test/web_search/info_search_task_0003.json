@@ -1,0 +1,26 @@
+{
+    "category": "general",
+    "question": "I'm looking for a paper based on the clues below: - Accepted by CVPR 2025 - The last author works at Salesforce - The second to last author works at NUS - The second author has studied at NTU - The paper has 6 authors - The paper uses the ELO rating system. You need to find the full title of the paper.",
+    "output_format": {
+        "answer": "[Your answer]"
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "google-search"
+        },
+        {
+            "name": "fetch"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "google_search.llm_as_a_judge",
+            "op_args": {
+                "question": "I'm looking for a paper based on the clues below: - Accepted by CVPR 2025 - The last author works at Salesforce - The second to last author works at NUS - The second author has studied at NTU - The paper has 6 authors - The paper uses the ELO rating system. You need to find the full title of the paper.",
+                "correct_answer": "VideoAutoArena: An Automated Arena for Evaluating Large Multimodal Models in Video Analysis through User Simulation"
+            }
+        }
+    ]
+}

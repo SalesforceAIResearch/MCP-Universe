@@ -1,0 +1,112 @@
+{
+    "category": "general",
+    "question": "I'm from Spain and plant to visit Indonesia. Help me plan an amazing road trip starting in 'Jakarta' and ending in 'Surabaya', and I'd love your help to make it perfect with the amazing website `https://www.google.com/maps`! My plan is to drive through exactly 3 interesting cities between the start and end points. Could you please map out exactly 3 distinct driving route options for this journey? For these routes, could you also identify 2 convenient rest stops within those intermediate cities for each route (a total of 2 rest stops per route)? Additionally, I would love to catch some scenery, so could you please find exactly 2 scenic viewpoints within those intermediate cities per route (the cities of the viewpoints should be at least 1 city different from the cities of the rest stops per route), and tell me their elevations (a total of 2 scenic viewpoints per route)? Oh, I must visit 'Yogyakarta' to enjoy the classical Javanese dance. Really looking forward to seeing the options for this fantastic adventure! Remember to close the browser after you finish the task.",
+    "output_format": {
+        "starting_city": "[Starting City]",
+        "destination_city": "[Destination City]",
+        "routes": [
+            {
+                "route_id": "1",
+                "route_name": "NAME OF THE ROUTE",
+                "cities_visited": [
+                    "[City 1]",
+                    "[City 2]",
+                    "[City 3]",
+                    "... (exclude the starting and destination cities in this list)"
+                ],
+                "rest_stops": [
+                    {
+                        "city": "[Specific City]",
+                        "rest_stop_id": "1",
+                        "name": "[Rest Stop Name]",
+                        "address": "[Rest Stop Address]",
+                        "amenities": ["[Amenity 1]", "[Amenity 2]", "..."]
+                    }
+                ],
+                "scenic_viewpoints": [
+                    {
+                        "city": "[Specific City]",
+                        "viewpoint_id": "1",
+                        "name": "[Viewpoint Name]",
+                        "address": "[Viewpoint Address]",
+                        "elevation_meters": "[Elevation in meters]",
+                        "description": "[Brief Description]"
+                    }
+                ]
+            }
+        ]
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "playwright"
+        },
+        {
+            "name": "date"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "json"
+        },
+        {
+            "func": "json -> get(routes) -> len",
+            "op": "=",
+            "value": 3
+        },
+        {
+            "func": "json",
+            "op": "google_maps.city_name_match",
+            "op_args": {
+                "key": "starting_city",
+                "values": ["Jakarta", "Jakarta City", "Sunda Kelapa", "Jayakarta", "Batavia", "Djakarta"]
+            }
+        },
+        {
+            "func": "json",
+            "op": "google_maps.city_name_match",
+            "op_args": {
+                "key": "destination_city",
+                "values": ["Surabaya", "Surabaya City", "Suroboyo", "Soerabaja"]
+            }
+        },
+        {
+            "func": "json -> get(routes) -> foreach -> get(cities_visited) -> len",
+            "op": "=",
+            "value": 3
+        },
+        {
+            "func": "json -> get(routes) -> foreach -> get(rest_stops) -> len",
+            "op": "=",
+            "value": 2
+        },
+        {
+            "func": "json -> get(routes) -> foreach -> get(scenic_viewpoints) -> len",
+            "op": "=",
+            "value": 2
+        },
+        {
+            "func": "json",
+            "op": "google_maps.places_in_cities_visited",
+            "op_args": "rest_stops"
+        },
+        {
+            "func": "json",
+            "op": "google_maps.places_in_cities_visited",
+            "op_args": "scenic_viewpoints"
+        },
+        {
+            "func": "json",
+            "op": "google_maps.validate_elevation_meters"
+        },
+        {
+            "func": "json",
+            "op": "google_maps.place_in_cities_visited_of_routes",
+            "op_args": ["Yogyakarta", "Jogjakarta", "Jogja"]
+        },
+        {
+            "func": "json",
+            "op": "google_maps.city_different_from_rest_stops"
+        }
+    ]
+}

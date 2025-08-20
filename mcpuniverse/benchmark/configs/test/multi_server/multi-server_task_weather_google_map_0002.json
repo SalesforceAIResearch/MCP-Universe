@@ -1,0 +1,69 @@
+{
+    "question": "I live at the Westin Copley Place, Boston. My friend lives at the Boston Marriott Cambridge. We want to find a meeting point between our two locations for tomorrow morning's meeting. If the temperature is higher than 65 Fahrenheit, find a single 'cafe' (which must be of type 'cafe') such that the estimated driving time from the Westin Copley Place to the cafe is as close as possible to the driving time from the Boston Marriott Cambridge to the cafe. If the temperature is not higher than 65 Fahrenheit, find a single 'park' (which must be of type 'park') such that the estimated driving time from the Westin Copley Place to the park is as close as possible to the driving time from the Boston Marriott Cambridge to the park. Report the name and Place ID of the park or cafe.",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "google-maps"
+        },  
+        {
+            "name": "weather"
+        }
+    ],
+    "output_format": {
+        "stops": [
+            {
+                "name": "NAME",
+                "place id": "Place ID",
+                "place type": "park or cafe"
+            }
+        ]
+    },
+    "evaluators": [
+        {
+            "func": "json"
+        },
+        {
+            "func": "json -> get(stops) -> len",
+            "op": "=",
+            "value": 1
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.stop_include_keys",
+            "op_args": {
+                "keys": ["name", "place id", "place type"]
+            }
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.is_a_validate_stop"
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.compare_time_of_middle_point",
+            "op_args": {
+                "place1": {
+                    "place": "10 Huntington Ave, Boston, MA 02116, United States",
+                    "mode": "driving"
+                },
+                "place2":{
+                    "place": "50 Broadway, Cambridge, MA 02142, United States",
+                    "mode": "driving"
+                },
+                "threshold": 0.1
+            }
+        },
+        {
+            "func": "json",
+            "op": "weather.check_place_type_with_weather",
+            "op_args": {
+                "night_or_not": false,
+                "condition_type": "temperature_higher_than",
+                "condition_value": 65,
+                "options": ["cafe", "park"],
+                "latitude": 42.34832,
+                "longitude": -71.07746
+            }
+        }
+    ]
+}

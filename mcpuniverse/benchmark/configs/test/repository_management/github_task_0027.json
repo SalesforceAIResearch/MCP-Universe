@@ -1,0 +1,71 @@
+{
+    "category": "general",
+    "question": "Hi! Can you please help me make a super cool project repository called `comment-auto-bot`? I want to start it with just the main branch! Oh, and can we put a special `README.md` file in it that says `# Automated Comment Bot\n\nA repository to test GitHub automation for adding comments to issues.`? That would be awesome! Then, I really really want to make a GitHub robot that watches for new issues and says different things based on what kind of issue it is! If someone makes an issue with a `bug` label, I want the robot to say \"Thank you. We will fix it\", and if they make one with a `feature` label, I want it to say \"Thank you, we will consider to include this feature.\" If no label is assigned, the robot should say \"Thank you for your contribution!\" After we build the robot, can we test it by making three pretend issues? The first one should be called \"Bug report\" and have a `bug` label, the second one should be \"Feature request\" with a `feature` label, and the third one should be \"Documentation update\" but with no label at all! This is going to be so much fun!",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "github"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "github.check_repository",
+            "op_args": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}/comment-auto-bot" 
+        },
+        {
+            "func": "raw",
+            "op": "github.check_file_content",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "comment-auto-bot",
+                "path": "README.md",
+                "branch": "main"
+            },
+            "value": "# Automated Comment Bot\n\nA repository to test GitHub automation for adding comments to issues."
+        },
+        {
+            "func": "raw",
+            "op": "github.check_number_of_issues",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "comment-auto-bot",
+                "title": "Bug report",
+                "comment": "Thank you. We will fix it"
+            },
+            "value": 1
+        },
+        {
+            "func": "raw",
+            "op": "github.check_number_of_issues",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "comment-auto-bot",
+                "title": "Feature request",
+                "comment": "Thank you, we will consider to include this feature."
+            },
+            "value": 1
+        },
+        {
+            "func": "raw",
+            "op": "github.check_number_of_issues",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "comment-auto-bot",
+                "title": "Documentation update",
+                "comment": "Thank you for your contribution!"
+            },
+            "value": 1
+        }
+    ],
+    "cleanups": [
+        {
+        "server": "github",
+        "tool": "create_repository",
+        "cleanup_func": "delete_repository",
+        "cleanup_args": {
+            "repo": "$name"
+            }
+        }
+    ]
+}

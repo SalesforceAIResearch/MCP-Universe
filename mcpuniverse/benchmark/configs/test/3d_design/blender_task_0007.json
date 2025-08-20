@@ -1,0 +1,31 @@
+{
+    "category": "blender",
+    "question": "Clear the current Blender scene and remove all PolyHaven materials.\nCreate a Cube named 'BrickCube', position it at the world origin (0,0,0), and set its scale factors to (X=5.0, Y=10.0, Z=2.0). Search Polyhaven for a texture asset tagged 'brick'. Download the suitable result at 1K. Create a new material named 'BrickWallMat'. Apply it to the Cube. Connect the Base Color, Roughness, and Normal maps to the Principled BSDF as standard. Then, multiply the Base Color texture with the AO map before connecting to the Base Color input (use a MixRGB node set to Multiply). Connect the Displacement map to the 'Height' input of a 'Displacement' node, and connect that node's output to the 'Displacement' input of the Material Output node. Set the Displacement node's 'Scale' to 0.05. After finishing all tasks, create a new file and save it as 'tid_7.blend' in the '{{MCPUniverse_DIR}}/mcpuniverse/evaluator/blender/blend_files'.",
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "blender.check_file",
+            "op_args": {
+                "path": "tid_7.blend",
+                "task_id": "7"
+            }
+        },
+        {
+            "func": "raw",
+            "op": "blender.check_file_content",
+            "op_args": {
+                "path": "tid_7.blend",
+                "task_id": "7"
+            }
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "blender",
+            "cleanup_func": "clear_scene_and_polyhaven_materials",
+            "cleanup_args": {
+                "ctx": "$CleanUp"
+            }
+        }
+    ]
+}

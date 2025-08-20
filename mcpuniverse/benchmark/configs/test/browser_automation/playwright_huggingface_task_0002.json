@@ -1,0 +1,25 @@
+{
+    "category": "general",
+    "question": "I am an agent researcher in the field of computer-use. We are working on a project to achieve state-of-the-art performance on the famous benchmark called GAIA. We have downloaded the official GAIA.py file but accidentally deleted some content. Could you help me find the exact content on line 81? You can find it at https://huggingface.co/. You only need to provide the non-space content. Remember to close the browser when you finish the task.",
+    "output_format": {
+        "answer": "[string]"
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "playwright"
+        },
+        {
+            "name": "date"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "json",
+            "op": "playwright.is_dict_equal",
+            "value": {
+                "answer": "name=getattr(datasets.Split, split.upper()),"
+            }
+        }
+    ]
+} 

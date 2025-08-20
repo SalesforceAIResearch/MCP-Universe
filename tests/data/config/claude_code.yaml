@@ -1,0 +1,8 @@
+kind: agent
+spec:
+  name: agent-1
+  type: claude-code
+  config:
+    instruction: You are an agent for weather forecast
+    servers:
+      - name: weather

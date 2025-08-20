@@ -1,0 +1,63 @@
+{
+    "category": "general",
+    "question": "I am from France. We are planning a trip to Kuala Lumpur, Malaysia. We want you to help us make a plan for our trip. We like to use the website https://theworldtravelguy.com/ to find the best places to visit, especially the travel experiences shared by David and Intan. We want to follow their travel experiences to go to the places that they think are the 15 best things to do in KL. For the 15, we want to first see the places with 19th-century buildings and second the places with Chinese temples. Please help us find a restaurant between these two places that is at the midpoint for driving distance and has at least a 4.2 rating on Google Maps so that we can have a good lunch there.",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "google-maps"
+        },  
+        {
+            "name": "playwright"
+        }
+    ],
+    "output_format": {
+        "first_place": "NAME",
+        "second_place": "NAME",
+        "restaurant": {
+            "name": "NAME",
+            "place id": "Place ID",
+            "full address": "FULL ADDRESS"
+        }
+    },
+    "evaluators": [
+        {
+            "func": "json"
+        },
+        {
+            "func": "json",
+            "op": "google_maps.city_name_match",
+            "op_args": {
+                "key": "first_place",
+                "values": ["Merdeka Square", "Dataran Merdeka", "Independence Square"]
+            }
+        },
+        {
+            "func": "json",
+            "op": "google_maps.city_name_match",
+            "op_args": {
+                "key": "second_place",
+                "values": ["Thean Hou Temple", "Tian Hou Gong", "Tian Hou Temple", "Thian Hou Temple", "Thian Hou Gong", "Thean Hou Gong"]
+            }
+        },
+        {
+            "func": "json -> get(restaurant)",
+            "op": "google_maps.compare_time_of_middle_point",
+            "op_args": {
+                "place1": {
+                    "place": "Kuala Lumpur City Centre, 50050 Kuala Lumpur, Federal Territory of Kuala Lumpur, Malaysia",
+                    "mode": "driving"
+                },
+                "place2":{
+                    "place": "65, Persiaran Endah, Taman Persiaran Desa, 50460 Kuala Lumpur, Wilayah Persekutuan Kuala Lumpur, Malaysia",
+                    "mode": "driving"
+                },
+                "threshold": 0.1
+            }
+        },
+        {
+            "func": "json -> get(restaurant)",
+            "op": "google_maps.validate_stop_rating",
+            "op_args": 4.1999
+        }
+    ]
+}

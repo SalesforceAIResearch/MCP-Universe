@@ -1,0 +1,21 @@
+{
+    "category": "general",
+    "question": "Hi there! I'm a busy mom trying to learn about investing for my family's future. I've managed to save up $5000 and want to make smart decisions with it. Another mom at my kids' school told me about something called a Moving Average Crossover strategy. She mentioned using 10-day as short-term and 50-day as long-term with simple moving averages. I'm interested in trying this with Salesforce (CRM) stock since I use their products at work. Could you please help me figure out which would be the best day to buy from these options: 2021-02-03, 2021-02-04, 2021-02-05, or 2021-02-06? I'm thinking of buying on one day and selling the next day (like buying at the close price on 2021-02-05 and selling at the close price on 2021-02-06) to see how this strategy works. How much could I potentially earn from this? I really appreciate any guidance you can provide. Investing feels overwhelming as a mom, but I want to secure my children's future!",
+    "output_format": {
+        "date": "2021-02-03/2021-02-04/2021-02-05/2021-02-06",
+        "earn": "[NUMBER] (do not include the dollar sign, only the number)"
+    },
+    "evaluators": [
+        {
+            "func": "json",
+            "op": "yfinance.check_quant_investment_task_output",
+            "op_args": {
+                "ticker": "CRM",
+                "start_date": "2021-02-03",
+                "end_date": "2021-02-04",
+                "initial_investment": 5000.0
+            },
+            "desc": "Whether the final value and the total percentage return are correct."
+        }
+    ]
+}

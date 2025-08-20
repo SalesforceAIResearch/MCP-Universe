@@ -1,0 +1,20 @@
+{
+    "category": "general",
+    "question": "Hi there! I just started at BlackRock and I'm trying to get up to speed on our portfolio positions. Could you help me analyze our Johnson & Johnson (JNJ) holdings? I need to pull our latest institutional holdings report for 'Blackrock Inc.' and extract the reported 'Shares', 'Value', and 'Date Reported'. Then I'd like to validate this data by converting that 'Date Reported' timestamp to the actual calendar date and fetching JNJ's closing stock price for that specific day. I want to calculate what our position should be worth using that historical closing price and see how it compares to our originally reported value. This kind of reconciliation work is really important for me to understand as I'm learning the ropes! Could you provide the 'Date Reported', the originally reported 'Value', my calculated market value, and the absolute difference between these figures?",
+    "output_format": {
+        "Date Reported": "[DDMMYYYY]", 
+        "originally reported value": "[NUMBER]", 
+        "calculated market value": "[NUMBER]", 
+        "absolute difference": "[NUMBER]"
+    },
+    "evaluators": [
+        {
+            "func": "json",
+            "op": "yfinance.check_institutional_holding_values",
+            "op_args": {
+                "ticker": "JNJ",
+                "holder": "Blackrock Inc."
+            }
+        }
+    ]
+}

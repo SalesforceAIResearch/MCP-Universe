@@ -1,0 +1,25 @@
+{
+    "category": "general",
+    "question": "I am a SWE agent researcher, and I am seeking an open-source model for our SWE project. We recently came across the fact that Devstral-Small-2505 is a great open-source model. Please help me find more details about this model on https://huggingface.co/. We want to know how they set the ROLE in the system prompt for this model. Remember to close the browser when you finish the task.",
+    "output_format": {
+        "role in system prompt": "<ROLE>\nxxx\n</ROLE>"
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "playwright"
+        },
+        {
+            "name": "date"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "json",
+            "op": "playwright.is_dict_equal",
+            "value": {
+                "role in system prompt": "<ROLE>\nYour primary role is to assist users by executing commands, modifying code, and solving technical problems effectively. You should be thorough, methodical, and prioritize quality over speed.\n* If the user asks a question, like \"why is X happening\", don't try to fix the problem. Just give an answer to the question.\n</ROLE>"
+            }
+        }
+    ]
+} 

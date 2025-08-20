@@ -1,0 +1,37 @@
+{
+    "category": "general",
+    "question": "As a Microsoft (MSFT) investor, I need to analyze the company's earnings performance for my portfolio review. Could you please help me retrieve the 'Net Income Common Stockholders' from Microsoft's most recent annual income statement and compare it with the figure from their latest quarterly income statement? I'd like to see both exact figures and understand how much higher the annual earnings are compared to the quarterly results. This comparison will help me evaluate the company's earnings consistency and growth trajectory for my investment decisions.",
+    "output_format": {
+        "MSFT": {
+            "net income common stockholders annually": "[NUMBER]", 
+            "net income common stockholders quarterly": "[NUMBER]", 
+            "difference": "[NUMBER]"
+        }
+    },
+    "evaluators": [
+        {
+            "func": "json",
+            "op": "yfinance.check_net_income",
+            "op_args": {
+                "ticker": "MSFT",
+                "period": "annually"
+            }
+        },
+        {
+            "func": "json",
+            "op": "yfinance.check_net_income",
+            "op_args": {
+                "ticker": "MSFT",
+                "period": "quarterly"
+            }
+        },
+        {
+            "func": "json",
+            "op": "yfinance.check_net_income_difference",
+            "op_args": {
+                "ticker": "MSFT",
+                "periods": ["annually", "quarterly"]
+            }
+        }
+    ]
+}

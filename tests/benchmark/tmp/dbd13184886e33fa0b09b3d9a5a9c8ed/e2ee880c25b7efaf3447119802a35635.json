@@ -1,0 +1,18 @@
+{
+  "results": [
+    {
+      "config": {
+        "func": "get(key1) -> foreach -> get(key2)",
+        "op": "",
+        "value": null,
+        "op_args": null,
+        "desc": ""
+      },
+      "response": "response",
+      "passed": true,
+      "reason": "testing",
+      "error": ""
+    }
+  ],
+  "trace_id": "12345"
+}

@@ -1,0 +1,17 @@
+{
+    "category": "general",
+    "question": "Good day! I'm a careful investor aiming to build a solid foundation for a long-term portfolio that could one day support my family's future. While exploring safer, fundamentally sound strategies, I've taken a keen interest in financial health-based stock selection. One approach that stood out to me is focused on consistent earnings growth, specifically, identifying companies with four consecutive quarters of rising net income. The logic is simple: stable and improving profitability often reflects solid management, sustainable business models, and the ability to weather economic shifts. Could you help me screen for companies' tickers that meet this criterion using recent financial data? I'm looking for a stock whose last four reported quarters show a consistent uptrend in net income, as I believe such businesses are more likely to provide steady returns over time. I'm hoping this will guide me in constructing a low-risk, long-horizon investment plan.",
+    "output_format": {
+        "tickers": ["ticker1"]
+    },
+    "evaluators": [
+        {
+            "func": "json",
+            "op": "yfinance.check_net_income_growth_task_output",
+            "op_args": {
+                "num_quarters": 4,
+                "num_tickers": 1
+            }
+        }
+    ]
+}

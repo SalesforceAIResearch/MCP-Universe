@@ -1,0 +1,1 @@
+celery -A mcpuniverse.app.tasks.worker worker --loglevel=info

@@ -1,0 +1,42 @@
+{
+    "category": "general",
+    "question": "As an open-source enthusiast and agent developer, I'm deeply inspired by the collaborative spirit of the QwenLM community and their groundbreaking work on autonomous agents. I want to conduct a thorough analysis of their Qwen-Agent repository to understand the development patterns and community contributions. Please help me search for the official Qwen-Agent repository and examine all closed issues labeled 'Work in Progress'. These represent the beautiful journey of features from conception to completion in the open-source ecosystem. I need to quantify the community's dedication to continuous improvement and collaborative development. After collecting this valuable data, please create a research repository called 'qwen-agent-close-wip-issues' under your account (if it doesn't already exist) and generate a comprehensive JSON report named 'qwen-agent-close-wip-report.json'. The JSON structure should be: {repository_name: closed_wip_issue_count, ...}. This analysis will showcase the power of open-source collaboration and the vibrant ecosystem surrounding autonomous agent development!",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "github"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "github.check_repository",
+            "op_args": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}/qwen-agent-close-wip-issues" 
+        },
+        {
+            "func": "raw",
+            "op": "github.check_file_content_and_issue_count",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "qwen-agent-close-wip-issues",
+                "path": "qwen-agent-close-wip-report.json",
+                "branch": "main",
+                "search_repo_owner": "QwenLM",
+                "search_repo_name": "Qwen-Agent",
+                "issue_labels": ["Work in Progress"],
+                "issue_state": "closed",
+                "file_type": "json"
+            }
+        }
+    ],
+    "cleanups": [
+        {
+        "server": "github",
+        "tool": "create_repository",
+        "cleanup_func": "delete_repository",
+        "cleanup_args": {
+            "repo": "$name"
+            }
+        }
+    ]
+}

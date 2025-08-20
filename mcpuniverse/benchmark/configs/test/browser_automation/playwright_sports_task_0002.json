@@ -1,0 +1,25 @@
+{
+    "category": "general",
+    "question": "I am a big fan of Yueru Li in WNBA. Can you help me find PTS of her in 2024 season? You can find it with the offical website of WNBA (https://www.wnba.com/). She played for the Sparks. Remember to close the browser when you finish the task.",
+    "output_format": {
+        "Yueru Li": "xx.x"
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "playwright"
+        },
+        {
+            "name": "date"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "json",
+            "op": "playwright.is_dict_equal",
+            "value": {
+                "Yueru Li": "5.1"
+            }
+        }
+    ]
+} 

@@ -1,0 +1,119 @@
+{
+    "category": "general",
+    "question": "Hey girls! So I'm staying at J Gateway Condo in Singapore, and I really want to catch up with my besties for some coffee and chat! My first friend is at Park Place Residences at PLQ, another friend is at Kent Ridge Hill Residences, and my last friend is at Park Rosewood Suites. We're all dying to meet up and gossip! Can you help us find the perfect 'cafe' (must be of type 'cafe') where we can all hang out? I'd love it if the driving time from my place (J Gateway Condo) is super close to my first friend's walking time from Park Place Residences at PLQ. Also, my driving time should be similar to my other friend's driving time from Kent Ridge Hill Residences. And finally, my driving time should match my last friend's walking time from Park Rosewood Suites as closely as possible! Please find us the perfect spot and give me the Name and Place ID of the cafe so we can plan our girl's day out!",
+    "output_format": {
+        "stops": [
+            {
+                "name": "NAME",
+                "place id": "Place ID"
+            }
+        ]
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "google-maps"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "json"
+        },
+        {
+            "func": "json -> get(stops) -> len",
+            "op": "=",
+            "value": 1
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.stop_include_keys",
+            "op_args": {
+                "keys": ["name", "place id"]
+            }
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.is_a_validate_stop"
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.validate_stop_type",
+            "op_args": ["cafe"]
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.compare_time_of_middle_point",
+            "op_args": {
+                "place1": {
+                    "place": "2 Gateway Dr, Singapore 608533",
+                    "mode": "driving"
+                },
+                "place2":{
+                    "place": "2 Paya Lebar Rd, Singapore 409053",
+                    "mode": "walking"
+                },
+                "threshold": 0.1
+            }
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.compare_time_of_middle_point",
+            "op_args": {
+                "place1": {
+                    "place": "2 Gateway Dr, Singapore 608533",
+                    "mode": "driving"
+                },
+                "place2":{
+                    "place": "50A South Buona Vista Rd, Singapore 118179",
+                    "mode": "driving"
+                },
+                "threshold": 0.1
+            }
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.compare_time_of_middle_point",
+            "op_args": {
+                "place1": {
+                    "place": "50A South Buona Vista Rd, Singapore 118179",
+                    "mode": "driving"
+                },
+                "place2":{
+                    "place": "69 Rosewood Dr, Singapore 737874",
+                    "mode": "walking"
+                },
+                "threshold": 0.1
+            }
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.compare_time_of_middle_point",
+            "op_args": {
+                "place1": {
+                    "place": "2 Paya Lebar Rd, Singapore 409053",
+                    "mode": "walking"
+                },
+                "place2":{
+                    "place": "69 Rosewood Dr, Singapore 737874",
+                    "mode": "walking"
+                },
+                "threshold": 0.1
+            }
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.compare_time_of_middle_point",
+            "op_args": {
+                "place1": {
+                    "place": "2 Gateway Dr, Singapore 608533",
+                    "mode": "driving"
+                },
+                "place2":{
+                    "place": "69 Rosewood Dr, Singapore 737874",
+                    "mode": "walking"
+                },
+                "threshold": 0.1
+            }
+        }
+    ]
+}

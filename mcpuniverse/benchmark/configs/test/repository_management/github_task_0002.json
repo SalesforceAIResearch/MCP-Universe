@@ -1,0 +1,105 @@
+{
+    "category": "general",
+    "question": "Hi! I'm just starting to learn about LLMs and want to set up my first training project. Could you help me create a repository called llm-training-toolkit? I'm trying to understand how different model architectures work, so I'd like to have separate branches for different experiments.\n\nCould you set up 4 branches: main, qwen-integration, starcoder-integration, and documentation? I want to keep things organized as I learn.\n\nFor the README.md on the main branch, I'd like: \"# LLM Training Toolkit\n\nA learning project for understanding and experimenting with large language model training and fine-tuning across different architectures.\"\n\nI've been reading about Qwen models and found there's a qwen.ipynb notebook in QwenLM's Qwen repository that looks really helpful for learning. Could you copy that to my qwen-integration branch? \n\nI'm also interested in code generation models, so I'd love to get the finetune.py file from bigcode-project's starcoder repository onto my starcoder-integration branch to study how fine-tuning works.\n\nI want to keep my repo clean while I'm learning, so could you add a .gitignore file to main with: \"# Python cache and virtual environments\n__pycache__/\n*.pyc\n*.py.class\nvenv/\n*.env\n\n# Training artifacts\ncheckpoints/\nlogs/\n\n# Dataset caches\n.cache/\n.huggingface/\"\n\nOnce that's done, I'd like to practice making pull requests! Could you create one to merge qwen-integration into main? Title it \"Add Qwen integration notebook\" with the description \"Adding the Qwen notebook to start learning about this model architecture and training approach.\"",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "github"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "github.check_repository",
+            "op_args": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}/llm-training-toolkit" 
+        },
+        {
+            "func": "raw",
+            "op": "github.check_branches_exist",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "llm-training-toolkit",
+                "path": "README.md",
+                "branches": ["main", "qwen-integration", "starcoder-integration", "documentation"]
+            }
+        },
+        {
+            "func": "raw",
+            "op": "github.check_file_content",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "llm-training-toolkit",
+                "path": "README.md",
+                "branch": "main"
+            },
+            "value": "# LLM Training Toolkit\n\nA learning project for understanding and experimenting with large language model training and fine-tuning across different architectures."
+        },
+        {
+            "func": "raw",
+            "op": "github.check_file_content",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "llm-training-toolkit",
+                "path": ".gitignore",
+                "branch": "main"
+            },
+            "value": "# Python cache and virtual environments\n__pycache__/\n*.pyc\n*.py.class\nvenv/\n*.env\n\n# Training artifacts\ncheckpoints/\nlogs/\n\n# Dataset caches\n.cache/\n.huggingface/"
+        },
+        {
+            "func": "raw",
+            "op": "github.check_file_content",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "llm-training-toolkit",
+                "path": "qwen.ipynb",
+                "branch": "qwen-integration"
+            },
+            "value": {
+                "owner": "QwenLM",
+                "repo": "Qwen",
+                "path": "recipes/quickstart/qwen.ipynb",
+                "branch": "main"
+            }
+        },
+        {
+            "func": "raw",
+            "op": "github.check_file_content",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "llm-training-toolkit",
+                "path": "finetune.py",
+                "branch": "starcoder-integration"
+            },
+            "value": {
+                "owner": "bigcode-project",
+                "repo": "starcoder",
+                "path": "finetune/finetune.py",
+                "branch": "main"
+            }
+        },
+        {
+            "func": "raw",
+            "op": "github.check_pull_request",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "llm-training-toolkit",
+                "base": "main",
+                "head": "qwen-integration"
+            },
+            "value": {
+                "title": "Add Qwen integration notebook",
+                "body": "Adding the Qwen notebook to start learning about this model architecture and training approach."
+            }
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "github",
+            "tool": "create_repository",
+            "cleanup_func": "delete_repository",
+            "cleanup_args": {
+                "repo": "$name"
+            }
+        }
+    ]
+}

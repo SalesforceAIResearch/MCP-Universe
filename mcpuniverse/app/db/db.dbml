@@ -1,0 +1,133 @@
+// Use DBML to define your database structure
+// Docs: https://dbml.dbdiagram.io/docs
+
+enum user_perm {
+    default
+    internal
+    admin
+}
+
+Table user {
+  id bigserial [primary key]
+  username varchar(256) [unique, not null]
+  email varchar(256) [unique, not null]
+  hashed_password varchar [not null]
+  permission user_perm [not null, default: 'default']
+  is_email_verified bool [not null, default: false]
+  password_changed_at timestamp [not null, default: `now()`]
+  created_at timestamp [not null, default: `now()`]
+  updated_at timestamp [not null, default: `now()`]
+}
+
+Table project {
+  id bigserial [primary key]
+  owner_id bigserial [not null]
+  name varchar [not null]
+  description text
+  configuration text
+  created_at timestamp [not null, default: `now()`]
+  updated_at timestamp [not null, default: `now()`]
+
+  Indexes {
+    (owner_id, name) [unique]
+  }
+}
+
+Table benchmark {
+  id bigserial [primary key]
+  owner_id bigserial [not null]
+  name varchar [not null]
+  description text
+  created_at timestamp [not null, default: `now()`]
+  updated_at timestamp [not null, default: `now()`]
+
+  Indexes {
+    (owner_id, name) [unique]
+  }
+}
+
+Table task {
+  id bigserial [primary key]
+  benchmark_id bigserial [not null]
+  name varchar [not null]
+  category text
+  question text
+  data text
+  is_public bool [default: true]
+  created_at timestamp [not null, default: `now()`]
+  updated_at timestamp [not null, default: `now()`]
+
+  Indexes {
+    (benchmark_id, name) [unique]
+  }
+}
+
+Ref: project.owner_id > user.id
+Ref: benchmark.owner_id > user.id
+Ref: task.benchmark_id > benchmark.id
+
+Table released_project {
+  id bigserial [primary key]
+  owner_id bigserial [not null]
+  name varchar [not null]
+  tag text [not null]
+  description text
+  configuration text
+  created_at timestamp [not null, default: `now()`]
+
+  Indexes {
+    (owner_id, name, tag) [unique]
+  }
+}
+
+Table released_benchmark {
+  id bigserial [primary key]
+  owner_id bigserial [not null]
+  name varchar [not null]
+  tag text [not null]
+  description text
+  created_at timestamp [not null, default: `now()`]
+
+  Indexes {
+    (owner_id, name, tag) [unique]
+  }
+}
+
+Table released_task {
+  id bigserial [primary key]
+  benchmark_id bigserial [not null]
+  name varchar [not null]
+  tag text [not null]
+  category text
+  question text
+  data text
+  is_public bool [default: true]
+  created_at timestamp [not null, default: `now()`]
+
+  Indexes {
+    (benchmark_id, name, tag) [unique]
+  }
+}
+
+Ref: released_project.owner_id > user.id
+Ref: released_benchmark.owner_id > user.id
+Ref: released_task.benchmark_id > released_benchmark.id
+
+Table benchmark_job {
+  id bigserial [primary key]
+  job_id varchar(36) [unique, not null]
+  owner_id bigserial [not null]
+  benchmark_id bigserial [not null]
+  project_id bigserial [not null]
+  status text [default: 'pending']
+  progress int [default: 0]
+  results text [default: '']
+  score float [default: 0]
+  celery_id varchar(36) [default: '']
+  created_at timestamp [not null, default: `now()`]
+  updated_at timestamp [not null, default: `now()`]
+}
+
+Ref: benchmark_job.owner_id > user.id
+Ref: benchmark_job.benchmark_id > released_benchmark.id
+Ref: benchmark_job.project_id > released_project.id

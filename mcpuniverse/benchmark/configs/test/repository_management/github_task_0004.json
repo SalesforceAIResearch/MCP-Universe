@@ -1,0 +1,100 @@
+{
+    "category": "general",
+    "question": "For this assignment, I would like you to establish a new project repository named ai-code-reviewer. Please begin by initializing the repository with three branches: feature-analysis, feature-integration, and main. You should include an initial README.md file in the main branch with the content \"# AI Code Reviewer\n\nAn intelligent code review assistant that analyzes code quality, detects potential bugs, and suggests improvements using machine learning techniques.\". Next, please add code_analyzer.py in the feature-analysis branch with the content \"# Code analysis module\nimport ast\n\nclass CodeAnalyzer:\n    def __init__(self, code):\n        self.code = code\n        self.tree = ast.parse(code)\n\n    def analyze(self):\n        # TODO: Implement analysis logic\n        pass\". Additionally, create a .gitignore file in the main branch with the exact content: \"# Python cache and virtual environments\n__pycache__/\n*.pyc\n*.py.class\nvenv/\n*.env\n\n# Analysis results\nreports/\nlogs/\n\n# Model checkpoints\nmodels/\". Please copy train.py from bigcode-project's starcoder repository to the feature-integration branch. Finally, I would like you to create a pull request to merge feature-analysis into main with the title \"Add initial code analysis module\" and description \"This PR implements the basic code analysis module using AST parsing for initial code quality assessment.\"",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "github"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "github.check_repository",
+            "op_args": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}/ai-code-reviewer" 
+        },
+        {
+            "func": "raw",
+            "op": "github.check_branches_exist",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "ai-code-reviewer",
+                "path": "README.md",
+                "branches": ["main", "feature-analysis", "feature-integration"]
+            }
+        },
+        {
+            "func": "raw",
+            "op": "github.check_file_content",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "ai-code-reviewer",
+                "path": "README.md",
+                "branch": "main"
+            },
+            "value": "# AI Code Reviewer\n\nAn intelligent code review assistant that analyzes code quality, detects potential bugs, and suggests improvements using machine learning techniques."
+        },
+        {
+            "func": "raw",
+            "op": "github.check_file_content",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "ai-code-reviewer",
+                "path": "code_analyzer.py",
+                "branch": "feature-analysis"
+            },
+            "value": "# Code analysis module\nimport ast\n\nclass CodeAnalyzer:\n    def __init__(self, code):\n        self.code = code\n        self.tree = ast.parse(code)\n\n    def analyze(self):\n        # TODO: Implement analysis logic\n        pass"
+        },
+        {
+            "func": "raw",
+            "op": "github.check_file_content",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "ai-code-reviewer",
+                "path": ".gitignore",
+                "branch": "main"
+            },
+            "value": "# Python cache and virtual environments\n__pycache__/\n*.pyc\n*.py.class\nvenv/\n*.env\n\n# Analysis results\nreports/\nlogs/\n\n# Model checkpoints\nmodels/"
+        },
+        {
+            "func": "raw",
+            "op": "github.check_file_content",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "ai-code-reviewer",
+                "path": "train.py",
+                "branch": "feature-integration"
+            },
+            "value": {
+                "owner": "bigcode-project",
+                "repo": "starcoder",
+                "path": "chat/train.py",
+                "branch": "main"
+            }
+        },
+        {
+            "func": "raw",
+            "op": "github.check_pull_request",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "ai-code-reviewer",
+                "base": "main",
+                "head": "feature-analysis"
+            },
+            "value": {
+                "title": "Add initial code analysis module",
+                "body": "This PR implements the basic code analysis module using AST parsing for initial code quality assessment."
+            }
+        }
+    ],
+    "cleanups": [
+        {
+        "server": "github",
+        "tool": "create_repository",
+        "cleanup_func": "delete_repository",
+        "cleanup_args": {
+            "repo": "$name"
+            }
+        }
+    ]
+}

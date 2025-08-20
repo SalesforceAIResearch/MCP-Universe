@@ -1,0 +1,31 @@
+{
+    "category": "general",
+    "question": "I will travel to Singapore 3 days from now (If today is 2025-06-07, then 3 days later will be 2025-06-10). I want to go to Universal Studios and Cove Waterpark. Could you tell me the total price for two adult tickets and one child ticket on the official website of Sentosa (https://www.rwsentosa.com/)? I only want to see the price. Remember to close the browser after you finish the task.",
+    "output_format": {
+        "price": "CCCXXX (CCC is the currency and XXX is the price. No blank space between the currency and the price.)"
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "playwright"
+        },
+        {
+            "name": "date"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "json"
+        },
+        {
+            "func": "json",
+            "op": "playwright.check_rwsentosa_price_with_conditions",
+            "op_args": {
+                "days_after": 3,
+                "theme_parks": ["USS", "CWP"],
+                "adults": 2,
+                "children": 1
+            }
+        }
+    ]
+}

@@ -1,0 +1,18 @@
+{
+    "category": "general",
+    "question": "Hey there! I'm working on some analysis for our team and could really use your help with Apple (AAPL) data. Can you find the most recent 'Date Reported' from Vanguard Group Inc's institutional holdings for AAPL? Once you have that date, I need you to pull AAPL's historical stock prices and calculate the percentage price changes for the following 7 calendar days and 30 calendar days after that reporting date. Please provide me with the 'Date Reported', the 7 day percentage change, and the 30 day percentage change. This would be super helpful for our internal analysis!",
+    "output_format": {
+        "Date Reported": "[DDMMYYYY]", 
+        "7-day percentage change": "[NUMBER]", 
+        "30-day percentage change": "[NUMBER]"
+    },
+    "evaluators": [
+        {
+            "func": "json",
+            "op": "yfinance.check_pct_values_with_durations",
+            "op_args": {
+                "ticker": "AAPL"
+            }
+        }
+    ]
+}

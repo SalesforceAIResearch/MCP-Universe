@@ -1,0 +1,25 @@
+{
+    "category": "general",
+    "question": "As a researcher specializing in LLM safety, I am investigating the performance characteristics of Llama Prompt Guard models. Specifically, I need to examine the Llama Prompt Guard 2 (86M parameter version) performance metrics on the Direct Jailbreak Detection Evaluation benchmark, with particular focus on the Recall @ 1% FPR (English) metric. Could you assist me in locating this performance data on https://huggingface.co/? Please remember to close the browser upon task completion.",
+    "output_format": {
+        "Recall @ 1% FPR (English)": "xx.x% (only one decimal place)"
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "playwright"
+        },
+        {
+            "name": "date"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "json",
+            "op": "playwright.is_dict_equal",
+            "value": {
+                "Recall @ 1% FPR (English)": "97.5%"
+            }
+        }
+    ]
+} 

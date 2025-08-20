@@ -1,0 +1,79 @@
+{
+    "category": "general",
+    "question": "My partner and I are from Spain and we're planning our romantic honeymoon trip to Indonesia. Help us plan an unforgettable road trip starting in 'Jakarta' and ending in 'Surabaya', and we'd love your help to make it perfect with the amazing website `https://www.google.com/maps`! For our romantic journey, we plan to drive through exactly 1 charming city between the start and end points. Could you please map out exactly 1 distinct driving route option for our honeymoon adventure? For this route, could you also identify 1 romantic rest stop within that intermediate city (a total of 1 rest stop per route) where we can enjoy some quality time together? We're really looking forward to creating beautiful memories on this fantastic honeymoon adventure! Remember to close the browser after you finish the task.",
+    "output_format": {
+        "starting_city": "[Starting City]",
+        "destination_city": "[Destination City]",
+        "routes": [
+            {
+                "route_id": "1",
+                "route_name": "NAME OF THE ROUTE",
+                "cities_visited": [
+                    "[City 1]",
+                    "[City 2]",
+                    "[City 3]",
+                    "... (exclude the starting and destination cities in this list)"
+                ],
+                "rest_stops": [
+                    {
+                        "city": "[Specific City]",
+                        "rest_stop_id": "1",
+                        "name": "[Rest Stop Name]",
+                        "address": "[Rest Stop Address]",
+                        "amenities": ["[Amenity 1]", "[Amenity 2]", "..."]
+                    }
+                ]
+            }
+        ]
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "playwright"
+        },
+        {
+            "name": "date"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "json"
+        },
+        {
+            "func": "json -> get(routes) -> len",
+            "op": "=",
+            "value": 1
+        },
+        {
+            "func": "json",
+            "op": "google_maps.city_name_match",
+            "op_args": {
+                "key": "starting_city",
+                "values": ["Jakarta", "Jakarta City", "Sunda Kelapa", "Jayakarta", "Batavia", "Djakarta"]
+            }
+        },
+        {
+            "func": "json",
+            "op": "google_maps.city_name_match",
+            "op_args": {
+                "key": "destination_city",
+                "values": ["Surabaya", "Surabaya City", "Suroboyo", "Soerabaja"]
+            }
+        },
+        {
+            "func": "json -> get(routes) -> foreach -> get(cities_visited) -> len",
+            "op": "=",
+            "value": 1
+        },
+        {
+            "func": "json -> get(routes) -> foreach -> get(rest_stops) -> len",
+            "op": "=",
+            "value": 1
+        },
+        {
+            "func": "json",
+            "op": "google_maps.places_in_cities_visited",
+            "op_args": "rest_stops"
+        }
+    ]
+}

@@ -1,0 +1,20 @@
+{
+    "category": "general",
+    "question": "Good day! I'm an old-timer looking to make some smart investments for my grandchild's future. I've saved up $6000 over the years and want to put it to good use for the little one's education fund. In my retirement, I've been studying the stock market and learning about different trading strategies. Keeps the mind sharp, you know! I've been reading about this Mean Reversion using Bollinger Bands approach (20-day moving average, 2 standard deviations) combined with something called Rate of Change (ROC) Reversal (12-day period, +20% overbought, -20% oversold thresholds). From what I understand, the combined trading rule works like this: buy if both strategies signal buy OR one signals buy and the other holds; sell if both signal sell OR one signals sell and the other holds; otherwise just hold tight. I'm thinking about trying this with Salesforce (CRM) stock, seems like a solid company that'll be around for my grandchild's future. Could you help an old fellow like me figure out the best entry date from these options: 2020-12-01, 2020-12-03, 2020-12-05, or 2020-12-07? I'm considering a quick trade, buying at one day's close and selling the next day's close (like buying at 2020-12-05 close and selling at 2020-12-06 close) to see if this strategy actually works. What kind of returns might this bring for my grandchild's nest egg? At my age, I want to make sure every dollar counts for the next generation. Much obliged for your help!",
+    "output_format": {
+        "date": "2020-12-03/2020-12-04/2020-12-05/2020-12-06",
+        "earn": "[NUMBER] (do not include the dollar sign, only the number)"
+    },
+    "evaluators": [
+        {
+            "func": "json",
+            "op": "yfinance.check_quant_investment_task_output",
+            "op_args": {
+                "ticker": "CRM",
+                "start_date": "2020-12-03",
+                "end_date": "2020-12-04",
+                "initial_investment": 6000.0
+            }
+        }
+    ]
+}

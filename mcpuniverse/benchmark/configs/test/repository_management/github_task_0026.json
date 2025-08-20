@@ -1,0 +1,52 @@
+{
+    "category": "general",
+    "question": "Hi! I'm absolutely thrilled to be working with two of the most incredible and groundbreaking LLM projects! There are two amazing repositories that have completely revolutionized the field: npxucan's WizardLM and tatsu-lab's stanford_alpaca. As a huge fan of large language models, I'm so excited to explore these fantastic projects! Could you please fork the repository with the fewest open issues, maintaining the same name as the source repository? If the brilliant WizardLM is forked, I'd love to add a reference link at the bottom of the README.md file: 'Related project: [stanford_alpaca](the link of stanford_alpaca repo)'. If the incredible stanford_alpaca is forked, please add a reference link at the bottom of the README.md file: 'Related project: [WizardLM](the link of WizardLM repo)'. I'm so passionate about these LLM innovations and can't wait to dive deeper into their ecosystems!",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "github"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "github.check_repository_with_fewest_issues",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repos": [
+                    "nlpxucan/WizardLM",
+                    "tatsu-lab/stanford_alpaca"
+                ],
+                "issue_state": "open"
+            }
+        },
+        {
+            "func": "raw",
+            "op": "github.check_file_content_with_fewest_issues",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repos": [
+                    "nlpxucan/WizardLM",
+                    "tatsu-lab/stanford_alpaca"
+                ],
+                "path": "README.md",
+                "branch": "main",
+                "issue_state": "open",
+                "file_content": [
+                    "Related project: [stanford_alpaca](https://github.com/tatsu-lab/stanford_alpaca)",
+                    "Related project: [WizardLM](https://github.com/nlpxucan/WizardLM)"
+                ]
+            }
+        }
+    ],
+    "cleanups": [
+        {
+        "server": "github",
+        "tool": "fork_repository",
+        "cleanup_func": "delete_repository",
+        "cleanup_args": {
+            "repo": "$repo"
+            }
+        }
+    ]
+}

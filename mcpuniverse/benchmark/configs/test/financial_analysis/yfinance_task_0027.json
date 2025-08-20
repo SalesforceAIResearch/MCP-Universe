@@ -1,0 +1,20 @@
+{
+    "category": "general",
+    "question": "Hey! I'm an undergrad student who's been getting into investing with the money I've saved up from my part-time job. I've got about $15000 saved up and I want to try out some trading strategies I've been learning about in my finance classes. My roommate told me about this thing called a Mean Reversion strategy and it sounds pretty cool! From what I understand, stock prices tend to bounce back to their average over time. One way to do this is with Bollinger Bands, basically using a moving average (like 20 days with 2 standard deviations) to create upper and lower bands based on how volatile the stock is. I want to test this out with Nvidia (NVDA) since I'm a CS major and I'm familiar with their GPUs. Can you help me figure out which would be the optimal day to buy from these dates: 2022-04-12, 2022-04-13, 2022-04-14, or 2022-04-15? I'm thinking of doing a quick day trade, buy at close on one day and sell at close three days later (like buy on 2022-04-14 close and sell on 2022-04-17 close) to see how this strategy performs. What kind of profit could I potentially make? Any help would be awesome. I'm trying to learn as much as I can about trading before I graduate!",
+    "output_format": {
+        "date": "2022-04-12/2022-04-13/2022-04-14/2022-04-15",
+        "earn": "[NUMBER] (do not include the dollar sign, only the number)"
+    },
+    "evaluators": [
+        {
+            "func": "json",
+            "op": "yfinance.check_quant_investment_task_output",
+            "op_args": {
+                "ticker": "NVDA",
+                "start_date": "2022-04-12",
+                "end_date": "2022-04-15",
+                "initial_investment": 15000.0
+            }
+        }
+    ]
+}

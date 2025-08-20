@@ -1,0 +1,31 @@
+{
+    "category": "blender",
+    "question": "Clear the current Blender scene and remove all PolyHaven materials.\nSet the render engine to Cycles and ensure the render device is CPU. In the Sampling settings, enable Denoising using OpenImageDenoise for both viewport and final render. Set the Render Samples to 512 and Viewport Samples to 128. Change the output resolution to 1350x1080 with a scale of 85%. In the Color Management panel, set the View Transform to Filmic, the Look to High Contrast, and adjust Gamma to 1.2. In the Render Layers Properties, enable Z Pass, Mist, and Normal passes. Go to World Settings and set the background color to a solid light gray using RGB (0.8, 0.8, 0.8). In the Output Properties, set the file format to OpenEXR MultiLayer, enable Zlib compression, and set output color depth to 32-bit float. After finishing all tasks, create a new file and save it as 'tid_12.blend' in the '{{MCPUniverse_DIR}}/mcpuniverse/evaluator/blender/blend_files'.",
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "blender.check_file",
+            "op_args": {
+                "path": "tid_12.blend",
+                "task_id": "12"
+            }
+        },
+        {
+            "func": "raw",
+            "op": "blender.check_file_content",
+            "op_args": {
+                "path": "tid_12.blend",
+                "task_id": "12"
+            }
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "blender",
+            "cleanup_func": "clear_scene_and_polyhaven_materials",
+            "cleanup_args": {
+                "ctx": "$CleanUp"
+            }
+        }
+    ]
+}

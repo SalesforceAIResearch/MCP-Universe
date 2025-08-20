@@ -1,0 +1,31 @@
+{
+    "category": "general",
+    "question": "Hello darling! I'm absolutely new to the fascinating world of investing and trading, but I've been doing quite a bit of research on various strategies to understand how the markets move. I've discovered two absolutely captivating approaches that I'd love to combine! The first is a Moving Average Distance Reversion strategy, which analyzes how far a stock price deviates from its recent average - if it falls more than 5% below its 20-day moving average, it's considered oversold and signals a buying opportunity, while if it rises more than 5% above, it's overbought and might be time to sell. The second strategy that has caught my attention is Mean Reversion using Bollinger Bands, which works on the principle that stock prices tend to return to their historical average over time. This method uses a simple moving average (I'm thinking 20 days with a standard deviation of 2) to establish upper and lower bands based on the stock's volatility patterns. I'm absolutely dying to test this combined approach on JPMorgan Chase & Co. (JPM) using their daily closing prices. My combined trading rule is: buy if both strategies signal buy OR one signals buy and the other holds; sell if both signal sell OR one signals sell and the other holds; otherwise hold. Would you be an absolute angel and help me determine whether JPM would have generated a buy, sell, or hold signal on 2023-01-04 using this dual strategy? I would be ever so grateful for your assistance, sweetie!",
+    "output_format": {
+        "check_buy_sell_hold_signal": "buy/sell/hold"
+    },
+    "evaluators": [
+        {
+            "func": "json",
+            "op": "yfinance.check_buy_sell_hold_signal",
+            "op_args": {
+                "ticker": "JPM",
+                "date": "2023-01-04",
+                "quant_strategy": 
+                {
+                    "name": "mean_reversion_bollinger_plus_ma_distance_reversion",
+                    "params": {
+                        "ma_distance_reversion_params": {
+                            "ma_period": 20,
+                            "threshold": 0.05
+                        },
+                        "mean_reversion_bollinger_params": {
+                            "window": 20,
+                            "std_dev": 2
+                        }
+                    }
+                }
+            }
+        }
+    ]
+}

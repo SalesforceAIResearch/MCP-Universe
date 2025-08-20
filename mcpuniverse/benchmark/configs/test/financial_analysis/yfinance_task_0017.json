@@ -1,0 +1,20 @@
+{
+    "category": "general",
+    "question": "I'm conducting due diligence on Caterpillar Inc. (CAT) for a potential investment opportunity and need to validate some institutional holding data. Can you pull the latest institutional holdings report for State Street Corporation and extract their reported 'Shares', 'Value', and 'Date Reported'? I need you to cross-reference this by converting the 'Date Reported' timestamp to the actual calendar date and pulling CAT's closing price for that specific trading day. Then calculate what State Street's position should be worth based on that historical closing price and compare it to their originally reported value. This discrepancy analysis is critical for our investment thesis - please provide the 'Date Reported', the originally reported 'Value', your calculated market value, and the absolute difference between these figures.",
+    "output_format": {
+        "Date Reported": "[DDMMYYYY]", 
+        "originally reported value": "[NUMBER]", 
+        "calculated market value": "[NUMBER]", 
+        "absolute difference": "[NUMBER]"
+    },
+    "evaluators": [
+        {
+            "func": "json",
+            "op": "yfinance.check_institutional_holding_values",
+            "op_args": {
+                "ticker": "CAT",
+                "holder": "State Street Corporation"
+            }
+        }
+    ]
+}

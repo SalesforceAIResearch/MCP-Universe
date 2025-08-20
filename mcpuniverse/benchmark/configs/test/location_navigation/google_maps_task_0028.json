@@ -1,0 +1,64 @@
+{
+    "category": "general",
+    "question": "I live in J Gateway Condo, Singapore. My friend lives in Park Place Residences at PLQ, Singapore. We want to find a meeting point between our two locations. Find a single 'cafe' (must be of type 'cafe') such that the estimated driving time from J Gateway Condo to the cafe is as close as possible to the walking time from Park Place Residences at PLQ to the cafe. Report the Name and Place ID of the cafe.",
+    "output_format": {
+        "stops": [
+            {
+                "name": "NAME",
+                "place id": "Place ID"
+            }
+        ]
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "google-maps"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "json"
+        },
+        {
+            "func": "json -> get(stops) -> len",
+            "op": "=",
+            "value": 1
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.stop_include_keys",
+            "op_args": {
+                "keys": ["name", "place id"]
+            }
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.is_a_validate_stop"
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.validate_stop_type",
+            "op_args": ["cafe"]
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.validate_stop_rating",
+            "op_args": 4.1999
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.compare_time_of_middle_point",
+            "op_args": {
+                "place1": {
+                    "place": "2 Gateway Dr, Singapore 608533",
+                    "mode": "driving"
+                },
+                "place2":{
+                    "place": "2 Paya Lebar Rd, Singapore 409053",
+                    "mode": "walking"
+                },
+                "threshold": 0.1
+            }
+        }
+    ]
+}

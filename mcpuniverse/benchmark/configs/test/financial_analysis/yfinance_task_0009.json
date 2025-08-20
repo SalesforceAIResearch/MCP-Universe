@@ -1,0 +1,46 @@
+{
+    "category": "general",
+    "question": "As an Apple investor, I need to analyze the company's latest financial performance. Could you please retrieve Apple Inc.'s (AAPL) most recent annual income statement and provide me with the exact figures for Total Revenue, Research And Development expense, and Operating Income? I also need you to calculate the Net Profit Margin using Net Income Common Stockholders divided by Total Revenue for that fiscal year, presented as a percentage. This information is crucial for my investment decision making.",
+    "output_format": {
+        "AAPL": {
+            "total revenue": "[NUMBER]", 
+            "R&D expense": "[NUMBER]", 
+            "operating income": "[NUMBER]", 
+            "net profit margin": "[NUMBER]"
+        }
+    },
+    "evaluators": [
+        {
+            "func": "json",
+            "op": "yfinance.check_total_revenue",
+            "op_args": {
+                "ticker": "AAPL"
+            },
+            "desc": "Whether the total revenue for ticker AAPL is correct?"
+        },
+        {
+            "func": "json",
+            "op": "yfinance.check_rd_expense",
+            "op_args": {
+                "ticker": "AAPL"
+            },
+            "desc": "Whether the R&D expense for ticker AAPL is correct?"
+        },
+        {
+            "func": "json",
+            "op": "yfinance.check_operating_income",
+            "op_args": {
+                "ticker": "AAPL"
+            },
+            "desc": "Whether the operating income for ticker AAPL is correct?"
+        },
+        {
+            "func": "json",
+            "op": "yfinance.check_net_profit_margin",
+            "op_args": {
+                "ticker": "AAPL"
+            },
+            "desc": "Whether the net profit margin for ticker AAPL is correct?"
+        }
+    ]
+}

@@ -1,0 +1,29 @@
+{
+    "category": "general",
+    "question": "I am a big fan of LLM open-source. Can you help me check the total number of parameters of DeepSeek-R1-0528, Rhymes-ai's Aria, and Llama-4-Scout-17B-16E-Instruct on huggingface.co? You can find it at https://huggingface.co/. Remember to close the browser when you finish the task.",
+    "output_format": {
+        "DeepSeek-R1-0528": "xxxB",
+        "Rhymes-ai's Aria": "xxxB",
+        "Llama-4-Scout-17B-16E-Instruct": "xxxB"
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "playwright"
+        },
+        {
+            "name": "date"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "json",
+            "op": "playwright.is_dict_equal",
+            "value": {
+                "DeepSeek-R1-0528": "685B",
+                "Rhymes-ai's Aria": "25.3B",
+                "Llama-4-Scout-17B-16E-Instruct": "109B"
+            }
+        }
+    ]
+} 

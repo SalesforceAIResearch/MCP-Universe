@@ -1,0 +1,25 @@
+{
+    "category": "general",
+    "question": "As a passionate Gooner and die-hard Arsenal supporter, I'm absolutely desperate to know how my beloved Gunners have been performing this season! Did my amazing Arsenal absolutely crush and win more matches than the Manchester United in the 2024-2025 Premier League season?! I'm so anxious to find out if we've dominated them. Please check the official Premier League website (https://www.premierleague.com/) to put me out of my misery! Come on you Gunners! Remember to close the browser when you finish the task.",
+    "output_format": {
+        "won more matches": "Y or N"
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "playwright"
+        },
+        {
+            "name": "date"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "json",
+            "op": "playwright.is_dict_equal",
+            "value": {
+                "won more matches": "Y"
+            }
+        }
+    ]
+} 

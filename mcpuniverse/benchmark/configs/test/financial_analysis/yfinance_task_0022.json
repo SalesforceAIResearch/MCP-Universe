@@ -1,0 +1,25 @@
+{
+    "category": "general",
+    "question": "Hello dear! I'm absolutely brand new to the world of investing and trading, but I've been doing some research on various strategies online. I stumbled upon something called a Mean Reversion strategy and it's absolutely fascinating! From my understanding, the concept is that stock prices have a tendency to return to their historical average over time. A particularly popular method to implement this is through Bollinger Bands. I'd like to work with a simple moving average (perhaps 20 days with a standard deviation of 2) and then establish upper and lower bands around it based on the stock's volatility patterns. I'm quite eager to test this approach with Microsoft (MSFT) stock using their daily closing prices. Would you be so kind as to help me determine whether 2024-12-04 would have represented a buy signal, sell signal, or hold signal according to this particular strategy? I'm still in the early stages of learning, so any assistance you could provide would be absolutely wonderful! Thank you ever so much!",
+    "output_format": {
+        "check_buy_sell_hold_signal": "buy/sell/hold"
+    },
+    "evaluators": [
+        {
+            "func": "json",
+            "op": "yfinance.check_buy_sell_hold_signal",
+            "op_args": {
+                "ticker": "MSFT",
+                "date": "2024-12-04",
+                "quant_strategy": 
+                {
+                    "name": "mean_reversion_bollinger",
+                    "params": {
+                        "window": 20,
+                        "std_dev": 2
+                    }
+                }
+            }
+        }
+    ]
+}

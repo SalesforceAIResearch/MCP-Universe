@@ -1,0 +1,81 @@
+{
+    "category": "general",
+    "question": "Heyy! I'm a young girl from Africa and I'm super excited about my upcoming road trip adventure from 'Paris' to 'Nice'! This is like a dream come true for me I've always wanted to explore France! I'm planning to visit exactly 2 amazing cities along the way to make this trip unforgettable. Could you help me plan 2 different driving routes for this incredible journey? For each route, I'd love to find 2 beautiful scenic viewpoints in those intermediate cities where I can take amazing photos and enjoy the views, and please tell me their elevation too (so that's 2 scenic viewpoints per route total)? I'm so pumped and can't wait to see what awesome options you come up with for my French adventure!",
+    "output_format": {
+        "starting_city": "[Starting City]",
+        "destination_city": "[Destination City]",
+        "routes": [
+            {
+                "route_id": "1",
+                "route_name": "NAME OF THE ROUTE",
+                "cities_visited": [
+                    "[City 1]",
+                    "[City 2]",
+                    "[City 3]",
+                    "... (exclude the starting and destination cities in this list)"
+                ],
+                "scenic_viewpoints": [
+                    {
+                        "city": "[Specific City]",
+                        "viewpoint_id": "1",
+                        "name": "[Viewpoint Name]",
+                        "address": "[Viewpoint Address]",
+                        "elevation_meters": "[Elevation in meters]",
+                        "description": "[Brief Description]"
+                    }
+                ]
+            }
+        ]
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "google-maps"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "json"
+        },
+        {
+            "func": "json -> get(routes) -> len",
+            "op": "=",
+            "value": 2
+        },
+        {
+            "func": "json",
+            "op": "google_maps.city_name_match",
+            "op_args": {
+                "key": "starting_city",
+                "values": ["Paris", "PAR", "Paris City"]
+            }
+        },
+        {
+            "func": "json",
+            "op": "google_maps.city_name_match",
+            "op_args": {
+                "key": "destination_city",
+                "values": ["Nice", "Nice City"]
+            }
+        },
+        {
+            "func": "json -> get(routes) -> foreach -> get(cities_visited) -> len",
+            "op": "=",
+            "value": 2
+        },
+        {
+            "func": "json -> get(routes) -> foreach -> get(scenic_viewpoints) -> len",
+            "op": "=",
+            "value": 2
+        },
+        {
+            "func": "json",
+            "op": "google_maps.places_in_cities_visited",
+            "op_args": "scenic_viewpoints"
+        },
+        {
+            "func": "json",
+            "op": "google_maps.validate_elevation_meters"
+        }
+    ]
+}

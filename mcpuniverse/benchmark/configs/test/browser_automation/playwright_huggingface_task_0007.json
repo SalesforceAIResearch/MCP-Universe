@@ -1,0 +1,33 @@
+{
+    "category": "general",
+    "question": "Hi! I'm completely new to AI agents and just started learning about them. I heard there's an Agent course on huggingface.co that might help me get started. Could you please help me find the topics covered in chapters 0-4? I'm not sure how to navigate the site yet. You can find it at https://huggingface.co/. Remember to close the browser when you finish the task.",
+    "output_format": {
+        "chapter 0": "topic",
+        "chapter 1": "topic",
+        "chapter 2": "topic",
+        "chapter 3": "topic",
+        "chapter 4": "topic"
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "playwright"
+        },
+        {
+            "name": "date"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "json",
+            "op": "playwright.is_dict_equal",
+            "value": {
+                "chapter 0": "Onboarding",
+                "chapter 1": "Agent Fundamentals",
+                "chapter 2": "Frameworks",
+                "chapter 3": "Use Cases",
+                "chapter 4": "Final Assignment"
+            }
+        }
+    ]
+} 

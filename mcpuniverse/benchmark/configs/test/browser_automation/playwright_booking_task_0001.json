@@ -1,0 +1,41 @@
+{
+    "category": "general",
+    "question": "Help me find a one-way flight from Singapore to Beijing, 5 days from now (If now is 2025-07-07, then 5 days later is 2025-07-12). Find the flight on www.booking.com. I want to find the cheapest flight, direct flight, Economy, and I don't want to go to the Daxing airport. I only want to see the price, so as to determine whether I should fly to Beijing or not. Remember to close the browser after you finish the task.",
+    "output_format": {
+        "price": "CCCXXX (CCC is the currency and XXX is the price. No blank space between the currency and the price.)"
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "playwright"
+        },
+        {
+            "name": "date"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "json"
+        },
+        {
+            "func": "json",
+            "op": "playwright.check_flight_price",
+            "op_args": {
+                "depart_days_after": 5,
+                "flight_type": "ONEWAY",
+                "cabin_class": "ECONOMY",
+                "adults": 1,
+                "children": 0,
+                "stops": 0,
+                "sort": "CHEAPEST",
+                "travel_purpose": "leisure",
+                "from_location": "SIN.AIRPORT",
+                "to_location": "PEK.AIRPORT",
+                "from_country": "SG",
+                "to_country": "CN",
+                "from_location_name": "Changi+Airport",
+                "to_location_name": "Beijing+Capital+International+Airport"
+            }
+        }
+    ]
+}

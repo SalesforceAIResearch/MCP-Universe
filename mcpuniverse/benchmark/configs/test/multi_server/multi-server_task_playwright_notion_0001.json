@@ -1,0 +1,40 @@
+{
+    "category": "general",
+    "question": "I am an undergraduate student in Sport Analysis. One of my courses requires us to analyze the so-called big six teams' performance in the Premier League (2023-24 season, https://www.premierleague.com/). I want to create a Notion page to collect the data of these teams. Please create a Notion page named `Big-6-Premier-League-Performance` in the parent page {{ NOTION_ROOT_PAGE }} and include the data of these teams on the page. Save the data as plain text with the format : `[Team Name]: Wins: [Wins], Draws: [Draws], Losses: [Losses], Points: [Points]`",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "playwright"
+        },
+        {
+            "name": "notion"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "notion.compare_block_content_no_order",
+            "op_args": {
+                "page_title": "Big-6-Premier-League-Performance"
+            },
+            "value": [
+                "Manchester United: Wins: 18, Draws: 6, Losses: 14, Points: 60",
+                "Manchester City: Wins: 28, Draws: 7, Losses: 3, Points: 91",
+                "Liverpool: Wins: 24, Draws: 10, Losses: 4, Points: 82",
+                "Chelsea: Wins: 18, Draws: 9, Losses: 11, Points: 63",
+                "Arsenal: Wins: 28, Draws: 5, Losses: 5, Points: 89",
+                "Tottenham Hotspur: Wins: 20, Draws: 6, Losses: 12, Points: 66"
+            ]
+        }
+    ],
+    "cleanups": [
+        {   
+            "server": "notion",
+            "tool": "API-post-page",
+            "cleanup_func": "delete_page",
+            "cleanup_args": {
+                "page":"$return -> get(content) -> array(0) -> get(text) -> json -> get(id)"
+            }   
+        }
+    ]
+}

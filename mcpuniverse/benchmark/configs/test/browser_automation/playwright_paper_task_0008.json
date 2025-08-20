@@ -1,0 +1,25 @@
+{
+    "category": "general",
+    "question": "I'm absolutely obsessed with DeepSeek and their incredible work! DeepSeek-R1 is such a groundbreaking and revolutionary paper that I just HAVE to read it! I'm a huge fan of everything DeepSeek does, they're absolutely amazing! Could you please help me find the arXiv ID for this fantastic DeepSeek-R1 paper from https://arxiv.org/? I'm so excited to dive deep into this masterpiece! Remember to close the browser when you finish the task.",
+    "output_format": {
+        "Name_of_the_paper_1": "2xxx.xxxxx"
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "playwright"
+        },
+        {
+            "name": "date"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "json",
+            "op": "playwright.is_dict_equal",
+            "value": {
+                "DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via Reinforcement Learning": "2501.12948"
+            }
+        }
+    ]
+} 

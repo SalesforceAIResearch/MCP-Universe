@@ -1,0 +1,22 @@
+{
+    "category": "general",
+    "question": "My dear fellow, I require you to calculate the final portfolio value and total percentage return on a modest $15,000 investment I'm considering. I wish to diversify equally across five blue-chip holdings: Apple (AAPL), Microsoft (MSFT), Amazon (AMZN), Tesla (TSLA), and NVIDIA (NVDA). The investment period would commence February 4, 2025, and conclude at market close on May 5, 2025. Kindly provide the precise figures for my wealth management review.",
+    "output_format": {
+        "total value": "[NUMBER]", 
+        "total percentage return": "[NUMBER]"
+    },
+    "evaluators": [
+        {
+            "func": "json",
+            "op": "yfinance.check_portfolio_task_output",
+            "op_args": {
+                "tickers": ["AAPL", "MSFT", "AMZN", "TSLA", "NVDA"],
+                "start_date": "2025-02-04",
+                "end_date": "2025-05-05",
+                "initial_investment": 15000.0,
+                "split": [0.2, 0.2, 0.2, 0.2, 0.2]
+            },
+            "desc": "Whether the final value and the total percentage return are correct."
+        }
+    ]
+}

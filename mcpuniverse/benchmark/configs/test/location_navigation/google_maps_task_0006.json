@@ -1,0 +1,104 @@
+{
+    "category": "general",
+    "question": "Hey! My friend and I are planning an epic road trip adventure from 'Seattle' to 'Portland' and we could really use your help to make it awesome! We're thinking of hitting up 3 cool cities along the way to really make the most of our time together. Could you hook us up with 2 different driving route options for this buddy trip? For each route, we'd love to find 1 good rest stop in those intermediate cities where we can grab some snacks and stretch our legs (a total of 1 rest stop per route). Also, since we want to get some great photos for our social media, could you find 1 scenic viewpoint in those intermediate cities with killer views and tell us the elevation (a total of 1 scenic viewpoint per route)? We're super excited about this road trip with the crew!",
+    "output_format": {
+        "starting_city": "[Starting City]",
+        "destination_city": "[Destination City]",
+        "routes": [
+            {
+                "route_id": "1",
+                "route_name": "NAME OF THE ROUTE",
+                "cities_visited": [
+                    "[City 1]",
+                    "[City 2]",
+                    "[City 3]",
+                    "... (exclude the starting and destination cities in this list)"
+                ],
+                "rest_stops": [
+                    {
+                        "city": "[Specific City]",
+                        "rest_stop_id": "1",
+                        "name": "[Rest Stop Name]",
+                        "address": "[Rest Stop Address]",
+                        "amenities": [
+                            "[Amenity 1]",
+                            "[Amenity 2]",
+                            "..."
+                        ]
+                    }
+                ],
+                "scenic_viewpoints": [
+                    {
+                        "city": "[Specific City]",
+                        "viewpoint_id": "1",
+                        "name": "[Viewpoint Name]",
+                        "address": "[Viewpoint Address]",
+                        "elevation_meters": "[Elevation in meters]",
+                        "description": "[Brief Description]"
+                    }
+                ]
+            }
+        ]
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "google-maps"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "json"
+        },
+        {
+            "func": "json -> get(routes) -> len",
+            "op": "=",
+            "value": 2
+        },
+        {
+            "func": "json",
+            "op": "google_maps.city_name_match",
+            "op_args": {
+                "key": "starting_city",
+                "values": ["Seattle", "Seattle City", "SEA"]
+            }
+        },
+        {
+            "func": "json",
+            "op": "google_maps.city_name_match",
+            "op_args": {
+                "key": "destination_city",
+                "values": ["Portland", "Portland City", "POR"]
+            }
+        },
+        {
+            "func": "json -> get(routes) -> foreach -> get(cities_visited) -> len",
+            "op": "=",
+            "value": 3
+        },
+        {
+            "func": "json -> get(routes) -> foreach -> get(rest_stops) -> len",
+            "op": "=",
+            "value": 1
+        },
+        {
+            "func": "json -> get(routes) -> foreach -> get(scenic_viewpoints) -> len",
+            "op": "=",
+            "value": 1
+        },
+        {
+            "func": "json",
+            "op": "google_maps.places_in_cities_visited",
+            "op_args": "rest_stops"
+        },
+        {
+            "func": "json",
+            "op": "google_maps.places_in_cities_visited",
+            "op_args": "scenic_viewpoints"
+        },
+        {
+            "func": "json",
+            "op": "google_maps.validate_elevation_meters"
+        }
+    ]
+}

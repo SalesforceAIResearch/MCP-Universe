@@ -1,0 +1,94 @@
+{
+    "category": "general",
+    "question": "Hi! I'm Kai, a PhD student in Computer Science. For my research project, I need to create a repository called ModelHub. I'm working with my classmate Jane on this. We want to keep things organized, so we're thinking of having a main branch for our stable code and separate dev branches for each of us (like dev-kai and dev-jane). Since we're just getting started, I'd like to put together a basic roadmap in the README.md file on the main branch. Could you help me add this content: \"# ModelHub Roadmap\n## Create a simple framework to run any LLMs.\n## Introduce new Method to accelerate the inference of LLMs.\n## Support the inference of LMMs.\" I've been learning about model deployment tools in my coursework, so I'll handle the initial framework setup. Could you help me copy the setup.py file from huggingface's accelerate repository to my branch? Jane has been working with large language models in her research, so could you also copy the setup.py from meta-llama's llama repository to her branch? Finally, I'd like to create a pull request from my branch to main with the title \"Add initial framework setup\" and description \"This PR adds the basic framework structure for ModelHub as part of our research project.\"",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "github"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "github.check_repository",
+            "op_args": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}/ModelHub" 
+        },
+        {
+            "func": "raw",
+            "op": "github.check_branches_exist",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "ModelHub",
+                "path": "README.md",
+                "branches": ["main", "dev-kai", "dev-jane"]
+            }
+        },
+        {
+            "func": "raw",
+            "op": "github.check_file_content",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "ModelHub",
+                "path": "README.md",
+                "branch": "main"
+            },
+            "value": "# ModelHub Roadmap\n## Create a simple framework to run any LLMs.\n## Introduce new Method to accelerate the inference of LLMs.\n## Support the inference of LMMs."
+        },
+        {
+            "func": "raw",
+            "op": "github.check_file_content",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "ModelHub",
+                "path": "setup.py",
+                "branch": "dev-kai"
+            },
+            "value": {
+                "owner": "huggingface",
+                "repo": "accelerate",
+                "path": "setup.py",
+                "branch": "main"
+            }
+        },
+        {
+            "func": "raw",
+            "op": "github.check_file_content",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "ModelHub",
+                "path": "setup.py",
+                "branch": "dev-jane"
+            },
+            "value": {
+                "owner": "meta-llama",
+                "repo": "llama",
+                "path": "setup.py",
+                "branch": "main"
+            }
+        },
+        {
+            "func": "raw",
+            "op": "github.check_pull_request",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "ModelHub",
+                "base": "main",
+                "head": "dev-kai"
+            },
+            "value": {
+                "title": "Add initial framework setup",
+                "body": "This PR adds the basic framework structure for ModelHub as part of our research project."
+            }
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "github",
+            "tool": "create_repository",
+            "cleanup_func": "delete_repository",
+            "cleanup_args": {
+                "repo": "$name"
+                }
+        }
+    ]
+}

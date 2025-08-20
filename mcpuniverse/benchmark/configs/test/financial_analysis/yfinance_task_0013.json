@@ -1,0 +1,21 @@
+{
+    "category": "general",
+    "question": "Hey! I'm working on a finance project for my BA degree and I need some help with institutional holdings data. Can you look at Microsoft (MSFT), Apple (AAPL), and Amazon (AMZN) and find all the institutional holders that show up in the holdings reports for ALL THREE companies? I specifically need those that hold more than 5% (pctHeld > 0.05) of shares in each company. Just give me a list with the names (Holder field) of these institutions that meet both requirements. This would really help with my analysis!",
+    "output_format": {
+        "companies": [
+            "institution 1", 
+            "institution 2", 
+            "..."
+        ]
+    },
+    "evaluators": [
+        {
+            "func": "json",
+            "op": "yfinance.check_holders_with_min_pct_held",
+            "op_args": {
+                "tickers": ["MSFT", "AAPL", "AMZN"],
+                "min_pct_held": 0.05
+            }
+        }
+    ]
+}

@@ -1,0 +1,22 @@
+<html lang="en">
+    <head>
+        <title>Dashboard</title>
+        <link href="/static/styles.css" rel="stylesheet">
+    </head>
+    <body>
+        <nav>
+            <ul>
+                {%- for gradio_app in gradio_apps %}
+                    <li class="{{'active' if current_path == gradio_app['path'] }}">
+                        <a href="/app/{{gradio_app['path']}}">
+                            {{gradio_app["title"]}}
+                        </a>
+                    </li>
+                {% endfor %}
+            </ul>
+        </nav>
+        <main>
+            <iframe src="/gradio/{{current_path}}?__theme=dark"></iframe>
+        </main>
+    </body>
+</html>

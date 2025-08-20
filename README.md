@@ -1,14 +1,22 @@
-# MCPWorld
+# MCPUniverse
 
-MCPWorld is a framework for developing and benchmarking AI agents. It provides tools for creating, testing,
+MCPUniverse is a framework for developing and benchmarking AI agents. It provides tools for creating, testing,
 and evaluating different agent configurations across a variety of task environments.
 
 ## Table of Contents
 
-- [Installation Guide](#installation-guide)
-- [System Architecture](#system-architecture)
-- [How to Add New Benchmarks](#how-to-add-new-benchmarks)
-- [How to Run Benchmarks](#how-to-run-benchmarks)
+- [MCPUniverse](#mcpuniverse)
+  - [Table of Contents](#table-of-contents)
+  - [Installation Guide](#installation-guide)
+    - [Setup](#setup)
+    - [Github MCP Server Installation](#github-mcp-server-installation)
+  - [System Architecture](#system-architecture)
+  - [How to Add New Benchmarks](#how-to-add-new-benchmarks)
+    - [Task definition](#task-definition)
+    - [Benchmark definition](#benchmark-definition)
+    - [How to run benchmarks](#how-to-run-benchmarks)
+    - [Test benchmark](#test-benchmark)
+    - [Visualization](#visualization)
 
 ## Installation Guide
 
@@ -22,11 +30,11 @@ is integrated into our CI to enforce Python coding standards.
 1. Clone this repo to your machine:
 
 ``` shell
-git clone git@github.com:salesforce-emu/MCPWorld.git
+git clone git@github.com:salesforce-emu/MCPUniverse.git
 ```
 
 2. Install Python and create a virtual environment:
-   MCPWorld requires Python 3.10 or higher. Install Python 3.10 and set up
+   MCPUniverse requires Python 3.10 or higher. Install Python 3.10 and set up
    a [virtual environment](https://virtualenv.pypa.io/en/latest/installation.html).
 
 ``` shell
@@ -41,6 +49,14 @@ source venv/bin/activate
 pip install -r requirements.txt
 pip install -r dev-requirements.txt
 ```
+To run unit tests, you also need install postgres. On Linux:
+```shell
+sudo apt-get install libpq-dev
+```
+On macOS:
+```shell
+brew install postgresql
+```
 
 4. Setup pre-commit hooks to ensure all the checks are passing before committing the code and pushing to the branch
 
@@ -48,16 +64,37 @@ pip install -r dev-requirements.txt
 pre-commit install
 ```
 
+### Github MCP Server Installation
+```shell
+git clone git@github.com:github/github-mcp-server.git
+cd cmd/github-mcp-server
+go build
+```
+
+- add github MCP config to /mcp/configs/server_list.json
+```json
+"github": {
+  "stdio": {
+    "command": "/path/to/github-mcp-server",
+    "args": ["stdio"]
+  },
+  "env": {
+    "GITHUB_PERSONAL_ACCESS_TOKEN": "{{GITHUB_PERSONAL_ACCESS_TOKEN}}"
+  }
+}
+```
+
+
 ## System Architecture
 
-The MCPWorld architecture consists of several key components:
+The MCPUniverse architecture consists of several key components:
 
 1. Agents and Workflows: YAML configurations that define the agents and workflows.
 2. MCP Servers: External services that agents can interact with to complete tasks.
 3. Benchmark/Task Definitions: Configurations that specify the task, required servers, and evaluation criteria.
 4. Evaluators: Functions that assess the agent's output against predefined criteria.
 
-![alt text](https://github.com/airesearch-emu/MCPWorld/raw/main/docs/_static/architecture.png)
+![alt text](https://github.com/SalesforceAIResearch/MCP-Universe/raw/main/docs/_static/architecture.png)
 
 ## How to Add New Benchmarks
 
@@ -125,7 +162,7 @@ Then "get(x) -> foreach -> get(y) -> len" will do the followings:
 3. Get the length of each list: [1, 2, 4].
 
 If these predefined funcs are not enough, you can implement customized ones.
-Please check package "mcpworld.evaluator.functions".
+Please check package "mcpuniverse.evaluator.functions".
 
 ### Benchmark definition
 
@@ -163,12 +200,12 @@ The benchmark definition mainly contains two parts: One is the definition of the
 and the other is the benchmark configuration. The benchmark configuration is simple where you just need to specify
 the agent to use (by the defined agent name), and a list of tasks to evaluate. Each task entry is the task config file
 path. It can be a full file path or a partial file path. If it is a partial file path (like "dummy/tasks/weather.json"),
-it should be put in the folder "mcpworld/benchmark/configs" in this repo.
+it should be put in the folder "mcpuniverse/benchmark/configs" in this repo.
 
 This framework provides a convenient way to define simple agents like ReAct or complex agent workflows.
 Firstly, you need to specify the LLMs you want to use in the agents. Note that each component has a name, e.g., "llm-1".
 The framework will use these names to link all the components together. Secondly, you can define an agent by specifying
-the agent name and agent class. Agent classes are those defined in the package "mcpworld.agent". Some commonly used ones
+the agent name and agent class. Agent classes are those defined in the package "mcpuniverse.agent". Some commonly used ones
 are "basic", "function-call" and "react". You also need to specify the LLM used in this agent by setting "llm" in
 spec.config.
 
@@ -224,11 +261,17 @@ spec:
 
 ### How to run benchmarks
 
+To run benchmarks, you first need to set environment variables:
+
+1. Copy the `.env.example` file to a new file named .env.
+2. In the `.env` file, set the required API keys for various services used by the agents, 
+such as `OPENAI_API_KEY` and `GOOGLE_MAPS_API_KEY`.
+
 To execute a benchmark programmatically:
 
 ```python
-from mcpworld.tracer.collectors import MemoryCollector  # You can also use SQLiteCollector
-from mcpworld.benchmark.runner import BenchmarkRunner
+from mcpuniverse.tracer.collectors import MemoryCollector  # You can also use SQLiteCollector
+from mcpuniverse.benchmark.runner import BenchmarkRunner
 
 
 async def test():
@@ -241,4 +284,16 @@ async def test():
     trace_records = trace_collector.get(trace_id)
 ```
 
+### Test benchmark
+``` shell
+PYTHONPATH=. python tests/benchmark/test_benchmark_google_maps.py
+```
 For further details, refer to the in-code documentation or existing configuration samples in the repository.
+
+
+
+### Visualization
+``` python
+results = await benchmark.run(trace_collector=trace_collector, verbose=True)
+```
+Print out the intermediate results.

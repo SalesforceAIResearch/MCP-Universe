@@ -1,0 +1,76 @@
+{
+    "category": "general",
+    "question": "Hi there! I'm working on a GitHub automation project and could really use your expertise. I need to create a new project repository named auto-comment-bot2 and set it up with just the main branch. Could you help me add an initial README.md file with the content \"# Automated Comment Bot\n\nA repository to test GitHub automation for adding comments to specific issues and closing them.\"? I'm trying to implement a GitHub automation script that automatically adds a comment 'Thank you for your contribution!' to any new issue labeled 'feedback' or 'suggestion', and then closes the issue. Once we get the automation working, I'd like to test it by creating three sample issues (labels: \"feedback\", title: \"UI improvement\"; labels: \"suggestion\", title: \"New feature\"; labels: \"bug\", title: \"Login error\"). Any guidance you can provide would be greatly appreciated!",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "github"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "github.check_repository",
+            "op_args": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}/auto-comment-bot2" 
+        },
+        {
+            "func": "raw",
+            "op": "github.check_file_content",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "auto-comment-bot2",
+                "path": "README.md",
+                "branch": "main"
+            },
+            "value": "# Automated Comment Bot\n\nA repository to test GitHub automation for adding comments to specific issues and closing them."
+        },
+        {
+            "func": "raw",
+            "op": "github.check_number_of_issues",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "auto-comment-bot2",
+                "title": "UI improvement",
+                "labels": ["feedback"],
+                "state": "closed",
+                "comments": "Thank you for your contribution!"
+            },
+            "value": 1
+        },
+        {
+            "func": "raw",
+            "op": "github.check_number_of_issues",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "auto-comment-bot2",
+                "title": "New feature",
+                "labels": ["suggestion"],
+                "state": "closed",
+                "comments": "Thank you for your contribution!"
+            },
+            "value": 1
+        },
+        {
+            "func": "raw",
+            "op": "github.check_number_of_issues",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "auto-comment-bot2",
+                "title": "Login error",
+                "labels": ["bug"],
+                "state": "open"
+            },
+            "value": 1
+        }
+    ],
+    "cleanups": [
+        {
+        "server": "github",
+        "tool": "create_repository",
+        "cleanup_func": "delete_repository",
+        "cleanup_args": {
+            "repo": "$name"
+            }
+        }
+    ]
+}

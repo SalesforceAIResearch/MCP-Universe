@@ -1,0 +1,23 @@
+{
+    "category": "general",
+    "question": "Hey there! So I'm an art student and my boyfriend is super into finance - like, he's always talking about options and volatility and all these complex financial instruments that honestly go way over my head. But I want to understand what he's passionate about so we can have deeper conversations! He mentioned something about 'implied volatility' and how it shows market emotions or something? I think he said high volatility options are really important for trading strategies. I'm hoping you can help me learn by finding an example - could you show me the out-of-the-money call option with the highest implied volatility for Salesforce (CRM) using the nearest expiration date? Maybe if I can understand a real example, I'll finally get what he's so excited about when he talks about the markets!",
+    "output_format": {
+        "ticker": "[String]",
+        "expiration": "YYYY-MM-DD",
+        "strike": "[Number]",
+        "implied_volatility": "[Number]",
+        "last_price": "[Number]",
+        "bid": "[Number]",
+        "ask": "[Number]",
+        "in_the_money": "[Boolean]"
+    },
+    "evaluators": [
+        {
+            "func": "json",
+            "op": "yfinance.check_highest_iv_otm_call_task_output",
+            "op_args": {
+                "ticker": "CRM"
+            }
+        }
+    ]
+}

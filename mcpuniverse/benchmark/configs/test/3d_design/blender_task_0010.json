@@ -1,0 +1,31 @@
+{
+    "category": "blender",
+    "question": "Clear the current Blender scene and remove all PolyHaven materials.\nSearch Polyhaven for an HDRI asset with the 'indoor' and 'studio' tags. Download the result at 1K resolution. Set this HDRI as the World background environment texture, ensuring its strength is 2.0. Now, search Polyhaven for a texture asset like 'wood'. Download a 2K version. Create a Plane object named 'Floorboard'. Create a new material named 'WoodenMat' and apply it to 'Floorboard'. Within this material, connect the Base Color and Roughness maps to the corresponding inputs of the Principled BSDF node (ensuring the Roughness map's Image Texture node uses 'Non-Color' space). Add a 'Mapping' node and a 'Texture Coordinate' node. Connect the Texture Coordinate node's 'UV' output to the Mapping node's 'Vector' input, and connect the Mapping node's 'Vector' output to the 'Vector' input of both the Base Color and Roughness Image Texture nodes. Finally, set the 'Scale' vector value within the Mapping node to (X=3.0, Y=1.0, Z=1.0). After finishing all tasks, create a new file and save it as 'tid_10.blend' in the '{{MCPUniverse_DIR}}/mcpuniverse/evaluator/blender/blend_files'.",
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "blender.check_file",
+            "op_args": {
+                "path": "tid_10.blend",
+                "task_id": "10"
+            }
+        },
+        {
+            "func": "raw",
+            "op": "blender.check_file_content",
+            "op_args": {
+                "path": "tid_10.blend",
+                "task_id": "10"
+            }
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "blender",
+            "cleanup_func": "clear_scene_and_polyhaven_materials",
+            "cleanup_args": {
+                "ctx": "$CleanUp"
+            }
+        }
+    ]
+}

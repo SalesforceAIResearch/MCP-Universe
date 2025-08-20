@@ -1,0 +1,94 @@
+{
+    "category": "general",
+    "question": "I am based at the Empire State Building in New York City. My business partner operates from the Willis Tower in Chicago. Our key client is located at the Holiday Inn Express Philadelphia - Penns Landing by IHG. We require a strategic meeting location that accommodates all three parties. Please identify a single 'restaurant' (must be of type 'restaurant') that minimizes travel time discrepancies between our three locations, ensuring the estimated driving time from each location to the restaurant is as equidistant as possible. The establishment must maintain a minimum user rating of 4.2 to meet our professional standards. Please provide the Name, and Place ID of the selected restaurant.",
+    "output_format": {
+        "stops": [
+            {
+                "name": "NAME",
+                "place id": "Place ID"
+            }
+        ]
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "google-maps"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "json"
+        },
+        {
+            "func": "json -> get(stops) -> len",
+            "op": "=",
+            "value": 1
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.stop_include_keys",
+            "op_args": {
+                "keys": ["name", "place id"]
+            }
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.is_a_validate_stop"
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.validate_stop_type",
+            "op_args": ["restaurant"]
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.validate_stop_rating",
+            "op_args": 4.1999
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.compare_time_of_middle_point",
+            "op_args": {
+                "place1": {
+                    "place": "20 W 34th St., New York, NY 10001, United States",
+                    "mode": "driving"
+                },
+                "place2":{
+                    "place": "233 S Wacker Dr, Chicago, IL 60606, United States",
+                    "mode": "driving"
+                },
+                "threshold": 0.1
+            }
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.compare_time_of_middle_point",
+            "op_args": {
+                "place1": {
+                    "place": "20 W 34th St., New York, NY 10001, United States",
+                    "mode": "driving"
+                },
+                "place2":{
+                    "place": "100 N Christopher Columbus Blvd, Philadelphia, PA 19106, United States",
+                    "mode": "driving"
+                },
+                "threshold": 0.1
+            }
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.compare_time_of_middle_point",
+            "op_args": {
+                "place1": {
+                    "place": "233 S Wacker Dr, Chicago, IL 60606, United States",
+                    "mode": "driving"
+                },
+                "place2":{
+                    "place": "100 N Christopher Columbus Blvd, Philadelphia, PA 19106, United States",
+                    "mode": "driving"
+                },
+                "threshold": 0.1
+            }
+        }
+    ]
+}

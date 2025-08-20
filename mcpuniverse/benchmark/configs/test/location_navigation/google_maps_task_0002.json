@@ -1,0 +1,103 @@
+{
+    "category": "general",
+    "question": "Hello! We just got married and we're planning our dream honeymoon road trip from 'Johor Bahru' to 'Kuala Lumpur'! As newlyweds, we want to make this journey extra special and memorable. We'd love to drive through exactly 2 intermediate cities between our starting and ending points to really savor this romantic adventure together. Could you help us plan exactly 1 perfect driving route for our honeymoon? We'd also appreciate finding exactly 1 cozy rest stop within those intermediate cities (a total of 1 rest stop per route) where we can take a romantic break and enjoy each other's company. Since we want to capture some beautiful moments together, could you also find exactly 1 scenic viewpoint within those intermediate cities and tell us its elevation (a total of 1 scenic viewpoint per route)? We're so excited to start this new chapter of our lives with this amazing journey together!",
+    "output_format": {
+        "starting_city": "[Starting City]",
+        "destination_city": "[Destination City]",
+        "routes": [
+            {
+                "route_id": "1",
+                "route_name": "NAME OF THE ROUTE",
+                "cities_visited": [
+                    "[City 1]",
+                    "[City 2]",
+                    "... (exclude the starting and destination cities in this list)"
+                ],
+                "rest_stops": [
+                    {
+                        "city": "[Specific City]",
+                        "rest_stop_id": "1",
+                        "name": "[Rest Stop Name]",
+                        "address": "[Rest Stop Address]",
+                        "amenities": [
+                            "[Amenity 1]",
+                            "[Amenity 2]",
+                            "..."
+                        ]
+                    }
+                ],
+                "scenic_viewpoints": [
+                    {
+                        "city": "[Specific City]",
+                        "viewpoint_id": "1",
+                        "name": "[Viewpoint Name]",
+                        "address": "[Viewpoint Address]",
+                        "elevation_meters": "[Elevation in meters]",
+                        "description": "[Brief Description]"
+                    }
+                ]
+            }
+        ]
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "google-maps"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "json"
+        },
+        {
+            "func": "json -> get(routes) -> len",
+            "op": "=",
+            "value": 1
+        },
+        {
+            "func": "json",
+            "op": "google_maps.city_name_match",
+            "op_args": {
+                "key": "starting_city",
+                "values": ["Johor Bahru", "Johor", "JB", "Johor Bahru City", "Johor Baru", "JB City", "Johor Bahru Malaysia", "Johor State", "Johor Darul Ta'zim", "Johor Bahru Johor", "Bandaraya Johor Bahru", "JB Malaysia", "Johor Malaysia", "Johor Bahru Town", "Southern Malaysia", "Johor Capital"]
+            }
+        },
+        {
+            "func": "json",
+            "op": "google_maps.city_name_match",
+            "op_args": {
+                "key": "destination_city",
+                "values": ["Kuala Lumpur", "KL", "Kuala Lumpur City", "Kuala Lumpur State", "KL City", "Kuala Lumpur Malaysia", "KL Malaysia", "Federal Territory of Kuala Lumpur", "Wilayah Persekutuan Kuala Lumpur", "KL Federal Territory", "Kuala Lumpur Federal Territory", "Malaysian Capital", "Capital of Malaysia", "KL Town", "Kuala Lumpur Town", "Greater Kuala Lumpur", "KL Metropolitan", "Kuala Lumpur Metropolitan"]
+            }
+        },
+        {
+            "func": "json -> get(routes) -> foreach -> get(cities_visited) -> len",
+            "op": "=",
+            "value": 2
+        },
+        {
+            "func": "json -> get(routes) -> foreach -> get(rest_stops) -> len",
+            "op": "=",
+            "value": 1
+        },
+        {
+            "func": "json -> get(routes) -> foreach -> get(scenic_viewpoints) -> len",
+            "op": "=",
+            "value": 1
+        },
+        {
+            "func": "json",
+            "op": "google_maps.places_in_cities_visited",
+            "op_args": "rest_stops"
+        },
+        {
+            "func": "json",
+            "op": "google_maps.places_in_cities_visited",
+            "op_args": "scenic_viewpoints"
+        },
+        {
+            "func": "json",
+            "op": "google_maps.validate_elevation_meters"
+        }
+    ]
+}

@@ -1,0 +1,36 @@
+{
+    "category": "general",
+    "question": "I'm searching for two papers. The first paper was accepted by ACM TIST, the first and last two authors have studied in Beijing, the paper has 5 authors, the paper is about Meme, and the first author has published at least 1 paper as the first author about fact checking at ACL 2025 main conference. For the second paper: It was accepted by AAAI 2025, the first paper's first author is the second author of this paper, the paper is also about Meme, this paper has 7 authors, the last author obtained his PhD at NTU in 2019. Could you please help me find the full titles of these papers so I can read them and learn more about this fascinating field? Please create a new page named \"Papers-Meme\" in the parent page {{ NOTION_ROOT_PAGE }} and include your collection of data in the page. The format should be: `The first paper title: xxx, The second paper title: xxx`",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "google-search"
+        },
+        {
+            "name": "fetch"
+        },
+        {
+            "name": "notion"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "notion.compare_page_text",
+            "op_args": {
+                "page_title": "Papers-Meme"
+            },
+            "value": "The first paper title: GOAT-Bench: Safety Insights to Large Multimodal Models through Meme-Based Social Abuse, The second paper title: Meme Trojan: Backdoor Attacks Against Hateful Meme Detection via Cross-Modal Triggers"
+        }
+    ],
+    "cleanups": [
+        {   
+            "server": "notion",
+            "tool": "API-post-page",
+            "cleanup_func": "delete_page",
+            "cleanup_args": {
+                "page":"$return -> get(content) -> array(0) -> get(text) -> json -> get(id)"
+            }   
+        }
+    ]
+}

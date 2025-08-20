@@ -1,0 +1,42 @@
+{
+    "category": "general",
+    "question": "Oh wow, I'm absolutely fascinated by these amazing VLM repositories! I've been diving deep into the analysis of these 4 incredible projects: QwenLM's Qwen2.5-VL, deepseek-ai's DeepSeek-VL2, rhymes-ai's Aria, and Moonshot AI's Kimi-VL. As a repo analysis enthusiast, I'm particularly excited to identify and fork the most recently created one among these cutting-edge VLM repositories. Keeping the exact same name as the original, of course! Then, being the thorough researcher I am, I need to enrich the README.md by adding three beautiful reference links at the bottom that showcase the interconnected nature of this VLM ecosystem: '1. related project [repo name 1](the link of repo 1)', '2. related project [repo name 2](the link of repo 2)', '3. related project [repo name 3](the link of repo 3)'. This kind of cross-referencing is what makes repository analysis so thrilling!",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "github"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "github.check_repository",
+            "op_args": "repo:{{GITHUB_PERSONAL_ACCOUNT_NAME}}/Kimi-VL fork:true" 
+        },
+        {
+            "func": "raw",
+            "op": "github.file_content_include",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "Kimi-VL",
+                "path": "README.md",
+                "branch": "main"
+            },
+            "value": [
+                "https://github.com/deepseek-ai/DeepSeek-VL2",
+                "https://github.com/rhymes-ai/Aria",
+                "https://github.com/QwenLM/Qwen2.5-VL"
+            ]
+        }
+    ],
+    "cleanups": [
+        {
+        "server": "github",
+        "tool": "fork_repository",
+        "cleanup_func": "delete_repository",
+        "cleanup_args": {
+            "repo": "$repo"
+            }
+        }
+    ]
+}

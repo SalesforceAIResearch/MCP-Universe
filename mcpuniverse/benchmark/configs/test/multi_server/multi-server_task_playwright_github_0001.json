@@ -1,0 +1,44 @@
+{
+    "category": "general",
+    "question": "I recently heard from my friend that HuggingFace has created an evaluation suite for GUI Agents. Please help me find the evaluation suite on GitHub or on HuggingFace's website (https://huggingface.co/). I want to create a GitHub repository to collect all the related information about this evaluation suite. The repository should be named 'GUI-Agents-Evaluation-Suite-Collection-Test'. You need to include all the desktop environment-related Grounding benchmarks in the README file. The format should be: '- benchmark name: official benchmark HuggingFace dataset link'",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "playwright"
+        },
+        {
+            "name": "github"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "github.check_repository",
+            "op_args": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}/GUI-Agents-Evaluation-Suite-Collection-Test" 
+        },
+        {
+            "func": "raw",
+            "op": "github.file_content_include",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "GUI-Agents-Evaluation-Suite-Collection-Test",
+                "path": "README.md",
+                "branch": "main"
+            },
+            "value": [
+                "- ScreenSpot-v2: https://huggingface.co/datasets/OS-Copilot/ScreenSpot-v2",
+                "- ScreenSpot-Pro: https://huggingface.co/datasets/likaixin/ScreenSpot-Pro"
+            ]
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "github",
+            "tool": "create_repository",
+            "cleanup_func": "delete_repository",
+            "cleanup_args": {
+                "repo": "$name"
+                }
+        }
+    ]
+}

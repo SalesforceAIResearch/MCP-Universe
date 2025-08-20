@@ -1,0 +1,44 @@
+{
+    "category": "general",
+    "question": "I met a new friend from England. He told me that he comes from the city with a football team that only lost 10 matches in the 2024-25 season. He asked me to find the team on the website https://www.premierleague.com/. Please help me find the team. Then he will invite me to go to his city to watch a match with him at the stadium. Suppose that I will start from the stadium of one of the football teams that scored 42 goals in the 2024-25 Premier League season. Please help us find a hotel between these two stadiums that is at the midpoint for driving distance and has at least a 4.2 rating on Google Maps so that we can rest there.",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "google-maps"
+        },  
+        {
+            "name": "playwright"
+        }
+    ],
+    "output_format": {
+        "friend_team": "XXX F.C.",
+        "my_team": "YYY F.C.", 
+        "hotel": {
+            "name": "NAME",
+            "place id": "Place ID",
+            "full address": "FULL ADDRESS"
+        }
+    },
+    "evaluators": [
+        {
+            "func": "json -> get(friend_team)",
+            "op": "=",
+            "value": "Aston Villa F.C."
+        },
+        {
+            "func": "json -> get(my_team)",
+            "op": "=",
+            "value": "Liverpool F.C."
+        },
+        {
+            "func": "json -> get(hotel) -> list",
+            "op": "google_maps.compare_distance_between_stops",
+            "op_args": {
+                "place1": "Trinity Rd, Birmingham B6 6HE, United Kingdom",
+                "place2": "Anfield Rd, Anfield, Liverpool L4 0TH, United Kingdom",
+                "mode": "driving",
+                "threshold": 0.1
+            }
+        }
+    ]
+}

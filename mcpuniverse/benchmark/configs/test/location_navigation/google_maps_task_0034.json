@@ -1,0 +1,63 @@
+{
+    "category": "general",
+    "question": "Identify 1 'hospital' location in Pairs, France that are north of the latitude of 'Eiffel Tower' AND east of the longitude of 'Arc de Triomphe'.",
+    "output_format": {
+        "stops": [
+            {
+                "name": "NAME",
+                "place id": "Place ID"
+            }
+        ]
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "google-maps"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "json"
+        },
+        {
+            "func": "json -> get(stops) -> len",
+            "op": "=",
+            "value": 1
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.stop_include_keys",
+            "op_args": {
+                "keys": ["name", "place id"]
+            }
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.validate_location",
+            "op_args": ["hospital"]
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.is_a_validate_stop"
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.places_in_country",
+            "op_args": "Pairs"
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.validate_direction_of_two_places",
+            "op_args": [
+                {
+                    "place": "Av. Gustave Eiffel, 75007 Paris, France",
+                    "direction": "north"
+                },
+                {
+                    "place": "Pl. Charles de Gaulle, 75008 Paris, France",
+                    "direction": "east"
+                }
+            ]
+        }
+    ]
+}

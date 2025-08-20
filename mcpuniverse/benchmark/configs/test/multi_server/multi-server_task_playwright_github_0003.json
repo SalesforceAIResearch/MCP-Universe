@@ -1,0 +1,45 @@
+{
+    "category": "general",
+    "question": "I am a new NLP student. My supervisor asked me to work on the dataset and resource direction. I try to collect all the related resource project in the recent year. I now need to collect from the ACL 2024 Best Resource Papers (https://2024.aclweb.org/). Please create a repo named `Resource_Papers_Dev` and include all the ACL 2024 best resource papers info in the readme file. The format is: `- Paper Name 1 -- Official Github Repository Link 1\n- Paper Name 2 -- Official Github Repository Link 2\n- ...`",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "playwright"
+        },
+        {
+            "name": "github"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "github.check_repository",
+            "op_args": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}/Resource_Papers_Dev" 
+        },
+        {
+            "func": "raw",
+            "op": "github.file_content_include",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "Resource_Papers_Dev",
+                "path": "README.md",
+                "branch": "main"
+            },
+            "value": [
+                "- Latxa: An Open Language Model and Evaluation Suite for Basque -- https://github.com/hitz-zentroa/latxa",
+                "- Dolma: an Open Corpus of Three Trillion Tokens for Language Model Pretraining Research -- https://github.com/allenai/dolma",
+                "- AppWorld: A Controllable World of Apps and People for Benchmarking Interactive Coding Agents -- https://github.com/stonybrooknlp/appworld"
+            ]
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "github",
+            "tool": "create_repository",
+            "cleanup_func": "delete_repository",
+            "cleanup_args": {
+                "repo": "$name"
+                }
+        }
+    ]
+}

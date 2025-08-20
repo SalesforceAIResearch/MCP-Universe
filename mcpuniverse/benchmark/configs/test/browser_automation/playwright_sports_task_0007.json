@@ -1,0 +1,27 @@
+{
+    "category": "general",
+    "question": "As a HUGE NBA fanatic, I'm absolutely going crazy waiting to find out the results! Who completely dominated and won NBA Finals 2025 Game 6?! I need to know the final score too (xx-xx, Thunder's score-Pacers' score). My heart can't take this suspense! Please check the official NBA website (https://www.nba.com/) to put me out of my misery! Remember to close the browser when you finish the task.",
+    "output_format": {
+        "Name of the winner": "Thunder/Pacers",
+        "Score": "xx-xx"
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "playwright"
+        },
+        {
+            "name": "date"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "json",
+            "op": "playwright.is_dict_equal",
+            "value": {
+                "Name of the winner": "Pacers",
+                "Score": "91-108"
+            }
+        }
+    ]
+} 

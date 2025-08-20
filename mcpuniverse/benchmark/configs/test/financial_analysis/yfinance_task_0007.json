@@ -1,0 +1,50 @@
+{
+    "category": "general",
+    "question": "Hi! I'm working on a finance assignment and need help analyzing some major tech companies. Could you please help me get the most recent annual income statements for Alphabet Inc. (GOOGL), Microsoft Corporation (MSFT), and Apple Inc. (AAPL)? I need to calculate the Net Profit Margin for each company using the formula: Net Income Common Stockholders divided by Total Revenue for their respective fiscal years. Could you show me the calculated margins for all three companies and tell me which one has the highest Net Profit Margin? I need the results expressed as percentages for my report. Thanks so much!",
+    "output_format": {
+        "GOOGL": {
+            "net profit margin": "[NUMBER]"
+        }, 
+        "MSFT": {
+            "net profit margin": "[NUMBER]"
+        }, 
+        "AAPL": {
+            "net profit margin": "[NUMBER]"
+        }, 
+        "company with highest net profit margin": "[GOOGL or MSFT or AAPL]"
+    },
+    "evaluators": [
+        {
+            "func": "json",
+            "op": "yfinance.check_net_profit_margin",
+            "op_args": {
+                "ticker": "GOOGL"
+            },
+            "desc": "Whether the net profit margin for ticker GOOGL is correct?"
+        },
+        {
+            "func": "json",
+            "op": "yfinance.check_net_profit_margin",
+            "op_args": {
+                "ticker": "MSFT"
+            },
+            "desc": "Whether the net profit margin for ticker MSFT is correct?"
+        },
+        {
+            "func": "json",
+            "op": "yfinance.check_net_profit_margin",
+            "op_args": {
+                "ticker": "AAPL"
+            },
+            "desc": "Whether the net profit margin for ticker AAPL is correct?"
+        },
+        {
+            "func": "json",
+            "op": "yfinance.compare_companies_net_profit_margin",
+            "op_args": {
+                "tickers": ["GOOGL", "MSFT", "AAPL"]
+            },
+            "desc": "Check which ticker, GOOGL or MSFT or AAPL, has a higher net profit margin."
+        }
+    ]
+}

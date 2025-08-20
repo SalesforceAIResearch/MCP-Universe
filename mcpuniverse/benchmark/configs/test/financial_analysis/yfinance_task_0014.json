@@ -1,0 +1,86 @@
+{
+    "category": "general",
+    "question": "Hey there! I'm building a revolutionary investing startup and I need some killer data to validate my investment thesis. Can you help me pull the latest institutional holdings for Microsoft (MSFT), Apple (AAPL), and Alphabet (GOOGL)? I'm specifically hunting for the percentage point changes (pctChange) in stakes for two major players: Blackrock Inc. and Vanguard Group across all three companies. Once you get that data, I need to know which company had the biggest positive bump for each of these institutional giants. This intel will be crucial for my startup's algorithm and could be a game changer for our platform!",
+    "output_format": {
+        "MSFT": {
+            "Blackrock Inc. pctChange": "[NUMBER]", 
+            "Vanguard Group pctChange": "[NUMBER]"
+        }, 
+        "AAPL": {
+            "Blackrock Inc. pctChange": "[NUMBER]", 
+            "Vanguard Group pctChange": "[NUMBER]"
+        }, 
+        "GOOGL": {
+            "Blackrock Inc. pctChange": "[NUMBER]", 
+            "Vanguard Group pctChange": "[NUMBER]"
+        }, 
+        "company with largest positive increase in Blackrock Inc.'s reported stake": "[MSFT or AAPL or GOOGL]", 
+        "company with largest positive increase in Vanguard Group's reported stake": "[MSFT or AAPL or GOOGL]"
+    },
+    "evaluators": [
+        {
+            "func": "json",
+            "op": "yfinance.check_holders_pct_change",
+            "op_args": {
+                "holder": "Blackrock Inc.",
+                "ticker": "MSFT"
+            }
+        },
+        {
+            "func": "json",
+            "op": "yfinance.check_holders_pct_change",
+            "op_args": {
+                "holder": "Vanguard Group",
+                "ticker": "MSFT"
+            }
+        },
+        {
+            "func": "json",
+            "op": "yfinance.check_holders_pct_change",
+            "op_args": {
+                "holder": "Blackrock Inc.",
+                "ticker": "AAPL"
+            }
+        },
+        {
+            "func": "json",
+            "op": "yfinance.check_holders_pct_change",
+            "op_args": {
+                "holder": "Vanguard Group",
+                "ticker": "AAPL"
+            }
+        },
+        {
+            "func": "json",
+            "op": "yfinance.check_holders_pct_change",
+            "op_args": {
+                "holder": "Blackrock Inc.",
+                "ticker": "GOOGL"
+            }
+        },
+        {
+            "func": "json",
+            "op": "yfinance.check_holders_pct_change",
+            "op_args": {
+                "holder": "Vanguard Group",
+                "ticker": "GOOGL"
+            }
+        },
+        {
+            "func": "json",
+            "op": "yfinance.check_holders_largest_pct_change",
+            "op_args": {
+                "holder": "Blackrock Inc.",
+                "tickers": ["MSFT", "AAPL", "GOOGL"]
+            }
+        },
+        {
+            "func": "json",
+            "op": "yfinance.check_holders_largest_pct_change",
+            "op_args": {
+                "holder": "Vanguard Group",
+                "tickers": ["MSFT", "AAPL", "GOOGL"]
+            }
+        }
+    ]
+}

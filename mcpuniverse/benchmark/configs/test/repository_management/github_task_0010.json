@@ -1,0 +1,42 @@
+{
+    "category": "general",
+    "question": "I need to analyze Microsoft's Air-related repositories for open issues that lack proper labeling. Please search for all repositories under the 'microsoft' organization that contain 'Air' in their name. For each repository found, count the number of open issues that have no labels assigned. Create a new repository called 'microsoft-air-no-label-issues' under your account (if it doesn't already exist) and generate a JSON report file named 'microsoft_air_no_label_report.json'. The report should follow this structure: {repository_name: open_issue_count, ...}. This data will help identify repositories that may need better issue management practices.",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "github"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "github.check_repository",
+            "op_args": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}/microsoft-air-no-label-issues" 
+        },
+        {
+            "func": "raw",
+            "op": "github.check_file_content_and_issue_count",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "microsoft-air-no-label-issues",
+                "path": "microsoft_air_no_label_report.json",
+                "branch": "main",
+                "search_repo_owner": "microsoft",
+                "search_repo_name": "Air",
+                "issue_labels": [],
+                "issue_state": "open",
+                "file_type": "json"
+            }
+        }
+    ],
+    "cleanups": [
+        {
+        "server": "github",
+        "tool": "create_repository",
+        "cleanup_func": "delete_repository",
+        "cleanup_args": {
+            "repo": "$name"
+            }
+        }
+    ]
+}

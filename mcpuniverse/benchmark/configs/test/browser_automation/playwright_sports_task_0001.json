@@ -1,0 +1,27 @@
+{
+    "category": "general",
+    "question": "I am a big fan of Lakers in NBA. Can you help me find 3P% of Bronny James and Markieff Morris in 2024-2025 season? You can find it with the offical website of NBA (https://www.nba.com/). Remember to close the browser when you finish the task.",
+    "output_format": {
+        "Bronny James": "xx.x", 
+        "Markieff Morris": "xx.x"
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "playwright"
+        },
+        {
+            "name": "date"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "json",
+            "op": "playwright.is_dict_equal",
+            "value": {
+                "Bronny James": "28.1",
+                "Markieff Morris": "30.4"
+            }
+        }
+    ]
+} 

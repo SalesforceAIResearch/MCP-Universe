@@ -1,0 +1,63 @@
+{
+    "category": "general",
+    "question": "Identify 1 'swimming pool' location in Singapore that are south of the latitude of 'Kallang MRT Station' AND east of the longitude of 'Queenstown MRT Station'.",
+    "output_format": {
+        "stops": [
+            {
+                "name": "NAME",
+                "place id": "Place ID"
+            }
+        ]
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "google-maps"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "json"
+        },
+        {
+            "func": "json -> get(stops) -> len",
+            "op": "=",
+            "value": 1
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.validate_location",
+            "op_args": ["swim"]
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.stop_include_keys",
+            "op_args": {
+                "keys": ["name", "place id"]
+            }
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.is_a_validate_stop"
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.places_in_country",
+            "op_args": "Singapore"
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.validate_direction_of_two_places",
+            "op_args": [
+                {
+                    "place": "5 Sims Ave, Singapore 387405",
+                    "direction": "south"
+                },
+                {
+                    "place": "301 Commonwealth Ave, Singapore 149729",
+                    "direction": "east"
+                }
+            ]
+        }
+    ]
+}

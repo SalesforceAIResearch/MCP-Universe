@@ -1,0 +1,17 @@
+{
+    "category": "general",
+    "question": "Hi there! I'm completely new to investing and finance, and honestly, I'm feeling pretty overwhelmed by all the jargon and concepts. I've been trying to learn about something called 'fundamental analysis'. I think it has to do with looking at company finances? Anyway, I heard somewhere that you should look for companies where their net income (I think that's like profit?) has been going up for a few quarters in a row. I'm not really sure what that means exactly, but apparently 2 consecutive quarters of rising net income is a good sign? I'm still figuring out what makes a company worth investing in. Could you help a total beginner like me find 3 company tickers that have this pattern? I'm trying to learn by doing some basic research, even though I barely understand what I'm looking for. Any help would be amazing! I'm just trying to get my feet wet in this whole investing world!",
+    "output_format": {
+        "tickers": ["ticker1", "ticker2", "ticker3"]
+    },
+    "evaluators": [
+        {
+            "func": "json",
+            "op": "yfinance.check_net_income_growth_task_output",
+            "op_args": {
+                "num_quarters": 2,
+                "num_tickers": 3
+            }
+        }
+    ]
+}

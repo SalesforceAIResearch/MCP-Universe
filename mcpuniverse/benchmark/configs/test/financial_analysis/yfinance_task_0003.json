@@ -1,0 +1,22 @@
+{
+    "category": "general",
+    "question": "Class, for today's exercise, I want you to analyze an investment scenario. Consider an initial investment of $40,000 made on March 15, 2024, allocated equally between Advanced Micro Devices (AMD) and Intel (INTC), with $20,000 invested in each company. Your task is to calculate the total combined value of both holdings and determine the overall percentage return as of the market close on March 14, 2025.",
+    "output_format": {
+        "total value": "[NUMBER]", 
+        "total percentage return": "[NUMBER]"
+    },
+    "evaluators": [
+        {
+            "func": "json",
+            "op": "yfinance.check_portfolio_task_output",
+            "op_args": {
+                "tickers": ["AMD", "INTC"],
+                "start_date": "2024-03-15",
+                "end_date": "2025-03-14",
+                "initial_investment": 40000.0,
+                "split": [0.5, 0.5]
+            },
+            "desc": "Whether the final value and the total percentage return are correct."
+        }
+    ]
+}

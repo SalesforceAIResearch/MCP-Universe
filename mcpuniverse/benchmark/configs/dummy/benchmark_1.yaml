@@ -1,0 +1,27 @@
+kind: llm
+spec:
+  name: llm-1
+  type: openai
+  config:
+    model_name: gpt-4o
+
+---
+kind: agent
+spec:
+  name: ReAct-agent
+  type: react
+  config:
+    llm: llm-1
+    instruction: You are an agent for weather forecasting.
+    summarize_tool_response: true
+    servers:
+      - name: weather
+
+---
+kind: benchmark
+spec:
+  description: Test the agent for weather forecasting
+  agent: ReAct-agent
+  tasks:
+    - dummy/tasks/weather_1.json
+    - dummy/tasks/weather_2.json

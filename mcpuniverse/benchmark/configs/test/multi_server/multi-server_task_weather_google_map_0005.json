@@ -1,0 +1,75 @@
+{
+    "question": "I live in the Waldorf Astoria Washington DC. My colleague lives in the Hilton Cleveland Downtown. We need to find a meeting point for lunch. First, please determine if the temperature is higher than 70 Fahrenheit in both places tomorrow morning. If yes, find a restaurant (type 'restaurant') such that the driving time from the Waldorf Astoria Washington DC to the restaurant is as close as possible to the driving time from the Hilton Cleveland Downtown to the restaurant. Othervise, find a cafe (type 'cafe') such that the driving time from the Waldorf Astoria Washington DC to the cafe is as close as possible to the driving time from the Hilton Cleveland Downtown to the cafe. Please report the Name, Place ID of the selected cafe or restaurant.",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "google-maps"
+        },  
+        {
+            "name": "weather"
+        }
+    ],
+    "output_format": {
+        "stops": [
+            {
+                "name": "NAME",
+                "place id": "Place ID",
+                "place type": "restaurant or cafe"
+            }
+        ]
+    },
+    "evaluators": [
+        {
+            "func": "json"
+        },
+        {
+            "func": "json -> get(stops) -> len",
+            "op": "=",
+            "value": 1
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.stop_include_keys",
+            "op_args": {
+                "keys": ["name", "place id", "place type"]
+            }
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.is_a_validate_stop"
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.compare_time_of_middle_point",
+            "op_args": {
+                "place1": {
+                    "place": "1100 Pennsylvania Ave NW, Washington, DC 20004, United States",
+                    "mode": "driving"
+                },
+                "place2":{
+                    "place": "100 Lakeside Ave E, Cleveland, OH 44114, United States",
+                    "mode": "driving"
+                },
+                "threshold": 0.1
+            }
+        },
+        {
+            "func": "json",
+            "op": "weather.check_place_type_with_multiple_weather",
+            "op_args": {
+                "night_or_not": false,
+                "condition_type": "temperature_higher_than",
+                "condition_value": 70,
+                "options": ["restaurant", "cafe"],
+                "geocode_1": {
+                    "latitude": 38.8941,
+                    "longitude": -77.0276
+                },
+                "geocode_2": {
+                    "latitude": 41.5029,
+                    "longitude": -81.6956
+                }
+            }
+        }
+    ]
+}

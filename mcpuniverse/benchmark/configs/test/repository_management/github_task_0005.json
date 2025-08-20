@@ -1,0 +1,105 @@
+{
+    "category": "general",
+    "question": "I am a first-year PhD student in Computer Science. My supervisor has assigned me a project to build a code large language model fine-tuning framework. He wants the project to be called 'BigCodeLLM-FT-Proj'. To finish this project, I also want to invite my friend to join me as a collaborator, so I need three branches: main, dev-me, and dev-friend. I need to create a README.md file in the main branch with the content \"# BigCodeLLM-FT-Proj\n\nA comprehensive framework for fine-tuning large language models.\". I also need to create a .gitignore file in the main branch with the exact content: \"# Python cache and virtual environments\n__pycache__/\n*.pyc\n*.py.class\nvenv/\n*.env\". In my dev branch, I want to copy the entire content of example_instructions.py from meta-llama's official codellama repository and give it the same name. I also want in my friend's branch to help me copy the entire content of generation.py from meta-llama's official codellama repository and give it the same name. Finally, create a pull request to merge my branch into main with the title \"Add example instructions\" and description \"This PR adds the example instructions for the fine-tuning framework.\"",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "github"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "github.check_repository",
+            "op_args": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}/BigCodeLLM-FT-Proj" 
+        },
+        {
+            "func": "raw",
+            "op": "github.check_branches_exist",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "BigCodeLLM-FT-Proj",
+                "path": "README.md",
+                "branches": ["main", "dev-me", "dev-friend"]
+            }
+        },
+        {
+            "func": "raw",
+            "op": "github.check_file_content",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "BigCodeLLM-FT-Proj",
+                "path": "README.md",
+                "branch": "main"
+            },
+            "value": "# BigCodeLLM-FT-Proj\n\nA comprehensive framework for fine-tuning large language models."
+        },
+        {
+            "func": "raw",
+            "op": "github.check_file_content",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "BigCodeLLM-FT-Proj",
+                "path": "example_instructions.py",
+                "branch": "dev-me"
+            },
+            "value": {
+                "owner": "meta-llama",
+                "repo": "codellama",
+                "path": "example_instructions.py",
+                "branch": "main"
+            }
+        },
+        {
+            "func": "raw",
+            "op": "github.check_file_content",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "BigCodeLLM-FT-Proj",
+                "path": "generation.py",
+                "branch": "dev-friend"
+            },
+            "value": {
+                "owner": "meta-llama",
+                "repo": "codellama",
+                "path": "llama/generation.py",
+                "branch": "main"
+            }
+        },
+        {
+            "func": "raw",
+            "op": "github.check_file_content",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "BigCodeLLM-FT-Proj",
+                "path": ".gitignore",
+                "branch": "main"
+            },
+            "value": "# Python cache and virtual environments\n__pycache__/\n*.pyc\n*.py.class\nvenv/\n*.env"
+        },
+        {
+            "func": "raw",
+            "op": "github.check_pull_request",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "BigCodeLLM-FT-Proj",
+                "base": "main",
+                "head": "dev-me"
+            },
+            "value": {
+                "title": "Add example instructions",
+                "body": "This PR adds the example instructions for the fine-tuning framework."
+            }
+        }
+    ],
+    "cleanups": [
+        {
+        "server": "github",
+        "tool": "create_repository",
+        "cleanup_func": "delete_repository",
+        "cleanup_args": {
+            "repo": "$name"
+            }
+        }
+    ]
+}

@@ -1,0 +1,43 @@
+{
+    "category": "general",
+    "question": "Hi! I need help with a research project. Could you please search for repositories owned by 'huggingface' with 'diffusers' in the name? For each repository you find, I'd like to know how many open issues are labeled with 'bug'. Then, could you help me create a CSV file called diffusers_bug_report.csv and put it in a new repository called huggingface-diffusers-issues under my account? If the repository doesn't exist yet, please create it for me. The CSV should have two columns: repository_name and open_bug_count, with each row showing the full repository name and how many open bug issues it has. Thanks so much for your help!",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "github"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "github.check_repository",
+            "op_args": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}/huggingface-diffusers-issues" 
+        },
+        {
+            "func": "raw",
+            "op": "github.check_file_content_and_issue_count",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "huggingface-diffusers-issues",
+                "path": "diffusers_bug_report.csv",
+                "branch": "main",
+                "search_repo_owner": "huggingface",
+                "search_repo_name": "diffusers",
+                "issue_labels": ["bug"],
+                "issue_state": "open",
+                "file_type": "csv",
+                "csv_columns": ["repository_name", "open_bug_count"]
+            }
+        }
+    ],
+    "cleanups": [
+        {
+        "server": "github",
+        "tool": "create_repository",
+        "cleanup_func": "delete_repository",
+        "cleanup_args": {
+            "repo": "$name"
+            }
+        }
+    ]
+}

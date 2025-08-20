@@ -1,0 +1,103 @@
+{
+    "category": "general",
+    "question": "Hi! I'm a student working on my final project and I really need help setting up my repository properly. Could you please help me create a new project repository named ci-extensive-challenge? I need to initialize it with three branches: main, analysis, and integration. For the main branch, I need an initial README.md file with the content \"# CI Extensive Challenge\n\nA repository to test complex GitHub automation workflows.\" I also need a file named analysis.txt with the content \"# Analysis\n\nThis is an example analysis file.\" in the analysis branch, and a file named integration.txt with the content \"# Integration\n\nThis is an example integration file.\" in the integration branch. I'm really struggling with GitHub automation. Could you help me develop a script that automatically labels new issues by keyword (label \"bug\" if the issue contains \"error\", and \"feature\" if it contains \"add\")? After we set up the automation script, I need to test it by opening three sample issues (titles: \"error test\", \"feature adding requirements\", and \"email feature adding error\"). I'm really grateful for any help you can provide!",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "github"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "github.check_repository",
+            "op_args": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}/ci-extensive-challenge" 
+        },
+        {
+            "func": "raw",
+            "op": "github.check_branches_exist",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "ci-extensive-challenge",
+                "path": "README.md",
+                "branches": ["main", "analysis", "integration"]
+            }
+        },
+        {
+            "func": "raw",
+            "op": "github.check_file_content",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "ci-extensive-challenge",
+                "path": "README.md",
+                "branch": "main"
+            },
+            "value": "# CI Extensive Challenge\n\nA repository to test complex GitHub automation workflows."
+        },
+        {
+            "func": "raw",
+            "op": "github.check_file_content",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "ci-extensive-challenge",
+                "path": "integration.txt",
+                "branch": "integration"
+            },
+            "value": "# Integration\n\nThis is an example integration file."
+        },
+        {
+            "func": "raw",
+            "op": "github.check_file_content",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "ci-extensive-challenge",
+                "path": "analysis.txt",
+                "branch": "analysis"
+            },
+            "value": "# Analysis\n\nThis is an example analysis file."
+        },
+        {
+            "func": "raw",
+            "op": "github.check_number_of_issues",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "ci-extensive-challenge",
+                "title": "error test",
+                "labels": ["bug"]
+            },
+            "value": 1
+        },
+        {
+            "func": "raw",
+            "op": "github.check_number_of_issues",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "ci-extensive-challenge",
+                "title": "feature adding requirements",
+                "labels": ["feature"]
+            },
+            "value": 1
+        },
+        {
+            "func": "raw",
+            "op": "github.check_number_of_issues",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "ci-extensive-challenge",
+                "title": "email feature adding error",
+                "labels": ["feature", "bug"]
+            },
+            "value": 1
+        }
+    ],
+    "cleanups": [
+        {
+        "server": "github",
+        "tool": "create_repository",
+        "cleanup_func": "delete_repository",
+        "cleanup_args": {
+            "repo": "$name"
+            }
+        }
+    ]
+}

@@ -1,0 +1,45 @@
+{
+    "category": "general",
+    "question": "I am a new PhD student. My supervisor asked me to work on the GUI grounding project. He told me that recent models have achieved great performance on the old GUI grounding benchmark, such as ScreenSpot-v2. He wanted me to check some new and popular GUI grounding benchmarks. I discussed this with my friend, and she told me that there are some new GUI grounding benchmarks, such as ScreenSpot-Pro. I want you to help me find this dataset on HuggingFace (https://huggingface.co). I also want to create a repository called `ScreenSpot-Pro-Performance-Dev` to collect the performance of different models on these benchmarks. Please create a repository named `ScreenSpot-Pro-Performance-Dev` and include the model name (the name on the ScreenSpot-Pro official leaderboard), performance, and the GitHub link of the work of the model in the README file. I only need to record three models with performances of 31.1%, 22.9%, and 11.3%. The format is: `- model name on the leaderboard, performance on the leaderboard (xx.x%, only one decimal place), GitHub link of the model`",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "playwright"
+        },
+        {
+            "name": "github"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "github.check_repository",
+            "op_args": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}/ScreenSpot-Pro-Performance-Dev" 
+        },
+        {
+            "func": "raw",
+            "op": "github.file_content_include",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "ScreenSpot-Pro-Performance-Dev",
+                "path": "README.md",
+                "branch": "main"
+            },
+            "value": [
+                "- UGround-V1-7B, 31.1%, https://github.com/OSU-NLP-Group/UGround",
+                "- Aguvis-7B, 22.9%, https://github.com/xlang-ai/aguvis",
+                "- AriaUI (MOE, 3.9B active), 11.3%, https://github.com/AriaUI/Aria-UI"
+            ]
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "github",
+            "tool": "create_repository",
+            "cleanup_func": "delete_repository",
+            "cleanup_args": {
+                "repo": "$name"
+                }
+        }
+    ]
+}

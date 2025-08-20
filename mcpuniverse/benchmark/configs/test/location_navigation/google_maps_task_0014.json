@@ -1,0 +1,125 @@
+{
+    "category": "general",
+    "question": "My spouse and I are newlyweds planning our first adventure together as a married couple, starting at the iconic Sydney Opera House and ending at the breathtaking Holiday Inn Express & Suites Sunshine Coast by IHG in Queensland. As we embark on this new chapter of our lives, we'd love to create unforgettable memories with two special stops along our journey. Could you help us map out a driving route with exactly two intermediate points? We're looking for two wonderful locations (please provide their names and Place IDs) that are closest to the geographic trisection points of the route (based on the route polyline). These spots should be either a cozy cafe perfect for sharing intimate conversations over coffee or a lovely hotel where we can rest and enjoy each other's company. To ensure we have the best experience, both locations must have a minimum user rating of 4.2. After our honeymoon bliss at the beautiful Sunshine Coast in Queensland, we need to travel to the Rockhampton Palms Motor Inn to meet my new in-laws for the first time. Their house is just next to the Rockhampton Palms Motor Inn. Please plan a second driving route for this important journey. This route also needs exactly two special locations (please provide their names and Place IDs) that are closest to the geographic trisection points of the route (based on the route polyline). These places should also be either a charming cafe where we can relax together or a comfortable hotel for quality time. Both locations must maintain a minimum user rating of 4.2. Please make sure all four stops are at different locations to make our newlywed adventure truly unique. This journey marks the beginning of our life together as husband and wife!",
+    "output_format": {
+        "route_1_stops": [
+            {
+                "name": "NAME",
+                "place id": "Place ID"
+            }
+        ],
+        "route_2_stops": [
+            {
+                "name": "NAME",
+                "place id": "Place ID"
+            }
+        ]
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "google-maps"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "json"
+        },
+        {
+            "func": "json -> get(route_1_stops) -> len",
+            "op": "=",
+            "value": 2
+        },
+        {
+            "func": "json -> get(route_2_stops) -> len",
+            "op": "=",
+            "value": 2
+        },
+        {
+            "func": "json -> get(route_1_stops)",
+            "op": "google_maps.stop_include_keys",
+            "op_args": {
+                "keys": ["name", "place id"]
+            }
+        },
+        {
+            "func": "json -> get(route_2_stops)",
+            "op": "google_maps.stop_include_keys",
+            "op_args": {
+                "keys": ["name", "place id"]
+            }
+        },
+        {
+            "func": "json -> get(route_1_stops)",
+            "op": "google_maps.is_a_validate_stop"
+        },
+        {
+            "func": "json -> get(route_2_stops)",
+            "op": "google_maps.is_a_validate_stop"
+        },
+        {
+            "func": "json -> get(route_1_stops)",
+            "op": "google_maps.validate_stop_rating",
+            "op_args": 4.1999
+        },
+        {
+            "func": "json -> get(route_2_stops)",
+            "op": "google_maps.validate_stop_rating",
+            "op_args": 4.1999
+        },
+        {
+            "func": "json -> get(route_1_stops)",
+            "op": "google_maps.validate_stop_type",
+            "op_args": ["cafe", "hotel"]
+        },
+        {
+            "func": "json -> get(route_2_stops)",
+            "op": "google_maps.validate_stop_type",
+            "op_args": ["cafe", "hotel"]
+        },
+        {
+            "func": "json -> get(route_1_stops)",
+            "op": "google_maps.compare_distance_between_stops",
+            "op_args": {
+                "place1": "Bennelong Point, Sydney NSW 2000, Australia",
+                "place2": "And, 42 First Avenue, Fairway Dr, Maroochydore QLD 4558, Australia",
+                "mode": "driving",
+                "threshold": 0.1
+            }
+        },
+        {
+            "func": "json -> get(route_2_stops)",
+            "op": "google_maps.compare_distance_between_stops",
+            "op_args": {
+                "place1": "And, 42 First Avenue, Fairway Dr, Maroochydore QLD 4558, Australia",
+                "place2": "55 George St, Rockhampton City QLD 4700, Australia",
+                "mode": "driving",
+                "threshold": 0.1
+            }
+        },
+        {
+            "func": "json -> get(route_1_stops)",
+            "op": "google_maps.compare_distance_with_and_wo_stops",
+            "op_args": {
+                "place1": "Bennelong Point, Sydney NSW 2000, Australia",
+                "place2": "And, 42 First Avenue, Fairway Dr, Maroochydore QLD 4558, Australia",
+                "mode": "driving",
+                "threshold": 0.1
+            }
+        },
+        {
+            "func": "json -> get(route_2_stops)",
+            "op": "google_maps.compare_distance_with_and_wo_stops",
+            "op_args": {
+                "place1": "And, 42 First Avenue, Fairway Dr, Maroochydore QLD 4558, Australia",
+                "place2": "55 George St, Rockhampton City QLD 4700, Australia",
+                "mode": "driving",
+                "threshold": 0.1
+            }
+        },
+        {
+            "func": "json",
+            "op": "google_maps.are_stops_different"
+        }
+    ]
+}

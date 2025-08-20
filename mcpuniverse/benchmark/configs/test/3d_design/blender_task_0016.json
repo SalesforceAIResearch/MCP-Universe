@@ -1,0 +1,31 @@
+{
+    "category": "blender",
+    "question": "Clear the current Blender scene and remove all PolyHaven materials.\nCreate a default Cube named 'BaseShape' at the origin. Add a 'Subdivision Surface' modifier to 'BaseShape' with Viewport and Render levels set to 3. Add a 'Bevel' modifier after the Subdivision Surface, set its Width to 0.07 meters, Segments to 3, and Limit Method to 'Angle'. Create a UV Sphere named 'Attachment', scale it down uniformly to 0.3. Select 'BaseShape', enter Edit Mode, select the single vertex closest to world coordinates (X=1, Y=1, Z=1). Return to Object Mode. Parent 'Attachment' to 'BaseShape' using the 'Vertex' parenting type (ensure the previously selected vertex is used). After finishing all tasks, create a new file and save it as 'tid_16.blend' in the '{{MCPUniverse_DIR}}/mcpuniverse/evaluator/blender/blend_files'.",
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "blender.check_file",
+            "op_args": {
+                "path": "tid_16.blend",
+                "task_id": "16"
+            }
+        },
+        {
+            "func": "raw",
+            "op": "blender.check_file_content",
+            "op_args": {
+                "path": "tid_16.blend",
+                "task_id": "16"
+            }
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "blender",
+            "cleanup_func": "clear_scene_and_polyhaven_materials",
+            "cleanup_args": {
+                "ctx": "$CleanUp"
+            }
+        }
+    ]
+}

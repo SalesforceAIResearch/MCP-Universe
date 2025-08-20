@@ -1,0 +1,46 @@
+{
+    "category": "general",
+    "question": "I am a new NLP student. My supervisor asked me to improve my coding skills. I am trying to learn from the code of the best demo paper at EMNLP 2024 (https://2024.emnlp.org). Please create a new repository named [EMNLP_best_demo_paper_repo_name]_mark. In my repository, copy the contents of the README.md file from the EMNLP 2024 repository into the README.md of my new repository.",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "playwright"
+        },
+        {
+            "name": "github"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "github.check_repository",
+            "op_args": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}/OpenOmniFramework_mark" 
+        },
+        {
+            "func": "raw",
+            "op": "github.check_file_content",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "OpenOmniFramework_mark",
+                "path": "README.md",
+                "branch": "main"
+            },
+            "value": {
+                "owner": "AI4WA",
+                "repo": "OpenOmniFramework",
+                "path": "README.md",
+                "branch": "main"
+            }
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "github",
+            "tool": "create_repository",
+            "cleanup_func": "delete_repository",
+            "cleanup_args": {
+                "repo": "$name"
+                }
+        }
+    ]
+}

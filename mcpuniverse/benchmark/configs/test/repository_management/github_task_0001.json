@@ -1,0 +1,100 @@
+{
+    "category": "general",
+    "question": "Hey! I need to set up a new repo for this travel planner project I'm working on. Can you help me create a repository called travel-planner-app? I need to start with 3 branches: main, feature-maps, and feature-itinerary. \n\nFor the README.md on main, can you add this content: \"# Travel Planner App\n\nA comprehensive travel planning application that helps users organize their trips, find attractions, and discover local restaurants.\"\n\nI also need an app.js file on the feature-itinerary branch with this basic Express setup: \"// Main application entry point\nconst express = require('express');\nconst app = express();\n\napp.get('/', (req, res) => {\n  res.send('Welcome to Travel Planner!');\n});\n\napp.listen(3000, () => {\n  console.log('Server running on port 3000');\n});\"\n\nOh, and don't forget a .gitignore file on main with: \"# Node dependencies\nnode_modules/\nnpm-debug.log*\nyarn-debug.log*\nyarn-error.log*\n\n# Python cache and virtual environments\n__pycache__/\n*.pyc\n*.py.class\nvenv/\n*.env\"\n\nI found this budget_estimation.py file in the OSU NLP Group's TravelPlanner repo that might be useful. Can you copy it to the feature-maps branch? \n\nLastly, I'd like to create a PR from feature-itinerary to main. Title it \"Add basic Express server setup\" and for the description: \"This PR implements the initial Express server configuration with a basic route handler for the homepage.\" Thanks!",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "github"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "github.check_repository",
+            "op_args": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}/travel-planner-app" 
+        },
+        {
+            "func": "raw",
+            "op": "github.check_branches_exist",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "travel-planner-app",
+                "path": "README.md",
+                "branches": ["main", "feature-maps", "feature-itinerary"]
+            }
+        },
+        {
+            "func": "raw",
+            "op": "github.check_file_content",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "travel-planner-app",
+                "path": "README.md",
+                "branch": "main"
+            },
+            "value": "# Travel Planner App\n\nA comprehensive travel planning application that helps users organize their trips, find attractions, and discover local restaurants."
+        },
+        {
+            "func": "raw",
+            "op": "github.check_file_content",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "travel-planner-app",
+                "path": "app.js",
+                "branch": "feature-itinerary"
+            },
+            "value": "// Main application entry point\nconst express = require('express');\nconst app = express();\n\napp.get('/', (req, res) => {\n  res.send('Welcome to Travel Planner!');\n});\n\napp.listen(3000, () => {\n  console.log('Server running on port 3000');\n});"
+        },
+        {
+            "func": "raw",
+            "op": "github.check_file_content",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "travel-planner-app",
+                "path": ".gitignore",
+                "branch": "main"
+            },
+            "value": "# Node dependencies\nnode_modules/\nnpm-debug.log*\nyarn-debug.log*\nyarn-error.log*\n\n# Python cache and virtual environments\n__pycache__/\n*.pyc\n*.py.class\nvenv/\n*.env"
+        },
+        {
+            "func": "raw",
+            "op": "github.check_file_content",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "travel-planner-app",
+                "path": "utils/budget_estimation.py",
+                "branch": "feature-maps"
+            },
+            "value": {
+                "owner": "OSU-NLP-Group",
+                "repo": "TravelPlanner",
+                "path": "utils/budget_estimation.py",
+                "branch": "main"
+            }
+        },
+        {
+            "func": "raw",
+            "op": "github.check_pull_request",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "travel-planner-app",
+                "base": "main",
+                "head": "feature-itinerary"
+            },
+            "value": {
+                "title": "Add basic Express server setup",
+                "body": "This PR implements the initial Express server configuration with a basic route handler for the homepage."
+            }
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "github",
+            "tool": "create_repository",
+            "cleanup_func": "delete_repository",
+            "cleanup_args": {
+                "repo": "$name"
+                }
+        }
+    ]
+}

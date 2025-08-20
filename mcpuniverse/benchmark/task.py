@@ -1,0 +1,229 @@
+"""
+The class for an agent task
+"""
+# pylint: disable=broad-exception-caught
+import re
+import os
+import copy
+import json
+from typing import List, Dict, Optional, Any
+from pydantic import BaseModel, Field
+from pydantic_core import from_json
+from jinja2 import Environment, meta
+
+from mcpuniverse.common.misc import AutodocABCMeta
+from mcpuniverse.evaluator import EvaluatorConfig, Evaluator, EvaluationResult
+from mcpuniverse.tracer.types import TraceRecord
+from mcpuniverse.common.logger import get_logger
+from mcpuniverse.mcp.manager import MCPManager
+from mcpuniverse.common.context import Context
+from .cleanups import CLEANUP_FUNCTIONS
+
+
+class TaskCleanupConfig(BaseModel):
+    """
+    Task cleanup configuration.
+
+    Example:
+        {
+            "server": "github",
+            "tool": "create_repository",
+            "cleanup_func": "delete_repository",
+            "cleanup_args": {
+                # Where the key (the first `name`) is an argument of "cleanup_tool"
+                # and the value (the second `name`) is an argument of "tool" or "$return" of "tool"
+                # or an extra parameter
+                "name": "$name"
+            }
+        }
+    """
+    server: str = Field(default="", description="The MCP server name")
+    tool: str = Field(default="", description="The tool that will change task status/environment")
+    cleanup_func: str = Field(default="", description="The tool for cleanup")
+    cleanup_args: dict = Field(default_factory=dict, description="The arguments for cleanup")
+
+
+class TaskConfig(BaseModel):
+    """
+    Task configuration.
+    """
+    category: str = Field(default="general", description="Task category")
+    question: str = Field(default="", description="Task question")
+    output_format: dict = Field(default_factory=dict, description="JSON output format")
+    mcp_servers: List[dict] = Field(default_factory=list, description="MCP servers in this task")
+    evaluators: List[EvaluatorConfig] = Field(default_factory=list, description="Evaluator configurations")
+    cleanups: List[TaskCleanupConfig] = Field(default_factory=list, description="Cleanup configurations")
+    use_specified_server: bool = (
+        Field(default=False, description="Whether to let agent only use the servers specified in this config"))
+
+    def set_environ_variables(self, context: Optional[Context] = None):
+        """Set environment variables specified in `question`."""
+        params = dict(os.environ)
+        if context:
+            params.update(context.env)
+        env = Environment(trim_blocks=True, lstrip_blocks=True)
+        undefined_vars = meta.find_undeclared_variables(env.parse(self.question))
+        d = {var: params.get(var, f"{{{{ {var} }}}}") for var in undefined_vars}
+        template = env.from_string(self.question)
+        self.question = template.render(**d)
+
+
+class Task(metaclass=AutodocABCMeta):
+    """
+    The class for an agent task.
+    """
+
+    def __init__(self, config: str | Dict, context: Optional[Context] = None):
+        if isinstance(config, str):
+            if config.endswith(".json"):
+                with open(config, "r", encoding="utf-8") as f:
+                    config = f.read()
+            config = from_json(config)
+        self._config = TaskConfig.model_validate(config)
+        self._context = context if context else Context()
+        self._config.set_environ_variables(context=self._context)
+        self._evaluators = [Evaluator(c, context=self._context) for c in self._config.evaluators]
+        self._logger = get_logger("Task")
+        self._mcp_manager = MCPManager(context=self._context)
+
+    def get_question(self) -> str:
+        """Return question prompt."""
+        return self._config.question
+
+    def get_output_format(self) -> Optional[dict]:
+        """Return the output format."""
+        if self._config.output_format:
+            return self._config.output_format
+        return None
+
+    def get_mcp_servers(self) -> List[Dict]:
+        """
+        Return the MCP servers used in this task.
+        """
+        return self._config.mcp_servers
+
+    def get_evaluators(self):
+        """
+        Return the specified evaluators.
+        """
+        return self._evaluators
+
+    def use_specified_server(self) -> bool:
+        """
+        Check if only allow agents to use the task specified servers.
+        """
+        return self._config.use_specified_server
+
+    async def evaluate(self, x: str | Dict) -> List[EvaluationResult]:
+        """
+        Run evaluations given the agent output.
+
+        Args:
+            x: The agent output.
+        """
+        return [await evaluator.evaluate(x) for evaluator in self._evaluators]
+
+    async def reset(self, trace_records: List[TraceRecord]):
+        """
+        Reset the task status/environment changed by agents via MCP servers.
+
+        Args:
+            trace_records (List[TraceRecord]): The traces generated by agents.
+        """
+        tool_calls = []
+        for trace_record in trace_records:
+            for record in trace_record.records:
+                data = record.data
+                timestamp = record.timestamp
+                if data.get("type", "") == "tool":
+                    call = copy.deepcopy(data)
+                    call["timestamp"] = timestamp
+                    tool_calls.append(call)
+        tool_calls = sorted(tool_calls, key=lambda x: x["timestamp"], reverse=True)
+        for config in self._config.cleanups:
+            if not any(c.get("server") == config.server and
+                       (c.get("tool_name") == config.tool or config.tool == "") for c in tool_calls):
+                self._logger.warning("No tool %s of server %s executed", config.tool, config.server)
+
+        for tool_call in tool_calls:
+            for config in self._config.cleanups:
+                if tool_call.get("server") == config.server and tool_call.get("tool_name") == config.tool:
+                    response = await self._execute_reset(config, tool_call)
+                    if response:
+                        self._logger.info("Task cleanup succeeded: %s", str(response))
+
+        # The case that config.tool == ""
+        for config in self._config.cleanups:
+            if config.tool == "":
+                response = await self._execute_reset(config)
+                if response:
+                    self._logger.info("Task cleanup succeeded: %s", str(response))
+
+    async def _execute_reset(self, cleanup_config: TaskCleanupConfig, tool_call: Optional[Dict] = None) -> Any:
+        """Execute the reset process."""
+        try:
+            self._logger.info("Running task cleanup: server `%s`, tool `%s`, cleanup_func `%s`",
+                              cleanup_config.server, cleanup_config.tool, cleanup_config.cleanup_func)
+            input_args = self._parse_cleanup_args(cleanup_config.cleanup_args, tool_call)
+            if (cleanup_config.server, cleanup_config.cleanup_func) in CLEANUP_FUNCTIONS:
+                func = CLEANUP_FUNCTIONS[(cleanup_config.server, cleanup_config.cleanup_func)]
+                return await func(**input_args)
+            return await self._mcp_manager.execute(
+                server_name=cleanup_config.server,
+                tool_name=cleanup_config.cleanup_func,
+                arguments=input_args,
+                transport="stdio"
+            )
+        except Exception as e:
+            self._logger.error("Failed to run task cleanup: %s", str(e))
+            return None
+
+    def _parse_cleanup_args(self, cleanup_args: Dict | List | str, tool_call: Dict) -> Dict | List | str:
+        """
+        Parse the arguments for the cleanup function. The arguments may contain strings representing operations
+        on the input arguments or returns of `tool_call`.
+
+        Examples:
+            `$name -> get(value)` where `name` is one of the arguments of `tool_call`.
+            `$return -> get(content) -> array(0) -> get(text)` where `return` is the response of `tool_call`.
+        """
+        if isinstance(cleanup_args, Dict):
+            return {key: self._parse_cleanup_args(value, tool_call) for key, value in cleanup_args.items()}
+        if isinstance(cleanup_args, List):
+            return [self._parse_cleanup_args(arg, tool_call) for arg in cleanup_args]
+        if not isinstance(cleanup_args, str):
+            return cleanup_args
+
+        arg = cleanup_args.strip()
+        if "$" not in arg or not tool_call:
+            return cleanup_args
+        if arg[0] != "$":
+            raise ValueError(f"Format error in `cleanup_args`: {arg}")
+        items = [f.strip() for f in arg.split("->") if f.strip()]
+
+        # Get the input argument
+        source = items[0][1:]
+        if source != "return" and source not in tool_call["arguments"]:
+            raise ValueError(f"Invalid input argument in `cleanup_args`: {source}")
+        input_arg = tool_call["response"] if source == "return" else tool_call["arguments"][source]
+
+        # Parse and execute the operations
+        for item in items[1:]:
+            name = item.split("(")[0].strip().lower()
+            match = re.search(r"\((.*?)\)", item)
+            arg = match.group(1).strip() if match else ""
+            match name:
+                case "get":
+                    input_arg = input_arg[arg]
+                case "array":
+                    input_arg = input_arg[int(arg)]
+                case "json":
+                    input_arg = json.loads(input_arg)
+                case _:
+                    raise ValueError(f"Invalid operation in `cleanup_args`: {name}")
+        if isinstance(input_arg, str) and "->" in input_arg:
+            self._logger.warning("The parsed `cleanup_args` contains `->`: %s", input_arg)
+        return input_arg
+
+    async def cleanup(self):
+        """Cleanup resources."""

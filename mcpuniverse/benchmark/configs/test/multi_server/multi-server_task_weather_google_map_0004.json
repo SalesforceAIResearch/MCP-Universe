@@ -1,0 +1,75 @@
+{
+    "question": "I live in the Terranea Resort, and my colleague lives in the Arizona Biltmore, LXR Hotels & Resorts. We need to find a meeting point equidistant between our locations based on driving time. First, please determine if there is a chance of rain both places tomorrow night. If there is a chance of rain for both places, find a single 'restaurant' (type: restaurant) where the estimated driving times from the Terranea Resort and the Arizona Biltmore, LXR Hotels & Resorts are as close as possible. Otherwise, find a single 'park' (type: park) where the estimated driving times from the Terranea Resort and the Arizona Biltmore are as close as possible. Please report the Name, Place ID of the selected park or restaurant.",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "google-maps"
+        },  
+        {
+            "name": "weather"
+        }
+    ],
+    "output_format": {
+        "stops": [
+            {
+                "name": "NAME",
+                "place id": "Place ID",
+                "place type": "restaurant or park"
+            }
+        ]
+    },
+    "evaluators": [
+        {
+            "func": "json"
+        },
+        {
+            "func": "json -> get(stops) -> len",
+            "op": "=",
+            "value": 1
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.stop_include_keys",
+            "op_args": {
+                "keys": ["name", "place id", "place type"]
+            }
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.is_a_validate_stop"
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.compare_time_of_middle_point",
+            "op_args": {
+                "place1": {
+                    "place": "100 Terranea Way, Rancho Palos Verdes, CA 90275, United States",
+                    "mode": "driving"
+                },
+                "place2":{
+                    "place": "2400 E Missouri Ave, Phoenix, AZ 85016, United States",
+                    "mode": "driving"
+                },
+                "threshold": 0.1
+            }
+        },
+        {
+            "func": "json",
+            "op": "weather.check_place_type_with_multiple_weather",
+            "op_args": {
+                "night_or_not": true,
+                "condition_type": "rain_or_not",
+                "condition_value": "",
+                "options": ["restaurant", "park"],
+                "geocode_1": {
+                    "latitude": 33.7418,
+                    "longitude": -118.3986
+                },
+                "geocode_2": {
+                    "latitude": 33.5230,
+                    "longitude": -112.0232
+                }
+            }
+        }
+    ]
+}

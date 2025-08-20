@@ -1,0 +1,23 @@
+{
+    "category": "general",
+    "question": "Hey! I'm a CS student diving into quantitative finance and I'm currently studying derivatives pricing models. I've been reading about the Black-Scholes model and how implied volatility is a key parameter that reflects market sentiment about future price movements. For my quant finance project, I need to analyze options data programmatically. Could you help me find the out-of-the-money call option with the highest implied volatility for a given stock? I'm particularly interested in understanding how volatility surfaces work and how market makers price options. High IV options are crucial for strategies like volatility trading and risk management. Can you help me extract the highest-IV OTM call for TSLA using the nearest expiration date?",
+    "output_format": {
+        "ticker": "[String]",
+        "expiration": "YYYY-MM-DD",
+        "strike": "[Number]",
+        "implied_volatility": "[Number]",
+        "last_price": "[Number]",
+        "bid": "[Number]",
+        "ask": "[Number]",
+        "in_the_money": "[Boolean]"
+    },
+    "evaluators": [
+        {
+            "func": "json",
+            "op": "yfinance.check_highest_iv_otm_call_task_output",
+            "op_args": {
+                "ticker": "TSLA"
+            }
+        }
+    ]
+}

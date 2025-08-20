@@ -1,0 +1,22 @@
+{
+    "category": "general",
+    "question": "Hey, I need you to help me figure out something cool! Say I put $60,000 into stocks on March 15, 2024, and I split it evenly between three companies: Advanced Micro Devices (AMD), Intel (INTC), and NVIDIA (NVDA). That means $20,000 goes into each one. Can you calculate what the total value of all my stocks would be worth and how much money I made or lost as a percentage by the time the market closed on March 14, 2025?",
+    "output_format": {
+        "total value": "[NUMBER]", 
+        "total percentage return": "[NUMBER]"
+    },
+    "evaluators": [
+        {
+            "func": "json",
+            "op": "yfinance.check_portfolio_task_output",
+            "op_args": {
+                "tickers": ["AMD", "INTC", "NVDA"],
+                "start_date": "2024-03-15",
+                "end_date": "2025-03-14",
+                "initial_investment": 60000.0,
+                "split": [0.3333333333333333, 0.3333333333333333, 0.3333333333333333]
+            },
+            "desc": "Whether the final value and the total percentage return are correct."
+        }
+    ]
+}

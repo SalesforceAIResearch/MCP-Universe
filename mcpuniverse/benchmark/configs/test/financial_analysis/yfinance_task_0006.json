@@ -1,0 +1,39 @@
+{
+    "category": "general",
+    "question": "I require a comprehensive financial analysis for investment evaluation purposes. Please obtain the most recent annual income statements for Pfizer Inc. (PFE) and Johnson & Johnson (JNJ). Conduct a comparative analysis of their gross profit margins, calculated as Gross Profit divided by Total Revenue for the respective fiscal year. I need you to determine which pharmaceutical company demonstrates superior profitability efficiency and provide the precise calculated percentage figures for both entities for our portfolio assessment.",
+    "output_format": {
+        "PFE": {
+            "gross profit margin": "[NUMBER]"
+        }, 
+        "JNJ": {
+            "gross profit margin": "[NUMBER]"
+        }, 
+        "company with higher gross profit margin": "[PFE or JNJ]"
+    },
+    "evaluators": [
+        {
+            "func": "json",
+            "op": "yfinance.check_gross_profit_margin",
+            "op_args": {
+                "ticker": "PFE"
+            },
+            "desc": "Whether the gross profit margin for ticker PFE is correct?"
+        },
+        {
+            "func": "json",
+            "op": "yfinance.check_gross_profit_margin",
+            "op_args": {
+                "ticker": "JNJ"
+            },
+            "desc": "Whether the gross profit margin for ticker JNJ is correct?"
+        },
+        {
+            "func": "json",
+            "op": "yfinance.compare_companies_gross_profit_margin",
+            "op_args": {
+                "tickers": ["PFE", "JNJ"]
+            },
+            "desc": "Check which ticker, PFE or JNJ, has a higher gross profit margin."
+        }
+    ]
+}

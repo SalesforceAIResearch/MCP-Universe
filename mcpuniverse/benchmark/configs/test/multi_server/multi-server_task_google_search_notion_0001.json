@@ -1,0 +1,36 @@
+{
+    "category": "general",
+    "question": "Yo! I am absolutely obsessed with the player who went 16th in the 2025 NBA draft! This dude is gonna be special and I need to create a Notion page to track all his stats and performance. I want to start by getting all his career numbers from the regular season before he made it to the league. Can you help me dig up all that data? I need the complete picture of what this beast did! Please create a new page named \"Performance of My Favorite Player\" in the parent page {{ NOTION_ROOT_PAGE }} and include your collection of data in the page. The format should be: `Name: [Given Name] [Family Name], Career Regular Season before NBA: xx GP, xx PPG, xx RPG, xx APG, xx SPG, xx BPG`",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "google-search"
+        },
+        {
+            "name": "fetch"
+        },
+        {
+            "name": "notion"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "notion.compare_page_text",
+            "op_args": {
+                "page_title": "Performance of My Favorite Player"
+            },
+            "value": "Name: Hansen Yang, Career Regular Season before NBA: 96 GP, 15.8 PPG, 10.7 RPG, 3.5 APG, 0.9 SPG, 2.4 BPG"
+        }
+    ],
+    "cleanups": [
+        {   
+            "server": "notion",
+            "tool": "API-post-page",
+            "cleanup_func": "delete_page",
+            "cleanup_args": {
+                "page":"$return -> get(content) -> array(0) -> get(text) -> json -> get(id)"
+            }   
+        }
+    ]
+}

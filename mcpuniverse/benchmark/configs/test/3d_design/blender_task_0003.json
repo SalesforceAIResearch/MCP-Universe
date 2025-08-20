@@ -1,0 +1,31 @@
+{
+    "category": "blender",
+    "question": "Clear the current Blender scene and remove all PolyHaven materials.\nCreate a Text object named 'Title', set its content to 'Blender MCP', its font size (size) to 1.5, its extrusion depth (extrude) to 0.1, its bevel depth (bevel_depth) to 0.02, and its bevel resolution (bevel_resolution) to 2, then position this 'Title' object at the world coordinates (X=0, Y=0, Z=5). Next, create a default Bezier Circle curve named 'PathCircle', ensure it is at the world origin (0,0,0) with default rotation, and set its uniform scale factors (X, Y, Z) to 3.0 to achieve an effective 3-unit radius. Subsequently, create a Cone primitive named 'Tracer', set its uniform scale factors (X, Y, Z) to 0.2, and ensure its location and rotation remain at their default origin/zero values. Finally, add a 'Follow Path' object constraint to the 'Tracer' object, assign 'PathCircle' as the constraint's Target, and within the constraint's settings, enable the 'Follow Curve' option (use_curve_follow) and the 'Fixed Position' option (use_fixed_location), setting the 'Offset Factor' (offset_factor) to 0.25. After finishing all tasks, create a new file and save it as 'tid_3.blend' in the '{{MCPUniverse_DIR}}/mcpuniverse/evaluator/blender/blend_files'.",
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "blender.check_file",
+            "op_args": {
+                "path": "tid_3.blend",
+                "task_id": "3"
+            }
+        },
+        {
+            "func": "raw",
+            "op": "blender.check_file_content",
+            "op_args": {
+                "path": "tid_3.blend",
+                "task_id": "3"
+            }
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "blender",
+            "cleanup_func": "clear_scene_and_polyhaven_materials",
+            "cleanup_args": {
+                "ctx": "$CleanUp"
+            }
+        }
+    ]
+}

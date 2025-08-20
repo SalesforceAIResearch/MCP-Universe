@@ -1,0 +1,89 @@
+{
+    "category": "general",
+    "question": "I live in Kent Ridge Hill Residences, Singapore. My one friend lives in Symphony Suites, Yishun, Singapore. My other friend lives in Park Rosewood Suites, Singapore. We want to find a meeting point among these three locations. Find a single 'cafe' (must be of type 'cafe') such that the estimated driving time from different places to the cafe is as close as possible. Report the Name and Place ID of the cafe.",
+    "output_format": {
+        "stops": [
+            {
+                "name": "NAME",
+                "place id": "Place ID"
+            }
+        ]
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "google-maps"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "json"
+        },
+        {
+            "func": "json -> get(stops) -> len",
+            "op": "=",
+            "value": 1
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.stop_include_keys",
+            "op_args": {
+                "keys": ["name", "place id"]
+            }
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.is_a_validate_stop"
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.validate_stop_type",
+            "op_args": ["cafe"]
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.compare_time_of_middle_point",
+            "op_args": {
+                "place1": {
+                    "place": "50A South Buona Vista Rd, Singapore 118179",
+                    "mode": "driving"
+                },
+                "place2":{
+                    "place": "23 Yishun Cl, Singapore 768015",
+                    "mode": "driving"
+                },
+                "threshold": 0.1
+            }
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.compare_time_of_middle_point",
+            "op_args": {
+                "place1": {
+                    "place": "50A South Buona Vista Rd, Singapore 118179",
+                    "mode": "driving"
+                },
+                "place2":{
+                    "place": "69 Rosewood Dr, Singapore 737874",
+                    "mode": "driving"
+                },
+                "threshold": 0.1
+            }
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.compare_time_of_middle_point",
+            "op_args": {
+                "place1": {
+                    "place": "23 Yishun Cl, Singapore 768015",
+                    "mode": "driving"
+                },
+                "place2":{
+                    "place": "69 Rosewood Dr, Singapore 737874",
+                    "mode": "driving"
+                },
+                "threshold": 0.1
+            }
+        }
+    ]
+}

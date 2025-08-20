@@ -1,0 +1,18 @@
+{
+    "category": "general",
+    "question": "Hi! I'm a financial analyst at Meta and I'm conducting some research on our own stock performance for an internal report. Could you help me analyze META's institutional holdings data? I need to find the most recent 'Date Reported' from Vanguard Group Inc's institutional holdings for META. After obtaining that date, I'll need you to pull META's historical stock prices and calculate the percentage price changes for the 7 calendar days and 30 calendar days following that reporting date. Please provide the 'Date Reported', the 7-day percentage change, and the 30-day percentage change. This analysis will be crucial for our quarterly investor relations preparation and internal performance metrics. Thanks for your assistance!",
+    "output_format": {
+        "Date Reported": "[DDMMYYYY]", 
+        "7-day percentage change": "[NUMBER]", 
+        "30-day percentage change": "[NUMBER]"
+    },
+    "evaluators": [
+        {
+            "func": "json",
+            "op": "yfinance.check_pct_values_with_durations",
+            "op_args": {
+                "ticker": "META"
+            }
+        }
+    ]
+}

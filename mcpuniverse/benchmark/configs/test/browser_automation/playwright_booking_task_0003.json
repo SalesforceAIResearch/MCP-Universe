@@ -1,0 +1,42 @@
+{
+    "category": "general",
+    "question": "Help me find a round-trip flight from Heathrow to Charles de Gaulle Airport in Paris departing 30 days from now (if today is 2025-07-07, then the departure date is 2025-08-06). The trip duration should be 6 days (for example, if the departure date is 2025-07-20, then the return date is 2025-07-26). Use www.booking.com to find the cheapest direct economy flight. For the outbound flight, the departure time must be between 6:00 AM and 12:00 PM, and the arrival time must also be between 6:00 AM and 12:00 PM. For the return flight, the departure time must be between 12:00 PM and 6:00 PM, and the arrival time must be between 12:00 PM and 6:00 PM. I only need the price to decide whether to plan this trip. Remember to close the browser after you finish the task.",
+    "output_format": {
+        "price": "CCCXXX (CCC is the currency and XXX is the price. No blank space between the currency and the price.)"
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "playwright"
+        },
+        {
+            "name": "date"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "json"
+        },
+        {
+            "func": "json",
+            "op": "playwright.check_flight_price",
+            "op_args": {
+                "depart_days_after": 30,
+                "return_days_after": 36,
+                "flight_type": "ROUNDTRIP",
+                "cabin_class": "ECONOMY",
+                "adults": 1,
+                "children": 0,
+                "stops": 0,
+                "sort": "CHEAPEST",
+                "travel_purpose": "leisure",
+                "from_location": "LHR.AIRPORT",
+                "to_location": "CDG.AIRPORT",
+                "from_country": "GB",
+                "to_country": "FR",
+                "from_location_name": "London+Heathrow+Airport",
+                "to_location_name": "Paris+-+Charles+de+Gaulle+Airport"
+            }
+        }
+    ]
+} 

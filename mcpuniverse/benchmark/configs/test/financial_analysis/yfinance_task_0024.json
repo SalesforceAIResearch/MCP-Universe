@@ -1,0 +1,26 @@
+{
+    "category": "general",
+    "question": "Hi there! I'm completely new to investing and trading, but I've been reading about different strategies online. I came across something called a Rate of Change (ROC) Reversal strategy and it sounds really interesting! From what I understand, it involves calculating the rate of change over a specific period (like 12 days) and using overbought and oversold thresholds (like 20% for overbought and -20% for oversold) to identify potential reversal points. I'd love to try this out with Salesforce (CRM) stock using their daily closing prices. Could you please help me figure out if 2024-05-30 would have been a buy signal, a sell signal or a hold signal according to this strategy? I'm still learning, so any guidance would be amazing! Thank you so much!",
+    "output_format": {
+        "check_buy_sell_hold_signal": "buy/sell/hold"
+    },
+    "evaluators": [
+        {
+            "func": "json",
+            "op": "yfinance.check_buy_sell_hold_signal",
+            "op_args": {
+                "ticker": "CRM",
+                "date": "2024-05-30",
+                "quant_strategy": 
+                {
+                    "name": "roc_reversal",
+                    "params": {
+                        "roc_period": 12,
+                        "overbought_threshold": 20,
+                        "oversold_threshold": -20
+                    }
+                }
+            }
+        }
+    ]
+}

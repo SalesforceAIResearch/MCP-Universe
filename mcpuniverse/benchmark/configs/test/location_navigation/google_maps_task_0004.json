@@ -1,0 +1,62 @@
+{
+    "category": "general",
+    "question": "Hi! My partner and I are planning a special pre-wedding road trip from 'Los Angeles' to 'San Francisco' as one last adventure before we tie the knot! We want to make this journey memorable before we start our married life together. Our plan is to drive through exactly 3 interesting cities between the starting and ending points to really enjoy this time together. Could you please map out exactly 2 distinct driving route options for this pre-wedding celebration? Oh, we must visit friends in 'Coalinga' during our trip to share our exciting news with them! We're so excited about this adventure before our big day!",
+    "output_format": {
+        "starting_city": "[Starting City]",
+        "destination_city": "[Destination City]",
+        "routes": [
+            {
+                "route_id": "1",
+                "route_name": "NAME OF THE ROUTE",
+                "cities_visited": [
+                    "[City 1]",
+                    "[City 2]",
+                    "[City 3]",
+                    "... (exclude the starting and destination cities in this list)"
+                ]
+            }
+        ]
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "google-maps"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "json"
+        },
+        {
+            "func": "json -> get(routes) -> len",
+            "op": "=",
+            "value": 2
+        },
+        {
+            "func": "json",
+            "op": "google_maps.city_name_match",
+            "op_args": {
+                "key": "starting_city",
+                "values": ["Los Angeles", "LA", "Los Angeles City", "LA City"]
+            }
+        },
+        {
+            "func": "json",
+            "op": "google_maps.city_name_match",
+            "op_args": {
+                "key": "destination_city",
+                "values": ["San Francisco", "SF", "San Francisco City", "SF City"]
+            }
+        },
+        {
+            "func": "json -> get(routes) -> foreach -> get(cities_visited) -> len",
+            "op": "=",
+            "value": 3
+        },
+        {
+            "func": "json",
+            "op": "google_maps.place_in_cities_visited_of_routes",
+            "op_args": ["Coalinga", "Coalinga City"]
+        }
+    ]
+}

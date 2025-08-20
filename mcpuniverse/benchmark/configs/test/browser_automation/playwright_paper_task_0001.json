@@ -1,0 +1,33 @@
+{
+    "category": "general",
+    "question": "I am a first-year PhD student focusing on Large Multimodal Models. My supervisor asked me to survey recent papers on this topic. Since ICLR 2025 is a top conference, I want to collect all main-track papers accepted there that include 'Large Multimodal Models' in their titles. Please ignore other tracks such as the blog track. Find these papers on the official ICLR website (https://iclr.cc/), then obtain their arXiv IDs from https://arxiv.org/. Remember to close the browser when you finish the task.",
+    "output_format": {
+        "Name_of_the_paper_1": "2xxx.xxxxx",
+        "Name_of_the_paper_2": "2xxx.xxxxx",
+        "Name_of_the_paper_3": "2xxx.xxxxx"
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "playwright"
+        },
+        {
+            "name": "date"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "json",
+            "op": "playwright.is_dict_equal",
+            "value": {
+                "VisualAgentBench: Towards Large Multimodal Models as Visual Foundation Agents": "2408.06327",
+                "LLaVA-Interleave: Tackling Multi-image, Video, and 3D in Large Multimodal Models": "2407.07895",
+                "KiVA: Kid-inspired Visual Analogies for Testing Large Multimodal Models": "2407.17773",
+                "LOKI: A Comprehensive Synthetic Data Detection Benchmark using Large Multimodal Models": "2410.09732",
+                "See What You Are Told: Visual Attention Sink in Large Multimodal Models": "2503.03321",
+                "LLaVA-Mini: Efficient Image and Video Large Multimodal Models with One Vision Token": "2501.03895",
+                "TIGeR: Unifying Text-to-Image Generation and Retrieval with Large Multimodal Models": "2406.05814"
+            }
+        }
+    ]
+}

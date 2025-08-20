@@ -1,0 +1,41 @@
+{
+    "category": "general",
+    "question": "I am a big fan of LongVideoBench. Can you help me find the arXiv ID of this paper on arXiv (https://arxiv.org/)? I also want to get the data for this benchmark on HuggingFace (https://huggingface.co/). In addition, I would like to know the official repository of this benchmark. Please create a repository named `LVB-Dev` and include the arXiv ID, HuggingFace link, and the GitHub link of the benchmark in the README file. The format is: `- arXiv ID, HuggingFace link, GitHub link`",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "playwright"
+        },
+        {
+            "name": "github"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "github.check_repository",
+            "op_args": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}/LVB-Dev" 
+        },
+        {
+            "func": "raw",
+            "op": "github.check_file_content",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "LVB-Dev",
+                "path": "README.md",
+                "branch": "main"
+            },
+            "value": "- 2407.15754, https://huggingface.co/datasets/LongVideoBench/LongVideoBench, https://github.com/LongVideoBench/LongVideoBench"
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "github",
+            "tool": "create_repository",
+            "cleanup_func": "delete_repository",
+            "cleanup_args": {
+                "repo": "$name"
+                }
+        }
+    ]
+}

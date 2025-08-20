@@ -1,0 +1,85 @@
+{
+    "category": "general",
+    "question": "Hey there! Me and my college buddies are planning this epic road trip from 'Osaka' to 'Tokyo' for spring break and we need some serious help mapping this out! We're thinking of hitting up exactly 2 cool cities along the way to make the most of our time. Could you hook us up with 2 different route options for this adventure? For each route, we'd love to find 2 solid rest stops in those cities where we can stretch our legs (so that's 2 rest stops per route total). Oh, and we absolutely have to stop in 'Toyama'. One of my friends has family there and we promised we'd visit. Can't wait to see what you come up with for our awesome trip!",
+    "output_format": {
+        "starting_city": "[Starting City]",
+        "destination_city": "[Destination City]",
+        "routes": [
+            {
+                "route_id": "1",
+                "route_name": "NAME OF THE ROUTE",
+                "cities_visited": [
+                    "[City 1]",
+                    "[City 2]",
+                    "[City 3]",
+                    "... (exclude the starting and destination cities in this list)"
+                ],
+                "rest_stops": [
+                    {
+                        "city": "[Specific City]",
+                        "rest_stop_id": "1",
+                        "name": "[Rest Stop Name]",
+                        "address": "[Rest Stop Address]",
+                        "amenities": [
+                            "[Amenity 1]",
+                            "[Amenity 2]",
+                            "..."
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "google-maps"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "json"
+        },
+        {
+            "func": "json -> get(routes) -> len",
+            "op": "=",
+            "value": 2
+        },
+        {
+            "func": "json",
+            "op": "google_maps.city_name_match",
+            "op_args": {
+                "key": "starting_city",
+                "values": ["Osaka", "OSA", "Osaka City"]
+            }
+        },
+        {
+            "func": "json",
+            "op": "google_maps.city_name_match",
+            "op_args": {
+                "key": "destination_city",
+                "values": ["Tokyo", "TYO", "Tokyo City"]
+            }
+        },
+        {
+            "func": "json -> get(routes) -> foreach -> get(cities_visited) -> len",
+            "op": "=",
+            "value": 2
+        },
+        {
+            "func": "json -> get(routes) -> foreach -> get(rest_stops) -> len",
+            "op": "=",
+            "value": 2
+        },
+        {
+            "func": "json",
+            "op": "google_maps.places_in_cities_visited",
+            "op_args": "rest_stops"
+        },
+        {
+            "func": "json",
+            "op": "google_maps.place_in_cities_visited_of_routes",
+            "op_args": ["Toyama", "Toyama City", "TOY"]
+        }
+    ]
+}

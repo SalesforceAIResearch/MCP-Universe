@@ -1,0 +1,25 @@
+{
+    "category": "general",
+    "question": "As a professor conducting research in the field of computer-use agents, I have recently become aware of a new GUI benchmark from ServiceNow, called UI-Vision. For my academic research, I need to determine how many software applications this benchmark focuses on. Please help me locate this information on https://huggingface.co/. Remember to close the browser when you finish the task.",
+    "output_format": {
+        "answer": "[number]"
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "playwright"
+        },
+        {
+            "name": "date"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "json",
+            "op": "playwright.is_dict_equal",
+            "value": {
+                "answer": "83"
+            }  
+        }
+    ]
+} 

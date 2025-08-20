@@ -1,3 +1,5 @@
 pytest
 pylint
 pre-commit
+pytest_postgresql
+pytest_asyncio

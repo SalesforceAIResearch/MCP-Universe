@@ -1,0 +1,20 @@
+{
+    "category": "general",
+    "question": "Hi there! I'm a father of two young kids and I've been working hard to save up some money for a family car. I've managed to put aside about $20000 from my salary, and I'm hoping to grow this amount through some smart investing so I can finally afford that reliable vehicle my family needs. I've been reading about different trading strategies in my spare time after the kids go to bed. I've learned about Mean Reversion strategies, which work on the principle that stock prices tend to return to their historical average over time. One popular method uses Bollinger Bands with a simple moving average (like 20 days with 2 standard deviations) to create upper and lower bands based on volatility. I've also been studying Moving Average Crossover strategies, which compare short-term (10 days) and long-term (50 days) simple moving averages. I want to combine these two strategies with Apple (AAPL) stock using daily closing prices, since Apple seems like a solid company. My trading rule is: if both strategies give buy signals or one buy one hold, I'll buy; if both give sell signals or one sell one hold, I'll sell; otherwise, I'll hold. Can you help me figure out which would be the optimal day to buy from these dates: 2022-04-24, 2022-04-25, 2022-04-26, or 2022-04-27? I'm thinking of doing a quick day trade, buy at close on one day and sell at close next day (like buy on 2022-05-03 close and sell on 2022-05-04 close) to see how this strategy might help me get closer to my car fund goal. What kind of profit could I potentially make? Any help would be greatly appreciated. Every dollar counts when you're trying to provide for your family!",
+    "output_format": {
+        "date": "2022-04-24/2022-04-25/2022-04-26/2022-04-27",
+        "earn": "[NUMBER] (do not include the dollar sign, only the number)"
+    },
+    "evaluators": [
+        {
+            "func": "json",
+            "op": "yfinance.check_quant_investment_task_output",
+            "op_args": {
+                "ticker": "AAPL",
+                "start_date": "2022-04-26",
+                "end_date": "2022-04-27",
+                "initial_investment": 20000.0
+            }
+        }
+    ]
+}

@@ -1,0 +1,143 @@
+{
+    "category": "general",
+    "question": "I'm working on a comprehensive evaluation framework for video-based language models and need your help setting up the infrastructure. Could you create a new project repository named video-llm-evaluation-harness? I need to organize this research project with proper branching strategy, so please initialize the repository with 5 branches: dataset-integration, evaluation-framework, training-module, documentation, and main. \n\nFor the main branch, I'd like to start with a README.md file containing: \"# Video LLM Evaluation Harness\n\nA comprehensive framework for evaluating video-based large language models, including dataset integration, evaluation metrics, and training modules.\"\n\nI've identified some key components from existing research that would be valuable for our framework. Could you copy longvideobench_dataset.py from longvideobench's LongVideoBench repository to the dataset-integration branch? I also need lmm_judge.py from VideoAutoArena's VideoAutoArena repository on the evaluation-framework branch, and videollama2_trainer.py from DAMO-NLP-SG's VideoLLaMA 2 repository on the training-module branch.\n\nAdditionally, I need two custom utility files: metrics_calculator.py in the evaluation-framework branch with content \"# Metrics calculation utilities for video LLM evaluation\" and data_preprocessor.py in the dataset-integration branch with content \"# Data preprocessing utilities for video datasets\".\n\nTo keep our research environment clean, please add a .gitignore file in the main branch with: \"# Python cache and virtual environments\n__pycache__/\n*.pyc\n*.py.class\nvenv/\n*.env\n\n# Evaluation artifacts\nresults/\nlogs/\n\n# Dataset caches\n.cache/\n.huggingface/\"\n\nOnce everything is set up, I'd like to create a pull request to merge evaluation-framework into main with the title \"Add evaluation framework with LMM judge\" and description \"This PR implements the core evaluation framework with the LMM judge module for assessing video LLM performance.\" This will help me review the evaluation components before integrating them into the main codebase.",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "github"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "github.check_repository",
+            "op_args": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}/video-llm-evaluation-harness" 
+        },
+        {
+            "func": "raw",
+            "op": "github.check_branches_exist",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "video-llm-evaluation-harness",
+                "path": "README.md",
+                "branches": ["main", "dataset-integration", "evaluation-framework", "training-module", "documentation"]
+            }
+        },
+        {
+            "func": "raw",
+            "op": "github.check_file_content",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "video-llm-evaluation-harness",
+                "path": "README.md",
+                "branch": "main"
+            },
+            "value": "# Video LLM Evaluation Harness\n\nA comprehensive framework for evaluating video-based large language models, including dataset integration, evaluation metrics, and training modules."
+        },
+        {
+            "func": "raw",
+            "op": "github.check_file_content",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "video-llm-evaluation-harness",
+                "path": "metrics_calculator.py",
+                "branch": "evaluation-framework"
+            },
+            "value": "# Metrics calculation utilities for video LLM evaluation"
+        },
+        {
+            "func": "raw",
+            "op": "github.check_file_content",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "video-llm-evaluation-harness",
+                "path": "data_preprocessor.py",
+                "branch": "dataset-integration"
+            },
+            "value": "# Data preprocessing utilities for video datasets"
+        },
+        {
+            "func": "raw",
+            "op": "github.check_file_content",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "video-llm-evaluation-harness",
+                "path": ".gitignore",
+                "branch": "main"
+            },
+            "value": "# Python cache and virtual environments\n__pycache__/\n*.pyc\n*.py.class\nvenv/\n*.env\n\n# Evaluation artifacts\nresults/\nlogs/\n\n# Dataset caches\n.cache/\n.huggingface/"
+        },
+        {
+            "func": "raw",
+            "op": "github.check_file_content",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "video-llm-evaluation-harness",
+                "path": "lmm_judge.py",
+                "branch": "evaluation-framework"
+            },
+            "value": {
+                "owner": "VideoAutoArena",
+                "repo": "VideoAutoArena",
+                "path": "src/lmm_judge.py",
+                "branch": "main"
+            }
+        },
+        {
+            "func": "raw",
+            "op": "github.check_file_content",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "video-llm-evaluation-harness",
+                "path": "longvideobench_dataset.py",
+                "branch": "dataset-integration"
+            },
+            "value": {
+                "owner": "longvideobench",
+                "repo": "LongVideoBench",
+                "path": "longvideobench/longvideobench_dataset.py",
+                "branch": "main"
+            }
+        },
+        {
+            "func": "raw",
+            "op": "github.check_file_content",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "video-llm-evaluation-harness",
+                "path": "videollama2_trainer.py",
+                "branch": "training-module"
+            },
+            "value": {
+                "owner": "DAMO-NLP-SG",
+                "repo": "VideoLLaMA2",
+                "path": "videollama2/videollama2_trainer.py",
+                "branch": "main"
+            }
+        },
+        {
+            "func": "raw",
+            "op": "github.check_pull_request",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "video-llm-evaluation-harness",
+                "base": "main",
+                "head": "evaluation-framework"
+            },
+            "value": {
+                "title": "Add evaluation framework with LMM judge",
+                "body": "This PR implements the core evaluation framework with the LMM judge module for assessing video LLM performance."
+            }
+        }
+    ],
+    "cleanups": [
+        {
+        "server": "github",
+        "tool": "create_repository",
+        "cleanup_func": "delete_repository",
+        "cleanup_args": {
+            "repo": "$name"
+            }
+        }
+    ]
+}

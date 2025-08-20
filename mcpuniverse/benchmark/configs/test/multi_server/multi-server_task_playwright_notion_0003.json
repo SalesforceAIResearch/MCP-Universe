@@ -1,0 +1,33 @@
+{
+    "category": "general",
+    "question": "I am an undergraduate student learning Python. I have some questions about 'Old string formatting'. Please create a Notion page named `Python-Tutorial` in the parent page {{ NOTION_ROOT_PAGE }} and include the Python example from https://docs.python.org/3 on this topic on the page. The format should be: `Old string formatting\n```python\n...\n```",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "playwright"
+        },
+        {
+            "name": "notion"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "notion.compare_page_text",
+            "op_args": {
+                "page_title": "Python-Tutorial"
+            },
+            "value": "Old string formatting\n```python\nimport math\nprint('The value of pi is approximately %5.3f.' % math.pi)\n```"
+        }
+    ],
+    "cleanups": [
+        {   
+            "server": "notion",
+            "tool": "API-post-page",
+            "cleanup_func": "delete_page",
+            "cleanup_args": {
+                "page":"$return -> get(content) -> array(0) -> get(text) -> json -> get(id)"
+            }   
+        }
+    ]
+}

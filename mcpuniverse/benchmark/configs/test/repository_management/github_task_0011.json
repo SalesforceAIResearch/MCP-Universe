@@ -1,0 +1,54 @@
+{
+    "category": "general",
+    "question": "Hi there! I'm a master's student working on AI research and I've come across three interesting repositories: QwenLM's Qwen2.5-VL, xlang-ai's OSWorld, and likaixin2000's ScreenSpot-Pro-GUI-Grounding. For my research project, I need to work with the GUI Computer Use evaluation repository that contains ariaui.py code. Could you help me fork that specific repository while keeping the same name as the original? I also need to investigate whether the ariaui.py implementation uses vllm. If it doesn't, I'd really appreciate it if you could copy the aria_ui_vllm.py file from the AriaUI's Aria-UI repository into my forked version, placing it in the same directory as ariaui.py. Oh, and one small detail: Could you add \"# copy from Aria-UI\" as the first line in the copied file? This would be incredibly helpful for my thesis work on GUI automation systems!",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "github"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "github.check_repository",
+            "op_args": "repo:{{GITHUB_PERSONAL_ACCOUNT_NAME}}/ScreenSpot-Pro-GUI-Grounding fork:true" 
+        },
+        {
+            "func": "raw",
+            "op": "github.check_file_content",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "ScreenSpot-Pro-GUI-Grounding",
+                "path": "models/ariaui.py",
+                "branch": "main"
+            },
+            "value": {
+                "owner": "likaixin2000",
+                "repo": "ScreenSpot-Pro-GUI-Grounding",
+                "path": "models/ariaui.py",
+                "branch": "main"
+            }
+        },
+        {
+            "func": "raw",
+            "op": "github.check_file_not_exist",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "ScreenSpot-Pro-GUI-Grounding",
+                "path": "models/aria_ui_vllm.py",
+                "branch": "main"
+            },
+            "value": ""
+        }
+    ],
+    "cleanups": [
+        {
+        "server": "github",
+        "tool": "fork_repository",
+        "cleanup_func": "delete_repository",
+        "cleanup_args": {
+            "repo": "$repo"
+            }
+        }
+    ]
+}

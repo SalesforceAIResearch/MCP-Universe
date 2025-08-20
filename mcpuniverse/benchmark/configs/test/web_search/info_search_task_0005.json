@@ -1,0 +1,26 @@
+{
+    "category": "general",
+    "question": "I'm looking for a city based on the clues below: - the city's football team scores 1 goal in a match in 2025, but the opponent scores 3 goals. - has an athlete who ran 10.62 in the Paris Summer Olympics' 100m dash. You need to find the name of the city.",
+    "output_format": {
+        "answer": "[Your answer]"
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "google-search"
+        },
+        {
+            "name": "fetch"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "google_search.llm_as_a_judge",
+            "op_args": {
+                "question": "I'm looking for a city based on the clues below: - the city's football team scores 1 goal in a match in 2025, but the opponent scores 3 goals. - has an athlete who ran 10.62 in the Paris Summer Olympics' 100m dash. You need to find the name of the city.",
+                "correct_answer": "Hong Kong"
+            }
+        }
+    ]
+}

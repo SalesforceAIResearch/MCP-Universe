@@ -1,0 +1,50 @@
+kind: llm
+spec:
+  name: llm-1
+  type: openai
+  config:
+    model_name: gpt-4o
+
+---
+kind: agent
+spec:
+  name: agent-1
+  type: basic
+  config:
+    llm: llm-1
+
+---
+kind: agent
+spec:
+  name: agent-2
+  type: basic
+  config:
+    llm: llm-1
+
+---
+kind: agent
+spec:
+  name: agent-3
+  type: basic
+  config:
+    llm: llm-1
+
+---
+kind: workflow
+spec:
+  name: workflow-1
+  type: parallelization
+  config:
+    agents:
+      - agent-1
+      - agent-2
+    aggregator: agent-3
+
+---
+kind: agent
+spec:
+  name: main
+  type: workflow
+  config:
+    workflow: workflow-1
+    instruction: Main agent

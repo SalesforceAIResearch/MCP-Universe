@@ -1,0 +1,25 @@
+{
+    "category": "general",
+    "question": "Hi there! I'm completely new to investing and trading, but I've been reading about different strategies online. I came across something called a Moving Average Crossover strategy and it sounds really interesting! From what I understand, it involves comparing a short-term moving average (10 days) with a longer-term one (50 days), and you use simple moving averages for this. I'd love to try this out with Salesforce (CRM) stock using their daily closing prices. Could you please help me figure out if 2024-07-26 would have been a buy signal, a sell signal or a hold signal according to this strategy? I'm still learning, so any guidance would be amazing! Thank you so much!",
+    "output_format": {
+        "check_buy_sell_hold_signal": "buy/sell/hold"
+    },
+    "evaluators": [
+        {
+            "func": "json",
+            "op": "yfinance.check_buy_sell_hold_signal",
+            "op_args": {
+                "ticker": "CRM",
+                "date": "2024-07-26",
+                "quant_strategy": 
+                {
+                    "name": "moving_average_crossover",
+                    "params": {
+                        "short_window": 10,
+                        "long_window": 50
+                    }
+                }
+            }
+        }
+    ]
+}

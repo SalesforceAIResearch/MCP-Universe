@@ -1,0 +1,32 @@
+{
+    "category": "general",
+    "question": "Hey! I'm a finance student working on a trading strategy assignment. I need to analyze the combination of two quantitative strategies: Mean Reversion using Bollinger Bands (20-day moving average, 2 standard deviations) and Rate of Change (ROC) Reversal (12-day period, +20% overbought, -20% oversold thresholds). My combined trading rule is: buy if both strategies signal buy OR one signals buy and the other holds; sell if both signal sell OR one signals sell and the other holds; otherwise hold. Could you help me determine what trading signal this combined strategy would generate for Salesforce (CRM) stock on 2020-12-02 using daily closing prices? This analysis is for my academic coursework. Thanks!",
+    "output_format": {
+        "check_buy_sell_hold_signal": "buy/sell/hold"
+    },
+    "evaluators": [
+        {
+            "func": "json",
+            "op": "yfinance.check_buy_sell_hold_signal",
+            "op_args": {
+                "ticker": "CRM",
+                "date": "2020-12-02",
+                "quant_strategy": 
+                {
+                    "name": "mean_reversion_bollinger_plus_roc_reversal",
+                    "params": {
+                        "roc_reversal_params": {
+                            "roc_period": 12,
+                            "overbought_threshold": 20,
+                            "oversold_threshold": -20
+                        },
+                        "mean_reversion_bollinger_params": {
+                            "window": 20,
+                            "std_dev": 2
+                        }
+                    }
+                }
+            }
+        }
+    ]
+}

@@ -1,0 +1,21 @@
+[MASTER]
+init-hook='import sys; sys.path.append(".")'
+ignore-patterns=test_.*?py,__.*?py,conftest.py,tid_.*?_check.py,setup.py
+ignore=Dockerfile,README.md,requirements.txt,CODEOWNERS
+ignore-paths=mcpuniverse/app/db
+
+[FORMAT]
+# Maximum number of characters on a single line.
+max-line-length=120
+
+[MESSAGES CONTROL]
+disable=no-member,import-error,no-self-use,useless-option-value,inconsistent-return-statements,too-many-positional-arguments
+
+[DESIGN]
+max-statements=75
+max-locals=35
+max-branches=25
+max-args=20
+max-nested-blocks=6
+max-attributes=15
+min-similarity-lines=200

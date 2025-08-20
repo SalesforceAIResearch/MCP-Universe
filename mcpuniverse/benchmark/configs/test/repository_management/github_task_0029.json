@@ -1,0 +1,130 @@
+{
+    "category": "general",
+    "question": "Hello! I'm Alex, a software engineer working on an exciting new project. I need your assistance in creating a repository called `ModelHub-X` for collaboration with my teammate Sam. Our workflow will be structured around a `main` branch for production-ready code and dedicated development branches: `dev-alex` and `dev-sam`. Please initialize the `README.md` file on the main branch with this roadmap: `# ModelHub Roadmap\n## Create a simple framework to run any LLMs.\n## Introduce new Method to accelerate the inference of LLMs.\n## Support the inference of LMMs.` For the initial setup, I'll be responsible for integrating the `setup.py` file from Hugging Face's `accelerate` repository into my development branch, while Sam will handle copying the `setup.py` from Meta's `llama` repository into their branch, given their expertise with large language models. Following this setup, I'd like to create a pull request from `dev-alex` to `main` with the title \"Add initial framework setup\" and description \"This PR adds the basic framework structure for ModelHub as part of our research project.\" We also need to implement an automation system that monitors newly created GitHub issues and responds with appropriate comments: issues labeled `bug` should receive the comment \"Thank you. We will fix it.\", issues labeled `feature` should get \"Thank you, we will consider to include this feature.\", and other issues should get \"Hello, world!\" To validate this functionality, please create three test issues with the titles \"Bug report\" (with label `bug`), \"Feature request\" (with label `feature`), and \"Documentation update\" (with label `documentation`), each with the corresponding labels where applicable.",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "github"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "github.check_repository",
+            "op_args": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}/ModelHub-X" 
+        },
+        {
+            "func": "raw",
+            "op": "github.check_branches_exist",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "ModelHub-X",
+                "path": "README.md",
+                "branches": ["main", "dev-alex", "dev-sam"]
+            }
+        },
+        {
+            "func": "raw",
+            "op": "github.check_file_content",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "ModelHub-X",
+                "path": "README.md",
+                "branch": "main"
+            },
+            "value": "# ModelHub Roadmap\n## Create a simple framework to run any LLMs.\n## Introduce new Method to accelerate the inference of LLMs.\n## Support the inference of LMMs."
+        },
+        {
+            "func": "raw",
+            "op": "github.check_file_content",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "ModelHub-X",
+                "path": "setup.py",
+                "branch": "dev-alex"
+            },
+            "value": {
+                "owner": "huggingface",
+                "repo": "accelerate",
+                "path": "setup.py",
+                "branch": "main"
+            }
+        },
+        {
+            "func": "raw",
+            "op": "github.check_file_content",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "ModelHub-X",
+                "path": "setup.py",
+                "branch": "dev-sam"
+            },
+            "value": {
+                "owner": "meta-llama",
+                "repo": "llama",
+                "path": "setup.py",
+                "branch": "main"
+            }
+        },
+        {
+            "func": "raw",
+            "op": "github.check_pull_request",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "ModelHub-X",
+                "base": "main",
+                "head": "dev-alex"
+            },
+            "value": {
+                "title": "Add initial framework setup",
+                "body": "This PR adds the basic framework structure for ModelHub as part of our research project."
+            }
+        },
+        {
+            "func": "raw",
+            "op": "github.check_number_of_issues",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "ModelHub-X",
+                "labels": ["feature"],
+                "title": "Feature request",
+                "comment": "Thank you, we will consider to include this feature."
+            },
+            "value": 1
+        },
+        {
+            "func": "raw",
+            "op": "github.check_number_of_issues",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "ModelHub-X",
+                "labels": ["documentation"],
+                "title": "Documentation update",
+                "comment": "Hello, world!"
+            },
+            "value": 1
+        },
+        {
+            "func": "raw",
+            "op": "github.check_number_of_issues",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "ModelHub-X",
+                "labels": ["bug"],
+                "title": "Bug report",
+                "comment": "Thank you. We will fix it."
+            },
+            "value": 1
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "github",
+            "tool": "create_repository",
+            "cleanup_func": "delete_repository",
+            "cleanup_args": {
+                "repo": "$name"
+                }
+        }
+    ]
+}

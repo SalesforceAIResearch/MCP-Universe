@@ -1,0 +1,109 @@
+{
+    "category": "general",
+    "question": "My dear wife and I are planning what might be our last grand adventure together, a road trip from 'Seattle' to 'Portland'. At our age, we want to make sure we see everything we can while we still have the energy for such journeys. We would like to visit 6 wonderful cities along the way to make the most of our time together. Could you please help us plan 3 different driving routes for this special trip? For each route, we would appreciate finding 2 comfortable rest stops in those intermediate cities where we can take our time and rest our old bones (a total of 2 rest stops per route). We also love beautiful views and would be delighted if you could find 3 scenic viewpoints in those intermediate cities for each route, along with their elevations (a total of 3 scenic viewpoints per route). Please note that we must avoid 'Tacoma' completely during our travels as we have some unpleasant memories from that place. We are very much looking forward to the options for this meaningful journey together!",
+    "output_format": {
+        "starting_city": "[Starting City]",
+        "destination_city": "[Destination City]",
+        "routes": [
+            {
+                "route_id": "1",
+                "route_name": "NAME OF THE ROUTE",
+                "cities_visited": [
+                    "[City 1]",
+                    "[City 2]",
+                    "[City 3]",
+                    "... (exclude the starting and destination cities in this list)"
+                ],
+                "rest_stops": [
+                    {
+                        "city": "[Specific City]",
+                        "rest_stop_id": "1",
+                        "name": "[Rest Stop Name]",
+                        "address": "[Rest Stop Address]",
+                        "amenities": [
+                            "[Amenity 1]",
+                            "[Amenity 2]",
+                            "..."
+                        ]
+                    }
+                ],
+                "scenic_viewpoints": [
+                    {
+                        "city": "[Specific City]",
+                        "viewpoint_id": "1",
+                        "name": "[Viewpoint Name]",
+                        "address": "[Viewpoint Address]",
+                        "elevation_meters": "[Elevation in meters]",
+                        "description": "[Brief Description]"
+                    }
+                ]
+            }
+        ]
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "google-maps"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "json"
+        },
+        {
+            "func": "json -> get(routes) -> len",
+            "op": "=",
+            "value": 3
+        },
+        {
+            "func": "json",
+            "op": "google_maps.city_name_match",
+            "op_args": {
+                "key": "starting_city",
+                "values": ["Seattle", "Seattle City", "SEA"]
+            }
+        },
+        {
+            "func": "json",
+            "op": "google_maps.city_name_match",
+            "op_args": {
+                "key": "destination_city",
+                "values": ["Portland", "Portland City", "POR"]
+            }
+        },
+        {
+            "func": "json -> get(routes) -> foreach -> get(cities_visited) -> len",
+            "op": "=",
+            "value": 6
+        },
+        {
+            "func": "json -> get(routes) -> foreach -> get(rest_stops) -> len",
+            "op": "=",
+            "value": 2
+        },
+        {
+            "func": "json -> get(routes) -> foreach -> get(scenic_viewpoints) -> len",
+            "op": "=",
+            "value": 3
+        },
+        {
+            "func": "json",
+            "op": "google_maps.places_in_cities_visited",
+            "op_args": "rest_stops"
+        },
+        {
+            "func": "json",
+            "op": "google_maps.places_in_cities_visited",
+            "op_args": "scenic_viewpoints"
+        },
+        {
+            "func": "json",
+            "op": "google_maps.validate_elevation_meters"
+        },
+        {
+            "func": "json",
+            "op": "google_maps.place_not_in_cities_visited_of_routes",
+            "op_args": ["Tacoma", "Tacoma City", "TAC"]
+        }
+    ]
+}

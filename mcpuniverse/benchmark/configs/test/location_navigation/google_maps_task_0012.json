@@ -1,0 +1,125 @@
+{
+    "category": "general",
+    "question": "I have a business trip that requires driving from Merlion Park, Singapore to the Petronas Towers, Kuala Lumpur, Malaysia. I need you to plan an efficient driving route for this journey. During this route, I require exactly one strategic stop. Please identify the single location (provide its name and Place ID) that is positioned closest to the geographic midpoint of the calculated route (based on the route polyline) and is classified as either a 'gas_station' OR a 'restaurant' with a minimum user rating of 4.2. Following the completion of my business meetings in Kuala Lumpur, I will need to return to Merlion Park, Singapore. Please plan a second driving route for the return journey. This return route also requires exactly one strategic stop. Identify the single location (provide its name and Place ID) that is closest to the geographic midpoint of this return route (based on the route polyline) and is categorized as either a 'gas_station' OR a 'restaurant' with a minimum user rating of 4.2. Please ensure that the two stops are at different locations to optimize my travel experience.",
+    "output_format": {
+        "route_1_stops": [
+            {
+                "name": "NAME",
+                "place id": "Place ID"
+            }
+        ],
+        "route_2_stops": [
+            {
+                "name": "NAME",
+                "place id": "Place ID"
+            }
+        ]
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "google-maps"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "json"
+        },
+        {
+            "func": "json -> get(route_1_stops) -> len",
+            "op": "=",
+            "value": 1
+        },
+        {
+            "func": "json -> get(route_2_stops) -> len",
+            "op": "=",
+            "value": 1
+        },
+        {
+            "func": "json -> get(route_1_stops)",
+            "op": "google_maps.stop_include_keys",
+            "op_args": {
+                "keys": ["name", "place id"]
+            }
+        },
+        {
+            "func": "json -> get(route_2_stops)",
+            "op": "google_maps.stop_include_keys",
+            "op_args": {
+                "keys": ["name", "place id"]
+            }
+        },
+        {
+            "func": "json -> get(route_1_stops)",
+            "op": "google_maps.is_a_validate_stop"
+        },
+        {
+            "func": "json -> get(route_2_stops)",
+            "op": "google_maps.is_a_validate_stop"
+        },
+        {
+            "func": "json -> get(route_1_stops)",
+            "op": "google_maps.validate_stop_rating",
+            "op_args": 4.1999
+        },
+        {
+            "func": "json -> get(route_2_stops)",
+            "op": "google_maps.validate_stop_rating",
+            "op_args": 4.1999
+        },
+        {
+            "func": "json -> get(route_1_stops)",
+            "op": "google_maps.validate_stop_type",
+            "op_args": ["restaurant", "gas_station"]
+        },
+        {
+            "func": "json -> get(route_2_stops)",
+            "op": "google_maps.validate_stop_type",
+            "op_args": ["restaurant", "gas_station"]
+        },
+        {
+            "func": "json -> get(route_1_stops)",
+            "op": "google_maps.compare_distance_between_stops",
+            "op_args": {
+                "place1": "1 Fullerton Rd, Singapore 049213",
+                "place2": "Petronas Twin Tower, Lower Ground (Concourse) Level, Kuala Lumpur City Centre, 50088 Kuala Lumpur, Malaysia",
+                "mode": "driving",
+                "threshold": 0.1
+            }
+        },
+        {
+            "func": "json -> get(route_2_stops)",
+            "op": "google_maps.compare_distance_between_stops",
+            "op_args": {
+                "place1": "Petronas Twin Tower, Lower Ground (Concourse) Level, Kuala Lumpur City Centre, 50088 Kuala Lumpur, Malaysia",
+                "place2": "1 Fullerton Rd, Singapore 049213",
+                "mode": "driving",
+                "threshold": 0.1
+            }
+        },
+        {
+            "func": "json -> get(route_1_stops)",
+            "op": "google_maps.compare_distance_with_and_wo_stops",
+            "op_args": {
+                "place1": "1 Fullerton Rd, Singapore 049213",
+                "place2": "Petronas Twin Tower, Lower Ground (Concourse) Level, Kuala Lumpur City Centre, 50088 Kuala Lumpur, Malaysia",
+                "mode": "driving",
+                "threshold": 0.1
+            }
+        },
+        {
+            "func": "json -> get(route_2_stops)",
+            "op": "google_maps.compare_distance_with_and_wo_stops",
+            "op_args": {
+                "place1": "Petronas Twin Tower, Lower Ground (Concourse) Level, Kuala Lumpur City Centre, 50088 Kuala Lumpur, Malaysia",
+                "place2": "1 Fullerton Rd, Singapore 049213",
+                "mode": "driving",
+                "threshold": 0.1
+            }
+        },
+        {
+            "func": "json",
+            "op": "google_maps.are_stops_different"
+        }
+    ]
+}

@@ -1,0 +1,80 @@
+{
+    "category": "general",
+    "question": "I'm planning an exciting family road trip from Disneyland Paris to the 24 Hours of Le Mans Museum with my kids. To ensure a comfortable and enjoyable journey, I need help creating a driving route with 3 well-planned stops, using the amazing website `https://www.google.com/maps`. Please map out a route with exactly 3 intermediate points that are located at the geographic fourth points along the route (based on the route polyline). For each stop, identify locations (provide names and Place IDs) that are either restaurants, hotels, or gas stations, all with a minimum user rating of 4.2. This trip should be both practical and memorable for our entire family! Remember to close the browser after you finish the task.",
+    "output_format": {
+        "stops": [
+            {
+                "name": "NAME",
+                "place id": "Place ID"
+            },
+            {
+                "name": "NAME",
+                "place id": "Place ID"
+            },
+            {
+                "name": "NAME",
+                "place id": "Place ID"
+            }
+        ]
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "playwright"
+        },
+        {
+            "name": "date"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "json"
+        },
+        {
+            "func": "json -> get(stops) -> len",
+            "op": "=",
+            "value": 3
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.stop_include_keys",
+            "op_args": {
+                "keys": ["name", "place id"]
+            }
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.is_a_validate_stop"
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.validate_stop_rating",
+            "op_args": 4.1999
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.validate_stop_type",
+            "op_args": ["restaurant", "hotel", "gas station"]
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.compare_distance_between_stops",
+            "op_args": {
+                "place1": "Bd de Parc, 77700 Coupvray, France",
+                "place2": "9 Pl. Luigi Chinetti, 72100 Le Mans, France",
+                "mode": "driving",
+                "threshold": 0.1
+            }
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.compare_distance_with_and_wo_stops",
+            "op_args": {
+                "place1": "Bd de Parc, 77700 Coupvray, France",
+                "place2": "9 Pl. Luigi Chinetti, 72100 Le Mans, France",
+                "mode": "driving",
+                "threshold": 0.1
+            }
+        }
+    ]
+} 

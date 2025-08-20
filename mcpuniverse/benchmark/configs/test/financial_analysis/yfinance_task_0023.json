@@ -1,0 +1,31 @@
+{
+    "category": "general",
+    "question": "Hey! I'm a bachelor student studying finance and I've been learning about different trading strategies in my coursework. I've been researching Mean Reversion strategies, which are based on the idea that stock prices tend to revert to their historical mean over time. One common implementation uses Bollinger Bands with a simple moving average (like 20 days with 2 standard deviations) to create upper and lower bands based on volatility. I've also been studying Moving Average Crossover strategies, which compare short-term (10 days) and long-term (50 days) simple moving averages. For my assignment, I want to combine these two strategies with Apple (AAPL) stock using daily closing prices. My trading rule is: if both strategies give buy signals or one buy one hold, I'll buy; if both give sell signals or one sell one hold, I'll sell; otherwise, I'll hold. Can you help me determine what signal these combined strategies would have given for 2025-01-10? This is for my academic project, so I'd really appreciate the help!",
+    "output_format": {
+        "check_buy_sell_hold_signal": "buy/sell/hold"
+    },
+    "evaluators": [
+        {
+            "func": "json",
+            "op": "yfinance.check_buy_sell_hold_signal",
+            "op_args": {
+                "ticker": "AAPL",
+                "date": "2025-01-10",
+                "quant_strategy": 
+                {
+                    "name": "mean_reversion_bollinger_plus_moving_average_crossover",
+                    "params": {
+                        "moving_average_crossover_params": {
+                            "short_window": 10,
+                            "long_window": 50
+                        },
+                        "mean_reversion_bollinger_params": {
+                            "window": 20,
+                            "std_dev": 2
+                        }
+                    }
+                }
+            }
+        }
+    ]
+}

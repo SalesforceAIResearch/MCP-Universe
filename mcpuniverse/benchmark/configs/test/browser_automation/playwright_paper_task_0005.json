@@ -1,0 +1,25 @@
+{
+    "category": "general",
+    "question": "I am a first-year PhD student. One of my paper is just accepted by CVPR 2025. Could you tell me how much I need to pay for the (early) non-member student passport for the conference from the https://cvpr.thecvf.com/Conferences/2025? Remember to close the browser when you finish the task.",
+    "output_format": {
+        "Price": "$xxx"
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "playwright"
+        },
+        {
+            "name": "date"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "json",
+            "op": "playwright.is_dict_equal",
+            "value": {
+                "Price": "$590"
+            }
+        }
+    ]
+}

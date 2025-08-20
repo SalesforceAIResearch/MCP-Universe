@@ -1,0 +1,39 @@
+{
+    "category": "general",
+    "question": "I need you to get the latest annual financial statements and calculate the Research and Development expense as a percentage of Total Revenue for Intel Corporation (INTC) and Advanced Micro Devices (AMD). Give me both calculated percentages using Research And Development and Total Revenue. Tell me which company invested more of its revenue into R&D for that fiscal year. Make sure you express the results as percentages.",
+    "output_format": {
+        "INTC": {
+            "R&D expense percentage": "[NUMBER]"
+        }, 
+        "AMD": {
+            "R&D expense percentage": "[NUMBER]"
+        }, 
+        "company with higher R&D expense percentage": "[INTC or AMD]"
+    },
+    "evaluators": [
+        {
+            "func": "json",
+            "op": "yfinance.check_rd_expense_percentage",
+            "op_args": {
+                "ticker": "INTC"
+            },
+            "desc": "Whether the R&D expense percentage for ticker INTC is correct?"
+        },
+        {
+            "func": "json",
+            "op": "yfinance.check_rd_expense_percentage",
+            "op_args": {
+                "ticker": "AMD"
+            },
+            "desc": "Whether the R&D expense percentage for ticker AMD is correct?"
+        },
+        {
+            "func": "json",
+            "op": "yfinance.compare_companies_rd_expense_percentage",
+            "op_args": {
+                "tickers": ["INTC", "AMD"]
+            },
+            "desc": "Check which ticker, INTC or AMD, has a higher R&D expense percentage."
+        }
+    ]
+}

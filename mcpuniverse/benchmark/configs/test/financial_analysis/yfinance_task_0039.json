@@ -1,0 +1,25 @@
+{
+    "category": "general",
+    "question": "Hey! I'm a huge fan of Lululemon and I've been following their stock religiously! As someone who's obsessed with LULU (I literally live in their gear), I've been trying to learn about trading strategies to time my investments better. I discovered this awesome Moving Average Distance Reversion strategy that analyzes how far the price deviates from its recent average. The way it works is if LULU's stock price drops more than 5% below its 20 day moving average, it's considered oversold and signals a buying opportunity. If it rises more than 5% above the average, it's overbought and might be time to sell. Otherwise, it's a hold signal. I'm dying to test this strategy on my beloved Lululemon using their daily closing prices. Can you help me determine what signal LULU would have generated on 2022-12-09? I really appreciate your help with analyzing my favorite company!",
+    "output_format": {
+        "check_buy_sell_hold_signal": "buy/sell/hold"
+    },
+    "evaluators": [
+        {
+            "func": "json",
+            "op": "yfinance.check_buy_sell_hold_signal",
+            "op_args": {
+                "ticker": "LULU",
+                "date": "2022-12-09",
+                "quant_strategy": 
+                {
+                    "name": "ma_distance_reversion",
+                    "params": {
+                        "ma_period": 20,
+                        "threshold": 0.05
+                    }
+                }
+            }
+        }
+    ]
+}

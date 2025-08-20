@@ -1,0 +1,63 @@
+{
+    "category": "general",
+    "question": "Identify 1 'library' location in New York City that are north of the latitude of 'Queensbridge Park' AND east of the longitude of 'NewYork-Presbyterian/Weill Cornell Medical Center'.",
+    "output_format": {
+        "stops": [
+            {
+                "name": "NAME",
+                "place id": "Place ID"
+            }
+        ]
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "google-maps"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "json"
+        },
+        {
+            "func": "json -> get(stops) -> len",
+            "op": "=",
+            "value": 1
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.stop_include_keys",
+            "op_args": {
+                "keys": ["name", "place id"]
+            }
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.validate_location",
+            "op_args": ["library"]
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.is_a_validate_stop"
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.places_in_countries",
+            "op_args": ["NY", "New York"]
+        },
+        {
+            "func": "json -> get(stops)",
+            "op": "google_maps.validate_direction_of_two_places",
+            "op_args": [
+                {
+                    "place": "Vernon Blvd, Long Island City, NY 11101, United States",
+                    "direction": "north"
+                },
+                {
+                    "place": "525 E 68th St, New York, NY 10065, United States",
+                    "direction": "east"
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,25 @@
+{
+    "category": "general",
+    "question": "I am a big fan of Manchester United in the Premier League. Can you help me find out whether Manchester United won more matches than Fulham in the 2024-2025 season? You can find this information on the official website of the Premier League (https://www.premierleague.com/). Remember to close the browser when you finish the task.",
+    "output_format": {
+        "won more matches": "Y or N"
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "playwright"
+        },
+        {
+            "name": "date"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "json",
+            "op": "playwright.is_dict_equal",
+            "value": {
+                "won more matches": "N"
+            }
+        }
+    ]
+} 

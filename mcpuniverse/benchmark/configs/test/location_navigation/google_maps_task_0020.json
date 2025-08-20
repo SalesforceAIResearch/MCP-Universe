@@ -1,0 +1,121 @@
+{
+    "category": "general",
+    "question": "We're planning the most amazing family adventure from the breathtaking Grand Canyon National Park in Arizona to the spectacular Rocky Mountain National Park in Colorado with our wonderful kids! We will live in the Grand Canyon Plaza Hotel and the Elk Meadow Lodge and RV Resort. To make sure everyone has the most comfortable and delightful journey possible, we're super excited to create a fantastic driving route with five incredible stops. Could you please help us map out a joyful route with exactly five intermediate points that are perfectly located at the geographic sixth points along the route (based on the route polyline)? For each fantastic stop, we'd love to discover amazing locations (please provide names and Place IDs) that are either a delicious restaurant, a cozy hotel, or a convenient gas station, all with a wonderful minimum user rating of 4.2. We're also thrilled about planning another fantastic route to go back to the magnificent Grand Canyon National Park in Arizona and live in the same hotel! Please help us map out this exciting return route with exactly 3 delightful intermediate points that are beautifully located at the geographic quarter points of the route. These stops should be charming cafes or lovely family restaurants where we can all happily enjoy wonderful meals together, also with that fantastic minimum user rating of 4.2. This incredible trip will be both practical and create the most beautiful, memorable experiences for our entire beloved family!",
+    "output_format": {
+        "route_1_stops": [
+            {
+                "name": "NAME",
+                "place id": "Place ID"
+            }
+        ],
+        "route_2_stops": [
+            {
+                "name": "NAME",
+                "place id": "Place ID"
+            }
+        ]
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "google-maps"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "json"
+        },
+        {
+            "func": "json -> get(route_1_stops) -> len",
+            "op": "=",
+            "value": 5
+        },
+        {
+            "func": "json -> get(route_2_stops) -> len",
+            "op": "=",
+            "value": 3
+        },
+        {
+            "func": "json -> get(route_1_stops)",
+            "op": "google_maps.stop_include_keys",
+            "op_args": {
+                "keys": ["name", "place id"]
+            }
+        },
+        {
+            "func": "json -> get(route_2_stops)",
+            "op": "google_maps.stop_include_keys",
+            "op_args": {
+                "keys": ["name", "place id"]
+            }
+        },
+        {
+            "func": "json -> get(route_1_stops)",
+            "op": "google_maps.is_a_validate_stop"
+        },
+        {
+            "func": "json -> get(route_2_stops)",
+            "op": "google_maps.is_a_validate_stop"
+        },
+        {
+            "func": "json -> get(route_1_stops)",
+            "op": "google_maps.validate_stop_rating",
+            "op_args": 4.1999
+        },
+        {
+            "func": "json -> get(route_2_stops)",
+            "op": "google_maps.validate_stop_rating",
+            "op_args": 4.1999
+        },
+        {
+            "func": "json -> get(route_1_stops)",
+            "op": "google_maps.validate_stop_type",
+            "op_args": ["restaurant", "hotel", "gas_station"]
+        },
+        {
+            "func": "json -> get(route_2_stops)",
+            "op": "google_maps.validate_stop_type",
+            "op_args": ["cafe", "restaurant"]
+        },
+        {
+            "func": "json -> get(route_1_stops)",
+            "op": "google_maps.compare_distance_between_stops",
+            "op_args": {
+                "place1": "406 Canyon Plaza Ln, Tusayan, AZ 86023, United States",
+                "place2": "1665 CO-66, Estes Park, CO 80517, United States",
+                "mode": "driving",
+                "threshold": 0.1
+            }
+        },
+        {
+            "func": "json -> get(route_2_stops)",
+            "op": "google_maps.compare_distance_between_stops",
+            "op_args": {
+                "place1": "1665 CO-66, Estes Park, CO 80517, United States",
+                "place2": "406 Canyon Plaza Ln, Tusayan, AZ 86023, United States",
+                "mode": "driving",
+                "threshold": 0.1
+            }
+        },
+        {
+            "func": "json -> get(route_1_stops)",
+            "op": "google_maps.compare_distance_with_and_wo_stops",
+            "op_args": {
+                "place1": "406 Canyon Plaza Ln, Tusayan, AZ 86023, United States",
+                "place2": "1665 CO-66, Estes Park, CO 80517, United States",
+                "mode": "driving",
+                "threshold": 0.1
+            }
+        },
+        {
+            "func": "json -> get(route_2_stops)",
+            "op": "google_maps.compare_distance_with_and_wo_stops",
+            "op_args": {
+                "place1": "1665 CO-66, Estes Park, CO 80517, United States",
+                "place2": "406 Canyon Plaza Ln, Tusayan, AZ 86023, United States",
+                "mode": "driving",
+                "threshold": 0.1
+            }
+        }
+    ]
+}

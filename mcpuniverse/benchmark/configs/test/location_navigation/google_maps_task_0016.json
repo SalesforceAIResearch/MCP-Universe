@@ -1,0 +1,121 @@
+{
+    "category": "general",
+    "question": "We're planning a romantic getaway together, starting at the iconic Eiffel Tower in Paris and concluding at the Chemin de Fer de Provence in Nice. To make this journey truly memorable for both of us, we'd like to incorporate three carefully selected stops along our route. Could you assist us in mapping out a driving path with precisely three intermediate points? We're seeking three exceptional locations (please provide their names and Place IDs) that are nearest to the geographic quarter points of the route (determined by the route polyline). These locations should be either a charming cafe ideal for sharing a coffee break together, a boutique hotel offering good places for us to have a good sleep, or a park for taking photos of each other. To guarantee quality for our special trip, all three locations must maintain a minimum user rating of 4.2. Then, we need to return to Paris from Chemin de Fer de Provence, but we need to go to the CDG airport of Paris, so we can fly to our next destination. For the back route, we'd like to incorporate one selected stop along our route. Could you assist us in finding this stop, which is the closest to the geographic mid point of the route? This location should be a hotel offering good places for us to have a good sleep together. To guarantee quality for our romantic journey, this location must maintain a minimum user rating of 4.2. This trip needs to be an extraordinary experience for both of us!",
+    "output_format": {
+        "route_1_stops": [
+            {
+                "name": "NAME",
+                "place id": "Place ID"
+            }
+        ],
+        "route_2_stops": [
+            {
+                "name": "NAME",
+                "place id": "Place ID"
+            }
+        ]
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "google-maps"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "json"
+        },
+        {
+            "func": "json -> get(route_1_stops) -> len",
+            "op": "=",
+            "value": 3
+        },
+        {
+            "func": "json -> get(route_2_stops) -> len",
+            "op": "=",
+            "value": 1
+        },
+        {
+            "func": "json -> get(route_1_stops)",
+            "op": "google_maps.stop_include_keys",
+            "op_args": {
+                "keys": ["name", "place id"]
+            }
+        },
+        {
+            "func": "json -> get(route_2_stops)",
+            "op": "google_maps.stop_include_keys",
+            "op_args": {
+                "keys": ["name", "place id"]
+            }
+        },
+        {
+            "func": "json -> get(route_1_stops)",
+            "op": "google_maps.is_a_validate_stop"
+        },
+        {
+            "func": "json -> get(route_2_stops)",
+            "op": "google_maps.is_a_validate_stop"
+        },
+        {
+            "func": "json -> get(route_1_stops)",
+            "op": "google_maps.validate_stop_rating",
+            "op_args": 4.1999
+        },
+        {
+            "func": "json -> get(route_2_stops)",
+            "op": "google_maps.validate_stop_rating",
+            "op_args": 4.1999
+        },
+        {
+            "func": "json -> get(route_1_stops)",
+            "op": "google_maps.validate_stop_type",
+            "op_args": ["cafe", "hotel", "park"]
+        },
+        {
+            "func": "json -> get(route_2_stops)",
+            "op": "google_maps.validate_stop_type",
+            "op_args": ["hotel"]
+        },
+        {
+            "func": "json -> get(route_1_stops)",
+            "op": "google_maps.compare_distance_between_stops",
+            "op_args": {
+                "place1": "Av. Gustave Eiffel, 75007 Paris, France",
+                "place2": "4bis Rue Alfred Binet, 06000 Nice, France",
+                "mode": "driving",
+                "threshold": 0.1
+            }
+        },
+        {
+            "func": "json -> get(route_2_stops)",
+            "op": "google_maps.compare_distance_between_stops",
+            "op_args": {
+                "place1": "4bis Rue Alfred Binet, 06000 Nice, France",
+                "place2": "95700 Roissy-en-France, France",
+                "mode": "driving",
+                "threshold": 0.1
+            }
+        },
+        {
+            "func": "json -> get(route_1_stops)",
+            "op": "google_maps.compare_distance_with_and_wo_stops",
+            "op_args": {
+                "place1": "Av. Gustave Eiffel, 75007 Paris, France",
+                "place2": "4bis Rue Alfred Binet, 06000 Nice, France",
+                "mode": "driving",
+                "threshold": 0.1
+            }
+        },
+        {
+            "func": "json -> get(route_2_stops)",
+            "op": "google_maps.compare_distance_with_and_wo_stops",
+            "op_args": {
+                "place1": "4bis Rue Alfred Binet, 06000 Nice, France",
+                "place2": "95700 Roissy-en-France, France",
+                "mode": "driving",
+                "threshold": 0.1
+            }
+        }
+    ]
+}

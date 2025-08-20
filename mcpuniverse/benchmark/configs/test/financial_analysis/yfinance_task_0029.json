@@ -1,0 +1,20 @@
+{
+    "category": "general",
+    "question": "Hello! I'm a finance student currently working on my investment portfolio analysis project. I have allocated $6000 from my internship earnings for this practical trading exercise to complement my academic studies. I've been researching various quantitative trading strategies as part of my coursework and thesis preparation. I'm particularly interested in exploring the Rate of Change (ROC) Reversal strategy, which I've been studying in my technical analysis class. From my research, I understand that this strategy involves calculating the rate of change over a specific period (such as 12 days) and utilizing overbought and oversold thresholds (typically 20% for overbought and -20% for oversold) to identify potential market reversal points. I would like to apply this strategy to Salesforce (CRM) stock using daily closing prices as part of my empirical analysis. Could you help me determine the optimal entry date from the following options: 2024-05-28, 2024-05-29, 2024-05-30, or 2024-05-31? I'm planning to execute a short-term position, buying at the close of one trading day and selling at the close of the subsequent day (for example, buying at 2024-05-28 close and selling at 2024-05-29 close) to test the effectiveness of this strategy in practice. What potential returns could this generate? This analysis will be crucial for my academic project on algorithmic trading strategies. Thank you for your assistance!",
+    "output_format": {
+        "date": "2024-05-28/2024-05-29/2024-05-30/2024-05-31",
+        "earn": "[NUMBER] (do not include the dollar sign, only the number)"
+    },
+    "evaluators": [
+        {
+            "func": "json",
+            "op": "yfinance.check_quant_investment_task_output",
+            "op_args": {
+                "ticker": "CRM",
+                "start_date": "2024-05-30",
+                "end_date": "2024-05-31",
+                "initial_investment": 6000.0
+            }
+        }
+    ]
+}

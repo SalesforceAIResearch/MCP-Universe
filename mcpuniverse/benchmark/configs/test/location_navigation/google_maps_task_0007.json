@@ -1,0 +1,104 @@
+{
+    "category": "general",
+    "question": "Konnichiwa! I'm a girl from Japan and I'm so excited about my dream road trip from the beautiful 'Paris' to the amazing 'Nice'! This will be my first time exploring France and I'm absolutely thrilled! I'm planning to visit exactly 6 wonderful cities along the way to make this trip super memorable. Could you please help me create 2 different driving routes for this incredible adventure? For each route, I would love to find 2 nice rest stops in those intermediate cities where I can take a break and maybe try some local food (that's 2 rest stops per route total), and please make sure they're easy to reach from the driving paths. Also, since I want to take lots of photos for my Instagram, could you find 2 scenic viewpoints in those intermediate cities with beautiful views and tell me their elevation too (2 scenic viewpoints per route total)? I'm so excited and can't wait to see what amazing options you suggest for my French adventure! Arigatou gozaimasu!",
+    "output_format": {
+        "starting_city": "[Starting City]",
+        "destination_city": "[Destination City]",
+        "routes": [
+            {
+                "route_id": "1",
+                "route_name": "NAME OF THE ROUTE",
+                "cities_visited": [
+                    "[City 1]",
+                    "[City 2]",
+                    "[City 3]",
+                    "... (exclude the starting and destination cities in this list)"
+                ],
+                "rest_stops": [
+                    {
+                        "city": "[Specific City]",
+                        "rest_stop_id": "1",
+                        "name": "[Rest Stop Name]",
+                        "address": "[Rest Stop Address]",
+                        "amenities": [
+                            "[Amenity 1]",
+                            "[Amenity 2]",
+                            "..."
+                        ]
+                    }
+                ],
+                "scenic_viewpoints": [
+                    {
+                        "city": "[Specific City]",
+                        "viewpoint_id": "1",
+                        "name": "[Viewpoint Name]",
+                        "address": "[Viewpoint Address]",
+                        "elevation_meters": "[Elevation in meters]",
+                        "description": "[Brief Description]"
+                    }
+                ]
+            }
+        ]
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "google-maps"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "json"
+        },
+        {
+            "func": "json -> get(routes) -> len",
+            "op": "=",
+            "value": 2
+        },
+        {
+            "func": "json",
+            "op": "google_maps.city_name_match",
+            "op_args": {
+                "key": "starting_city",
+                "values": ["Paris", "PAR", "Paris City"]
+            }
+        },
+        {
+            "func": "json",
+            "op": "google_maps.city_name_match",
+            "op_args": {
+                "key": "destination_city",
+                "values": ["Nice", "Nice City"]
+            }
+        },
+        {
+            "func": "json -> get(routes) -> foreach -> get(cities_visited) -> len",
+            "op": "=",
+            "value": 6
+        },
+        {
+            "func": "json -> get(routes) -> foreach -> get(rest_stops) -> len",
+            "op": "=",
+            "value": 2
+        },
+        {
+            "func": "json -> get(routes) -> foreach -> get(scenic_viewpoints) -> len",
+            "op": "=",
+            "value": 2
+        },
+        {
+            "func": "json",
+            "op": "google_maps.places_in_cities_visited",
+            "op_args": "rest_stops"
+        },
+        {
+            "func": "json",
+            "op": "google_maps.places_in_cities_visited",
+            "op_args": "scenic_viewpoints"
+        },
+        {
+            "func": "json",
+            "op": "google_maps.validate_elevation_meters"
+        }
+    ]
+}

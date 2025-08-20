@@ -1,0 +1,17 @@
+{
+    "category": "general",
+    "question": "Hey! I'm a finance student currently working on a project about fundamental analysis and stock screening techniques. For my assignment, I need to explore different investment strategies, and one approach I'm studying focuses on consistent earnings growth patterns. Specifically, I'm researching companies that show 3 consecutive quarters of rising net income. From what I've learned in class, this pattern often indicates strong management, sustainable business models, and resilience during economic fluctuations. Could you help me identify companies' tickers that meet this criterion using recent financial data? I need to find two stocks whose last 3 reported quarters demonstrate a consistent upward trend in net income for my analysis. This research will help me understand how to construct portfolios based on fundamental financial health indicators. Thanks for helping with my studies!",
+    "output_format": {
+        "tickers": ["ticker1", "ticker2"]
+    },
+    "evaluators": [
+        {
+            "func": "json",
+            "op": "yfinance.check_net_income_growth_task_output",
+            "op_args": {
+                "num_quarters": 3,
+                "num_tickers": 2
+            }
+        }
+    ]
+}

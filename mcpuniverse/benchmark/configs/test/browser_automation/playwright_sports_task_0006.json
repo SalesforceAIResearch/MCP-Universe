@@ -1,0 +1,25 @@
+{
+    "category": "general",
+    "question": "As the BIGGEST Lionel Messi fan in the world, I'm absolutely dying to know about my GOAT's performance! Did my incredible legend Messi and his amazing team absolutely demolish FC Porto in the first stage of the FIFA Club World Cup 2025?! I'm so excited and can't contain my enthusiasm for the greatest player of all time! Please check the official FIFA website (https://www.fifa.com/en/tournaments/mens/club-world-cup/usa-2025) to find out if my hero secured the victory! Remember to close the browser when you finish the task.",
+    "output_format": {
+        "Win or Lose": "Win/Lose"
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "playwright"
+        },
+        {
+            "name": "date"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "json",
+            "op": "playwright.is_dict_equal",
+            "value": {
+                "Win or Lose": "Win"
+            }
+        }
+    ]
+} 

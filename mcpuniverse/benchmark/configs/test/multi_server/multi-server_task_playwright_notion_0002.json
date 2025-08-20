@@ -1,0 +1,38 @@
+{
+    "category": "general",
+    "question": "I am finding a place to live for next month. I will move to Singapore for a new job. I have several candidates in mind, including the Commonwealth Towers (232 Commonwealth Avenue), One Pearl Bank (1 Pearl Bank), and Urban Vista (6 Tanah Merah Kechil Link). My company is located in the Suntec City area. Please create a Notion page named `Singapore-Apartment-Search` in the parent page {{ NOTION_ROOT_PAGE }} and include the data of these teams on the page. The format should be a valiadte JSON: `[{'Apartment Name': '[...]', 'Singapore Postcode': '[...]', 'Distance to Suntec City (in km)': [float]}, ... ]` I hope you use https://www.google.com/maps to get the correct distance.",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "playwright"
+        },
+        {
+            "name": "notion"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "notion.check_postcode_distance_to_place_in_notion_page",
+            "op_args": {
+                "page_title": "Singapore-Apartment-Search",
+                "place": "Suntec City"
+            },
+            "value": [
+                {"Apartment Name": "Commonwealth Towers", "Singapore Postcode": "149739", "Distance to Suntec City (in km)": 7.2},
+                {"Apartment Name": "One Pearl Bank", "Singapore Postcode": "169016", "Distance to Suntec City (in km)": 3.1},
+                {"Apartment Name": "Urban Vista", "Singapore Postcode": "465419", "Distance to Suntec City (in km)": 11.5}
+            ]
+        }
+    ],
+    "cleanups": [
+        {   
+            "server": "notion",
+            "tool": "API-post-page",
+            "cleanup_func": "delete_page",
+            "cleanup_args": {
+                "page":"$return -> get(content) -> array(0) -> get(text) -> json -> get(id)"
+            }   
+        }
+    ]
+}

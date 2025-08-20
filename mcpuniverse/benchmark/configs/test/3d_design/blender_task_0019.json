@@ -1,0 +1,31 @@
+{
+    "category": "blender",
+    "question": "Clear the current Blender scene and remove all PolyHaven materials.\nCreate a default Camera and position it at (X=0, Y=-10, Z=1). Change the Camera's lens type to 'Orthographic'. Set the Camera's 'Orthographic Scale' to 8.1. Create an Empty object (any type) named 'FocusPoint' and position it at (X=0, Y=0, Z=1.1). Enable Depth of Field for the Camera. Instead of using the Focus Object, set the DOF 'Focus Distance' to exactly 10.1 meters. Set the Aperture 'F-Stop' value to 2.8. After finishing all tasks, create a new file and save it as 'tid_19.blend' in the '{{MCPUniverse_DIR}}/mcpuniverse/evaluator/blender/blend_files'.",
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "blender.check_file",
+            "op_args": {
+                "path": "tid_19.blend",
+                "task_id": "19"
+            }
+        },
+        {
+            "func": "raw",
+            "op": "blender.check_file_content",
+            "op_args": {
+                "path": "tid_19.blend",
+                "task_id": "19"
+            }
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "blender",
+            "cleanup_func": "clear_scene_and_polyhaven_materials",
+            "cleanup_args": {
+                "ctx": "$CleanUp"
+            }
+        }
+    ]
+}

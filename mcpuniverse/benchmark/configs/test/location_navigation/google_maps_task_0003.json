@@ -1,0 +1,109 @@
+{
+    "category": "general",
+    "question": "I'm excited to plan an amazing road trip starting in 'San Francisco' and ending in beautiful 'Los Angeles', and I would love your help to make it perfect! My plan is to drive through exactly 5 interesting cities between the starting and ending points. Could you please map out exactly 2 distinct driving route options for this journey? For these routes, could you also find exactly 3 convenient rest stops within those intermediate cities for each route (a total of 3 rest stops per route), making sure the rest stops are located along or very near the suggested driving paths? Additionally, I would love to catch some scenery, so could you please find exactly 3 scenic viewpoints within those intermediate cities for each route that are reasonably accessible from the routes, and tell me their elevations (a total of 3 scenic viewpoints per route)? Oh, I must visit friends in 'Coalinga' during my trip. I am really looking forward to seeing the options for this fantastic adventure!",
+    "output_format": {
+        "starting_city": "[Starting City]",
+        "destination_city": "[Destination City]",
+        "routes": [
+            {
+                "route_id": "1",
+                "route_name": "NAME OF THE ROUTE",
+                "cities_visited": [
+                    "[City 1]",
+                    "[City 2]",
+                    "[City 3]",
+                    "... (exclude the starting and destination cities in this list)"
+                ],
+                "rest_stops": [
+                    {
+                        "city": "[Specific City]",
+                        "rest_stop_id": "1",
+                        "name": "[Rest Stop Name]",
+                        "address": "[Rest Stop Address]",
+                        "amenities": [
+                            "[Amenity 1]",
+                            "[Amenity 2]",
+                            "..."
+                        ]
+                    }
+                ],
+                "scenic_viewpoints": [
+                    {
+                        "city": "[Specific City]",
+                        "viewpoint_id": "1",
+                        "name": "[Viewpoint Name]",
+                        "address": "[Viewpoint Address]",
+                        "elevation_meters": "[Elevation in meters]",
+                        "description": "[Brief Description]"
+                    }
+                ]
+            }
+        ]
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "google-maps"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "json"
+        },
+        {
+            "func": "json -> get(routes) -> len",
+            "op": "=",
+            "value": 2
+        },
+        {
+            "func": "json",
+            "op": "google_maps.city_name_match",
+            "op_args": {
+                "key": "starting_city",
+                "values": ["San Francisco", "SF", "San Francisco City", "SF City"]
+            }
+        },
+        {
+            "func": "json",
+            "op": "google_maps.city_name_match",
+            "op_args": {
+                "key": "destination_city",
+                "values": ["Los Angeles", "LA", "Los Angeles City", "LA City"]
+            }
+        },
+        {
+            "func": "json -> get(routes) -> foreach -> get(cities_visited) -> len",
+            "op": "=",
+            "value": 5
+        },
+        {
+            "func": "json -> get(routes) -> foreach -> get(rest_stops) -> len",
+            "op": "=",
+            "value": 3
+        },
+        {
+            "func": "json -> get(routes) -> foreach -> get(scenic_viewpoints) -> len",
+            "op": "=",
+            "value": 3
+        },
+        {
+            "func": "json",
+            "op": "google_maps.places_in_cities_visited",
+            "op_args": "rest_stops"
+        },
+        {
+            "func": "json",
+            "op": "google_maps.places_in_cities_visited",
+            "op_args": "scenic_viewpoints"
+        },
+        {
+            "func": "json",
+            "op": "google_maps.validate_elevation_meters"
+        },
+        {
+            "func": "json",
+            "op": "google_maps.place_in_cities_visited_of_routes",
+            "op_args": ["Coalinga", "Coalinga City"]
+        }
+    ]
+}

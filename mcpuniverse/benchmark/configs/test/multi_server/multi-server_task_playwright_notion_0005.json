@@ -1,0 +1,46 @@
+{
+    "category": "general",
+    "question": "I need to arrange a business trip from Singapore to Kuala Lumpur, departing 10 days from now (If now is 2025-07-07, then 10 days later is 2025-07-17). Please search for flights on www.booking.com. I require the most cost-effective option: cheapest direct flight in Economy class. Kindly create a Notion page titled `Singapore-Kuala Lumpur Flight` in the parent page {{ NOTION_ROOT_PAGE }} with the pricing information. I need this data for budget approval and travel planning purposes. The output format should be: `The cheapest flight price: CCCXXX` (CCC is the currency and XXX is the price. No blank space between the currency and the price.).",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "playwright"
+        },
+        {
+            "name": "notion"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "playwright.check_flight_price_with_notion",
+            "op_args": {
+                "depart_days_after": 6,
+                "flight_type": "ONEWAY",
+                "cabin_class": "ECONOMY",
+                "adults": 1,
+                "children": 0,
+                "stops": 0,
+                "sort": "CHEAPEST",
+                "travel_purpose": "leisure",
+                "from_location": "SIN.AIRPORT",
+                "to_location": "KUL.AIRPORT",
+                "from_country": "SG",
+                "to_country": "MY",
+                "from_location_name": "Changi+Airport",
+                "to_location_name": "Kuala+Lumpur+International+Airport",
+                "notion_page_title": "Singapore-Kuala Lumpur Flight"
+            }
+        }
+    ],
+    "cleanups": [
+        {   
+            "server": "notion",
+            "tool": "API-post-page",
+            "cleanup_func": "delete_page",
+            "cleanup_args": {
+                "page":"$return -> get(content) -> array(0) -> get(text) -> json -> get(id)"
+            }   
+        }
+    ]
+}

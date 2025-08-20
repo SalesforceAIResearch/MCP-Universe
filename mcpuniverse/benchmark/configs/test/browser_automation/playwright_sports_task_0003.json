@@ -1,0 +1,25 @@
+{
+    "category": "general",
+    "question": "I am a big fan of Newcastle in Premier League. Can you help me find the total number of goals of Newcastle in 2024-2025 season? You can find it with the offical website of Premier League (https://www.premierleague.com/). Remember to close the browser when you finish the task.",
+    "output_format": {
+        "Newcastle": "xx"
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "playwright"
+        },
+        {
+            "name": "date"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "json",
+            "op": "playwright.is_dict_equal",
+            "value": {
+                "Newcastle": "68"
+            }
+        }
+    ]
+} 

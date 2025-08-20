@@ -1,0 +1,43 @@
+{
+    "category": "general",
+    "question": "Hi! I'm learning how to use GitHub and I want to practice exploring repositories and working with issues. Can you help me with a research project? I'd like to search for repositories owned by 'google' that have 'generative-ai' in their name. Once I find them, I want to count how many open issues each repository has that are labeled 'type:bug'. This will help me understand how developers track bugs in real projects! After gathering this information, I need to practice creating my own repository called 'google-generative-ai-issues' and uploading a CSV file named 'google_generative_ai_bug_report.csv' to it. The CSV should have two columns: 'repository_name' and 'open_bug_count'. This exercise will help me learn about repository management, issue tracking, and data organization on GitHub!",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "github"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "github.check_repository",
+            "op_args": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}/google-generative-ai-issues" 
+        },
+        {
+            "func": "raw",
+            "op": "github.check_file_content_and_issue_count",
+            "op_args": {
+                "owner": "{{GITHUB_PERSONAL_ACCOUNT_NAME}}",
+                "repo": "google-generative-ai-issues",
+                "path": "google_generative_ai_bug_report.csv",
+                "branch": "main",
+                "search_repo_owner": "google",
+                "search_repo_name": "generative-ai",
+                "issue_labels": ["type:bug"],
+                "issue_state": "open",
+                "file_type": "csv",
+                "csv_columns": ["repository_name", "open_bug_count"]
+            }
+        }
+    ],
+    "cleanups": [
+        {
+        "server": "github",
+        "tool": "create_repository",
+        "cleanup_func": "delete_repository",
+        "cleanup_args": {
+            "repo": "$name"
+            }
+        }
+    ]
+}

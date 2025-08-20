@@ -1,0 +1,121 @@
+{
+    "category": "general",
+    "question": "We're planning an amazing family adventure from Disneyland in Anaheim to Yosemite Valley Visitor Center with our kids! To make sure everyone stays happy and comfortable during our journey, we need help creating a fun driving route with four great family-friendly stops. Could you please map out a route with exactly four intermediate points that are located at the geographic fifth points along the route (based on the route polyline)? For each stop, we'd love to find locations (please provide names and Place IDs) that are either a family restaurant where we can all grab a bite, a comfortable hotel where the kids can rest, or a gas station to fuel up our adventure. All with a minimum user rating of 4.2 to ensure quality for our family. After having a blast at Yosemite National Park, we need to drive to the Residence Inn by Marriott San Jose North/Silicon Valley to visit our dear friend. For this second leg of our family journey, please map out a route with exactly one intermediate point that is located at the geographic mid point of the route. This stop should be a cozy cafe or family restaurant where we can all enjoy a meal together, also with a minimum user rating of 4.2. This trip should be both practical and create wonderful memories for our entire family!",
+    "output_format": {
+        "route_1_stops": [
+            {
+                "name": "NAME",
+                "place id": "Place ID"
+            }
+        ],
+        "route_2_stops": [
+            {
+                "name": "NAME",
+                "place id": "Place ID"
+            }
+        ]
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "google-maps"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "json"
+        },
+        {
+            "func": "json -> get(route_1_stops) -> len",
+            "op": "=",
+            "value": 4
+        },
+        {
+            "func": "json -> get(route_2_stops) -> len",
+            "op": "=",
+            "value": 1
+        },
+        {
+            "func": "json -> get(route_1_stops)",
+            "op": "google_maps.stop_include_keys",
+            "op_args": {
+                "keys": ["name", "place id"]
+            }
+        },
+        {
+            "func": "json -> get(route_2_stops)",
+            "op": "google_maps.stop_include_keys",
+            "op_args": {
+                "keys": ["name", "place id"]
+            }
+        },
+        {
+            "func": "json -> get(route_1_stops)",
+            "op": "google_maps.is_a_validate_stop"
+        },
+        {
+            "func": "json -> get(route_2_stops)",
+            "op": "google_maps.is_a_validate_stop"
+        },
+        {
+            "func": "json -> get(route_1_stops)",
+            "op": "google_maps.validate_stop_rating",
+            "op_args": 4.1999
+        },
+        {
+            "func": "json -> get(route_2_stops)",
+            "op": "google_maps.validate_stop_rating",
+            "op_args": 4.1999
+        },
+        {
+            "func": "json -> get(route_1_stops)",
+            "op": "google_maps.validate_stop_type",
+            "op_args": ["restaurant", "hotel", "gas station"]
+        },
+        {
+            "func": "json -> get(route_2_stops)",
+            "op": "google_maps.validate_stop_type",
+            "op_args": ["restaurant", "cafe"]
+        },
+        {
+            "func": "json -> get(route_1_stops)",
+            "op": "google_maps.compare_distance_between_stops",
+            "op_args": {
+                "place1": "Anaheim, CA 92802, United States",
+                "place2": "9035 Village Dr, YOSEMITE NATIONAL PARK, CA 95389, United States",
+                "mode": "driving",
+                "threshold": 0.1
+            }
+        },
+        {
+            "func": "json -> get(route_2_stops)",
+            "op": "google_maps.compare_distance_between_stops",
+            "op_args": {
+                "place1": "9035 Village Dr, YOSEMITE NATIONAL PARK, CA 95389, United States",
+                "place2": "656 America Center Ct, San Jose, CA 95002, United States",
+                "mode": "driving",
+                "threshold": 0.1
+            }
+        },
+        {
+            "func": "json -> get(route_1_stops)",
+            "op": "google_maps.compare_distance_with_and_wo_stops",
+            "op_args": {
+                "place1": "Anaheim, CA 92802, United States",
+                "place2": "9035 Village Dr, YOSEMITE NATIONAL PARK, CA 95389, United States",
+                "mode": "driving",
+                "threshold": 0.1
+            }
+        },
+        {
+            "func": "json -> get(route_1_stops)",
+            "op": "google_maps.compare_distance_with_and_wo_stops",
+            "op_args": {
+                "place1": "9035 Village Dr, YOSEMITE NATIONAL PARK, CA 95389, United States",
+                "place2": "656 America Center Ct, San Jose, CA 95002, United States",
+                "mode": "driving",
+                "threshold": 0.1
+            }
+        }
+    ]
+}
