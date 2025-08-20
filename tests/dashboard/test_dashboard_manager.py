@@ -1,3 +1,4 @@
+import os
 import unittest
 from mcpuniverse.dashboard.manager import Manager
 
@@ -5,6 +6,8 @@ from mcpuniverse.dashboard.manager import Manager
 class TestDashboardManager(unittest.TestCase):
 
     def test_add_agent(self):
+        if not os.environ.get("OPENAI_API_KEY", ""):
+            return
         manager = Manager()
         config = """
 kind: llm

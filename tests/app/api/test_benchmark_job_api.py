@@ -1,5 +1,5 @@
 import json
-
+import os
 from pydantic_core import from_json
 from mcpuniverse.app.api.benchmark import CreateReleasedBenchmarkResponse
 from mcpuniverse.app.api.user import CreateUserResponse
@@ -101,6 +101,8 @@ spec:
     servers:
       - name: weather
         """
+        if not os.environ.get("OPENAI_API_KEY", ""):
+            return
 
         response = client.post(
             "/project/create",
