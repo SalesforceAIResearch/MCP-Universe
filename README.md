@@ -5,15 +5,14 @@ and evaluating different agent configurations across a variety of task environme
 
 ## Table of Contents
 
-- [MCPUniverse](#mcpuniverse)
-    - [Installation Guide](#installation-guide)
-    - [System Architecture](#system-architecture)
-    - [How to Run Benchmarks](#how-to-run-benchmarks)
-    - [How to Add New Benchmarks](#how-to-add-new-benchmarks)
-        - [Task definition](#task-definition)
-        - [Benchmark definition](#benchmark-definition)
-        - [Test benchmark](#test-benchmark)
-        - [Visualization](#visualization)
+- [Installation Guide](#installation-guide)
+- [System Architecture](#system-architecture)
+- [How to Run Benchmarks](#how-to-run-benchmarks)
+- [How to Add New Benchmarks](#how-to-add-new-benchmarks)
+    - [Task definition](#task-definition)
+    - [Benchmark definition](#benchmark-definition)
+    - [Test benchmark](#test-benchmark)
+    - [Visualization](#visualization)
 
 ## Installation Guide
 
