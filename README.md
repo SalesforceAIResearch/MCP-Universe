@@ -96,6 +96,8 @@ The MCPUniverse architecture consists of several key components:
 
 ![alt text](https://github.com/SalesforceAIResearch/MCP-Universe/raw/main/docs/_static/architecture.png)
 
+More information can be found [here](https://github.com/SalesforceAIResearch/MCP-Universe/blob/main/docs).
+
 ## How to Add New Benchmarks
 
 A benchmark is defined by three main configuration elements: the task definition,
