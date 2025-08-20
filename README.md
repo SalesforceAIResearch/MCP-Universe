@@ -238,13 +238,13 @@ the agent to use (by the defined agent name), and a list of tasks to evaluate. E
 path. It can be a full file path or a partial file path. If it is a partial file path (like "dummy/tasks/weather.json"),
 it should be put in the folder [mcpuniverse/benchmark/configs](https://github.com/SalesforceAIResearch/MCP-Universe/tree/main/mcpuniverse/benchmark/configs) in this repo.
 
-This framework provides a convenient way to define simple agents like ReAct or complex agent workflows.
-Firstly, you need to specify the LLMs you want to use in the agents. Note that each component has a name, e.g., "llm-1".
-The framework will use these names to link all the components together. Secondly, you can define an agent by specifying
-the agent name and agent class. Agent classes are those defined in the package [mcpuniverse.agent](https://github.com/SalesforceAIResearch/MCP-Universe/tree/main/mcpuniverse/agent). 
-Some commonly used ones are "basic", "function-call" and "react". You also need to specify the LLM used in this agent by setting "llm" in spec.config.
+This framework offers a flexible way to define both simple agents (such as ReAct) and more complex, multi-step agent workflows.
 
-Complex workflows (e.g., orchestrated agents) can also be defined. Example:
+1. **Specify LLMs:** Begin by declaring the large language models (LLMs) you want the agents to use. Each LLM component must be assigned a unique name (e.g., `"llm-1"`). These names serve as identifiers that the framework uses to connect the different components together.
+2. **Define an agent:** Next, define an agent by providing its name and selecting an agent class. Agent classes are available in the [mcpuniverse.agent](https://github.com/SalesforceAIResearch/MCP-Universe/tree/main/mcpuniverse/agent) package. Commonly used classes include `"basic"`, `"function-call"`, and `"react"`. Within the agent specification (`spec.config`), you must also indicate which LLM instance the agent should use by setting the `"llm"` field.
+3. **Create complex workflows:** Beyond simple agents, the framework supports the definition of sophisticated, orchestrated workflows where multiple agents interact or collaborate to solve more complex tasks.
+
+For example:
 
 ```yaml
 kind: llm
