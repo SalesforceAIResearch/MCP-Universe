@@ -64,27 +64,6 @@ brew install postgresql
 pre-commit install
 ```
 
-### Github MCP Server Installation
-```shell
-git clone git@github.com:github/github-mcp-server.git
-cd cmd/github-mcp-server
-go build
-```
-
-- add github MCP config to /mcp/configs/server_list.json
-```json
-"github": {
-  "stdio": {
-    "command": "/path/to/github-mcp-server",
-    "args": ["stdio"]
-  },
-  "env": {
-    "GITHUB_PERSONAL_ACCESS_TOKEN": "{{GITHUB_PERSONAL_ACCESS_TOKEN}}"
-  }
-}
-```
-
-
 ## System Architecture
 
 The MCPUniverse architecture consists of several key components:
