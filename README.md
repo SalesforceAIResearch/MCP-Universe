@@ -6,17 +6,17 @@ and evaluating different agent configurations across a variety of task environme
 ## Table of Contents
 
 - [MCPUniverse](#mcpuniverse)
-  - [Table of Contents](#table-of-contents)
-  - [Installation Guide](#installation-guide)
-    - [Setup](#setup)
-    - [Github MCP Server Installation](#github-mcp-server-installation)
-  - [System Architecture](#system-architecture)
-  - [How to Add New Benchmarks](#how-to-add-new-benchmarks)
-    - [Task definition](#task-definition)
-    - [Benchmark definition](#benchmark-definition)
-    - [How to run benchmarks](#how-to-run-benchmarks)
-    - [Test benchmark](#test-benchmark)
-    - [Visualization](#visualization)
+    - [Table of Contents](#table-of-contents)
+    - [Installation Guide](#installation-guide)
+        - [Setup](#setup)
+        - [Github MCP Server Installation](#github-mcp-server-installation)
+    - [System Architecture](#system-architecture)
+    - [How to Add New Benchmarks](#how-to-add-new-benchmarks)
+        - [Task definition](#task-definition)
+        - [Benchmark definition](#benchmark-definition)
+        - [How to run benchmarks](#how-to-run-benchmarks)
+        - [Test benchmark](#test-benchmark)
+        - [Visualization](#visualization)
 
 ## Installation Guide
 
@@ -49,11 +49,15 @@ source venv/bin/activate
 pip install -r requirements.txt
 pip install -r dev-requirements.txt
 ```
+
 To run unit tests, you also need install postgres. On Linux:
+
 ```shell
 sudo apt-get install libpq-dev
 ```
+
 On macOS:
+
 ```shell
 brew install postgresql
 ```
@@ -74,6 +78,7 @@ The MCPUniverse architecture consists of several key components:
 4. Evaluators: Functions that assess the agent's output against predefined criteria.
 
 The diagram below illustrates the high-level view:
+
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                      Application Layer                          │
@@ -112,14 +117,15 @@ More information can be found [here](https://github.com/SalesforceAIResearch/MCP
 To run benchmarks, you first need to set environment variables:
 
 1. Copy the `.env.example` file to a new file named .env.
-2. In the `.env` file, set the required API keys for various services used by the agents, 
-such as `OPENAI_API_KEY` and `GOOGLE_MAPS_API_KEY`.
+2. In the `.env` file, set the required API keys for various services used by the agents,
+   such as `OPENAI_API_KEY` and `GOOGLE_MAPS_API_KEY`.
 
 To execute a benchmark programmatically:
 
 ```python
 from mcpuniverse.tracer.collectors import MemoryCollector  # You can also use SQLiteCollector
 from mcpuniverse.benchmark.runner import BenchmarkRunner
+
 
 async def test():
     trace_collector = MemoryCollector()
@@ -191,14 +197,15 @@ For example, let's define
 data = {"x": [{"y": [1]}, {"y": [1, 1]}, {"y": [1, 2, 3, 4]}]}
 ```
 
-Then "get(x) -> foreach -> get(y) -> len" will do the followings:
+Then `get(x) -> foreach -> get(y) -> len` will do the followings:
 
-1. Get value of "x": [{"y": [1]}, {"y": [1, 1]}, {"y": [1, 2, 3, 4]}].
-2. Do foreach loop and get value of "y": [[1], [1, 1], [1, 2, 3, 4]].
-3. Get the length of each list: [1, 2, 4].
+1. Get value of "x": `[{"y": [1]}, {"y": [1, 1]}, {"y": [1, 2, 3, 4]}]`.
+2. Do foreach loop and get value of "y": `[[1], [1, 1], [1, 2, 3, 4]]`.
+3. Get the length of each list: `[1, 2, 4]`.
 
 If these predefined funcs are not enough, you can implement customized ones.
-For more details, please check this [doc](https://github.com/SalesforceAIResearch/MCP-Universe/blob/main/docs/custom-evaluators-guide.md).
+For more details, please check
+this [doc](https://github.com/SalesforceAIResearch/MCP-Universe/blob/main/docs/custom-evaluators-guide.md).
 
 ### Benchmark definition
 
@@ -236,13 +243,23 @@ The benchmark definition mainly contains two parts: One is the definition of the
 and the other is the benchmark configuration. The benchmark configuration is simple where you just need to specify
 the agent to use (by the defined agent name), and a list of tasks to evaluate. Each task entry is the task config file
 path. It can be a full file path or a partial file path. If it is a partial file path (like "dummy/tasks/weather.json"),
-it should be put in the folder [mcpuniverse/benchmark/configs](https://github.com/SalesforceAIResearch/MCP-Universe/tree/main/mcpuniverse/benchmark/configs) in this repo.
+it should be put in the
+folder [mcpuniverse/benchmark/configs](https://github.com/SalesforceAIResearch/MCP-Universe/tree/main/mcpuniverse/benchmark/configs)
+in this repo.
 
-This framework offers a flexible way to define both simple agents (such as ReAct) and more complex, multi-step agent workflows.
+This framework offers a flexible way to define both simple agents (such as ReAct) and more complex, multi-step agent
+workflows.
 
-1. **Specify LLMs:** Begin by declaring the large language models (LLMs) you want the agents to use. Each LLM component must be assigned a unique name (e.g., `"llm-1"`). These names serve as identifiers that the framework uses to connect the different components together.
-2. **Define an agent:** Next, define an agent by providing its name and selecting an agent class. Agent classes are available in the [mcpuniverse.agent](https://github.com/SalesforceAIResearch/MCP-Universe/tree/main/mcpuniverse/agent) package. Commonly used classes include `"basic"`, `"function-call"`, and `"react"`. Within the agent specification (`spec.config`), you must also indicate which LLM instance the agent should use by setting the `"llm"` field.
-3. **Create complex workflows:** Beyond simple agents, the framework supports the definition of sophisticated, orchestrated workflows where multiple agents interact or collaborate to solve more complex tasks.
+1. **Specify LLMs:** Begin by declaring the large language models (LLMs) you want the agents to use. Each LLM component
+   must be assigned a unique name (e.g., `"llm-1"`). These names serve as identifiers that the framework uses to connect
+   the different components together.
+2. **Define an agent:** Next, define an agent by providing its name and selecting an agent class. Agent classes are
+   available in
+   the [mcpuniverse.agent](https://github.com/SalesforceAIResearch/MCP-Universe/tree/main/mcpuniverse/agent) package.
+   Commonly used classes include `"basic"`, `"function-call"`, and `"react"`. Within the agent specification (
+   `spec.config`), you must also indicate which LLM instance the agent should use by setting the `"llm"` field.
+3. **Create complex workflows:** Beyond simple agents, the framework supports the definition of sophisticated,
+   orchestrated workflows where multiple agents interact or collaborate to solve more complex tasks.
 
 For example:
 
@@ -295,15 +312,17 @@ spec:
 ```
 
 ### Test benchmark
+
 ``` shell
 PYTHONPATH=. python tests/benchmark/test_benchmark_google_maps.py
 ```
+
 For further details, refer to the in-code documentation or existing configuration samples in the repository.
 
-
-
 ### Visualization
+
 ``` python
 results = await benchmark.run(trace_collector=trace_collector, verbose=True)
 ```
+
 Print out the intermediate results.
