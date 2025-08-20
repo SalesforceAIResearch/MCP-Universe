@@ -128,6 +128,31 @@ The diagram below illustrates the high-level view:
 
 More information can be found [here](https://github.com/SalesforceAIResearch/MCP-Universe/blob/main/docs).
 
+## How to run benchmarks
+
+To run benchmarks, you first need to set environment variables:
+
+1. Copy the `.env.example` file to a new file named .env.
+2. In the `.env` file, set the required API keys for various services used by the agents, 
+such as `OPENAI_API_KEY` and `GOOGLE_MAPS_API_KEY`.
+
+To execute a benchmark programmatically:
+
+```python
+from mcpuniverse.tracer.collectors import MemoryCollector  # You can also use SQLiteCollector
+from mcpuniverse.benchmark.runner import BenchmarkRunner
+
+
+async def test():
+    trace_collector = MemoryCollector()
+    # Run a benchmark
+    benchmark = BenchmarkRunner("dummy/benchmark_1.yaml")  # Choose a benchmark config file
+    results = await benchmark.run(trace_collector=trace_collector)
+    # Get traces
+    trace_id = results[0].task_trace_ids["dummy/tasks/weather.json"]
+    trace_records = trace_collector.get(trace_id)
+```
+
 ## How to Add New Benchmarks
 
 A benchmark is defined by three main configuration elements: the task definition,
@@ -289,31 +314,6 @@ spec:
   agent: orchestrator-workflow
   tasks:
     - dummy/tasks/weather.json
-```
-
-### How to run benchmarks
-
-To run benchmarks, you first need to set environment variables:
-
-1. Copy the `.env.example` file to a new file named .env.
-2. In the `.env` file, set the required API keys for various services used by the agents, 
-such as `OPENAI_API_KEY` and `GOOGLE_MAPS_API_KEY`.
-
-To execute a benchmark programmatically:
-
-```python
-from mcpuniverse.tracer.collectors import MemoryCollector  # You can also use SQLiteCollector
-from mcpuniverse.benchmark.runner import BenchmarkRunner
-
-
-async def test():
-    trace_collector = MemoryCollector()
-    # Run a benchmark
-    benchmark = BenchmarkRunner("dummy/benchmark_1.yaml")  # Choose a benchmark config file
-    results = await benchmark.run(trace_collector=trace_collector)
-    # Get traces
-    trace_id = results[0].task_trace_ids["dummy/tasks/weather.json"]
-    trace_records = trace_collector.get(trace_id)
 ```
 
 ### Test benchmark
