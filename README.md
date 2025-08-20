@@ -6,10 +6,7 @@ and evaluating different agent configurations across a variety of task environme
 ## Table of Contents
 
 - [MCPUniverse](#mcpuniverse)
-    - [Table of Contents](#table-of-contents)
     - [Installation Guide](#installation-guide)
-        - [Setup](#setup)
-        - [Github MCP Server Installation](#github-mcp-server-installation)
     - [System Architecture](#system-architecture)
     - [How to Run Benchmarks](#how-to-run-benchmarks)
     - [How to Add New Benchmarks](#how-to-add-new-benchmarks)
@@ -112,7 +109,7 @@ The diagram below illustrates the high-level view:
 
 More information can be found [here](https://github.com/SalesforceAIResearch/MCP-Universe/blob/main/docs).
 
-## How to run benchmarks
+## How to Run Benchmarks
 
 To run benchmarks, you first need to set environment variables:
 
