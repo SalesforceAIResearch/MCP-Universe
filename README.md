@@ -2,7 +2,7 @@
 
 # <img src="assets/icon.png" alt="MCP-Universe" width="22" height="22"> MCP-Universe
 
-[![Paper](https://img.shields.io/badge/Paper-arXiv:2508.XXXXX-B31B1B?style=for-the-badge&logo=arxiv&logoColor=white)](https://arxiv.org/abs/2508.XXXXX)
+[![Paper](https://img.shields.io/badge/Paper-arXiv:2508.14704-B31B1B?style=for-the-badge&logo=arxiv&logoColor=white)](https://arxiv.org/abs/2508.14704)
 [![Website](https://img.shields.io/badge/Website-Live-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white)](https://mcp-universe.github.io/)
 [![Leaderboard](https://img.shields.io/badge/Leaderboard-Results-FF6B35?style=for-the-badge&logo=chartdotjs&logoColor=white)](https://mcp-universe.github.io/#benchmark-results)
 [![Discord](https://img.shields.io/badge/Discord-Join_Community-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/t9tU77GF)
@@ -569,8 +569,9 @@ If you use MCP-Universe in your research, please cite our paper:
   title={MCP-Universe: Benchmarking Large Language Models with Real-World Model Context Protocol Servers},
   author={Ziyang Luo and Zhiqi Shen and Wenzhuo Yang and Zirui Zhao and Prathyusha Jwalapuram and Amrita Saha and Doyen Sahoo and Silvio Savarese and Caiming Xiong and Junnan Li},
   year={2025},
-  eprint={2508.XXXXX},
+  eprint={2508.14704},
   archivePrefix={arXiv},
-  primaryClass={cs.AI}
+  primaryClass={cs.AI},
+  url={https://arxiv.org/abs/2508.14704}, 
 }
 ```
