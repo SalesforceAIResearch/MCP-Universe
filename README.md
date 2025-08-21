@@ -40,14 +40,11 @@ Even state-of-the-art models show significant limitations in real-world MCP inte
 
 ## Table of Contents
 
+- [Architecture Overview](#architecture-overview)
 - [Getting Started](#getting-started)
     - [Prerequisites](#prerequisites)
-    - [Quick Installation](#quick-installation)
-- [Architecture Overview](#architecture-overview)
-- [Quick Start](#quick-start)
-- [Creating Custom Benchmarks](#creating-custom-benchmarks)
-    - [Task definition](#task-definition)
-    - [Benchmark definition](#benchmark-definition)
+    - [Installation](#installation)
+    - [Quick Test](#quick-test)
 - [Evaluating LLMs and Agents](#evaluating-llms-and-agents)
     - [Prerequisites](#prerequisites-1)
     - [Environment Configuration](#environment-configuration)
@@ -56,64 +53,10 @@ Even state-of-the-art models show significant limitations in real-world MCP inte
     - [Save the running log](#save-the-running-log)
     - [Save the benchmark result to a report](#save-the-benchmark-result-to-a-report)
     - [Visualize the agent running information](#visualize-the-agent-running-information)
+- [Creating Custom Benchmarks](#creating-custom-benchmarks)
+    - [Task definition](#task-definition)
+    - [Benchmark definition](#benchmark-definition)
 - [Citation](#citation)
-
-## Getting Started
-
-We follow
-the [feature branch workflow](https://www.atlassian.com/git/tutorials/comparing-workflows/feature-branch-workflow)
-in this repo for its simplicity. To ensure code quality, [PyLint](https://pylint.readthedocs.io/en/latest/)
-is integrated into our CI to enforce Python coding standards.
-
-### Prerequisites
-
-* **Python**: Requires version 3.10 or higher.
-* **Docker**: Used for running Dockerized MCP servers.
-* **PostgreSQL** (optional): Used for database storage and persistence.
-* **Redis** (optional): Used for caching and memory management.
-
-### Quick Installation
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/SalesforceAIResearch/MCP-Universe.git
-   cd MCP-Universe
-   ```
-
-2. **Create and activate virtual environment**
-   ```bash
-   python3 -m venv venv
-   source venv/bin/activate
-   ```
-
-3. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   pip install -r dev-requirements.txt
-   ```
-
-4. **Platform-specific requirements**
-
-   **Linux:**
-   ```bash
-   sudo apt-get install libpq-dev
-   ```
-
-   **macOS:**
-   ```bash
-   brew install postgresql
-   ```
-
-5. **Configure pre-commit hooks**
-   ```bash
-   pre-commit install
-   ```
-
-6. **Environment configuration**
-   ```bash
-   cp .env.example .env
-   # Edit .env with your API keys and configuration
-   ```
 
 ## Architecture Overview
 
@@ -161,7 +104,64 @@ The diagram below illustrates the high-level view:
 
 More information can be found [here](https://github.com/SalesforceAIResearch/MCP-Universe/blob/main/docs).
 
-## Quick Start
+## Getting Started
+
+We follow
+the [feature branch workflow](https://www.atlassian.com/git/tutorials/comparing-workflows/feature-branch-workflow)
+in this repo for its simplicity. To ensure code quality, [PyLint](https://pylint.readthedocs.io/en/latest/)
+is integrated into our CI to enforce Python coding standards.
+
+### Prerequisites
+
+* **Python**: Requires version 3.10 or higher.
+* **Docker**: Used for running Dockerized MCP servers.
+* **PostgreSQL** (optional): Used for database storage and persistence.
+* **Redis** (optional): Used for caching and memory management.
+
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/SalesforceAIResearch/MCP-Universe.git
+   cd MCP-Universe
+   ```
+
+2. **Create and activate virtual environment**
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate
+   ```
+
+3. **Install dependencies**
+   ```bash
+   pip install -r requirements.txt
+   pip install -r dev-requirements.txt
+   ```
+
+4. **Platform-specific requirements**
+
+   **Linux:**
+   ```bash
+   sudo apt-get install libpq-dev
+   ```
+
+   **macOS:**
+   ```bash
+   brew install postgresql
+   ```
+
+5. **Configure pre-commit hooks**
+   ```bash
+   pre-commit install
+   ```
+
+6. **Environment configuration**
+   ```bash
+   cp .env.example .env
+   # Edit .env with your API keys and configuration
+   ```
+
+### Quick Test
 
 To run benchmarks, you first need to set environment variables:
 
@@ -186,177 +186,6 @@ async def test():
     trace_records = trace_collector.get(trace_id)
 ```
 
-## Creating Custom Benchmarks
-
-A benchmark is defined by three main configuration elements: the task definition,
-agent/workflow definition, and the benchmark configuration itself. Below is an example
-using a simple "weather forecasting" task.
-
-### Task definition
-
-The task definition is provided in JSON format, for example:
-
-```json
-{
-  "category": "general",
-  "question": "What's the weather in San Francisco now?",
-  "mcp_servers": [
-    {
-      "name": "weather"
-    }
-  ],
-  "output_format": {
-    "city": "<City>",
-    "weather": "<Weather forecast results>"
-  },
-  "evaluators": [
-    {
-      "func": "json -> get(city)",
-      "op": "=",
-      "value": "San Francisco"
-    }
-  ]
-}
-```
-
-Field descriptions:
-
-1. **category**: The task category, e.g., "general", "google-maps", etc. You can set any value for this property.
-2. **question**: The main question you want to ask in this task. This is treated as a user message.
-3. **mcp_servers**: A list of MCP servers that are supported in this framework.
-4. **output_format**: The desired output format of agent responses.
-5. **evaluators**: A list of tests to evaluate. For each test/evaluator, it has three attributes: "func" indicates
-   how to extract values from the agent response, "op" is the comparison operator, and "value" is the ground-truth
-   value.
-   It will evaluate **op(func(...), value, op_args...)**. "op" can be "=", "<", ">" or other customized operators.
-
-In "evaluators", you need to write a rule ("func" attribute) showing how to extract values for testing. In the example
-above, "json -> get(city)" will first do JSON decoding and then extract the value of key "city". There are several
-predefined funcs in this repo:
-
-1. **json**: Perform JSON decoding.
-2. **get**: Get the value of a key.
-3. **len**: Get the length of a list.
-4. **foreach**: Do a FOR-EACH loop.
-
-For example, let's define
-
-```python
-data = {"x": [{"y": [1]}, {"y": [1, 1]}, {"y": [1, 2, 3, 4]}]}
-```
-
-Then `get(x) -> foreach -> get(y) -> len` will do the following:
-
-1. Get the value of "x": `[{"y": [1]}, {"y": [1, 1]}, {"y": [1, 2, 3, 4]}]`.
-2. Do a foreach loop and get the value of "y": `[[1], [1, 1], [1, 2, 3, 4]]`.
-3. Get the length of each list: `[1, 2, 4]`.
-
-If these predefined functions are not enough, you can implement custom ones.
-For more details, please check
-this [doc](https://github.com/SalesforceAIResearch/MCP-Universe/blob/main/docs/custom-evaluators-guide.md).
-
-### Benchmark definition
-
-Define agent(s) and benchmark in a YAML file. Here’s a simple weather forecast benchmark:
-
-```yaml
-kind: llm
-spec:
-  name: llm-1
-  type: openai
-  config:
-    model_name: gpt-4o
-
----
-kind: agent
-spec:
-  name: ReAct-agent
-  type: react
-  config:
-    llm: llm-1
-    instruction: You are an agent for weather forecasting.
-    servers:
-      - name: weather
-
----
-kind: benchmark
-spec:
-  description: Test the agent for weather forecasting
-  agent: ReAct-agent
-  tasks:
-    - dummy/tasks/weather.json
-```
-
-The benchmark definition mainly contains two parts: the agent definition and the benchmark configuration. The benchmark configuration is simple—you just need to specify the agent to use (by the defined agent name) and a list of tasks to evaluate. Each task entry is the task config file
-path. It can be a full file path or a partial file path. If it is a partial file path (like "dummy/tasks/weather.json"),
-it should be put in the
-folder [mcpuniverse/benchmark/configs](https://github.com/SalesforceAIResearch/MCP-Universe/tree/main/mcpuniverse/benchmark/configs)
-in this repo.
-
-This framework offers a flexible way to define both simple agents (such as ReAct) and more complex, multi-step agent
-workflows.
-
-1. **Specify LLMs:** Begin by declaring the large language models (LLMs) you want the agents to use. Each LLM component
-   must be assigned a unique name (e.g., `"llm-1"`). These names serve as identifiers that the framework uses to connect
-   the different components together.
-2. **Define an agent:** Next, define an agent by providing its name and selecting an agent class. Agent classes are
-   available in
-   the [mcpuniverse.agent](https://github.com/SalesforceAIResearch/MCP-Universe/tree/main/mcpuniverse/agent) package.
-   Commonly used classes include `"basic"`, `"function-call"`, and `"react"`. Within the agent specification (
-   `spec.config`), you must also indicate which LLM instance the agent should use by setting the `"llm"` field.
-3. **Create complex workflows:** Beyond simple agents, the framework supports the definition of sophisticated,
-   orchestrated workflows where multiple agents interact or collaborate to solve more complex tasks.
-
-For example:
-
-```yaml
-kind: llm
-spec:
-  name: llm-1
-  type: openai
-  config:
-    model_name: gpt-4o
-
----
-kind: agent
-spec:
-  name: basic-agent
-  type: basic
-  config:
-    llm: llm-1
-    instruction: Return the latitude and the longitude of a place.
-
----
-kind: agent
-spec:
-  name: function-call-agent
-  type: function-call
-  config:
-    llm: llm-1
-    instruction: You are an agent for weather forecast. Please return the weather today at the given latitude and longitude.
-    servers:
-      - name: weather
-
----
-kind: workflow
-spec:
-  name: orchestrator-workflow
-  type: orchestrator
-  config:
-    llm: llm-1
-    agents:
-      - basic-agent
-      - function-call-agent
-
----
-kind: benchmark
-spec:
-  description: Test the agent for weather forecasting
-  agent: orchestrator-workflow
-  tasks:
-    - dummy/tasks/weather.json
-```
-
 ## Evaluating LLMs and Agents
 
 This section provides comprehensive instructions for evaluating LLMs and AI agents using the MCP-Universe benchmark suite. The framework supports evaluation across multiple domains including web search, location navigation, browser automation, financial analysis, repository management, and 3D design.
@@ -365,7 +194,8 @@ This section provides comprehensive instructions for evaluating LLMs and AI agen
 
 Before running benchmark evaluations, ensure you have completed the [Getting Started](#getting-started) section and have the following:
 
-- Python 3.10 or higher
+- Python: Version 3.10 or higher
+- Docker: Installed and available in your environment
 - All required dependencies installed via `pip install -r requirements.txt`
 - Active virtual environment
 - Appropriate API access for the services you intend to evaluate
@@ -560,6 +390,177 @@ This will print out the intermediate results as the benchmark runs.
 
 
 For further details, refer to the in-code documentation or existing configuration samples in the repository.
+
+## Creating Custom Benchmarks
+
+A benchmark is defined by three main configuration elements: the task definition,
+agent/workflow definition, and the benchmark configuration itself. Below is an example
+using a simple "weather forecasting" task.
+
+### Task definition
+
+The task definition is provided in JSON format, for example:
+
+```json
+{
+  "category": "general",
+  "question": "What's the weather in San Francisco now?",
+  "mcp_servers": [
+    {
+      "name": "weather"
+    }
+  ],
+  "output_format": {
+    "city": "<City>",
+    "weather": "<Weather forecast results>"
+  },
+  "evaluators": [
+    {
+      "func": "json -> get(city)",
+      "op": "=",
+      "value": "San Francisco"
+    }
+  ]
+}
+```
+
+Field descriptions:
+
+1. **category**: The task category, e.g., "general", "google-maps", etc. You can set any value for this property.
+2. **question**: The main question you want to ask in this task. This is treated as a user message.
+3. **mcp_servers**: A list of MCP servers that are supported in this framework.
+4. **output_format**: The desired output format of agent responses.
+5. **evaluators**: A list of tests to evaluate. For each test/evaluator, it has three attributes: "func" indicates
+   how to extract values from the agent response, "op" is the comparison operator, and "value" is the ground-truth
+   value.
+   It will evaluate **op(func(...), value, op_args...)**. "op" can be "=", "<", ">" or other customized operators.
+
+In "evaluators", you need to write a rule ("func" attribute) showing how to extract values for testing. In the example
+above, "json -> get(city)" will first do JSON decoding and then extract the value of key "city". There are several
+predefined funcs in this repo:
+
+1. **json**: Perform JSON decoding.
+2. **get**: Get the value of a key.
+3. **len**: Get the length of a list.
+4. **foreach**: Do a FOR-EACH loop.
+
+For example, let's define
+
+```python
+data = {"x": [{"y": [1]}, {"y": [1, 1]}, {"y": [1, 2, 3, 4]}]}
+```
+
+Then `get(x) -> foreach -> get(y) -> len` will do the following:
+
+1. Get the value of "x": `[{"y": [1]}, {"y": [1, 1]}, {"y": [1, 2, 3, 4]}]`.
+2. Do a foreach loop and get the value of "y": `[[1], [1, 1], [1, 2, 3, 4]]`.
+3. Get the length of each list: `[1, 2, 4]`.
+
+If these predefined functions are not enough, you can implement custom ones.
+For more details, please check
+this [doc](https://github.com/SalesforceAIResearch/MCP-Universe/blob/main/docs/custom-evaluators-guide.md).
+
+### Benchmark definition
+
+Define agent(s) and benchmark in a YAML file. Here’s a simple weather forecast benchmark:
+
+```yaml
+kind: llm
+spec:
+  name: llm-1
+  type: openai
+  config:
+    model_name: gpt-4o
+
+---
+kind: agent
+spec:
+  name: ReAct-agent
+  type: react
+  config:
+    llm: llm-1
+    instruction: You are an agent for weather forecasting.
+    servers:
+      - name: weather
+
+---
+kind: benchmark
+spec:
+  description: Test the agent for weather forecasting
+  agent: ReAct-agent
+  tasks:
+    - dummy/tasks/weather.json
+```
+
+The benchmark definition mainly contains two parts: the agent definition and the benchmark configuration. The benchmark configuration is simple—you just need to specify the agent to use (by the defined agent name) and a list of tasks to evaluate. Each task entry is the task config file
+path. It can be a full file path or a partial file path. If it is a partial file path (like "dummy/tasks/weather.json"),
+it should be put in the
+folder [mcpuniverse/benchmark/configs](https://github.com/SalesforceAIResearch/MCP-Universe/tree/main/mcpuniverse/benchmark/configs)
+in this repo.
+
+This framework offers a flexible way to define both simple agents (such as ReAct) and more complex, multi-step agent
+workflows.
+
+1. **Specify LLMs:** Begin by declaring the large language models (LLMs) you want the agents to use. Each LLM component
+   must be assigned a unique name (e.g., `"llm-1"`). These names serve as identifiers that the framework uses to connect
+   the different components together.
+2. **Define an agent:** Next, define an agent by providing its name and selecting an agent class. Agent classes are
+   available in
+   the [mcpuniverse.agent](https://github.com/SalesforceAIResearch/MCP-Universe/tree/main/mcpuniverse/agent) package.
+   Commonly used classes include `"basic"`, `"function-call"`, and `"react"`. Within the agent specification (
+   `spec.config`), you must also indicate which LLM instance the agent should use by setting the `"llm"` field.
+3. **Create complex workflows:** Beyond simple agents, the framework supports the definition of sophisticated,
+   orchestrated workflows where multiple agents interact or collaborate to solve more complex tasks.
+
+For example:
+
+```yaml
+kind: llm
+spec:
+  name: llm-1
+  type: openai
+  config:
+    model_name: gpt-4o
+
+---
+kind: agent
+spec:
+  name: basic-agent
+  type: basic
+  config:
+    llm: llm-1
+    instruction: Return the latitude and the longitude of a place.
+
+---
+kind: agent
+spec:
+  name: function-call-agent
+  type: function-call
+  config:
+    llm: llm-1
+    instruction: You are an agent for weather forecast. Please return the weather today at the given latitude and longitude.
+    servers:
+      - name: weather
+
+---
+kind: workflow
+spec:
+  name: orchestrator-workflow
+  type: orchestrator
+  config:
+    llm: llm-1
+    agents:
+      - basic-agent
+      - function-call-agent
+
+---
+kind: benchmark
+spec:
+  description: Test the agent for weather forecasting
+  agent: orchestrator-workflow
+  tasks:
+    - dummy/tasks/weather.json
+```
 
 ## Citation
 
