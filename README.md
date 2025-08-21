@@ -68,6 +68,7 @@ is integrated into our CI to enforce Python coding standards.
 ### Prerequisites
 
 * **Python**: Requires version 3.10 or higher.
+* **Docker**: Used for running Dockerized MCP servers.
 * **PostgreSQL** (optional): Used for database storage and persistence.
 * **Redis** (optional): Used for caching and memory management.
 
