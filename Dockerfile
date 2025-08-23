@@ -1,3 +1,11 @@
+#Python image
+FROM python:3.10-slim-bookworm
+
+LABEL vendor=SalesforceAIResearch \
+      Project=MCP-Universe 
+
+
+
 WORKDIR /app
 
 # Copy the entire project directory into the container.
