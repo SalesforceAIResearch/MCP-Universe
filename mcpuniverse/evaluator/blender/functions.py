@@ -30,7 +30,6 @@ async def blender__check_file_exists(path: str) -> bool:
         bool: True if the file exists, False otherwise
     """
     file_path = os.path.join(PARENT_DIR, "blend_files", path)
-    print(file_path)
     return os.path.exists(file_path)
 
 
@@ -74,11 +73,9 @@ async def blender__check_file_content(path: str, task_id: str) -> Tuple[bool, st
         if result.returncode != 0:
             return False, f"Blender validation script failed: {result.stderr}"
 
-        print('PARENT_DIR', PARENT_DIR)
         result_file_path = os.path.join(
             PARENT_DIR, "evaluated_results", f"tid_{task_id}_results.json"
         )
-        print(cmd, result_file_path)
 
         if not os.path.exists(result_file_path):
             return False, "Validation results file not generated"
@@ -111,13 +108,18 @@ async def blender__remove_files(blender_path: str, result_path: str) -> None:
         This function silently handles file removal failures to ensure cleanup
         operations don't interrupt the evaluation workflow.
     """
-    blender_file_path = os.path.join(PARENT_DIR, "blend_files", blender_path)
-    if os.path.exists(blender_file_path):
-        try:
-            os.remove(blender_file_path)
-        except OSError:
-            # Silently handle file removal failures to avoid interrupting workflow
-            pass
+    blend_files_dir = os.path.join(PARENT_DIR, "blend_files")
+    if os.path.exists(blend_files_dir):
+        for filename in os.listdir(blend_files_dir):
+            # Check if "blend" is in the filename (case-insensitive)
+            if "blend" in filename.lower():
+                file_to_remove = os.path.join(blend_files_dir, filename)
+                if os.path.isfile(file_to_remove): # Ensure it's a file before attempting to remove
+                    try:
+                        os.remove(file_to_remove)
+                    except OSError:
+                        # Silently handle file removal failures to avoid interrupting workflow
+                        pass
 
     result_file_path = os.path.join(PARENT_DIR, "evaluated_results", result_path)
     if os.path.exists(result_file_path):

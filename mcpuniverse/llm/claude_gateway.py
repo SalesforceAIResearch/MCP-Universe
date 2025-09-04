@@ -39,7 +39,7 @@ class ClaudeGatewayConfig(BaseConfig):
     api_key: str = os.getenv("SALESFORCE_GATEWAY_KEY", "")
     temperature: float = 0.0
     top_p: float = 1.0
-    max_completion_tokens: int = 2048
+    max_completion_tokens: int = 10000
 
 
 class ClaudeGatewayModel(BaseLLM):

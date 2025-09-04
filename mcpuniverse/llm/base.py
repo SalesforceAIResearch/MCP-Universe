@@ -103,13 +103,31 @@ class BaseLLM(ExportConfigMixin, metaclass=ComponentABCMeta):
                 project_id=self.project_id))
             try:
                 response = self._generate(messages, **kwargs)
+                # Handle different response types for tracing
+                if isinstance(response, BaseModel):
+                    response_data = response.model_dump(mode="json")
+                elif hasattr(response, 'choices') and hasattr(response, 'model'):
+                    # Handle OpenAI-style response objects
+                    response_data = {
+                        "model": getattr(response, 'model', ''),
+                        "choices": [
+                            {
+                                "message": {
+                                    "content": getattr(choice.message, 'content', None),
+                                    "tool_calls": getattr(choice.message, 'tool_calls', None)
+                                }
+                            } for choice in response.choices
+                        ]
+                    }
+                else:
+                    response_data = response
+
                 t.add({
                     "type": "llm",
                     "class": self.__class__.__name__,
                     "config": self.config.to_dict(),
                     "messages": messages,
-                    "response": response.model_dump(mode="json")
-                    if isinstance(response, BaseModel) else response,
+                    "response": response_data,
                     "error": ""
                 })
             except Exception as e:
@@ -132,9 +150,28 @@ class BaseLLM(ExportConfigMixin, metaclass=ComponentABCMeta):
                     project_id=self.project_id))
                 raise e
 
+        # Handle different response types for callbacks
+        if isinstance(response, BaseModel):
+            callback_data = response.model_dump(mode="json")
+        elif hasattr(response, 'choices') and hasattr(response, 'model'):
+            # Handle OpenAI-style response objects
+            callback_data = {
+                "model": getattr(response, 'model', ''),
+                "choices": [
+                    {
+                        "message": {
+                            "content": getattr(choice.message, 'content', None),
+                            "tool_calls": getattr(choice.message, 'tool_calls', None)
+                        }
+                    } for choice in response.choices
+                ]
+            }
+        else:
+            callback_data = response
+
         send_message(callbacks, message=CallbackMessage(
             source=self.id, type=MessageType.RESPONSE,
-            data=response.model_dump(mode="json") if isinstance(response, BaseModel) else response,
+            data=callback_data,
             project_id=self.project_id))
         send_message(callbacks, message=CallbackMessage(
             source=self.id, type=MessageType.EVENT, data=Event.AFTER_CALL,

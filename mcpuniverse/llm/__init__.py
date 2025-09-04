@@ -6,6 +6,7 @@ from .deepseek import DeepSeekModel
 from .claude_gateway import ClaudeGatewayModel
 from .grok import GrokModel
 from .openai_agent import OpenAIAgentModel
+from .openrouter import OpenRouterModel
 
 __all__ = [
     "OpenAIModel",

@@ -1,5 +1,5 @@
 """
-OpenAI LLMs
+OpenRouter LLMs
 """
 # pylint: disable=broad-exception-caught
 import os
@@ -18,15 +18,24 @@ from .base import BaseLLM
 
 load_dotenv()
 
+model_name_map = {
+    "Qwen3Coder_OR": "qwen/qwen3-coder",
+    "GrokCoderFast1_OR": "x-ai/grok-code-fast-1",
+    "GPTOSS120B_OR": "openai/gpt-oss-120b",
+    "DeepSeekV3_1_OR": "deepseek/deepseek-chat-v3.1",
+    "GLM4_5_OR": "z-ai/glm-4.5",
+    "GLM4_5_AIR_OR": "z-ai/glm-4.5-air",
+    "KimiK2_OR": "moonshotai/kimi-k2"
+}
 
 @dataclass
-class OpenAIConfig(BaseConfig):
+class OpenRouterConfig(BaseConfig):
     """
-    Configuration for OpenAI language models.
+    Configuration for OpenRouter language models.
 
     Attributes:
-        model_name (str): The name of the OpenAI model to use (default: "gpt-4o").
-        api_key (str): The OpenAI API key (default: environment variable OPENAI_API_KEY).
+        model_name (str): The name of the OpenRouter model to use (default: "GPTOSS120B_OR").
+        api_key (str): The OpenRouter API key (default: environment variable OPENROUTER_API_KEY).
         temperature (float): Controls randomness in output (default: 1.0).
         top_p (float): Controls diversity of output (default: 1.0).
         frequency_penalty (float): Penalizes frequent token use (default: 0.0).
@@ -34,8 +43,8 @@ class OpenAIConfig(BaseConfig):
         max_completion_tokens (int): Maximum number of tokens in the completion (default: 2048).
         seed (int): Random seed for reproducibility (default: 12345).
     """
-    model_name: str = "gpt-4.1"
-    api_key: str = os.getenv("OPENAI_API_KEY", "")
+    model_name: str = "KimiK2_OR"
+    api_key: str = os.getenv("OPENROUTER_API_KEY", "")
     temperature: float = 1.0
     top_p: float = 1.0
     frequency_penalty: float = 0.0
@@ -44,24 +53,24 @@ class OpenAIConfig(BaseConfig):
     seed: int = 12345
 
 
-class OpenAIModel(BaseLLM):
+class OpenRouterModel(BaseLLM):
     """
-    OpenAI language models.
+    OpenRouter language models.
 
-    This class provides methods to interact with OpenAI's language models,
+    This class provides methods to interact with OpenRouter's language models,
     including generating responses based on input messages.
 
     Attributes:
-        config_class (Type[OpenAIConfig]): Configuration class for the model.
+        config_class (Type[OpenRouterConfig]): Configuration class for the model.
         alias (str): Alias for the model, used for identification.
     """
-    config_class = OpenAIConfig
-    alias = "openai"
-    env_vars = ["OPENAI_API_KEY"]
+    config_class = OpenRouterConfig
+    alias = "openrouter"
+    env_vars = ["OPENROUTER_API_KEY"]
 
     def __init__(self, config: Optional[Union[Dict, str]] = None):
         super().__init__()
-        self.config = OpenAIModel.config_class.load(config)
+        self.config = OpenRouterModel.config_class.load(config)
 
     def _generate(
             self,
@@ -70,7 +79,7 @@ class OpenAIModel(BaseLLM):
             **kwargs
     ):
         """
-        Generates content using the OpenAI model.
+        Generates content using the OpenRouter model.
 
         Args:
             messages (List[dict[str, str]]): List of message dictionaries,
@@ -91,14 +100,16 @@ class OpenAIModel(BaseLLM):
         """
         max_retries = kwargs.get("max_retries", 5)
         base_delay = kwargs.get("base_delay", 10.0)
+        # Map model name to OpenRouter model name
+        model_name = model_name_map.get(self.config.model_name, self.config.model_name)
 
         for attempt in range(max_retries + 1):
             try:
-                client = OpenAI(api_key=self.config.api_key)
+                client = OpenAI(api_key=self.config.api_key, base_url="https://openrouter.ai/api/v1")
                 if response_format is None:
                     chat = client.chat.completions.create(
                         messages=messages,
-                        model=self.config.model_name,
+                        model=model_name,
                         temperature=self.config.temperature,
                         timeout=int(kwargs.get("timeout", 60)),
                         top_p=self.config.top_p,
@@ -116,7 +127,7 @@ class OpenAIModel(BaseLLM):
 
                 chat = client.beta.chat.completions.parse(
                     messages=messages,
-                    model=self.config.model_name,
+                    model=model_name,
                     temperature=self.config.temperature,
                     timeout=int(kwargs.get("timeout", 60)),
                     top_p=self.config.top_p,
@@ -155,4 +166,4 @@ class OpenAIModel(BaseLLM):
         Set context, e.g., environment variables (API keys).
         """
         super().set_context(context)
-        self.config.api_key = context.env.get("OPENAI_API_KEY", self.config.api_key)
+        self.config.api_key = context.env.get("OPENROUTER_API_KEY", self.config.api_key)

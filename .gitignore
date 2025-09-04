@@ -184,8 +184,7 @@ notebook/
 log/
 
 # run script
-run.sh
-run1.sh
+run*.sh
 
 # cursor results
 cursor_results/
@@ -198,3 +197,4 @@ tests/gpt-oss/
 mcpuniverse/evaluator/blender/check_functions/evaluated_results/
 mcpuniverse/evaluator/blender/blend_files/
 tests/cursor/
+tests/benchmark/*_run_many_llms.py
