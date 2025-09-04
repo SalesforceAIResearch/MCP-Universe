@@ -13,6 +13,6 @@ __all__ = [
     "WorkflowAgent",
     "ReAct",
     "Reflection",
-    "BaseAgent"
+    "BaseAgent",
     "ClaudeCodeAgent"
 ]
