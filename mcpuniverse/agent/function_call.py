@@ -83,7 +83,7 @@ class FunctionCall(BaseAgent):
 
         Args:
             tools (Dict[str, List[Tool]]): MCP tools organized by server name
-            
+
         Returns:
             List[Dict[str, Any]]: Tools in function call format
         """
@@ -104,10 +104,10 @@ class FunctionCall(BaseAgent):
     def _parse_function_call_name(self, function_name: str) -> tuple[str, str]:
         """
         Parse function call name to extract server and tool names.
-        
+
         Args:
             function_name (str): Function name in format "server__tool"
-            
+
         Returns:
             tuple[str, str]: (server_name, tool_name)
         """
@@ -123,13 +123,13 @@ class FunctionCall(BaseAgent):
     def _extract_json_from_text(self, text: str) -> str:
         """
         Extract JSON from text that might contain additional content before or after the JSON.
-        
+
         Args:
             text (str): Text that may contain JSON
-            
+
         Returns:
             str: Extracted JSON string
-            
+
         Raises:
             ValueError: If no valid JSON is found in the text
         """
@@ -221,6 +221,155 @@ class FunctionCall(BaseAgent):
         """
         self._history.append(f"{history_type.title()}: {message}")
 
+    async def _handle_none_response(self, iter_num: int, callbacks: List[Any], tracer: Tracer) -> AgentResponse:
+        """Handle case where LLM returns None response."""
+        self._logger.error("LLM returned None response, stopping execution")
+        error_msg = (
+            "The language model encountered a critical error and couldn't generate a response. "
+            "This may be due to API failures, context length limits, or other issues."
+        )
+        self._add_history(
+            history_type="error",
+            message=error_msg
+        )
+
+        # Send error message to callbacks
+        await send_message_async(
+            callbacks,
+            message=CallbackMessage(
+                source=__file__,
+                type=MessageType.LOG,
+                metadata={
+                    "event": "error",
+                    "data": "".join([
+                        f"{'=' * 66}\n",
+                        f"Iteration: {iter_num + 1}\n",
+                        f"{'-' * 66}\n",
+                        "\\033[31mCritical Error: LLM returned None response\\n\\033[0m",
+                        f"\\033[33mDetails: {error_msg}\\n\\033[0m"
+                    ])
+                }
+            )
+        )
+
+        # Return immediately instead of continuing iterations
+        return AgentResponse(
+            name=self._name,
+            class_name=self.__class__.__name__,
+            response=error_msg,
+            trace_id=tracer.trace_id
+        )
+
+    async def _handle_content_response(
+        self,
+        content: str,
+        messages: List[Dict[str, Any]],
+        iter_num: int,
+        callbacks: List[Any],
+        tracer: Tracer
+    ) -> Optional[AgentResponse]:
+        """Handle content-based responses from LLM."""
+        try:
+            # Add content as assistant message to conversation
+            messages.append({
+                "role": "assistant",
+                "content": content
+            })
+
+            # Try to parse as JSON response
+            # Handle cases where JSON might be embedded in other text
+            response_text = content.strip().strip('`').strip()
+
+            # Remove "json" prefix if present
+            if response_text.startswith("json"):
+                response_text = response_text[4:].strip()
+
+            # Try to extract JSON from the text
+            json_text = self._extract_json_from_text(response_text)
+            parsed_response = json.loads(json_text)
+
+            # Check if this is a final answer
+            if "answer" in parsed_response:
+                self._add_history(
+                    history_type="answer",
+                    message=parsed_response["answer"]
+                )
+                await send_message_async(
+                    callbacks,
+                    message=CallbackMessage(
+                        source=__file__,
+                        type=MessageType.LOG,
+                        metadata={
+                            "event": "plain_text",
+                            "data": "".join([
+                                f"{'=' * 66}\n",
+                                f"Iteration: {iter_num + 1}\n",
+                                f"{'-' * 66}\n",
+                                f"\\033[32mThought: {parsed_response['thought']}\\n\\n\\033[0m",
+                                f"\\033[31mAnswer: {parsed_response['answer']}\\n\\033[0m"
+                            ])
+                        }
+                    )
+                )
+                return AgentResponse(
+                    name=self._name,
+                    class_name=self.__class__.__name__,
+                    response=parsed_response["answer"],
+                    trace_id=tracer.trace_id
+                )
+
+            # If no answer field, treat entire response as thought
+            self._add_history(
+                history_type="thought",
+                message=content
+            )
+            await send_message_async(
+                callbacks,
+                message=CallbackMessage(
+                    source=__file__,
+                    type=MessageType.LOG,
+                    metadata={
+                        "event": "plain_text",
+                        "data": "".join([
+                            f"{'=' * 66}\n",
+                            f"Iteration: {iter_num + 1}\n",
+                            f"{'-' * 66}\n",
+                            f"\\033[32mThought: {content}\\n\\033[0m"
+                        ])
+                    }
+                )
+            )
+            # Continue to next iteration
+            return None
+
+        except json.JSONDecodeError as e:
+            self._logger.error("Failed to parse response: %s", str(e))
+            error_msg = f"Encountered an error in parsing LLM response:\\n{content}\\n\\nPlease try again."
+            self._add_history(
+                history_type="error",
+                message=error_msg
+            )
+            # Add error as user message to guide the next iteration
+            messages.append({
+                "role": "user",
+                "content": error_msg
+            })
+            return None
+        except Exception as e:
+            self._logger.error("Failed to process response: %s", str(e))
+            error_msg = (f"Encountered an unexpected error for the LLM response:\\n"
+                       f"{content}.\\n\\nPlease try again.")
+            self._add_history(
+                history_type="error",
+                message=error_msg
+            )
+            # Add error as user message to guide the next iteration
+            messages.append({
+                "role": "user",
+                "content": error_msg
+            })
+            return None
+
     async def _execute(
             self,
             message: Union[str, List[str]],
@@ -287,6 +436,8 @@ class FunctionCall(BaseAgent):
                 )
 
             # Handle different types of responses
+            if response is None:
+                return await self._handle_none_response(iter_num, callbacks, tracer)
             if hasattr(response, 'choices') and response.choices:
                 choice = response.choices[0]
                 message_obj = choice.message
@@ -322,7 +473,7 @@ class FunctionCall(BaseAgent):
                                     source=__file__,
                                     type=MessageType.LOG,
                                     metadata={
-                                        "event": "plain_text", 
+                                        "event": "plain_text",
                                         "data": "".join([
                                             f"{'=' * 66}\n",
                                             f"Iteration: {iter_num + 1}\n",
@@ -335,116 +486,23 @@ class FunctionCall(BaseAgent):
                     continue
                 if has_content:
                     content = message_obj.content.strip()
-                    try:
-                        # Add content as assistant message to conversation
-                        messages.append({
-                            "role": "assistant",
-                            "content": content
-                        })
+                    result = await self._handle_content_response(content, messages, iter_num, callbacks, tracer)
+                    if result is not None:
+                        return result
+                    continue
 
-                        # Try to parse as JSON response
-                        # Handle cases where JSON might be embedded in other text
-                        response_text = content.strip().strip('`').strip()
-
-                        # Remove "json" prefix if present
-                        if response_text.startswith("json"):
-                            response_text = response_text[4:].strip()
-                        # Try to extract JSON from the text
-                        json_text = self._extract_json_from_text(response_text)
-                        parsed_response = json.loads(json_text)
-
-                        # Check if this is a final answer
-                        if "answer" in parsed_response:
-                            self._add_history(
-                                history_type="answer",
-                                message=parsed_response["answer"]
-                            )
-                            await send_message_async(
-                                callbacks,
-                                message=CallbackMessage(
-                                    source=__file__,
-                                    type=MessageType.LOG,
-                                    metadata={
-                                        "event": "plain_text",
-                                        "data": "".join([
-                                            f"{'=' * 66}\n",
-                                            f"Iteration: {iter_num + 1}\n",
-                                            f"{'-' * 66}\n",
-                                            f"\033[32mThought: {parsed_response['thought']}\n\n\033[0m",
-                                            f"\033[31mAnswer: {parsed_response['answer']}\n\033[0m"
-                                        ])
-                                    }
-                                )
-                            )
-                            return AgentResponse(
-                                name=self._name,
-                                class_name=self.__class__.__name__,
-                                response=parsed_response["answer"],
-                                trace_id=tracer.trace_id
-                            )
-
-                        # If no answer field, treat entire response as thought
-                        self._add_history(
-                            history_type="thought",
-                            message=content
-                        )
-                        await send_message_async(
-                            callbacks,
-                            message=CallbackMessage(
-                                source=__file__,
-                                type=MessageType.LOG,
-                                metadata={
-                                    "event": "plain_text", 
-                                    "data": "".join([
-                                        f"{'=' * 66}\n",
-                                        f"Iteration: {iter_num + 1}\n",
-                                        f"{'-' * 66}\n",
-                                        f"\033[32mThought: {content}\n\033[0m"
-                                    ])
-                                }
-                            )
-                        )
-                        # Continue to next iteration
-                        continue
-
-                    except json.JSONDecodeError as e:
-                        self._logger.error("Failed to parse response: %s", str(e))
-                        error_msg = f"Encountered an error in parsing LLM response:\n{content}\n\nPlease try again."
-                        self._add_history(
-                            history_type="error",
-                            message=error_msg
-                        )
-                        # Add error as user message to guide the next iteration
-                        messages.append({
-                            "role": "user",
-                            "content": error_msg
-                        })
-                    except Exception as e:
-                        self._logger.error("Failed to process response: %s", str(e))
-                        error_msg = (f"Encountered an unexpected error for the LLM response:\n"
-                                   f"{content}.\n\nPlease try again.")
-                        self._add_history(
-                            history_type="error",
-                            message=error_msg
-                        )
-                        # Add error as user message to guide the next iteration
-                        messages.append({
-                            "role": "user",
-                            "content": error_msg
-                        })
-                else:
-                    # Handle case where message has no content or tool_calls
-                    self._logger.warning("Received message with no content or tool_calls")
-                    error_msg = "Received an empty response from the LLM. Please try again."
-                    self._add_history(
-                        history_type="error",
-                        message=error_msg
-                    )
-                    # Add error as user message to guide the next iteration
-                    messages.append({
-                        "role": "user",
-                        "content": error_msg
-                    })
+                # Handle case where message has no content or tool_calls
+                self._logger.warning("Received message with no content or tool_calls")
+                error_msg = "Received an empty response from the LLM. Please try again."
+                self._add_history(
+                    history_type="error",
+                    message=error_msg
+                )
+                # Add error as user message to guide the next iteration
+                messages.append({
+                    "role": "user",
+                    "content": error_msg
+                })
             elif isinstance(response, str):
                 # Fallback for string responses
                 content = response.strip()
@@ -490,7 +548,7 @@ class FunctionCall(BaseAgent):
     ):
         """
         Handle function calls from the LLM response.
-        
+
         Args:
             tool_calls: List of tool calls from the LLM
             messages: Conversation messages list to update
@@ -500,15 +558,19 @@ class FunctionCall(BaseAgent):
         """
         # Add assistant message with tool calls to conversation
         assistant_message = {
-            "role": "assistant", 
+            "role": "assistant",
             "content": None,
             "tool_calls": [
                 {
-                    "id": tool_call.id,
-                    "type": "function", 
+                    "id": tool_call.get("id") if isinstance(tool_call, dict) else tool_call.id,
+                    "type": "function",
                     "function": {
-                        "name": tool_call.function.name,
-                        "arguments": tool_call.function.arguments
+                        "name": (tool_call.get("function", {}).get("name")
+                                if isinstance(tool_call, dict)
+                                else tool_call.function.name),
+                        "arguments": (tool_call.get("function", {}).get("arguments")
+                                     if isinstance(tool_call, dict)
+                                     else tool_call.function.arguments)
                     }
                 } for tool_call in tool_calls
             ]
@@ -518,14 +580,24 @@ class FunctionCall(BaseAgent):
         # Execute each tool call
         for tool_call in tool_calls:
             try:
+                # Handle both dict and object formats for tool_call
+                if isinstance(tool_call, dict):
+                    function_name = tool_call.get("function", {}).get("name")
+                    function_arguments = tool_call.get("function", {}).get("arguments")
+                    tool_call_id = tool_call.get("id")
+                else:
+                    function_name = tool_call.function.name
+                    function_arguments = tool_call.function.arguments
+                    tool_call_id = tool_call.id
+
                 # Parse function name to get server and tool names
-                server_name, tool_name = self._parse_function_call_name(tool_call.function.name)
+                server_name, tool_name = self._parse_function_call_name(function_name)
 
                 # Parse arguments
-                if isinstance(tool_call.function.arguments, str):
-                    arguments = json.loads(tool_call.function.arguments)
+                if isinstance(function_arguments, str):
+                    arguments = json.loads(function_arguments)
                 else:
-                    arguments = tool_call.function.arguments
+                    arguments = function_arguments
 
                 self._add_history(
                     history_type="action",
@@ -569,7 +641,7 @@ class FunctionCall(BaseAgent):
                 # Add tool result to conversation
                 tool_message = {
                     "role": "tool",
-                    "tool_call_id": tool_call.id,
+                    "tool_call_id": tool_call_id,
                     "content": result_text.strip()
                 }
                 messages.append(tool_message)
@@ -599,7 +671,7 @@ class FunctionCall(BaseAgent):
                 # Add error result to conversation
                 tool_message = {
                     "role": "tool",
-                    "tool_call_id": tool_call.id,
+                    "tool_call_id": tool_call_id,
                     "content": f"Error: {error_msg}"
                 }
                 messages.append(tool_message)

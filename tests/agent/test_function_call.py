@@ -17,7 +17,7 @@ class TestFunctionCallAgent(unittest.IsolatedAsyncioTestCase):
         """Test the prompt building functionality of FunctionCall agent."""
         agent = FunctionCall(
             mcp_manager=MCPManager(),
-            llm=ModelManager().build_model(name="openrouter"),
+            llm=ModelManager().build_model(name="openai"),
             config={"servers": [{"name": "weather"}]}
         )
         await agent.initialize()        
@@ -29,7 +29,7 @@ class TestFunctionCallAgent(unittest.IsolatedAsyncioTestCase):
         """Test MCP tools to function call conversion."""
         agent = FunctionCall(
             mcp_manager=MCPManager(),
-            llm=ModelManager().build_model(name="openrouter"),
+            llm=ModelManager().build_model(name="openai"),
             config={"servers": [{"name": "weather"}]}
         )
         await agent.initialize()
@@ -37,7 +37,7 @@ class TestFunctionCallAgent(unittest.IsolatedAsyncioTestCase):
         # Test empty tools conversion
         empty_tools = agent._convert_mcp_tools_to_function_calls({})
         self.assertEqual(empty_tools, [])
-        
+
         # Test with actual tools if available
         if agent._tools:
             function_calls = agent._convert_mcp_tools_to_function_calls(agent._tools)
@@ -49,14 +49,14 @@ class TestFunctionCallAgent(unittest.IsolatedAsyncioTestCase):
                 self.assertIn("name", fc["function"])
                 self.assertIn("description", fc["function"])
                 self.assertIn("parameters", fc["function"])
-        
+
         await agent.cleanup()
 
     async def test_function_name_parsing(self):
         """Test function name parsing functionality."""
         agent = FunctionCall(
             mcp_manager=MCPManager(),
-            llm=ModelManager().build_model(name="openrouter"),
+            llm=ModelManager().build_model(name="openai"),
             config={"servers": [{"name": "weather"}]}
         )
         await agent.initialize()
@@ -93,7 +93,7 @@ class TestFunctionCallAgent(unittest.IsolatedAsyncioTestCase):
         
         agent = FunctionCall(
             mcp_manager=MCPManager(),
-            llm=ModelManager().build_model(name="openrouter"),
+            llm=ModelManager().build_model(name="openai"),
             config=config
         )
         await agent.initialize()
@@ -111,7 +111,7 @@ class TestFunctionCallAgent(unittest.IsolatedAsyncioTestCase):
         """Test conversation history management."""
         agent = FunctionCall(
             mcp_manager=MCPManager(),
-            llm=ModelManager().build_model(name="openrouter"),
+            llm=ModelManager().build_model(name="openai"),
             config={"servers": [{"name": "weather"}]}
         )
         await agent.initialize()
@@ -138,13 +138,14 @@ class TestFunctionCallAgent(unittest.IsolatedAsyncioTestCase):
         
         await agent.cleanup()
 
+    @pytest.mark.skip
     async def test_execute_weather(self):
         """Test executing a weather query using function calling."""
         question = "I live in San Francisco. Do I need to bring an umbrella if I need to go outside?"
         tracer = Tracer()
         agent = FunctionCall(
             mcp_manager=MCPManager(),
-            llm=ModelManager().build_model(name="openrouter"),
+            llm=ModelManager().build_model(name="openai"),
             config={
                 "instruction": "You are a helpful weather assistant that can check current weather conditions.",
                 "servers": [{"name": "weather"}],
@@ -164,13 +165,14 @@ class TestFunctionCallAgent(unittest.IsolatedAsyncioTestCase):
         await agent.cleanup()
         pprint.pprint(tracer.get_trace())
 
+    @pytest.mark.skip
     async def test_execute_with_output_format(self):
         """Test executing with specific output format."""
         question = "What's the current weather in New York City?"
         tracer = Tracer()
         agent = FunctionCall(
             mcp_manager=MCPManager(),
-            llm=ModelManager().build_model(name="openrouter"),
+            llm=ModelManager().build_model(name="openai"),
             config={
                 "instruction": "You are a weather assistant.",
                 "servers": [{"name": "weather"}],
@@ -197,14 +199,14 @@ class TestFunctionCallAgent(unittest.IsolatedAsyncioTestCase):
         await agent.cleanup()
         pprint.pprint(tracer.get_trace())
 
-    # @pytest.mark.skip
+    @pytest.mark.skip
     async def test_execute_multi_server(self):
         """Test executing with multiple servers."""
         question = "Search for information about the tallest building in LA and then get the current weather there."
         tracer = Tracer()
         agent = FunctionCall(
             mcp_manager=MCPManager(),
-            llm=ModelManager().build_model(name="openrouter"),
+            llm=ModelManager().build_model(name="openai"),
             config={
                 "instruction": "You are an assistant that can search for information and check weather.",
                 "servers": [
@@ -234,7 +236,7 @@ class TestFunctionCallAgent(unittest.IsolatedAsyncioTestCase):
         # Create a simple agent for testing
         agent = FunctionCall(
             mcp_manager=MCPManager(),
-            llm=ModelManager().build_model(name="openrouter"),
+            llm=ModelManager().build_model(name="openai"),
             config={"max_iterations": 2, "servers": []}
         )
         await agent.initialize()

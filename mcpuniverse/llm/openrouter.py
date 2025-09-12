@@ -25,7 +25,9 @@ model_name_map = {
     "DeepSeekV3_1_OR": "deepseek/deepseek-chat-v3.1",
     "GLM4_5_OR": "z-ai/glm-4.5",
     "GLM4_5_AIR_OR": "z-ai/glm-4.5-air",
-    "KimiK2_OR": "moonshotai/kimi-k2"
+    "KimiK2_OR": "moonshotai/kimi-k2",
+    "Qwen3Max_OR": "qwen/qwen3-max",
+    "KimiK2_0905_OR": "moonshotai/kimi-k2-0905"
 }
 
 @dataclass
@@ -116,6 +118,7 @@ class OpenRouterModel(BaseLLM):
                         frequency_penalty=self.config.frequency_penalty,
                         presence_penalty=self.config.presence_penalty,
                         seed=self.config.seed,
+                        max_completion_tokens=self.config.max_completion_tokens,
                         **kwargs
                     )
                     # If tools are provided, return the entire response object
@@ -135,6 +138,7 @@ class OpenRouterModel(BaseLLM):
                     presence_penalty=self.config.presence_penalty,
                     seed=self.config.seed,
                     response_format=response_format,
+                    max_completion_tokens=self.config.max_completion_tokens,
                     **kwargs
                 )
                 # If tools are provided, return the entire response object
