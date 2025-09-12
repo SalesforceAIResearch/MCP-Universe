@@ -4,13 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mcpuniverse"
-version = "1.0.0"
+version = "1.0.1"
 authors = [
     {name = "Salesforce Research"}
 ]
-description = "A framework for developing and benchmarking AI agents using Model Control Protocol"
+description = "A framework for developing and benchmarking AI agents using Model Context Protocol (MCP)"
 readme = "README.md"
-license = {text = "3-Clause BSD"}
+license = {text = "Apache 2.0"}
 keywords = [
     "AI",
     "Agents", 
@@ -20,9 +20,7 @@ keywords = [
     "machine-learning"
 ]
 classifiers = [
-    "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: BSD License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",

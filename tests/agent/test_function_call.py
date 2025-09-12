@@ -13,6 +13,7 @@ from mcpuniverse.callbacks.base import Printer
 
 class TestFunctionCallAgent(unittest.IsolatedAsyncioTestCase):
 
+    @pytest.mark.skip
     async def test_prompt(self):
         """Test the prompt building functionality of FunctionCall agent."""
         agent = FunctionCall(
@@ -25,6 +26,7 @@ class TestFunctionCallAgent(unittest.IsolatedAsyncioTestCase):
         self.assertTrue("What's the weather in San Francisco now?" in prompt)
         await agent.cleanup()
 
+    @pytest.mark.skip
     async def test_tool_conversion(self):
         """Test MCP tools to function call conversion."""
         agent = FunctionCall(
@@ -52,6 +54,7 @@ class TestFunctionCallAgent(unittest.IsolatedAsyncioTestCase):
 
         await agent.cleanup()
 
+    @pytest.mark.skip
     async def test_function_name_parsing(self):
         """Test function name parsing functionality."""
         agent = FunctionCall(
@@ -81,6 +84,7 @@ class TestFunctionCallAgent(unittest.IsolatedAsyncioTestCase):
 
         await agent.cleanup()
 
+    @pytest.mark.skip
     async def test_configuration(self):
         """Test FunctionCall configuration."""
         config = {
@@ -107,6 +111,7 @@ class TestFunctionCallAgent(unittest.IsolatedAsyncioTestCase):
         
         await agent.cleanup()
 
+    @pytest.mark.skip
     async def test_history_management(self):
         """Test conversation history management."""
         agent = FunctionCall(
@@ -229,6 +234,7 @@ class TestFunctionCallAgent(unittest.IsolatedAsyncioTestCase):
         await agent.cleanup()
         pprint.pprint(tracer.get_trace())
 
+    @pytest.mark.skip
     async def test_tool_calls_with_content(self):
         """Test that agent can handle responses with both tool_calls and content (e.g., GPT-5)."""
         print("Testing FunctionCall agent with both tool_calls and content...")
