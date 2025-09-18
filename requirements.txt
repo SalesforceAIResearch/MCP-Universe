@@ -27,7 +27,7 @@ openai-agents==0.2.11
 
 # MCP servers
 wikipedia-api==0.8.1
-mcp_server_fetch==
+mcp_server_fetch
 google-auth==2.38.0
 google-auth-oauthlib==1.2.1
 google-api-python-client
