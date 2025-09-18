@@ -1,8 +1,5 @@
 """
-A ReAct agent implementation.
-
-This module contains the ReAct agent class and its configuration, based on the paper
-'ReAct: Synergizing Reasoning and Acting in Language Models' (https://arxiv.org/abs/2210.03629).
+A Harmony ReAct agent implementation for GPT-OSS models.
 """
 # pylint: disable=broad-exception-caught
 import os
@@ -39,7 +36,7 @@ class HarmonyReActConfig(BaseAgentConfig):
 
     Attributes:
         system_prompt (str): The system prompt template file or string.
-        context_examples (str): Additional context examples for the agent.
+        context_examples (str): Additional context examples for the agent (not used).
         max_iterations (int): Maximum number of reasoning iterations.
         summarize_tool_response (bool): Whether to summarize tool responses using the LLM.
     """
@@ -53,11 +50,10 @@ class HarmonyReAct(BaseAgent):
     """
     Harmony ReAct agent implementation.
 
-    This class implements the ReAct (Reasoning+Acting) paradigm,
-    allowing the agent to alternate between reasoning and acting to solve tasks.
+    This class implements the Harmony agent for GPT-OSS models.
 
     Attributes:
-        config_class (Type[ReActConfig]): The configuration class for this agent.
+        config_class (Type[HarmonyReActConfig]): The configuration class for this agent.
         alias (List[str]): Alternative names for this agent type.
     """
     config_class = HarmonyReActConfig
@@ -169,7 +165,7 @@ Return the final answer in the final channel.
             **kwargs
     ) -> AgentResponse:
         """
-        Execute the ReAct agent's reasoning and action loop.
+        Execute the Harmony agent's reasoning and action loop.
 
         This method processes the user's message, generates thoughts and actions,
         and returns a final answer or explanation.
@@ -298,15 +294,6 @@ Return the final answer in the final channel.
                     iter_num=iter_num,
                     thought=response
                 )                       
-            
-                # send_message(callbacks, message=CallbackMessage(
-                #     source=__file__,
-                #     type=MessageType.LOG,
-                #     data={
-                #         "step": iter_num + 1,
-                #         "error": f"Failed to process response: {str(e)}"
-                #     }
-                # ))
 
         return AgentResponse(
             name=self._name,
