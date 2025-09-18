@@ -7,6 +7,7 @@ from .reflection import Reflection
 from .explore_and_exploit import ExploreAndExploit
 from .base import BaseAgent
 from .claude_code import ClaudeCodeAgent
+from .openai_agent_sdk import OpenAIAgentSDK
 
 __all__ = [
     "FunctionCall",
@@ -16,5 +17,6 @@ __all__ = [
     "HarmonyReAct",
     "Reflection",
     "BaseAgent",
-    "ClaudeCodeAgent"
+    "ClaudeCodeAgent",
+    "OpenAIAgentSDK"
 ]

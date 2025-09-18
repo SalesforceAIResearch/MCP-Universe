@@ -85,9 +85,11 @@ class BenchmarkReport:
         section_details.append("## Appendix (Benchmark Details)")
 
         for task_name in benchmark_result.task_results.keys():
-            task_details, task_passed, task_notpassed, llm_call_count = self._process_task(
+            task_details, task_passed, task_notpassed, llm_call_count, total_turns = self._process_task(
                 task_name, benchmark_result, benchmark_idx)
             section_details.extend(task_details)
+            if llm_call_count == 0:
+                llm_call_count = total_turns
 
             # Add to summary
             section_summary.append(f"|**{task_name}**:| \
@@ -101,7 +103,7 @@ class BenchmarkReport:
     def _process_task(self, task_name, benchmark_result, benchmark_idx):
         """Process a single task and return its details."""
         trace_id = self.benchmark_results[benchmark_idx].task_trace_ids.get(task_name)
-        stats, parent_ids, llm_call_count = self._analyze_traces(trace_id)
+        stats, parent_ids, llm_call_count, total_turns = self._analyze_traces(trace_id)
 
         task_details = []
         task_details.append("### Task")
@@ -111,6 +113,8 @@ class BenchmarkReport:
             task_details.append(f"- parent_id: {', '.join(parent_ids)}")
 
         task_details.append(f"- LLM Call Count: {llm_call_count}")
+        if total_turns > 0:
+            task_details.append(f"- Agent Turns: {total_turns}")
 
         # Add performance metrics
         self._add_performance_metrics(task_details, trace_id)
@@ -130,13 +134,14 @@ class BenchmarkReport:
         eval_results = benchmark_result.task_results[task_name]["evaluation_results"]
         task_passed, task_notpassed = self._process_evaluation_results(task_details, eval_results)
 
-        return task_details, task_passed, task_notpassed, llm_call_count
+        return task_details, task_passed, task_notpassed, llm_call_count, total_turns
 
     def _analyze_traces(self, trace_id):
         """Analyze traces and return stats, parent IDs, and LLM call count."""
         stats = defaultdict(int)
         parent_ids = set()
         llm_call_count = 0
+        total_turns = 0
 
         for task_trace in self.trace_collector.get(trace_id):
             if not task_trace.records:
@@ -150,6 +155,12 @@ class BenchmarkReport:
                 print(iter_type, is_summarized)
                 iter_name = f"llm_{'summary' if is_summarized else 'thought'}"
                 llm_call_count += 1
+            elif iter_type == 'openai_agent_sdk':
+                # Extract turns information from OpenAI Agent SDK traces
+                turns = task_trace.records[0].data.get('turns', 1)
+                total_turns += turns
+                print(f"OpenAI Agent SDK: {turns} turns")
+                continue
             else:
                 continue
 
@@ -158,7 +169,7 @@ class BenchmarkReport:
             if task_trace.parent_id:
                 parent_ids.add(task_trace.parent_id)
 
-        return stats, parent_ids, llm_call_count
+        return stats, parent_ids, llm_call_count, total_turns
 
     def _add_performance_metrics(self, task_details, trace_id):
         """Add performance and resource usage statistics."""

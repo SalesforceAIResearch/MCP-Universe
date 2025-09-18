@@ -1,14 +1,14 @@
 requests==2.32.4
-pydantic==2.10.6
-pydantic[email]==2.10.6
+pydantic==2.11.7
+pydantic[email]==2.11.7
 schema==0.7.7
-mcp==1.9.4
+mcp==1.13.1
 httpx==0.28.1
 click==8.1.8
 jinja2==3.1.6
 python-dotenv==1.0.1
 anyio==4.9.0
-openai==1.68.2
+openai==1.106.1
 anthropic==0.49.0
 mistralai==1.6.0
 pyyaml==6.0.2
@@ -23,6 +23,7 @@ celery==5.5.3
 pytz==2024.2
 xai-sdk==1.0.0
 claude-code-sdk==0.0.20
+openai-agents==0.2.11
 
 # MCP servers
 wikipedia-api==0.8.1

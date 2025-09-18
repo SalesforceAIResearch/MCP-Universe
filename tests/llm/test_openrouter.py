@@ -21,7 +21,7 @@ class TestOpenRouter(unittest.TestCase):
     @pytest.mark.skip
     def test(self):
         model = OpenRouterModel()
-        model.config.model_name = self.model_names[-1]
+        model.config.model_name = self.model_names[1]
         system_message = "As a professional python developer"
         user_message = "please write a very short program to generate a fibonacci sequence"
         response = model.get_response(system_message, user_message)

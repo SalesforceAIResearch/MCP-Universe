@@ -32,6 +32,7 @@ class OpenAIConfig(BaseConfig):
         frequency_penalty (float): Penalizes frequent token use (default: 0.0).
         presence_penalty (float): Penalizes repeated topics (default: 0.0).
         max_completion_tokens (int): Maximum number of tokens in the completion (default: 2048).
+        reasoning_effort (str): The reasoning effort to use (default: "medium").
         seed (int): Random seed for reproducibility (default: 12345).
     """
     model_name: str = "gpt-4.1"
@@ -41,6 +42,7 @@ class OpenAIConfig(BaseConfig):
     frequency_penalty: float = 0.0
     presence_penalty: float = 0.0
     max_completion_tokens: int = 10000
+    reasoning_effort: str = "medium"
     seed: int = 12345
 
 
@@ -95,6 +97,17 @@ class OpenAIModel(BaseLLM):
         for attempt in range(max_retries + 1):
             try:
                 client = OpenAI(api_key=self.config.api_key)
+                # Models support the 'reasoning_effort' parameter.
+                # This set can be extended as new models are introduced.
+                _models_with_reasoning_effort_support = {"gpt-5", "o3", "o4-mini", "gpt-5-high"}
+                if any(prefix in self.config.model_name
+                       for prefix in _models_with_reasoning_effort_support):
+                    kwargs["reasoning_effort"] = self.config.reasoning_effort
+
+                if "high" in self.config.model_name:
+                    kwargs["reasoning_effort"] = "high"
+                    self.config.model_name = "gpt-5"
+
                 if response_format is None:
                     chat = client.chat.completions.create(
                         messages=messages,
@@ -104,6 +117,7 @@ class OpenAIModel(BaseLLM):
                         top_p=self.config.top_p,
                         frequency_penalty=self.config.frequency_penalty,
                         presence_penalty=self.config.presence_penalty,
+                        max_completion_tokens=self.config.max_completion_tokens,
                         seed=self.config.seed,
                         **kwargs
                     )
@@ -122,6 +136,7 @@ class OpenAIModel(BaseLLM):
                     top_p=self.config.top_p,
                     frequency_penalty=self.config.frequency_penalty,
                     presence_penalty=self.config.presence_penalty,
+                    max_completion_tokens=self.config.max_completion_tokens,
                     seed=self.config.seed,
                     response_format=response_format,
                     **kwargs
