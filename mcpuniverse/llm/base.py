@@ -196,7 +196,8 @@ class BaseLLM(ExportConfigMixin, metaclass=ComponentABCMeta):
 
     async def generate_async(
             self,
-            messages: List[dict[str, str]],
+            messages: List[dict[str, str]] = None,
+            prompt: str = None,
             tracer: Tracer = None,
             callbacks: BaseCallback | List[BaseCallback] = None,
             **kwargs
@@ -225,6 +226,7 @@ class BaseLLM(ExportConfigMixin, metaclass=ComponentABCMeta):
                 return await asyncio.wait_for(
                     self._call_generate(
                         messages=messages,
+                        prompt=prompt,
                         tracer=tracer,
                         callbacks=callbacks,
                         **kwargs

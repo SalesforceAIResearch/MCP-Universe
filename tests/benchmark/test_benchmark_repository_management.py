@@ -14,7 +14,7 @@ class TestBenchmarkRunner(unittest.IsolatedAsyncioTestCase):
         benchmark = BenchmarkRunner("test/repository_management.yaml")
         results = await benchmark.run(
             trace_collector=trace_collector,
-            # callbacks=get_vprint_callbacks()
+            callbacks=get_vprint_callbacks()
         )
         report = BenchmarkReport(benchmark, trace_collector=trace_collector)
         report.dump()

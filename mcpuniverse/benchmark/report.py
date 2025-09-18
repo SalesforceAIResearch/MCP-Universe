@@ -139,10 +139,12 @@ class BenchmarkReport:
         llm_call_count = 0
 
         for task_trace in self.trace_collector.get(trace_id):
+            if not task_trace.records:
+                continue
             iter_type = task_trace.records[0].data['type']
             iter_name = iter_type
 
-            if iter_type == 'llm':
+            if iter_type == 'llm' and task_trace.records[0].data['messages'] is not None:
                 summary_prompt = TOOL_RESPONSE_SUMMARIZER_PROMPT[:20]
                 is_summarized = task_trace.records[0].data['messages'][0]['content'].startswith(summary_prompt)
                 print(iter_type, is_summarized)
