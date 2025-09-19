@@ -83,10 +83,6 @@ class HarmonyReAct(BaseAgent):
         """Initialize the harmony agent after tools are loaded."""
         if self._tools and self._config.summarize_tool_response:
             self.encoding = tiktoken.encoding_for_model("gpt-oss-120b")
-        #     doc = inspect.getdoc(self.summarize_tool_output)
-        #     description = textwrap.dedent(doc).strip().split("\n\n")[0] if doc else ""
-        #     parameters = {"type": "object", "properties": {}, "additionalProperties": False}
-        #     self._tools["agent"] = [{"type": "function", "function": {"name": "summarize_tool_output", "description": description, "parameters": parameters}}]
         
         self._tools_namespace_ts = render_tools_namespace(self._tools)
 
@@ -301,45 +297,6 @@ Return the final answer in the final channel.
             response="I'm sorry, but I couldn't find a satisfactory answer within the allowed number of iterations.",
             trace_id=tracer.trace_id
         )
-
-    async def summarize_tool_output(self) -> str:
-        """
-        If the last tool output is too lengthy, call this tool to summarize the last tool output.
-
-        Args: none.
-
-        Returns:
-            str: summary of the tool output.
-        """
-
-        prompt = self._build_summarize_prompt()
-        while True:
-            response = await self._llm.generate_async(
-                prompt=prompt
-            )
-            if response:
-                break
-        summary = parse_harmony(response)["final"]
-        self._history[:-1]["tool_result"] = summary
-        return summary
-
-    def _build_summarize_prompt(self) -> str:
-        instruction = f"""You are a helpful assistant that summarizes the outputs of the last tool call.
-You will be given an agent's trajectory containing a task, tool calls and the tool outputs.
-You need to summarize the outputs of the last tool call.
-Remove information that is not relevant to complete the task.
-Do not use any tools and directly output the summary.
-        """
-
-        prompt = render_harmony_chain(
-            developer_instructions=instruction,
-            user_first_message=self._message,
-            rounds=self._history,
-            reasoning=self._llm.config.reasoning
-        )
-
-        return prompt
-
 
     def clear_history(self):
         """
