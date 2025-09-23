@@ -63,7 +63,15 @@ class BaseAgentConfig(BaseConfig):
         system_prompt (str): The system prompt template file or string.
         tools_prompt (str): The tools prompt template file or string.
         template_vars (dict): Additional variables for template rendering.
-        servers (List[Dict]): List of server configurations.
+        servers (List[Dict]): List of server configurations. Each server dict can contain:
+            - name (str): Server name (required)
+            - transport (str): Transport type, "stdio" or "sse" (optional, default: "stdio")
+            - tools (List[str]): List of specific tools to use from this server (optional)
+            - permissions (List[Dict]): Permission rules for tool execution (optional)
+                Each permission rule contains:
+                - tool (str): Tool name or regex pattern (e.g., "*" for all tools)
+                - arguments (Dict[str, str]): Argument constraints as key-value pairs (optional)
+                - action (str): "allow", "reject", or "human_review" (default: "allow")
         resources (List[str]): List of resource identifiers.
         use_llm_tool_api (str): Whether to use LLM tool calling API, e.g., "yes" or "no".
         mcp_gateway_url (str, optional): MCP gateway server address.
@@ -77,8 +85,9 @@ class BaseAgentConfig(BaseConfig):
     tools_prompt: str = os.path.join(DEFAULT_CONFIG_FOLDER, "tools_prompt.j2")
     # Additional template variables
     template_vars: dict = field(default_factory=dict)
-    # A list of servers: [{"name": server_name}, {"name": server_name, "transport": "sse"}]
-    servers: List[Dict[Literal["name", "transport", "tools"], str | list]] = field(default_factory=list)
+    # A list of servers with optional permissions:
+    # Example: [{"name": "weather", "permissions": [{"tool": "*", "action": "human_review"}]}]
+    servers: List[Dict[Literal["name", "transport", "tools", "permissions"], str | list]] = field(default_factory=list)
     # A list of resources
     resources: List[str] = field(default_factory=list)
     # Whether to use LLM tool calling API
@@ -180,6 +189,12 @@ class BaseAgent(Executor, ExportConfigMixin, metaclass=ComponentABCMeta):
         Args:
             mcp_servers (List[dict], optional): A list of MCP servers.
                 If not set, use the servers specified in the config.
+                Each server dict supports:
+                - name (str): Server name
+                - transport (str): "stdio" or "sse" 
+                - tools (List[str]): Specific tools to enable
+                - permissions (List[Dict]): Tool permission rules
+                    Format: [{"tool": "pattern", "action": "allow|reject|human_review", "arguments": {}}]
         """
         if self._initialized:
             return
@@ -189,8 +204,13 @@ class BaseAgent(Executor, ExportConfigMixin, metaclass=ComponentABCMeta):
         self._mcp_clients = OrderedDict()
         for server in mcp_servers:
             server_name = server["name"]
+            # Build client with optional permission configuration
+            # Permissions format: [{"tool": "pattern", "action": "allow|reject|human_review", "arguments": {}}]
             client = await self._mcp_manager.build_client(
-                server_name, transport=server.get("transport", "stdio"))
+                server_name,
+                transport=server.get("transport", "stdio"),
+                permissions=server.get("permissions", None)
+            )
             client.project_id = self._project_id
             self._mcp_clients[server_name] = client
         # Get the tools information
@@ -214,7 +234,8 @@ class BaseAgent(Executor, ExportConfigMixin, metaclass=ComponentABCMeta):
         server and retrieving the available tools.
 
         Args:
-            mcp_servers (List[dict], optional): A list of MCP servers.
+            mcp_servers (List[dict]): A list of MCP servers with optional permission configurations.
+                Format: [{"name": "server", "permissions": [{"tool": "*", "action": "human_review"}]}]
         """
         await self.cleanup()
         await self.initialize(mcp_servers=mcp_servers)
@@ -366,15 +387,21 @@ class BaseAgent(Executor, ExportConfigMixin, metaclass=ComponentABCMeta):
         Call a specific tool indicated in a LLM response.
 
         This method parses the LLM response, identifies the tool to be called,
-        and executes it using the appropriate MCP client.
+        and executes it using the appropriate MCP client. Tool execution is
+        subject to permission rules configured for each server.
 
         Args:
             llm_response (Union[str, Dict]): The response from the language model,
                 either as a JSON string or a dictionary.
+                Expected format: {"server": "name", "tool": "tool_name", "arguments": {}}
             tracer (Tracer, optional): Tracer object for tracking model outputs.
                 If None, a new Tracer will be created.
             callbacks (BaseCallback | List[BaseCallback], optional):
                 Callbacks for recording MCP call status and responses
+
+        Note:
+            Tool execution may be blocked, allowed, or require human approval
+            based on the permission rules configured for each server.
 
         Returns:
             Any: The result of the tool execution.
@@ -406,6 +433,7 @@ class BaseAgent(Executor, ExportConfigMixin, metaclass=ComponentABCMeta):
                                 self._logger.info(
                                     "Executing tool %s of server %s", tool_call["tool"], tool_call["server"])
                                 self._logger.info("With arguments: %s", str(tool_call["arguments"]))
+                            # Execute tool with permission checking
                             response = await self._mcp_clients[tool_call["server"]].execute_tool(
                                 tool_call["tool"], tool_call["arguments"], callbacks=callbacks)
                             t.add({
