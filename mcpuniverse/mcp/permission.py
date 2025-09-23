@@ -1,4 +1,5 @@
 """Tool permission management for MCP operations."""
+# pylint: disable=unused-argument,too-few-public-methods
 import re
 from typing import Dict, Literal, Any, Optional, List
 from pydantic import BaseModel, Field
@@ -127,7 +128,7 @@ class PermissionAction:
         return PermissionStatus(approved=False, reason="This tool is not permitted to perform the requested operation.")
 
     @staticmethod
-    def _human_review(tool_name: str, arguments: Optional[Dict[str, Any]] = None, *args, **kwargs) -> PermissionStatus:
+    def _human_review(tool_name: str, arguments: Optional[Dict[str, Any]] = None, **kwargs) -> PermissionStatus:
         """
         Prompts user for approval of tool execution.
 
@@ -149,10 +150,9 @@ class PermissionAction:
             response = input("Do you want to approve this tool execution? (y/n): ").strip().lower()
             if response in ['y', 'yes']:
                 return PermissionStatus(approved=True, reason="Tool execution was approved by user")
-            elif response in ['n', 'no']:
+            if response in ['n', 'no']:
                 return PermissionStatus(approved=False, reason="Tool execution was rejected by user")
-            else:
-                print("Please enter 'y' for yes or 'n' for no.")
+            print("Please enter 'y' for yes or 'n' for no.")
 
 
 def check_permissions(
