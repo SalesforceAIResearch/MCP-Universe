@@ -1,8 +1,6 @@
 import unittest
 
-from click import argument
-
-from mcpuniverse.mcp.permission import ToolPermission
+from mcpuniverse.mcp.permission import ToolPermission, check_permissions
 
 
 class TestPermission(unittest.TestCase):
@@ -56,6 +54,25 @@ class TestPermission(unittest.TestCase):
             arguments={"folder": "abcd"}
         )
         self.assertEqual(result, "reject")
+
+    def test_3(self):
+        status = check_permissions(
+            permissions=[ToolPermission(
+                tool="list_actions",
+                action="reject"
+            )],
+            tool_name="list_actions"
+        )
+        self.assertEqual(status.approved, False)
+
+        status = check_permissions(
+            permissions=[ToolPermission(
+                tool="list_actions",
+                action="allow"
+            )],
+            tool_name="list_actions"
+        )
+        self.assertEqual(status.approved, True)
 
 
 if __name__ == "__main__":
