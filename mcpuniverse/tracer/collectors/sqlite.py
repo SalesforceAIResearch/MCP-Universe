@@ -95,7 +95,7 @@ class SQLiteCollector(BaseCollector):
         table_name = type(record).get_class_name()
         fields = type(record).get_field_names()
         insert_query = f'''
-                    INSERT INTO {table_name} ({', '.join(field.name for field in fields)}) 
+                    INSERT INTO {table_name} ({', '.join(field.name for field in fields)})
                     VALUES ({', '.join('?' * len(fields))});
                     '''
         values = record.to_dict()

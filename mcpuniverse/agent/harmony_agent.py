@@ -4,13 +4,11 @@ A Harmony ReAct agent implementation for GPT-OSS models.
 # pylint: disable=broad-exception-caught
 import os
 import json
-import inspect
-import textwrap
-import tiktoken
 from typing import Optional, Union, Dict, List
 from collections import OrderedDict
 from dataclasses import dataclass
-from mcp.types import TextContent
+
+import tiktoken
 
 from mcpuniverse.mcp.manager import MCPManager
 from mcpuniverse.llm.base import BaseLLM
@@ -20,7 +18,7 @@ from mcpuniverse.callbacks.base import (
     send_message,
     send_message_async,
     CallbackMessage,
-    MessageType
+    MessageType,
 )
 from .base import BaseAgentConfig, BaseAgent
 from .utils import render_tools_namespace, render_harmony_chain, parse_harmony
@@ -60,10 +58,10 @@ class HarmonyReAct(BaseAgent):
     alias = ["harmony_react"]
 
     def __init__(
-            self,
-            mcp_manager: MCPManager,
-            llm: BaseLLM,
-            config: Optional[Union[Dict, str]] = None
+        self,
+        mcp_manager: MCPManager,
+        llm: BaseLLM,
+        config: Optional[Union[Dict, str]] = None,
     ):
         """
         Initialize a Harmony ReAct agent.
@@ -75,17 +73,19 @@ class HarmonyReAct(BaseAgent):
         """
         super().__init__(mcp_manager=mcp_manager, llm=llm, config=config)
         self._logger = get_logger(f"{self.__class__.__name__}:{self._name}")
-        self._tools_namespace_ts = ""  
+        self._tools_namespace_ts = ""
         self._history: List[str] = []
         self._remove_tool_output = False
+        # Initialize attributes to avoid W0201 (defined outside __init__)
+        self.encoding = None
+        self._message = ""
 
     async def _initialize(self):
         """Initialize the harmony agent after tools are loaded."""
         if self._tools and self._config.summarize_tool_response:
             self.encoding = tiktoken.encoding_for_model("gpt-oss-120b")
-        
-        self._tools_namespace_ts = render_tools_namespace(self._tools)
 
+        self._tools_namespace_ts = render_tools_namespace(self._tools)
 
     def _build_prompt(self, question: str, output_format: Optional[Union[str, Dict]] = None):
         """
@@ -102,20 +102,26 @@ Your goal is to reason about the task and use tools to answer it accurately.
 Please use only the tools that are explicitly defined below. 
 At each step, you can either use a tool or provide a final answer. 
 Do **not** ask clarifying questions.
-Your MUST output the final answer within {self._config.max_iterations} steps. Be aware of the number of steps remaining. 
+Your MUST output the final answer within {self._config.max_iterations} steps. Be aware of the number of steps remaining.
 Return the final answer in the final channel.
 """
         if output_format is not None:
             instruction = instruction + "\n\n" + self._get_output_format_prompt(output_format)
         else:
-            instruction = instruction + "\n\n" + "Follow this JSON format when you output the final answer: [final_answer] or {final_answer}. No extra text. Do not include any literal such as json before the output. Do not wrap in code fences."
-
+            instruction = (
+                instruction
+                + "\n\n"
+                + "Follow this JSON format when you output the final answer: "
+                + "[final_answer] or {final_answer}. "
+                + "No extra text. Do not include any literal such as json before the output. "
+                + "Do not wrap in code fences."
+            )
         prompt = render_harmony_chain(
             developer_instructions=instruction,
             tools_namespace_ts=self._tools_namespace_ts,
             user_first_message=question,
             rounds=self._history,
-            reasoning=self._llm.config.reasoning
+            reasoning=self._llm.config.reasoning,
         )
 
         return prompt
@@ -129,7 +135,7 @@ Return the final answer in the final channel.
     ) -> None:
         """
         Appends a new round to the rounds list.
-        
+
         Each round must have:
             - analysis (str)
             - tool_call (dict with name and arguments) [optional]
@@ -142,23 +148,23 @@ Return the final answer in the final channel.
         if tool_call_arguments is not None and not isinstance(tool_call_arguments, dict):
             raise TypeError("tool_call_arguments must be a dict if provided")
         if tool_result is not None and not isinstance(tool_result, str):
-            raise TypeError("tool_result must be a string if provided")        
+            raise TypeError("tool_result must be a string if provided")
 
         round_entry = {"analysis": analysis}
         if tool_call_name is not None:
             round_entry["tool_call"] = {
                 "name": tool_call_name,
-                "arguments": tool_call_arguments or {}
+                "arguments": tool_call_arguments or {},
             }
             if tool_result is not None:
                 round_entry["tool_result"] = tool_result
         self._history.append(round_entry)
 
     async def _execute(
-            self,
-            message: Union[str, List[str]],
-            output_format: Optional[Union[str, Dict]] = None,
-            **kwargs
+        self,
+        message: Union[str, List[str]],
+        output_format: Optional[Union[str, Dict]] = None,
+        **kwargs,
     ) -> AgentResponse:
         """
         Execute the Harmony agent's reasoning and action loop.
@@ -186,12 +192,13 @@ Return the final answer in the final channel.
         for iter_num in range(self._config.max_iterations):
             try:
                 prompt = self._build_prompt(message, output_format)
+                messages = [{"role": "raw", "content": prompt}]
 
                 while True:
                     response = await self._llm.generate_async(
-                        prompt=prompt,
+                        messages=messages,
                         tracer=tracer,
-                        callbacks=callbacks
+                        callbacks=callbacks,
                     )
                     if response:
                         break
@@ -208,7 +215,11 @@ Return the final answer in the final channel.
                         tool_result = "Invalid tool call"
                     else:
                         try:
-                            tool_result = await self.call_tool(action, tracer=tracer, callbacks=callbacks)
+                            tool_result = await self.call_tool(
+                                action,
+                                tracer=tracer,
+                                callbacks=callbacks,
+                            )
                             tool_result = tool_result.content[0].text
                         except Exception as e:
                             tool_result = "Error calling tool: " + str(e)[:500]
@@ -217,7 +228,7 @@ Return the final answer in the final channel.
                             analysis=parsed_response["analysis"],
                             tool_call_name=action["tool_name"],
                             tool_call_arguments=action["arguments"],
-                            tool_result=tool_result
+                            tool_result=tool_result,
                         )
 
                         if self._config.summarize_tool_response:
@@ -226,57 +237,67 @@ Return the final answer in the final channel.
                                 self._remove_tool_output = False
                             tokens = self.encoding.encode(tool_result)
                             if len(tokens) > 2000:
-                                self._history[-1]["tool_result"] = tool_result[:50000] + "\n" + "Please summarize the above tool output in the next step. Put the summary in the analysis channel, keep all the important information."
+                                self._history[-1]["tool_result"] = (
+                                    tool_result[:50000]
+                                    + "\n"
+                                    + "Please summarize the above tool output in the next step. "
+                                      "Put the summary in the analysis channel, keep all the important information."
+                                )
                                 self._remove_tool_output = True
 
-                        tool_result = tool_result[:500] + "\n..." #truncate for printing
+                        tool_result = tool_result[:500] + "\n..."  # truncate for printing
 
                     await self._send_callback_message(
                         callbacks=callbacks,
                         iter_num=iter_num,
                         thought=parsed_response["analysis"],
                         action=action,
-                        result=tool_result
+                        result=tool_result,
                     )
 
                 if not parsed_response["tool_call"] and parsed_response["final"] is not None:
-                    
+
                     await self._send_callback_message(
                         callbacks=callbacks,
                         iter_num=iter_num,
                         thought=parsed_response["analysis"],
-                        answer=parsed_response["final"]
+                        answer=parsed_response["final"],
                     )
                     return AgentResponse(
                         name=self._name,
                         class_name=self.__class__.__name__,
                         response=parsed_response["final"],
-                        trace_id=tracer.trace_id
+                        trace_id=tracer.trace_id,
                     )
                 if not parsed_response["tool_call"] and parsed_response["final"] is None:
                     format_error_count += 1
                     if format_error_count <= 5:
-                        analysis = parsed_response["analysis"] + "\n\n" + "Cannot find <|channel|>commentary or <|channel|>final. In your next step, be careful with the channel format."
+                        analysis = (
+                            parsed_response["analysis"]
+                            + "\n\n"
+                            + "Cannot find <|channel|>commentary or <|channel|>final. "
+                              "In your next step, be careful with the channel format."
+                        )
                         await self._send_callback_message(
                             callbacks=callbacks,
                             iter_num=iter_num,
-                            thought=analysis
-                        )                       
+                            thought=analysis,
+                        )
                         self._add_history(
                             analysis=analysis,
-                        )    
+                        )
                     else:
                         # give up, use the analysis as the answer
                         await self._send_callback_message(
                             callbacks=callbacks,
                             iter_num=iter_num,
-                            answer=parsed_response["analysis"]
-                        )                                     
+                            answer=parsed_response["analysis"],
+                        )
                         return AgentResponse(
                             name=self._name,
                             class_name=self.__class__.__name__,
                             response=parsed_response["analysis"],
-                            trace_id=tracer.trace_id
+                            trace_id=tracer.trace_id,
                         )
 
             except Exception as e:
@@ -284,18 +305,18 @@ Return the final answer in the final channel.
                 response = response + "\n\n" + "Failed to process response: " + str(e)
                 self._add_history(
                     analysis=response,
-                )                      
+                )
                 await self._send_callback_message(
                     callbacks=callbacks,
                     iter_num=iter_num,
-                    thought=response
-                )                       
+                    thought=response,
+                )
 
         return AgentResponse(
             name=self._name,
             class_name=self.__class__.__name__,
             response="I'm sorry, but I couldn't find a satisfactory answer within the allowed number of iterations.",
-            trace_id=tracer.trace_id
+            trace_id=tracer.trace_id,
         )
 
     def clear_history(self):
@@ -310,12 +331,12 @@ Return the final answer in the final channel.
 
     @staticmethod
     async def _send_callback_message(
-            callbacks,
-            iter_num: int,
-            thought: str = "",
-            action: str = "",
-            result: str = "",
-            answer: str = ""
+        callbacks,
+        iter_num: int,
+        thought: str = "",
+        action: str = "",
+        result: str = "",
+        answer: str = "",
     ):
         """Send log messages."""
         logs = []
@@ -331,11 +352,14 @@ Return the final answer in the final channel.
         data = OrderedDict({"Iteration": iter_num + 1})
         for tag, value in logs:
             data[tag] = value
-        send_message(callbacks, message=CallbackMessage(
-            source=__file__,
-            type=MessageType.LOG,
-            data=data
-        ))
+        send_message(
+            callbacks,
+            message=CallbackMessage(
+                source=__file__,
+                type=MessageType.LOG,
+                data=data,
+            ),
+        )
         data = [
             f"{'=' * 66}\n",
             f"Iteration: {iter_num + 1}\n",
@@ -350,26 +374,26 @@ Return the final answer in the final channel.
                 type=MessageType.LOG,
                 metadata={
                     "event": "plain_text",
-                    "data": "".join(data)
-                }
-            )
+                    "data": "".join(data),
+                },
+            ),
         )
-
 
     @staticmethod
     def _get_output_format_prompt(output_format: Union[str, Dict]) -> str:
         """Return the custom output-format prompt for Harmony agent."""
-        CUSTOM_OUTPUT_FORMAT_PROMPT = """
+        custom_output_format_prompt = """
 Follow this JSON format when you output the final answer:
 {output_format}
 No markdown formatting. No extra text. Do not include any literal such as json before the output. Do not wrap in code fences."
 Property names must be enclosed in double quotes.
 """.strip()
-        
+
         if output_format is not None:
             if isinstance(output_format, dict):
-                output_format_prompt = CUSTOM_OUTPUT_FORMAT_PROMPT.format(
-                    output_format=json.dumps(output_format, indent=2))
+                output_format_prompt = custom_output_format_prompt.format(
+                    output_format=json.dumps(output_format, indent=2)
+                )
             else:
                 output_format_prompt = output_format
             return output_format_prompt.strip()

@@ -79,18 +79,16 @@ class OpenRouterModel(BaseLLM):
 
     def _generate(
             self,
-            messages: List[dict[str, str]] = None,
-            prompt: str = None,
+            messages: List[dict[str, str]],
             response_format: Type[PydanticBaseModel] = None,
             **kwargs
-    ):
+    ):  # pylint: disable=too-many-return-statements
         """
         Generates content using the OpenRouter model.
 
         Args:
             messages (List[dict[str, str]]): List of message dictionaries,
                 each containing 'role' and 'content' keys.
-            prompt (str): Raw prompt, only if messages is None, needs to handle the format yourself.
             response_format (Type[PydanticBaseModel], optional): Pydantic model
                 defining the structure of the desired output. If None, generates
                 free-form text.
@@ -110,17 +108,14 @@ class OpenRouterModel(BaseLLM):
         # Map model name to OpenRouter model name
         model_name = model_name_map.get(self.config.model_name, self.config.model_name)
 
-        if messages is None and prompt is None:
-            raise ValueError("messages or prompt must be provided")
-
         for attempt in range(max_retries + 1):
             try:
                 client = OpenAI(api_key=self.config.api_key, base_url="https://openrouter.ai/api/v1")
                 if response_format is None:
-                    if prompt is not None:
+                    if messages[0]['role']=="raw":
                         chat = client.completions.create(
-                            prompt=prompt,
                             model=model_name,
+                            prompt= messages[0]['content'],
                             temperature=self.config.temperature,
                             # max_tokens=self.config.max_completion_tokens,
                             timeout=int(kwargs.get("timeout", 60)),
@@ -130,20 +125,20 @@ class OpenRouterModel(BaseLLM):
                             seed=self.config.seed,
                         )
                         return chat.choices[0].text
-                    else:         
-                        chat = client.chat.completions.create(
-                            messages=messages,
-                            model=model_name,
-                            temperature=self.config.temperature,
-                            max_tokens=self.config.max_completion_tokens,
-                            timeout=int(kwargs.get("timeout", 60)),
-                            top_p=self.config.top_p,
-                            frequency_penalty=self.config.frequency_penalty,
-                            presence_penalty=self.config.presence_penalty,
-                            seed=self.config.seed,
-                            **kwargs
-                        )
-                    
+
+                    chat = client.chat.completions.create(
+                        messages=messages,
+                        model=model_name,
+                        temperature=self.config.temperature,
+                        max_tokens=self.config.max_completion_tokens,
+                        timeout=int(kwargs.get("timeout", 60)),
+                        top_p=self.config.top_p,
+                        frequency_penalty=self.config.frequency_penalty,
+                        presence_penalty=self.config.presence_penalty,
+                        seed=self.config.seed,
+                        **kwargs
+                    )
+
                     # If tools are provided, return the entire response object
                     # so the caller can handle both content and tool_calls
                     if 'tools' in kwargs:

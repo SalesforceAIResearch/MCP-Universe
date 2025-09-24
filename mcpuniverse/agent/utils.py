@@ -5,7 +5,7 @@ This module provides functions for handling tool descriptions,
 building system prompts, and rendering prompt templates.
 """
 import json
-from typing import Any, Dict, Iterable, List, Optional, Union, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Tuple
 import re
 import yaml
 from jinja2 import Environment
@@ -32,28 +32,36 @@ def get_tools_description(tools: Dict[str, List[Tool]]) -> str:
             args = []
             if "properties" in tool.inputSchema:
                 for param_name, param_info in tool.inputSchema["properties"].items():
-                    info = "\n".join(["    " + line for line in
-                                      yaml.dump(param_info, sort_keys=False, indent=2).split("\n")])
+                    info = "\n".join(
+                        [
+                            "    " + line
+                            for line in yaml.dump(
+                                param_info, sort_keys=False, indent=2
+                            ).split("\n")
+                        ]
+                    )
                     arg = f"- {param_name}:\n{info}".strip()
                     if param_name in tool.inputSchema.get("required", []):
                         arg += "\n    required: true"
                     args.append(arg.strip())
             lines = [line for line in tool.description.split("\n") if line.strip()]
             arguments = f"\n{chr(10).join(args)}" if args else " No arguments"
-            description = (f"Server: {server_name}\n"
-                           f"Tool: {tool.name}\n"
-                           f"Description:\n{chr(10).join(lines)}\n"
-                           f"Arguments:{arguments}")
+            description = (
+                f"Server: {server_name}\n"
+                f"Tool: {tool.name}\n"
+                f"Description:\n{chr(10).join(lines)}\n"
+                f"Arguments:{arguments}"
+            )
             descriptions.append(description)
     return "\n\n".join(descriptions).strip()
 
 
 def build_system_prompt(
-        system_prompt_template: str,
-        tool_prompt_template: str = "",
-        tools: Optional[Dict[str, List[Tool]]] = None,
-        include_tool_description: Optional[bool] = True,
-        **kwargs
+    system_prompt_template: str,
+    tool_prompt_template: str = "",
+    tools: Optional[Dict[str, List[Tool]]] = None,
+    include_tool_description: Optional[bool] = True,
+    **kwargs,
 ) -> str:
     """
     Build an agent system prompt using provided templates and tools.
@@ -138,7 +146,9 @@ def _sanitize_ident(name: str) -> str:
     s = "".join(out)
     return s or "_"  # avoid empty
 
-_TS_IDENT_RE = re.compile(r'^[A-Za-z_]\w*$')
+
+_TS_IDENT_RE = re.compile(r"^[A-Za-z_]\w*$")
+
 
 def _format_ts_prop_key(key: str) -> str:
     """
@@ -148,12 +158,13 @@ def _format_ts_prop_key(key: str) -> str:
         return key
     return json.dumps(key, ensure_ascii=False)  # e.g. "API-post-page"
 
-def _jsonschema_to_ts(schema: Optional[Dict[str, Any]]) -> str:
+
+def _jsonschema_to_ts(schema: Optional[Dict[str, Any]]) -> str:  # pylint: disable=too-many-return-statements
     """Tiny JSON-Schema → TS-ish mapper for Harmony tool arg blocks."""
     if not schema:
         return "any"
 
-    def to_ts(s: Any) -> str:
+    def to_ts(s: Any) -> str:  # pylint: disable=too-many-return-statements
         if s is None:
             return "any"
         if isinstance(s, bool):
@@ -224,6 +235,7 @@ def render_tools_namespace(
     lines: List[str] = ["# Tools", f"## {title}", "", f"namespace {title} {{", ""]
 
     def extract_one(tool_obj: Any) -> Optional[Dict[str, Any]]:
+        """Extract name/description/schema from a tool object or function dict."""
         if isinstance(tool_obj, dict) and tool_obj.get("type") == "function":
             f = tool_obj.get("function") or {}
             return {
@@ -270,15 +282,15 @@ def render_harmony_chain(
     developer_instructions: str,
     user_first_message: str,
     # Each round MUST have analysis; tool_call/tool_result are optional
-    rounds: List[Dict[str, Any]],    
+    rounds: List[Dict[str, Any]],
     system_identity: str = "You are ChatGPT, a large language model trained by OpenAI.",
     knowledge_cutoff: str = "2024-06",
     reasoning: str = "high",
-    tools_namespace_ts: Optional[str] = "",   # string from render_tools_namespace(...)
+    tools_namespace_ts: Optional[str] = "",  # string from render_tools_namespace(...)
 ) -> str:
     """
     Format a multi-round tool-calling transcript in Harmony
-    
+
     Parameters:
     - developer_instructions: your instructions for the assistant/developer message.
     - tools_namespace_ts: TypeScript namespace block defining tools.
@@ -299,7 +311,7 @@ def render_harmony_chain(
         "",
         f"Reasoning: {reasoning}",
         "",
-        "# Valid channels: analysis, commentary, final. Channel must be included for every message."
+        "# Valid channels: analysis, commentary, final. Channel must be included for every message.",
     ]
     if tools_namespace_ts:
         sys_lines.append("Calls to these tools must go to the commentary channel: 'functions'.")
@@ -340,12 +352,14 @@ def render_harmony_chain(
             # 3. Optional Tool result (tool → assistant commentary)
             if "tool_result" in step and step["tool_result"] is not None:
                 parts.append(
-                    f"<|start|>functions.{name} to=assistant<|channel|>commentary<|message|>{step["tool_result"]}<|end|>\n"
+                    (
+                        f"<|start|>functions.{name} to=assistant<|channel|>commentary<|message|>"
+                        f"{step['tool_result']}<|end|>\n"
+                    )
                 )
     parts.append("<|start|>assistant<|channel|>analysis<|message|>")
     # Join everything
     return "".join(parts)
-
 
 
 # ---------- Regex ----------
@@ -361,12 +375,16 @@ NEXT_TAG_RE = re.compile(r"(<\|start\|>|<\|end\|>|<\|call\|>)", re.DOTALL)
 # assistantcommentary to=functions.server__tool json{...}
 # assistantcommentary   to=functions.tool   { ... }
 COMPACT_COMMENTARY_RE = re.compile(
-    r"\bassistantcommentary\b(?P<after>.*?)(?=(\bassistantcommentary\b|<\|start\|>|<\|end\|>|\Z))",
+    (
+        r"\bassistantcommentary\b(?P<after>.*?)(?="
+        r"(\bassistantcommentary\b|\bassistantfinal\b|<\|start\|>|<\|end\|>|\Z))"
+    ),
     re.DOTALL,
 )
 
 # ---------- Balanced JSON scanner ----------
 def _scan_balanced_json(s: str, start_idx: int) -> Optional[Dict[str, Any]]:
+    """Scan for balanced JSON object starting at start_idx; returns dict with raw/end/value or None."""
     if start_idx >= len(s) or s[start_idx] != "{":
         return None
     depth, in_str, esc = 0, False, False
@@ -391,14 +409,16 @@ def _scan_balanced_json(s: str, start_idx: int) -> Optional[Dict[str, Any]]:
                     raw = s[start_idx : j + 1]
                     try:
                         val = json.loads(raw)
-                    except Exception:
+                    except (json.JSONDecodeError, ValueError):
                         val = raw
                     return {"raw": raw, "end": j + 1, "value": val}
         j += 1
     return None
 
+
 # ---------- Helpers ----------
 def _split_server_tool(tool_name: Optional[str]) -> Tuple[str, str]:
+    """Split a fully-qualified tool name into (server, tool)."""
     if not tool_name:
         return "", ""
     for sep in ("__", ".", "_"):
@@ -407,11 +427,14 @@ def _split_server_tool(tool_name: Optional[str]) -> Tuple[str, str]:
             return a, b
     return "", tool_name
 
+
 def _slice_until_next_tag(text: str, start: int) -> Tuple[str, int]:
+    """Return (slice, next_index) from start until next structural tag (or end)."""
     m = NEXT_TAG_RE.search(text, start)
     if not m:
         return text[start:].strip(), len(text)
     return text[start:m.start()].strip(), m.start()
+
 
 # ---------- Parsers ----------
 # ---------- Regex ----------
@@ -431,7 +454,10 @@ NEXT_TAG_RE = re.compile(r"(<\|start\|>|<\|end\|>|<\|call\|>)", re.DOTALL)
 # assistantcommentary to=functions.server__tool json{...}
 # assistantcommentary   to=functions.tool   { ... }
 COMPACT_COMMENTARY_RE = re.compile(
-    r"\bassistantcommentary\b(?P<after>.*?)(?=(\bassistantcommentary\b|\bassistantfinal\b|<\|start\|>|<\|end\|>|\Z))",
+    (
+        r"\bassistantcommentary\b(?P<after>.*?)(?="
+        r"(\bassistantcommentary\b|\bassistantfinal\b|<\|start\|>|<\|end\|>|\Z))"
+    ),
     re.DOTALL,
 )
 # Compact final form, e.g.:
@@ -439,7 +465,10 @@ COMPACT_COMMENTARY_RE = re.compile(
 # assistantfinal [ ... ]
 # assistantfinal plain text...
 COMPACT_FINAL_RE = re.compile(
-    r"\bassistantfinal\b(?P<after>.*?)(?=(\bassistantcommentary\b|\bassistantfinal\b|<\|start\|>|<\|end\|>|\Z))",
+    (
+        r"\bassistantfinal\b(?P<after>.*?)(?="
+        r"(\bassistantcommentary\b|\bassistantfinal\b|<\|start\|>|<\|end\|>|\Z))"
+    ),
     re.DOTALL,
 )
 
@@ -477,18 +506,22 @@ def _scan_balanced_json_like(s: str, start_idx: int) -> Optional[Dict[str, Any]]
                     raw = s[start_idx : j + 1]
                     try:
                         val = json.loads(raw)
-                    except Exception:
+                    except (json.JSONDecodeError, ValueError):
                         val = raw
                     return {"raw": raw, "end": j + 1, "value": val}
         j += 1
     return None
 
+
 # Backward-compat: keep the old name for code that imports it elsewhere.
-def _scan_balanced_json(s: str, start_idx: int) -> Optional[Dict[str, Any]]:
+def _scan_balanced_json(s: str, start_idx: int) -> Optional[Dict[str, Any]]:  # type: ignore[override]
+    """Compatibility wrapper for _scan_balanced_json_like (object-only)."""
     return _scan_balanced_json_like(s, start_idx)
+
 
 # ---------- Helpers ----------
 def _split_server_tool(tool_name: Optional[str]) -> Tuple[str, str]:
+    """Split a fully-qualified tool name into (server, tool)."""
     if not tool_name:
         return "", ""
     for sep in ("__", ".", "_"):
@@ -497,11 +530,14 @@ def _split_server_tool(tool_name: Optional[str]) -> Tuple[str, str]:
             return a, b
     return "", tool_name
 
+
 def _slice_until_next_tag(text: str, start: int) -> Tuple[str, int]:
+    """Return (slice, next_index) from start until next structural tag (or end)."""
     m = NEXT_TAG_RE.search(text, start)
     if not m:
         return text[start:].strip(), len(text)
     return text[start:m.start()].strip(), m.start()
+
 
 # ---------- Parsers ----------
 def parse_analysis(text: str) -> str:
@@ -524,7 +560,9 @@ def parse_analysis(text: str) -> str:
     prefix = prefix.strip()
     return prefix
 
+
 def _parse_tool_call_harmony(text: str) -> List[Dict[str, Any]]:
+    """Parse tool calls in full Harmony tag format."""
     calls: List[Dict[str, Any]] = []
     for m in COMMENTARY_HEADER_RE.finditer(text):
         header = m.group(0)  # includes <|message|>
@@ -547,8 +585,11 @@ def _parse_tool_call_harmony(text: str) -> List[Dict[str, Any]]:
             slice_text, _ = _slice_until_next_tag(text, i)
             args_val = slice_text
 
-        calls.append({"tool_name": tool_name, "server": server, "tool": tool, "arguments": args_val})
+        calls.append(
+            {"tool_name": tool_name, "server": server, "tool": tool, "arguments": args_val}
+        )
     return calls
+
 
 def _parse_tool_call_compact(text: str) -> List[Dict[str, Any]]:
     """
@@ -577,11 +618,14 @@ def _parse_tool_call_compact(text: str) -> List[Dict[str, Any]]:
             else:
                 args_val = block[brace_idx:].strip()
 
-        calls.append({"tool_name": tool_name, "server": server, "tool": tool, "arguments": args_val})
+        calls.append(
+            {"tool_name": tool_name, "server": server, "tool": tool, "arguments": args_val}
+        )
     return calls
 
+
 def parse_tool_call(text: str) -> List[Dict[str, Any]]:
-    # Merge both styles; Harmony first, then compact.
+    """Parse tool calls from both Harmony and compact styles; normalize arguments."""
     calls = _parse_tool_call_harmony(text)
     calls.extend(_parse_tool_call_compact(text))
     # Normalize: ensure arguments is always a dict
@@ -590,6 +634,7 @@ def parse_tool_call(text: str) -> List[Dict[str, Any]]:
         if not isinstance(args_val, dict):
             c["arguments"] = {"value": args_val}
     return calls
+
 
 # ---------- Final answer parsers (JSON-only) ----------
 def _final_json_after_idx(text: str, i: int) -> Optional[Any]:
@@ -603,13 +648,17 @@ def _final_json_after_idx(text: str, i: int) -> Optional[Any]:
             return parsed["value"]
     return None
 
+
 def _parse_final_harmony_json(text: str) -> Optional[Any]:
+    """Extract JSON payload from Harmony final block."""
     m = FINAL_HEADER_RE.search(text)
     if not m:
         return None
     return _final_json_after_idx(text, m.end())
 
+
 def _parse_final_compact_json(text: str) -> Optional[Any]:
+    """Extract JSON payload from compact 'assistantfinal' block."""
     m = COMPACT_FINAL_RE.search(text)
     if not m:
         return None
@@ -619,6 +668,7 @@ def _parse_final_compact_json(text: str) -> Optional[Any]:
     after_start = block_start + (block.find(after) if after else len(block))
     return _final_json_after_idx(text, after_start)
 
+
 def parse_final(text: str) -> Optional[Any]:
     """
     Returns the JSON value from the final answer:
@@ -627,7 +677,9 @@ def parse_final(text: str) -> Optional[Any]:
     """
     return _parse_final_harmony_json(text) or _parse_final_compact_json(text)
 
+
 def parse_harmony(text: str) -> Dict[str, Any]:
+    """Parse Harmony-formatted transcript into analysis/tool_call/final fields."""
     return {
         "analysis": parse_analysis(text),  # always a string (may be empty)
         "tool_call": parse_tool_call(text),

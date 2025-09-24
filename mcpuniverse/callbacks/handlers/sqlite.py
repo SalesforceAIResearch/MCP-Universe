@@ -91,7 +91,7 @@ class SQLiteHandler(BaseCallback):
         self._connect_db()
         cursor = self._db.cursor()
         insert_query = f'''
-        INSERT INTO {self._table_name} ({', '.join(attr for attr, _ in self._fields)}) 
+        INSERT INTO {self._table_name} ({', '.join(attr for attr, _ in self._fields)})
         VALUES ({', '.join('?' * len(self._fields))});
         '''
         values = message.model_dump(mode="json")
@@ -110,7 +110,7 @@ class SQLiteHandler(BaseCallback):
         self._connect_db()
         cursor = self._db.cursor()
         insert_query = f'''
-        INSERT OR REPLACE INTO {self._table_name} ({', '.join(attr for attr, _ in self._fields)}) 
+        INSERT OR REPLACE INTO {self._table_name} ({', '.join(attr for attr, _ in self._fields)})
         VALUES ({', '.join('?' * len(self._fields))});
         '''
         values = message.model_dump(mode="json")
