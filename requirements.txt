@@ -24,6 +24,7 @@ pytz==2024.2
 xai-sdk==1.0.0
 claude-code-sdk==0.0.20
 openai-agents==0.2.11
+tiktoken==0.11.0
 
 # MCP servers
 wikipedia-api==0.8.1
