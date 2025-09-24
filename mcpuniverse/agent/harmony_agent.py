@@ -186,7 +186,7 @@ Return the final answer in the final channel.
         for iter_num in range(self._config.max_iterations):
             try:
                 prompt = self._build_prompt(message, output_format)
-                
+
                 while True:
                     response = await self._llm.generate_async(
                         prompt=prompt,
@@ -211,7 +211,7 @@ Return the final answer in the final channel.
                             tool_result = await self.call_tool(action, tracer=tracer, callbacks=callbacks)
                             tool_result = tool_result.content[0].text
                         except Exception as e:
-                            tool_result = str(e)[:500]
+                            tool_result = "Error calling tool: " + str(e)[:500]
 
                         self._add_history(
                             analysis=parsed_response["analysis"],

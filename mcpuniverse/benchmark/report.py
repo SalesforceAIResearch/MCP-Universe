@@ -149,11 +149,15 @@ class BenchmarkReport:
             iter_type = task_trace.records[0].data['type']
             iter_name = iter_type
 
-            if iter_type == 'llm' and task_trace.records[0].data['messages'] is not None:
-                summary_prompt = TOOL_RESPONSE_SUMMARIZER_PROMPT[:20]
-                is_summarized = task_trace.records[0].data['messages'][0]['content'].startswith(summary_prompt)
-                print(iter_type, is_summarized)
-                iter_name = f"llm_{'summary' if is_summarized else 'thought'}"
+            if iter_type == 'llm':
+                if task_trace.records[0].data['messages'] is not None:
+                    summary_prompt = TOOL_RESPONSE_SUMMARIZER_PROMPT[:20]
+                    is_summarized = task_trace.records[0].data['messages'][0]['content'].startswith(summary_prompt)
+                    print(iter_type, is_summarized)
+                    iter_name = f"llm_{'summary' if is_summarized else 'thought'}"  
+                else:
+                    # TODO: harmony agent does not have messages, need to store prompt in the trace instead
+                    iter_name = f"llm_thought"
                 llm_call_count += 1
             elif iter_type == 'openai_agent_sdk':
                 # Extract turns information from OpenAI Agent SDK traces

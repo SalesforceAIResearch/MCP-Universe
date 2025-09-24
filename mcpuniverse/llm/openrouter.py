@@ -122,7 +122,7 @@ class OpenRouterModel(BaseLLM):
                             prompt=prompt,
                             model=model_name,
                             temperature=self.config.temperature,
-                            max_tokens=self.config.max_completion_tokens,
+                            # max_tokens=self.config.max_completion_tokens,
                             timeout=int(kwargs.get("timeout", 60)),
                             top_p=self.config.top_p,
                             frequency_penalty=self.config.frequency_penalty,
