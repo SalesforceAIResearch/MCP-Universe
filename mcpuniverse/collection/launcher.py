@@ -103,6 +103,7 @@ class Launcher(metaclass=AutodocABCMeta):
                 path = os.path.join(folder, path)
                 if not os.path.exists(path):
                     raise ValueError(f"Missing agent config file `{config.spec.config}`")
+                config.spec.config = path
 
         self._name_to_configs = {}
         for config in self._collection_configs:
