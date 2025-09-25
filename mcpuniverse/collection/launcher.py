@@ -3,11 +3,14 @@
 This module provides classes for defining and loading agent collection
 configurations, supporting both YAML file and programmatic configuration.
 """
+# pylint: disable=too-few-public-methods
 from __future__ import annotations
+import os
 from typing import List, Dict, Literal
 
 import yaml
 from pydantic import BaseModel, Field
+from mcpuniverse.common.misc import AutodocABCMeta
 
 
 class AgentCollectionSpec(BaseModel):
@@ -65,3 +68,44 @@ class AgentCollectionConfig(BaseModel):
         if isinstance(config, dict):
             config = [config]
         return [AgentCollectionConfig.model_validate(o) for o in config]
+
+
+class Launcher(metaclass=AutodocABCMeta):
+    """
+    Launcher for managing agent collections.
+    
+    Loads and validates agent collection configurations, ensuring all
+    required files exist and collection names are unique.
+    """
+
+    def __init__(self, config_path: str):
+        """
+        Initialize the launcher with configuration.
+        
+        Args:
+            config_path: Path to the YAML configuration file.
+            
+        Raises:
+            ValueError: If invalid kind, missing config files, or duplicate names.
+        """
+        self._collection_configs = AgentCollectionConfig.load(config_path)
+
+        # Check if all the configs are "collection"
+        for config in self._collection_configs:
+            if config.kind != "collection":
+                raise ValueError(f"Agent collection configs have invalid kind `{config.kind}`")
+
+        # Check if agent config file exists
+        folder = os.path.dirname(config_path)
+        for config in self._collection_configs:
+            path = config.spec.config
+            if not os.path.exists(path):
+                path = os.path.join(folder, path)
+                if not os.path.exists(path):
+                    raise ValueError(f"Missing agent config file `{config.spec.config}`")
+
+        self._name_to_configs = {}
+        for config in self._collection_configs:
+            if config.spec.name in self._name_to_configs:
+                raise ValueError(f"Found duplicated collection name `{config.spec.name}`")
+            self._name_to_configs[config.spec.name] = config
