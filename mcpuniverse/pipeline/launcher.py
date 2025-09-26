@@ -74,7 +74,7 @@ class AgentCollectionConfig(BaseModel):
         return [AgentCollectionConfig.model_validate(o) for o in config]
 
 
-class Launcher(metaclass=AutodocABCMeta):
+class AgentLauncher(metaclass=AutodocABCMeta):
     """
     Manages and launches agent collections.
     
