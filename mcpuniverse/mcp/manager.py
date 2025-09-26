@@ -5,6 +5,7 @@ The MCPManager class is responsible for loading and managing server configuratio
 setting parameters, and building clients for MCP servers. It supports both stdio
 and SSE (Server-Sent Events) transport types.
 """
+import copy
 # pylint: disable=broad-exception-caught
 import os
 import json
@@ -88,7 +89,7 @@ class MCPManager(metaclass=AutodocABCMeta):
         self._server_configs = {}
         for name, conf in configs.items():
             try:
-                self._server_configs[name] = ServerConfig.from_dict(conf)
+                self._server_configs[name] = ServerConfig.from_dict(copy.deepcopy(conf))
             except Exception as e:
                 self._logger.error("Failed to load config of server `%s`: %s", name, str(e))
                 raise e
