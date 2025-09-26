@@ -1,7 +1,8 @@
-"""Agent collection configuration and loading utilities.
+"""
+Agent collection launcher and configuration utilities.
 
-This module provides classes for defining and loading agent collection
-configurations, supporting both YAML file and programmatic configuration.
+Defines classes for loading agent collection configurations and launching
+agent instances with specified contexts and settings.
 """
 # pylint: disable=too-few-public-methods
 from __future__ import annotations
@@ -11,6 +12,8 @@ from typing import List, Dict, Literal
 import yaml
 from pydantic import BaseModel, Field
 from mcpuniverse.common.misc import AutodocABCMeta
+from mcpuniverse.workflows.builder import WorkflowBuilder, Executor
+from mcpuniverse.mcp.manager import MCPManager, Context
 
 
 class AgentCollectionSpec(BaseModel):
@@ -26,13 +29,14 @@ class AgentCollectionSpec(BaseModel):
     # Agent config file path
     config: str
     # Agent contexts defining environment variables and settings
-    context: List[Dict[str, str]] = Field(default_factory=list)
+    context: List[Context] = Field(default_factory=list)
     # Number of agents to create for each context
     number: int = 1
 
 
 class AgentCollectionConfig(BaseModel):
-    """Configuration for an agent collection.
+    """
+    Configuration for an agent collection.
     
     Contains the collection specification and metadata.
     """
@@ -72,10 +76,9 @@ class AgentCollectionConfig(BaseModel):
 
 class Launcher(metaclass=AutodocABCMeta):
     """
-    Launcher for managing agent collections.
+    Manages and launches agent collections.
     
-    Loads and validates agent collection configurations, ensuring all
-    required files exist and collection names are unique.
+    Validates configurations and creates agent instances from collection specs.
     """
 
     def __init__(self, config_path: str):
@@ -110,3 +113,27 @@ class Launcher(metaclass=AutodocABCMeta):
             if config.spec.name in self._name_to_configs:
                 raise ValueError(f"Found duplicated collection name `{config.spec.name}`")
             self._name_to_configs[config.spec.name] = config
+
+    def create_agents(self, project_id: str = "agent-collection") -> Dict[str, List[Executor]]:
+        """
+        Create agent instances from collection configurations.
+        
+        Args:
+            project_id: Project identifier for the agents.
+            
+        Returns:
+            Dictionary mapping collection names to lists of agent executors.
+        """
+        agent_collection = {}
+        for name, config in self._name_to_configs.items():
+            agents = []
+            for _ in range(config.spec.number):
+                contexts = config.spec.context if config.spec.context else [None]
+                for context in contexts:
+                    mcp_manager = MCPManager(context=context)
+                    builder = WorkflowBuilder(mcp_manager=mcp_manager, config=config.spec.config)
+                    builder.build(project_id=project_id)
+                    agent_name = builder.get_entrypoint()
+                    agents.append(builder.get_component(agent_name))
+            agent_collection[name] = agents
+        return agent_collection

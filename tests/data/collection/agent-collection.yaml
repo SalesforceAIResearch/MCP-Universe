@@ -1,0 +1,23 @@
+kind: collection
+spec:
+  name: agent-collection-1
+  config: agent-1.yaml
+---
+kind: collection
+spec:
+  name: agent-collection-2
+  config: agent-2.yaml
+  number: 2
+---
+kind: collection
+spec:
+  name: agent-collection-3
+  config: agent-3.yaml
+  context:
+    - env:
+        GITHUB_PERSONAL_ACCESS_TOKEN: xxx
+        GITHUB_PERSONAL_ACCOUNT_NAME: xxx
+    - env:
+        GITHUB_PERSONAL_ACCESS_TOKEN: yyy
+        GITHUB_PERSONAL_ACCOUNT_NAME: yyy
+  number: 1
