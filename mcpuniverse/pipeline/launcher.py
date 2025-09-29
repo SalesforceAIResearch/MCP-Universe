@@ -4,7 +4,7 @@ Agent collection launcher and configuration utilities.
 Defines classes for loading agent collection configurations and launching
 agent instances with specified contexts and settings.
 """
-# pylint: disable=too-few-public-methods,consider-using-with
+# pylint: disable=too-few-public-methods,consider-using-with,broad-exception-caught
 from __future__ import annotations
 import os
 import json
@@ -255,16 +255,20 @@ class AgentPipeline(metaclass=AutodocABCMeta):
         if self._get_queue_size(agent_name) > self._max_queue_size:
             return False
 
-        send_task(
-            task=AGENT_TASK,
-            kwargs={
-                "agent_collection_name": agent_collection_name,
-                "agent_index": agent_index,
-                "task_config": json.dumps(task_config.model_dump(mode="json"))
-            },
-            queue=agent_name
-        )
-        return True
+        try:
+            send_task(
+                task=AGENT_TASK,
+                kwargs={
+                    "agent_collection_name": agent_collection_name,
+                    "agent_index": agent_index,
+                    "task_config": json.dumps(task_config.model_dump(mode="json"))
+                },
+                queue=agent_name
+            )
+            return True
+        except Exception as e:
+            logger.error(str(e))
+            return False
 
     def delete_all_tasks(self):
         """Delete all scheduled tasks in the Celery queues."""
