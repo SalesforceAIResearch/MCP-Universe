@@ -232,7 +232,7 @@ class AgentPipeline(metaclass=AutodocABCMeta):
     def _get_queue_size(self, queue_name) -> int:
         return self._redis_client.llen(queue_name)
 
-    def send_task(self, agent_collection_name: str, task_config: TaskConfig | dict):
+    def send_task(self, agent_collection_name: str, task_config: TaskConfig | dict) -> bool:
         """
         Send a task to an agent using round-robin scheduling.
         
@@ -252,6 +252,8 @@ class AgentPipeline(metaclass=AutodocABCMeta):
         self._agent_indices[agent_collection_name] = (
                 (agent_index + 1) % len(self._agent_collection[agent_collection_name]))
         agent_name = f"{agent_collection_name}_{agent_index}"
+        if self._get_queue_size(agent_name) > self._max_queue_size:
+            return False
 
         send_task(
             task=AGENT_TASK,
@@ -262,6 +264,7 @@ class AgentPipeline(metaclass=AutodocABCMeta):
             },
             queue=agent_name
         )
+        return True
 
     def delete_all_tasks(self):
         """Delete all scheduled tasks in the Celery queues."""
