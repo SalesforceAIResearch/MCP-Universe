@@ -43,7 +43,7 @@ class AgentTask(CeleryTask):
         Args:
             agent_collection_config: Path to the agent collection configuration file.
         """
-        self._logger = get_logger(__name__)
+        self._logger = get_logger(self.__class__.__name__)
         launcher = AgentLauncher(config_path=agent_collection_config)
         self._agent_collection = launcher.create_agents(project_id="celery")
 
@@ -77,7 +77,8 @@ class AgentTask(CeleryTask):
             **kwargs: Arbitrary keyword arguments containing task input data.
         """
         task_input = TaskInput.model_validate(kwargs)
-        self._loop.run_until_complete(self._run_task(task_input))
+        result = self._loop.run_until_complete(self._run_task(task_input))
+        print(result)
 
     async def _run_task(self, task_input: TaskInput):
         """

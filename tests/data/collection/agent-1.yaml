@@ -13,6 +13,5 @@ spec:
   config:
     llm: llm-1
     instruction: You are an agent for weather forecasting.
-    summarize_tool_response: true
     servers:
       - name: weather
