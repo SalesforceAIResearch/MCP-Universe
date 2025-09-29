@@ -47,8 +47,8 @@ class AgentTask(CeleryTask):
         launcher = AgentLauncher(config_path=agent_collection_config)
         self._agent_collection = launcher.create_agents(project_id="celery")
 
-        # Initialize all agents asynchronously
         self._running_agents = []
+        self._initialized_agents = set()
         self._loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self._loop)
 
@@ -65,6 +65,8 @@ class AgentTask(CeleryTask):
         """Clean up all agents in the collection."""
         for agent in self._running_agents[::-1]:
             await agent.cleanup()
+        self._running_agents = []
+        self._initialized_agents = set()
 
     def run(self, *args, **kwargs):
         """
@@ -95,8 +97,10 @@ class AgentTask(CeleryTask):
 
         trace_collector = MemoryCollector()
         agent = self._agent_collection[task_input.agent_collection_name][task_input.agent_index]
-        self._running_agents.append(agent)
-        await agent.initialize()
+        if not (task_input.agent_collection_name, task_input.agent_index) in self._initialized_agents:
+            await agent.initialize()
+            self._running_agents.append(agent)
+            self._initialized_agents.add((task_input.agent_collection_name, task_input.agent_index))
 
         async with AsyncExitStack():
             try:
