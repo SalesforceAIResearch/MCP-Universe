@@ -47,27 +47,6 @@ class AgentTask(CeleryTask):
         launcher = AgentLauncher(config_path=agent_collection_config)
         self._agent_collection = launcher.create_agents(project_id="celery")
 
-        self._running_agents = []
-        self._initialized_agents = set()
-        self._loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(self._loop)
-
-    def __del__(self):
-        """Destructor to clean up agents and event loop."""
-        try:
-            if self._loop and not self._loop.is_closed():
-                self._loop.run_until_complete(self._cleanup_agents())
-                self._loop.close()
-        except Exception as e:
-            self._logger.error("Error during cleanup: %s", str(e))
-
-    async def _cleanup_agents(self):
-        """Clean up all agents in the collection."""
-        for agent in self._running_agents[::-1]:
-            await agent.cleanup()
-        self._running_agents = []
-        self._initialized_agents = set()
-
     def run(self, *args, **kwargs):
         """
         Execute the Celery task.
@@ -77,7 +56,7 @@ class AgentTask(CeleryTask):
             **kwargs: Arbitrary keyword arguments containing task input data.
         """
         task_input = TaskInput.model_validate(kwargs)
-        result = self._loop.run_until_complete(self._run_task(task_input))
+        result = asyncio.run(self._run_task(task_input))
         print(result)
 
     async def _run_task(self, task_input: TaskInput):
@@ -98,12 +77,9 @@ class AgentTask(CeleryTask):
 
         trace_collector = MemoryCollector()
         agent = self._agent_collection[task_input.agent_collection_name][task_input.agent_index]
-        if not (task_input.agent_collection_name, task_input.agent_index) in self._initialized_agents:
-            await agent.initialize()
-            self._running_agents.append(agent)
-            self._initialized_agents.add((task_input.agent_collection_name, task_input.agent_index))
 
         async with AsyncExitStack():
+            await agent.initialize()
             try:
                 task = Task(config=task_input.task_config.model_dump())
                 question = task.get_question()
@@ -134,6 +110,7 @@ class AgentTask(CeleryTask):
             await task.cleanup()
             if task.use_specified_server() and isinstance(agent, BaseAgent):
                 await agent.cleanup()
+            await agent.cleanup()
 
             return {
                 "result": result,
