@@ -1,0 +1,1 @@
+AGENT_TASK = "mcpuniverse.pipeline.task.AgentTask"
