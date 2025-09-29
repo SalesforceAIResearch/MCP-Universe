@@ -32,6 +32,10 @@ class TestAgentPipeline(unittest.TestCase):
                 }
             ]
         }
+        a = launcher._get_queue_size(queue_name='agent-collection-1_0')
+        b = launcher._get_queue_size(queue_name='agent-collection-1_1')
+        print(f"Queue size: {(a, b)}")
+
         launcher.send_task(
             agent_collection_name="agent-collection-1",
             task_config=task_config
@@ -40,6 +44,9 @@ class TestAgentPipeline(unittest.TestCase):
             agent_collection_name="agent-collection-1",
             task_config=task_config
         )
+        a = launcher._get_queue_size(queue_name='agent-collection-1_0')
+        b = launcher._get_queue_size(queue_name='agent-collection-1_1')
+        print(f"Queue size: {(a, b)}")
 
 
 if __name__ == "__main__":

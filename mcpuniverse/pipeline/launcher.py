@@ -161,7 +161,7 @@ class AgentPipeline(metaclass=AutodocABCMeta):
     across available agents using round-robin scheduling.
     """
 
-    def __init__(self, config_path: str):
+    def __init__(self, config_path: str, max_queue_size: int = 100):
         """
         Initialize the pipeline launcher with agent configuration.
         
@@ -172,6 +172,26 @@ class AgentPipeline(metaclass=AutodocABCMeta):
         self._agent_collection = agent_launcher.create_agents(project_id="pipeline")
         self._agent_collection_config = config_path
         self._agent_indices = {name: 0 for name in self._agent_collection}
+        self._max_queue_size = max_queue_size
+        self._redis_client = AgentPipeline._build_redis_client()
+
+    @staticmethod
+    def _build_redis_client() -> redis.Redis:
+        redis_host = os.environ.get("REDIS_HOST", "localhost")
+        redis_port = int(os.environ.get("REDIS_PORT", 6379))
+        max_retries, retry_delay = 6, 10
+        for attempt in range(max_retries):
+            try:
+                redis_client = redis.Redis(host=redis_host, port=redis_port, socket_timeout=30)
+                redis_client.ping()
+                return redis_client
+            except (redis.ConnectionError, redis.TimeoutError) as e:
+                logger.warning("Redis connection attempt %d failed: %s", attempt + 1, str(e))
+                if attempt == max_retries - 1:
+                    logger.error("Failed to connect to Redis after all retries")
+                    raise RuntimeError(f"Cannot connect to Redis at {redis_host}:{redis_port}") from e
+                logger.info("Retrying in %d seconds...", retry_delay)
+                time.sleep(retry_delay)
 
     def _build_celery_script(self):
         """
@@ -196,24 +216,6 @@ class AgentPipeline(metaclass=AutodocABCMeta):
         Creates a shell script with worker startup commands and executes it.
         Logs output and handles subprocess errors.
         """
-        # Check Redis connection with retries
-        redis_host = os.environ.get('REDIS_HOST', 'localhost')
-        redis_port = int(os.environ.get('REDIS_PORT', 6379))
-        max_retries, retry_delay = 6, 10
-        for attempt in range(max_retries):
-            try:
-                redis_client = redis.Redis(host=redis_host, port=redis_port, socket_timeout=5)
-                redis_client.ping()
-                logger.info("Redis connection successful")
-                break
-            except (redis.ConnectionError, redis.TimeoutError) as e:
-                logger.warning("Redis connection attempt %d failed: %s", attempt + 1, str(e))
-                if attempt == max_retries - 1:
-                    logger.error("Failed to connect to Redis after all retries")
-                    raise RuntimeError(f"Cannot connect to Redis at {redis_host}:{redis_port}") from e
-                logger.info("Retrying in %d seconds...", retry_delay)
-                time.sleep(retry_delay)
-
         folder = os.path.dirname(os.path.realpath(__file__))
         tmpdir = tempfile.gettempdir()
         script = self._build_celery_script()
@@ -226,6 +228,9 @@ class AgentPipeline(metaclass=AutodocABCMeta):
             _stream_logs(commands, env=env, cwd=os.path.join(folder, '../..'))
         except subprocess.CalledProcessError as e:
             logger.error(str(e))
+
+    def _get_queue_size(self, queue_name) -> int:
+        return self._redis_client.llen(queue_name)
 
     def send_task(self, agent_collection_name: str, task_config: TaskConfig | dict):
         """
