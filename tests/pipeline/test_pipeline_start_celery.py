@@ -11,6 +11,7 @@ class TestAgentPipeline(unittest.TestCase):
         folder = os.path.dirname(os.path.realpath(__file__))
         config_path = os.path.join(folder, "../data/collection/agent-collection.yaml")
         launcher = AgentPipeline(config_path)
+        launcher.delete_all_tasks()
         launcher.start_celery_workers()
 
 

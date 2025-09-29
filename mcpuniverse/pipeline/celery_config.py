@@ -37,3 +37,14 @@ def send_task(task, args=None, kwargs=None, queue=None):
     if kwargs is None:
         kwargs = {}
     return WORKER.send_task(task, args=args, kwargs=kwargs, queue=queue)
+
+
+def purge_queue(queue_name: str):
+    """
+    Delete all scheduled tasks in a Celery queue.
+    
+    Args:
+        queue_name: Name of the queue to purge.
+    """
+    with WORKER.connection_for_write() as conn:
+        conn.default_channel.queue_purge(queue_name)

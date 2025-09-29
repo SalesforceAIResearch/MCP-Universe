@@ -22,7 +22,7 @@ from mcpuniverse.workflows.builder import WorkflowBuilder, Executor
 from mcpuniverse.mcp.manager import MCPManager, Context
 from mcpuniverse.benchmark.task import TaskConfig
 from mcpuniverse.pipeline import AGENT_TASK
-from mcpuniverse.pipeline.celery_config import send_task
+from mcpuniverse.pipeline.celery_config import send_task, purge_queue
 
 logging.basicConfig(level="INFO")
 logger = logging.getLogger("Agent-Pipeline")
@@ -237,6 +237,12 @@ class AgentPipeline(metaclass=AutodocABCMeta):
             },
             queue=agent_name
         )
+
+    def delete_all_tasks(self):
+        """Delete all scheduled tasks in the Celery queues."""
+        for name, agents in self._agent_collection.items():
+            for i in range(len(agents)):
+                purge_queue(f"{name}_{i}")
 
 
 def _stream_logs(cmds: str | List[str], *, env=None, cwd=None):
