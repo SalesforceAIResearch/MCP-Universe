@@ -6,6 +6,7 @@ tasks asynchronously in a distributed pipeline environment.
 """
 # pylint: disable=broad-exception-caught
 import asyncio
+import json
 from contextlib import AsyncExitStack
 from pydantic import BaseModel
 from celery import Task as CeleryTask
@@ -55,6 +56,17 @@ class AgentTask(CeleryTask):
             *args: Variable length argument list.
             **kwargs: Arbitrary keyword arguments containing task input data.
         """
+        if "agent_collection_name" not in kwargs:
+            raise RuntimeError("No agent collection name")
+        if "agent_index" not in kwargs:
+            raise RuntimeError("No agent index")
+        if "task_config" not in kwargs:
+            raise RuntimeError("No task configuration")
+
+        kwargs["agent_index"] = int(kwargs["agent_index"])
+        if isinstance(kwargs["task_config"], str):
+            kwargs["task_config"] = json.loads(kwargs["task_config"])
+
         task_input = TaskInput.model_validate(kwargs)
         result = asyncio.run(self._run_task(task_input))
         print(result)

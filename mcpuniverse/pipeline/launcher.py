@@ -4,9 +4,15 @@ Agent collection launcher and configuration utilities.
 Defines classes for loading agent collection configurations and launching
 agent instances with specified contexts and settings.
 """
-# pylint: disable=too-few-public-methods
+# pylint: disable=too-few-public-methods,consider-using-with
 from __future__ import annotations
 import os
+import json
+import tempfile
+import subprocess
+import logging
+from queue import Queue
+from threading import Thread
 from typing import List, Dict, Literal
 
 import yaml
@@ -14,6 +20,12 @@ from pydantic import BaseModel, Field
 from mcpuniverse.common.misc import AutodocABCMeta
 from mcpuniverse.workflows.builder import WorkflowBuilder, Executor
 from mcpuniverse.mcp.manager import MCPManager, Context
+from mcpuniverse.benchmark.task import TaskConfig
+from mcpuniverse.pipeline import AGENT_TASK
+from mcpuniverse.pipeline.celery_config import send_task
+
+logging.basicConfig(level="INFO")
+logger = logging.getLogger("Agent-Pipeline")
 
 
 class AgentCollectionSpec(BaseModel):
@@ -137,3 +149,127 @@ class AgentLauncher(metaclass=AutodocABCMeta):
                     agents.append(builder.get_component(agent_name))
             agent_collection[name] = agents
         return agent_collection
+
+
+class PipelineLauncher(metaclass=AutodocABCMeta):
+    """
+    Manages distributed task execution using Celery workers.
+    
+    Launches agent collections as Celery workers and distributes tasks
+    across available agents using round-robin scheduling.
+    """
+
+    def __init__(self, config_path: str):
+        """
+        Initialize the pipeline launcher with agent configuration.
+        
+        Args:
+            config_path: Path to the YAML agent collection configuration file.
+        """
+        agent_launcher = AgentLauncher(config_path=config_path)
+        self._agent_collection = agent_launcher.create_agents(project_id="pipeline")
+        self._agent_collection_config = config_path
+        self._agent_indices = {name: 0 for name in self._agent_collection}
+
+    def _build_celery_script(self):
+        """
+        Build shell script for starting Celery workers.
+        
+        Returns:
+            Shell script content with Celery worker startup commands.
+        """
+        commands = []
+        for name, agents in self._agent_collection.items():
+            for i in range(len(agents)):
+                agent_name = f"{name}_{i}"
+                commands.append(f"AGENT_COLLECTION_CONFIG_FILE={self._agent_collection_config} "
+                                f"celery -A mcpuniverse.pipeline.worker worker -Q {agent_name} "
+                                f"--loglevel=info -n {agent_name}@%h -c 1 &")
+        return "\n".join(commands)
+
+    def start_celery_workers(self):
+        """
+        Start Celery workers for all agent collections.
+        
+        Creates a shell script with worker startup commands and executes it.
+        Logs output and handles subprocess errors.
+        """
+        folder = os.path.dirname(os.path.realpath(__file__))
+        tmpdir = tempfile.gettempdir()
+        script = self._build_celery_script()
+        with open(os.path.join(tmpdir, "start_pipeline.sh"), "w", encoding="utf-8") as f:
+            f.write(script)
+        commands = ["bash", os.path.join(tmpdir, "start_pipeline.sh")]
+        try:
+            env = os.environ.copy()
+            env["AGENT_COLLECTION_CONFIG_FILE"] = self._agent_collection_config
+            _stream_logs(commands, env=env, cwd=os.path.join(folder, '../..'))
+        except subprocess.CalledProcessError as e:
+            logger.error(str(e))
+
+    def send_task(self, agent_collection_name: str, task_config: TaskConfig):
+        """
+        Send a task to an agent using round-robin scheduling.
+        
+        Args:
+            agent_collection_name: Name of the agent collection to send task to.
+            task_config: Configuration for the task to be executed.
+            
+        Raises:
+            RuntimeError: If agent collection name is invalid.
+        """
+        if agent_collection_name not in self._agent_collection:
+            raise RuntimeError(f"Invalid agent collection: {agent_collection_name}")
+        agent_index = self._agent_indices[agent_collection_name]
+        self._agent_indices[agent_collection_name] = (
+                (agent_index + 1) % len(self._agent_collection[agent_collection_name]))
+
+        agent_name = f"{agent_collection_name}_{agent_index}"
+        send_task(
+            task=AGENT_TASK,
+            kwargs={
+                "agent_collection_name": agent_collection_name,
+                "agent_index": agent_index,
+                "task_config": json.dumps(task_config.model_dump(mode="json"))
+            },
+            queue=agent_name
+        )
+
+
+def _stream_logs(cmds: str | List[str], *, env=None, cwd=None):
+    proc = subprocess.Popen(
+        cmds, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env, cwd=cwd
+    )
+    queue: Queue[tuple[str, bytes]] = Queue()
+    stderr, stdout = b"", b""
+    # We will use a thread to read from the subprocess and avoid hanging from Ctrl+C
+    t = Thread(target=_enqueue_output, args=(proc.stdout, "stdout", queue))
+    t.daemon = True
+    t.start()
+    t = Thread(target=_enqueue_output, args=(proc.stderr, "stderr", queue))
+    t.daemon = True
+    t.start()
+    for _ in range(2):
+        for src, line in iter(queue.get, None):
+            logger.info(line.decode(errors="replace").strip("\n"))
+            if src == "stderr":
+                stderr += line
+            else:
+                stdout += line
+    exit_code = proc.wait()
+    if exit_code != 0:
+        raise subprocess.CalledProcessError(
+            exit_code, cmds, output=stdout, stderr=stderr
+        )
+    return subprocess.CompletedProcess(
+        proc.args, exit_code, stdout=stdout, stderr=stderr
+    )
+
+
+def _enqueue_output(pipe, pipe_name, queue):
+    try:
+        with pipe:
+            for line in iter(pipe.readline, b""):
+                queue.put((pipe_name, line))
+    finally:
+        queue.put(None)

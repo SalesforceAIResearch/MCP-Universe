@@ -10,7 +10,6 @@ load_dotenv()
 
 BROKER = f"redis://{os.environ['REDIS_HOST']}:{os.environ['REDIS_PORT']}/0"
 RESULT_BACKEND = f"redis://{os.environ['REDIS_HOST']}:{os.environ['REDIS_PORT']}/0"
-AGENT_COLLECTION_CONFIG_FILE = os.environ["AGENT_COLLECTION_CONFIG_FILE"]
 
 WORKER = Celery("celery_app", broker=BROKER)
 WORKER.conf.update(
@@ -31,10 +30,10 @@ def setup_celery_logging(**kwargs):
     """Resovle `AttributeError: 'LoggingProxy' object has no attribute 'fileno'`"""
 
 
-def send_task(task, args=None, kwargs=None):
+def send_task(task, args=None, kwargs=None, queue=None):
     """
     Provides the task priority level based on message source
     """
     if kwargs is None:
         kwargs = {}
-    return WORKER.send_task(task, args=args, kwargs=kwargs)
+    return WORKER.send_task(task, args=args, kwargs=kwargs, queue=queue)
