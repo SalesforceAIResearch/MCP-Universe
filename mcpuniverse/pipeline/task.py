@@ -69,7 +69,7 @@ class AgentTask(CeleryTask):
 
         task_input = TaskInput.model_validate(kwargs)
         result = asyncio.run(self._run_task(task_input))
-        print(result)
+        self._logger.info(str(result))
 
     async def _run_task(self, task_input: TaskInput):
         """

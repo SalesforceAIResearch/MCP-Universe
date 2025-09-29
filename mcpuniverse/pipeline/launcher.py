@@ -151,7 +151,7 @@ class AgentLauncher(metaclass=AutodocABCMeta):
         return agent_collection
 
 
-class PipelineLauncher(metaclass=AutodocABCMeta):
+class AgentPipeline(metaclass=AutodocABCMeta):
     """
     Manages distributed task execution using Celery workers.
     
@@ -207,7 +207,7 @@ class PipelineLauncher(metaclass=AutodocABCMeta):
         except subprocess.CalledProcessError as e:
             logger.error(str(e))
 
-    def send_task(self, agent_collection_name: str, task_config: TaskConfig):
+    def send_task(self, agent_collection_name: str, task_config: TaskConfig | dict):
         """
         Send a task to an agent using round-robin scheduling.
         
@@ -220,11 +220,14 @@ class PipelineLauncher(metaclass=AutodocABCMeta):
         """
         if agent_collection_name not in self._agent_collection:
             raise RuntimeError(f"Invalid agent collection: {agent_collection_name}")
+        if isinstance(task_config, dict):
+            task_config = TaskConfig.model_validate(task_config)
+
         agent_index = self._agent_indices[agent_collection_name]
         self._agent_indices[agent_collection_name] = (
                 (agent_index + 1) % len(self._agent_collection[agent_collection_name]))
-
         agent_name = f"{agent_collection_name}_{agent_index}"
+
         send_task(
             task=AGENT_TASK,
             kwargs={
