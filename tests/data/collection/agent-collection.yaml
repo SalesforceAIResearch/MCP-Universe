@@ -2,12 +2,12 @@ kind: collection
 spec:
   name: agent-collection-1
   config: agent-1.yaml
+  number: 2
 ---
 kind: collection
 spec:
   name: agent-collection-2
   config: agent-2.yaml
-  number: 2
 ---
 kind: collection
 spec:

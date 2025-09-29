@@ -36,6 +36,10 @@ class TestAgentPipeline(unittest.TestCase):
             agent_collection_name="agent-collection-1",
             task_config=task_config
         )
+        launcher.send_task(
+            agent_collection_name="agent-collection-1",
+            task_config=task_config
+        )
 
 
 if __name__ == "__main__":
