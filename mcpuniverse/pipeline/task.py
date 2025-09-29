@@ -1,4 +1,5 @@
-"""Pipeline task module for executing agent tasks in Celery workers.
+"""
+Pipeline task module for executing agent tasks in Celery workers.
 
 This module provides Celery task implementations for running agent-based
 tasks asynchronously in a distributed pipeline environment.
@@ -10,7 +11,6 @@ from pydantic import BaseModel
 from celery import Task as CeleryTask
 from mcpuniverse.common.logger import get_logger
 from mcpuniverse.benchmark.task import TaskConfig, Task
-from mcpuniverse.mcp.servers.blender.server import logger
 from mcpuniverse.pipeline.launcher import AgentLauncher
 from mcpuniverse.agent.base import BaseAgent
 from mcpuniverse.tracer import Tracer
@@ -18,7 +18,8 @@ from mcpuniverse.tracer.collectors import MemoryCollector
 
 
 class TaskInput(BaseModel):
-    """Input data for agent task execution.
+    """
+    Input data for agent task execution.
     
     Args:
         agent_collection_name: Name of the agent collection to use.
@@ -31,34 +32,54 @@ class TaskInput(BaseModel):
 
 
 class AgentTask(CeleryTask):
-    """Celery task for executing agent tasks asynchronously.
-    
-    Attributes:
-        logger: Logger instance for the task.
     """
-    logger = get_logger(__name__)
+    Celery task for executing agent tasks asynchronously.
+    """
 
     def __init__(self, agent_collection_config: str):
-        """Initialize the agent task with an agent collection.
+        """
+        Initialize the agent task with an agent collection.
         
         Args:
             agent_collection_config: Path to the agent collection configuration file.
         """
+        self._logger = get_logger(__name__)
         launcher = AgentLauncher(config_path=agent_collection_config)
         self._agent_collection = launcher.create_agents(project_id="celery")
 
+        # Initialize all agents asynchronously
+        self._running_agents = []
+        self._loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(self._loop)
+
+    def __del__(self):
+        """Destructor to clean up agents and event loop."""
+        try:
+            if self._loop and not self._loop.is_closed():
+                self._loop.run_until_complete(self._cleanup_agents())
+                self._loop.close()
+        except Exception as e:
+            self._logger.error("Error during cleanup: %s", str(e))
+
+    async def _cleanup_agents(self):
+        """Clean up all agents in the collection."""
+        for agent in self._running_agents[::-1]:
+            await agent.cleanup()
+
     def run(self, *args, **kwargs):
-        """Execute the Celery task.
+        """
+        Execute the Celery task.
         
         Args:
             *args: Variable length argument list.
             **kwargs: Arbitrary keyword arguments containing task input data.
         """
         task_input = TaskInput.model_validate(kwargs)
-        asyncio.run(self._run_task(task_input))
+        self._loop.run_until_complete(self._run_task(task_input))
 
     async def _run_task(self, task_input: TaskInput):
-        """Execute a task using the specified agent.
+        """
+        Execute a task using the specified agent.
         
         Args:
             task_input: Input parameters for task execution.
@@ -74,6 +95,7 @@ class AgentTask(CeleryTask):
 
         trace_collector = MemoryCollector()
         agent = self._agent_collection[task_input.agent_collection_name][task_input.agent_index]
+        self._running_agents.append(agent)
         await agent.initialize()
 
         async with AsyncExitStack():
@@ -82,7 +104,7 @@ class AgentTask(CeleryTask):
                 question = task.get_question()
                 output_format = task.get_output_format()
             except Exception as e:
-                logger.error("Failed to create task: %s", str(e))
+                self._logger.error("Failed to create task: %s", str(e))
                 return None
 
             try:
