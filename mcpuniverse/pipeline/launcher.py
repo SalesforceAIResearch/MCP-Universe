@@ -11,11 +11,13 @@ import json
 import tempfile
 import subprocess
 import logging
+import time
 from queue import Queue
 from threading import Thread
 from typing import List, Dict, Literal
 
 import yaml
+import redis
 from pydantic import BaseModel, Field
 from mcpuniverse.common.misc import AutodocABCMeta
 from mcpuniverse.workflows.builder import WorkflowBuilder, Executor
@@ -194,6 +196,24 @@ class AgentPipeline(metaclass=AutodocABCMeta):
         Creates a shell script with worker startup commands and executes it.
         Logs output and handles subprocess errors.
         """
+        # Check Redis connection with retries
+        redis_host = os.environ.get('REDIS_HOST', 'localhost')
+        redis_port = int(os.environ.get('REDIS_PORT', 6379))
+        max_retries, retry_delay = 6, 10
+        for attempt in range(max_retries):
+            try:
+                redis_client = redis.Redis(host=redis_host, port=redis_port, socket_timeout=5)
+                redis_client.ping()
+                logger.info("Redis connection successful")
+                break
+            except (redis.ConnectionError, redis.TimeoutError) as e:
+                logger.warning("Redis connection attempt %d failed: %s", attempt + 1, str(e))
+                if attempt == max_retries - 1:
+                    logger.error("Failed to connect to Redis after all retries")
+                    raise RuntimeError(f"Cannot connect to Redis at {redis_host}:{redis_port}") from e
+                logger.info("Retrying in %d seconds...", retry_delay)
+                time.sleep(retry_delay)
+
         folder = os.path.dirname(os.path.realpath(__file__))
         tmpdir = tempfile.gettempdir()
         script = self._build_celery_script()
