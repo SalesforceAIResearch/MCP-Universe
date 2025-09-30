@@ -14,7 +14,7 @@ import logging
 import time
 from queue import Queue
 from threading import Thread
-from typing import List, Dict, Literal
+from typing import List, Dict, Literal, Generator
 
 import yaml
 import redis
@@ -25,6 +25,8 @@ from mcpuniverse.mcp.manager import MCPManager, Context
 from mcpuniverse.benchmark.task import TaskConfig
 from mcpuniverse.pipeline import AGENT_TASK
 from mcpuniverse.pipeline.celery_config import send_task, purge_queue
+from mcpuniverse.pipeline.mq.consumer import Consumer
+from mcpuniverse.pipeline.utils import deserialize_task_output
 
 logging.basicConfig(level="INFO")
 logger = logging.getLogger("Agent-Pipeline")
@@ -161,12 +163,19 @@ class AgentPipeline(metaclass=AutodocABCMeta):
     across available agents using round-robin scheduling.
     """
 
-    def __init__(self, config_path: str, max_queue_size: int = 100):
+    def __init__(
+            self,
+            config_path: str,
+            max_queue_size: int = 100,
+            auto_offset_reset: str = "earliest"
+    ):
         """
         Initialize the pipeline launcher with agent configuration.
         
         Args:
             config_path: Path to the YAML agent collection configuration file.
+            max_queue_size: The maximum Celery queue size.
+            auto_offset_reset: Offset reset strategy ('earliest', 'latest') for Kafka.
         """
         agent_launcher = AgentLauncher(config_path=config_path)
         self._agent_collection = agent_launcher.create_agents(project_id="pipeline")
@@ -174,6 +183,13 @@ class AgentPipeline(metaclass=AutodocABCMeta):
         self._agent_indices = {name: 0 for name in self._agent_collection}
         self._max_queue_size = max_queue_size
         self._redis_client = AgentPipeline._build_redis_client()
+        self._mq_consumer = Consumer(
+            host=os.environ.get("KAFKA_HOST", "localhost"),
+            port=int(os.environ.get("KAFKA_PORT", 9092)),
+            topic=os.environ.get("KAFKA_TOPIC", "agent-task-mq"),
+            value_deserializer=deserialize_task_output,
+            auto_offset_reset=auto_offset_reset
+        )
 
     @staticmethod
     def _build_redis_client() -> redis.Redis:
@@ -275,6 +291,10 @@ class AgentPipeline(metaclass=AutodocABCMeta):
         for name, agents in self._agent_collection.items():
             for i in range(len(agents)):
                 purge_queue(f"{name}_{i}")
+
+    def pull_task_outputs(self) -> Generator:
+        """Pull task outputs from Kafka."""
+        return self._mq_consumer.consume_messages()
 
 
 def _stream_logs(cmds: str | List[str], *, env=None, cwd=None):

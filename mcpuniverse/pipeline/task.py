@@ -7,7 +7,9 @@ tasks asynchronously in a distributed pipeline environment.
 # pylint: disable=broad-exception-caught
 import asyncio
 import json
+import os
 from contextlib import AsyncExitStack
+from dotenv import load_dotenv
 from pydantic import BaseModel
 from celery import Task as CeleryTask
 from mcpuniverse.common.logger import get_logger
@@ -16,6 +18,10 @@ from mcpuniverse.pipeline.launcher import AgentLauncher
 from mcpuniverse.agent.base import BaseAgent
 from mcpuniverse.tracer import Tracer
 from mcpuniverse.tracer.collectors import MemoryCollector
+from mcpuniverse.pipeline.mq.producer import Producer
+from mcpuniverse.pipeline.utils import serialize_task_output
+
+load_dotenv()
 
 
 class TaskInput(BaseModel):
@@ -47,6 +53,12 @@ class AgentTask(CeleryTask):
         self._logger = get_logger(self.__class__.__name__)
         launcher = AgentLauncher(config_path=agent_collection_config)
         self._agent_collection = launcher.create_agents(project_id="celery")
+        self._mq = Producer(
+            host=os.environ.get("KAFKA_HOST", "localhost"),
+            port=int(os.environ.get("KAFKA_PORT", 9092)),
+            topic=os.environ.get("KAFKA_TOPIC", "agent-task-mq"),
+            value_serializer=serialize_task_output
+        )
 
     def run(self, *args, **kwargs):
         """
@@ -66,10 +78,13 @@ class AgentTask(CeleryTask):
         kwargs["agent_index"] = int(kwargs["agent_index"])
         if isinstance(kwargs["task_config"], str):
             kwargs["task_config"] = json.loads(kwargs["task_config"])
-
-        task_input = TaskInput.model_validate(kwargs)
-        result = asyncio.run(self._run_task(task_input))
-        self._logger.info(str(result))
+        try:
+            task_input = TaskInput.model_validate(kwargs)
+            task_output = asyncio.run(self._run_task(task_input))
+            if not self._mq.send(task_output):
+                self._logger.error("Failed to send task output for %s", str(kwargs))
+        except Exception as e:
+            self._logger.error("Failed to process task: %s", str(e))
 
     async def _run_task(self, task_input: TaskInput):
         """
