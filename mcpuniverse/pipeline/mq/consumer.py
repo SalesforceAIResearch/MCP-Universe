@@ -20,7 +20,7 @@ class Consumer(metaclass=AutodocABCMeta):
             key_deserializer: Optional[Callable] = None,
             bootstrap_servers: Optional[List[str]] = None,
             group_id: str = "mcpuniverse-group",
-            auto_offset_reset: str = "latest",
+            auto_offset_reset: str = "earliest",
             enable_auto_commit: bool = True,
             **kwargs
     ):
