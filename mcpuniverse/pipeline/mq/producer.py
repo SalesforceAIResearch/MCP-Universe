@@ -2,7 +2,7 @@
 # pylint: disable=broad-exception-caught
 from typing import Callable, Any, Optional, List
 from kafka import KafkaProducer
-from kafka.errors import KafkaError, KafkaTimeoutError
+from kafka.errors import KafkaError, KafkaTimeoutError, MessageSizeTooLargeError
 from mcpuniverse.common.misc import AutodocABCMeta
 from mcpuniverse.common.logger import get_logger
 
@@ -112,6 +112,9 @@ class Producer(metaclass=AutodocABCMeta):
 
         except KafkaTimeoutError as e:
             self._logger.error("Kafka send timeout for topic %s: %s", target_topic, str(e))
+            return False
+        except MessageSizeTooLargeError as e:
+            self._logger.error("Kafka too large message sending to topic %s: %s", target_topic, str(e))
             return False
         except KafkaError as e:
             self._logger.error("Kafka error sending to topic %s: %s", target_topic, str(e))
