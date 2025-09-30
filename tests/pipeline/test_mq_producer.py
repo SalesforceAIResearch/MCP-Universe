@@ -1,9 +1,13 @@
+import os
 import unittest
 import pytest
 import json
 import random
 import time
+from dotenv import load_dotenv
 from mcpuniverse.pipeline.mq.producer import Producer
+
+load_dotenv()
 
 
 class TestMQProducer(unittest.TestCase):
@@ -11,9 +15,9 @@ class TestMQProducer(unittest.TestCase):
     @pytest.mark.skip
     def test(self):
         producer = Producer(
-            host="localhost",
-            port=9092,
-            topic="driver-location",
+            host=os.environ.get("KAFKA_HOST", "localhost"),
+            port=int(os.environ.get("KAFKA_PORT", 9092)),
+            topic=os.environ.get("KAFKA_TOPIC", "agent-task-mq"),
             value_serializer=lambda v: json.dumps(v).encode("utf-8")
         )
         while True:

@@ -1,7 +1,11 @@
+import os
 import unittest
 import pytest
 import json
+from dotenv import load_dotenv
 from mcpuniverse.pipeline.mq.consumer import Consumer
+
+load_dotenv()
 
 
 class TestMQConsumer(unittest.TestCase):
@@ -9,9 +13,9 @@ class TestMQConsumer(unittest.TestCase):
     @pytest.mark.skip
     def test(self):
         consumer = Consumer(
-            host="localhost",
-            port=9092,
-            topic="driver-location",
+            host=os.environ.get("KAFKA_HOST", "localhost"),
+            port=int(os.environ.get("KAFKA_PORT", 9092)),
+            topic=os.environ.get("KAFKA_TOPIC", "agent-task-mq"),
             value_deserializer=lambda x: json.loads(x.decode("utf-8"))
         )
         for location in consumer.consume_messages():
