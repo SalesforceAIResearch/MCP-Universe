@@ -1,9 +1,10 @@
 """MQ consumer"""
 # pylint: disable=broad-exception-caught
 import logging
+import time
 from typing import Callable, Any, Optional, List, Generator, Union
 from kafka import KafkaConsumer
-from kafka.errors import KafkaError, KafkaTimeoutError
+from kafka.errors import KafkaTimeoutError
 from mcpuniverse.common.misc import AutodocABCMeta
 
 logger = logging.getLogger(__name__)
@@ -104,31 +105,23 @@ class Consumer(metaclass=AutodocABCMeta):
 
                 for _, messages in message_batch.items():
                     for message in messages:
-                        try:
-                            logger.debug(
-                                "Received message from topic=%s partition=%s offset=%s",
-                                message.topic,
-                                message.partition,
-                                message.offset
-                            )
-                            yield message.value
-                            message_count += 1
-                            if max_messages is not None and message_count >= max_messages:
-                                return
-
-                        except Exception as e:
-                            logger.error("Error processing message: %s", str(e))
-                            continue
+                        logger.debug(
+                            "Received message from topic=%s partition=%s offset=%s",
+                            message.topic,
+                            message.partition,
+                            message.offset
+                        )
+                        yield message.value
+                        message_count += 1
+                        if max_messages is not None and message_count >= max_messages:
+                            return
 
             except KafkaTimeoutError:
                 logger.debug("Poll timeout, continuing...")
-                continue
-            except KafkaError as e:
-                logger.error("Kafka error during poll: %s", str(e))
-                break
+                time.sleep(1)
             except Exception as e:
                 logger.error("Unexpected error during poll: %s", str(e))
-                break
+                time.sleep(5)
 
     def seek_to_beginning(self, partitions: Optional[List] = None):
         """
