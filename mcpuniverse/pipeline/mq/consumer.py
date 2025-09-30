@@ -1,4 +1,4 @@
-"""MQ consumer"""
+"""Kafka message queue consumer implementation."""
 # pylint: disable=broad-exception-caught
 import logging
 import time
@@ -11,12 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 class Consumer(metaclass=AutodocABCMeta):
-    """
-    Production-ready Kafka consumer with robust error handling and configuration.
-    
-    Provides reliable message consumption with proper connection management,
-    offset handling, and comprehensive error handling.
-    """
+    """Kafka consumer with robust error handling and generator-based message consumption."""
 
     def __init__(
             self,
@@ -64,7 +59,7 @@ class Consumer(metaclass=AutodocABCMeta):
 
         try:
             self._client = KafkaConsumer(topic, **config)
-            logger.info("Kafka consumer initialized successfully for topics: %s", self._topics)
+            logger.info("Kafka consumer initialized successfully for topics: %s", self._topic)
         except Exception as e:
             logger.error("Failed to initialize Kafka consumer: %s", str(e))
             raise
