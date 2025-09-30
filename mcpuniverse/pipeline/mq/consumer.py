@@ -1,13 +1,11 @@
 """Kafka message queue consumer implementation."""
 # pylint: disable=broad-exception-caught
-import logging
 import time
 from typing import Callable, Any, Optional, List, Generator
 from kafka import KafkaConsumer
 from kafka.errors import KafkaTimeoutError
 from mcpuniverse.common.misc import AutodocABCMeta
-
-logger = logging.getLogger(__name__)
+from mcpuniverse.common.logger import get_logger
 
 
 class Consumer(metaclass=AutodocABCMeta):
@@ -44,6 +42,7 @@ class Consumer(metaclass=AutodocABCMeta):
         self._host = host
         self._port = port
         self._topic = topic
+        self._logger = get_logger(self.__class__.__name__)
 
         servers = bootstrap_servers if bootstrap_servers else [f"{host}:{port}"]
         config = {
@@ -59,9 +58,9 @@ class Consumer(metaclass=AutodocABCMeta):
 
         try:
             self._client = KafkaConsumer(topic, **config)
-            logger.info("Kafka consumer initialized successfully for topics: %s", self._topic)
+            self._logger.info("Kafka consumer initialized successfully for topics: %s", self._topic)
         except Exception as e:
-            logger.error("Failed to initialize Kafka consumer: %s", str(e))
+            self._logger.error("Failed to initialize Kafka consumer: %s", str(e))
             raise
 
     def __del__(self):
@@ -87,7 +86,7 @@ class Consumer(metaclass=AutodocABCMeta):
 
         while True:
             if max_messages is not None and message_count >= max_messages:
-                logger.info("Reached maximum message limit: %d", max_messages)
+                self._logger.info("Reached maximum message limit: %d", max_messages)
                 break
 
             try:
@@ -100,7 +99,7 @@ class Consumer(metaclass=AutodocABCMeta):
 
                 for _, messages in message_batch.items():
                     for message in messages:
-                        logger.debug(
+                        self._logger.debug(
                             "Received message from topic=%s partition=%s offset=%s",
                             message.topic,
                             message.partition,
@@ -112,10 +111,10 @@ class Consumer(metaclass=AutodocABCMeta):
                             return
 
             except KafkaTimeoutError:
-                logger.debug("Poll timeout, continuing...")
+                self._logger.debug("Poll timeout, continuing...")
                 time.sleep(1)
             except Exception as e:
-                logger.error("Unexpected error during poll: %s", str(e))
+                self._logger.error("Unexpected error during poll: %s", str(e))
                 time.sleep(5)
 
     def seek_to_beginning(self, partitions: Optional[List] = None):
@@ -130,9 +129,9 @@ class Consumer(metaclass=AutodocABCMeta):
                 self._client.seek_to_beginning(*partitions)
             else:
                 self._client.seek_to_beginning()
-            logger.info("Seeked to beginning of partitions")
+            self._logger.info("Seeked to beginning of partitions")
         except Exception as e:
-            logger.error("Error seeking to beginning: %s", str(e))
+            self._logger.error("Error seeking to beginning: %s", str(e))
 
     def seek_to_end(self, partitions: Optional[List] = None):
         """
@@ -146,9 +145,9 @@ class Consumer(metaclass=AutodocABCMeta):
                 self._client.seek_to_end(*partitions)
             else:
                 self._client.seek_to_end()
-            logger.info("Seeked to end of partitions")
+            self._logger.info("Seeked to end of partitions")
         except Exception as e:
-            logger.error("Error seeking to end: %s", str(e))
+            self._logger.error("Error seeking to end: %s", str(e))
 
     def close(self, timeout: Optional[float] = None):
         """
@@ -159,6 +158,6 @@ class Consumer(metaclass=AutodocABCMeta):
         """
         try:
             self._client.close(timeout_ms=timeout)
-            logger.info("Kafka consumer closed successfully")
+            self._logger.info("Kafka consumer closed successfully")
         except Exception as e:
-            logger.error("Error closing Kafka consumer: %s", str(e))
+            self._logger.error("Error closing Kafka consumer: %s", str(e))

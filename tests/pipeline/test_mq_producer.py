@@ -24,6 +24,7 @@ class TestMQProducer(unittest.TestCase):
                 "timestamp": time.time()
             }
             producer.send(location)
+            print(f"Sent {location}")
             time.sleep(5)
 
 
