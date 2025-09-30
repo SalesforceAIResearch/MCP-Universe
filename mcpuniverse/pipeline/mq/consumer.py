@@ -2,7 +2,7 @@
 # pylint: disable=broad-exception-caught
 import logging
 import time
-from typing import Callable, Any, Optional, List, Generator, Union
+from typing import Callable, Any, Optional, List, Generator
 from kafka import KafkaConsumer
 from kafka.errors import KafkaTimeoutError
 from mcpuniverse.common.misc import AutodocABCMeta
@@ -17,7 +17,7 @@ class Consumer(metaclass=AutodocABCMeta):
             self,
             host: str,
             port: int,
-            topic: Union[str, List[str]],
+            topic: str,
             value_deserializer: Callable,
             key_deserializer: Optional[Callable] = None,
             bootstrap_servers: Optional[List[str]] = None,
@@ -32,7 +32,7 @@ class Consumer(metaclass=AutodocABCMeta):
         Args:
             host: Kafka broker host.
             port: Kafka broker port.
-            topic: Topic(s) to subscribe to.
+            topic: Topic to subscribe to.
             value_deserializer: Function to deserialize message values.
             key_deserializer: Function to deserialize message keys.
             bootstrap_servers: List of bootstrap servers (overrides host:port).
