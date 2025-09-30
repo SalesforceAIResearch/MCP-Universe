@@ -75,14 +75,16 @@ class AgentTask(CeleryTask):
         try:
             task_input = TaskInput.model_validate(kwargs)
             task_output = asyncio.run(self._run_task(task_input))
-            mq = Producer(
-                host=os.environ.get("KAFKA_HOST", "localhost"),
-                port=int(os.environ.get("KAFKA_PORT", 9092)),
-                topic=os.environ.get("KAFKA_TOPIC", "agent-task-mq"),
-                value_serializer=serialize_task_output
-            )
-            if not mq.send(task_output):
-                self._logger.error("Failed to send task output for %s", str(kwargs))
+            self._logger.info(task_output)
+            if task_output:
+                mq = Producer(
+                    host=os.environ.get("KAFKA_HOST", "localhost"),
+                    port=int(os.environ.get("KAFKA_PORT", 9092)),
+                    topic=os.environ.get("KAFKA_TOPIC", "agent-task-mq"),
+                    value_serializer=serialize_task_output
+                )
+                if not mq.send(task_output):
+                    self._logger.error("Failed to send task output for %s", str(kwargs))
         except Exception as e:
             self._logger.error("Failed to process task: %s", str(e))
 
