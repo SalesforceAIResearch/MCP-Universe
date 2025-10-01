@@ -38,4 +38,11 @@ migratedown:
 dashboard:
 	PYTHONPATH=. uvicorn mcpuniverse.dashboard.app:app
 
-.PHONY: test sqlc redis dropredis postgres droppostgres createdb dropdb new_migration migrateup migratedown dashboard
+kafka:
+	docker run --name kafka -p 9092:9092 -d apache/kafka:4.1.0
+
+dropkafka:
+	docker stop kafka
+	docker container rm kafka
+
+.PHONY: test sqlc redis dropredis postgres droppostgres createdb dropdb new_migration migrateup migratedown dashboard kafka dropkafka

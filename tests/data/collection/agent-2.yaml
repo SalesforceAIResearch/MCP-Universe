@@ -1,0 +1,15 @@
+kind: llm
+spec:
+  name: llm-1
+  type: openai
+  config:
+    model_name: gpt-4o
+
+---
+kind: agent
+spec:
+  name: basic-agent
+  type: basic
+  config:
+    llm: llm-1
+    instruction: Return the latitude and the longitude of a place.
