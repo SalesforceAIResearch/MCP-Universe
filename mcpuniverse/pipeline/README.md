@@ -245,3 +245,22 @@ then monitoring the outputs in the terminal created in the previous step.
 This test validates that tasks can be properly sent to the agent collection for processing.
 
 **Note**: Make sure Redis and Kafka are running before executing these tests, and that the Celery workers are started as described in the "Usage" section.
+
+## Implementing a PyTorch Dataset with Pipeline Results
+
+The pipeline's `pull_task_outputs()` method can be integrated into PyTorch training workflows using an `IterableDataset`.
+
+```python
+from torch.utils.data import IterableDataset, DataLoader
+from mcpuniverse.pipeline import AgentPipeline
+
+class AgentStreamingDataset(IterableDataset):
+
+    def __init__(self, config_path: str):
+        self.pipeline = AgentPipeline(config_path)
+
+    def __iter__(self):
+        for data in self.pipeline.pull_task_outputs():
+            # Perform any necessary preprocessing on 'data'
+            yield data
+```
