@@ -42,6 +42,11 @@ The Agent Pipeline package provides a scalable, distributed infrastructure for e
 └─────────────────┘                      │  (LLM + Tools)  │
                                          └─────────────────┘
 ```
+1. **Task Submission**: Client submits tasks via `AgentPipeline.send_task()`
+2. **Queue Distribution**: Tasks distributed to Celery queues using round-robin strategy
+3. **Worker Execution**: Celery workers pick up tasks, execute agents and run evaluations
+4. **Result Publication**: Task outputs published to message queue
+5. **Result Consumption**: Clients consume results via `AgentPipeline.pull_task_outputs()`
 
 ### Key Classes
 
@@ -65,14 +70,6 @@ The Agent Pipeline package provides a scalable, distributed infrastructure for e
    - **`Consumer`**: Consumes task outputs with generator interface
    - **Serialization utilities**: JSON-based task input/output serialization
 
-### Data Flow
-
-1. **Task Submission**: Client submits tasks via `AgentPipeline.send_task()`
-2. **Queue Distribution**: Tasks distributed to Celery queues using round-robin strategy
-3. **Worker Execution**: Celery workers pick up tasks, execute agents and run evaluations
-4. **Result Publication**: Task outputs published to message queue
-5. **Result Consumption**: Clients consume results via `AgentPipeline.pull_task_outputs()`
-
 ### Configuration
 
 The pipeline uses environment variables for configuration:
@@ -91,9 +88,31 @@ KAFKA_PORT=9092
 MQ_TOPIC=agent-task-mq
 ```
 
-## Usage
+## Usage (For testing purpose)
 
 ### 1. Launching the Pipeline
+
+#### Prerequisites
+
+Before starting the pipeline, ensure Redis and Kafka are running:
+
+```bash
+# Start Redis (required for Celery backend)
+make redis
+
+# Start Kafka (required for message queue)
+make kafka
+```
+
+To stop and clean up the services when done:
+
+```bash
+# Stop Redis
+make dropredis
+
+# Stop Kafka
+make dropkafka
+```
 
 #### Using CLI (Recommended)
 
@@ -106,9 +125,7 @@ python -m mcpuniverse.pipeline start-workers \
   --agent-collection /path/to/config.yaml \
   --clean \
   --mq-type kafka \
-  --max-queue-size 200 \
-  --redis-host redis.example.com \
-  --kafka-host kafka.example.com
+  --max-queue-size 200
 ```
 
 #### Programmatic Launch
