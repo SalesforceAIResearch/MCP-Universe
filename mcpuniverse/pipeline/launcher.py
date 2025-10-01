@@ -23,7 +23,6 @@ from mcpuniverse.common.misc import AutodocABCMeta
 from mcpuniverse.workflows.builder import WorkflowBuilder, Executor
 from mcpuniverse.mcp.manager import MCPManager, Context
 from mcpuniverse.benchmark.task import TaskConfig
-from mcpuniverse.pipeline import AGENT_TASK
 from mcpuniverse.pipeline.celery_config import send_task, purge_queue
 from mcpuniverse.pipeline.mq.factory import MQFactory
 from mcpuniverse.pipeline.utils import deserialize_task_output
@@ -162,6 +161,7 @@ class AgentPipeline(metaclass=AutodocABCMeta):
     Launches agent collections as Celery workers and distributes tasks
     across available agents using round-robin scheduling.
     """
+    AGENT_TASK = "mcpuniverse.pipeline.task.AgentTask"
 
     def __init__(
             self,
@@ -271,7 +271,7 @@ class AgentPipeline(metaclass=AutodocABCMeta):
 
         try:
             send_task(
-                task=AGENT_TASK,
+                task=AgentPipeline.AGENT_TASK,
                 kwargs={
                     "agent_collection_name": agent_collection_name,
                     "agent_index": agent_index,
