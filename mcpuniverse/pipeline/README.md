@@ -35,12 +35,11 @@ The Agent Pipeline package provides a scalable, distributed infrastructure for e
 │ (Kafka/RabbitMQ)│      results         │  (AgentTask)    │
 │                 │                      └─────────────────┘
 │ ┌─────────────┐ │                                │
-│ │Task Results │ │                                │ 4. Execute
-│ │Evaluation   │ │                                │    agents
-│ │Trace Data   │ │                                ▼
-│ └─────────────┘ │                      ┌─────────────────┐
-└─────────────────┘                      │  Agent Engine   │
-                                         │ (LLM + Tools)   │
+│ │Task Results │ │                                │ 4. Execute agents
+│ │Evaluation   │ │                                ▼   
+│ │Trace Data   │ │                      ┌─────────────────┐
+│ └─────────────┘ │                      │  Agent Engine   │
+└─────────────────┘                      │  (LLM + Tools)  │
                                          └─────────────────┘
 ```
 
@@ -49,7 +48,7 @@ The Agent Pipeline package provides a scalable, distributed infrastructure for e
 1. **`AgentPipeline`**: Main orchestrator for distributed task execution
    - Manages Celery workers and message queue connections
    - Handles task distribution with round-robin scheduling
-   - Provides Redis connection management with retry logic
+   - Provides functions for sending tasks and pulling task results
 
 2. **`AgentTask`**: Celery task implementation for agent execution
    - Executes individual agent tasks asynchronously
@@ -69,10 +68,10 @@ The Agent Pipeline package provides a scalable, distributed infrastructure for e
 ### Data Flow
 
 1. **Task Submission**: Client submits tasks via `AgentPipeline.send_task()`
-2. **Queue Distribution**: Tasks distributed to Celery queues using round-robin
-3. **Worker Execution**: Celery workers pick up tasks and execute agents
+2. **Queue Distribution**: Tasks distributed to Celery queues using round-robin strategy
+3. **Worker Execution**: Celery workers pick up tasks, execute agents and run evaluations
 4. **Result Publication**: Task outputs published to message queue
-5. **Result Consumption**: Clients consume results via `pull_task_outputs()`
+5. **Result Consumption**: Clients consume results via `AgentPipeline.pull_task_outputs()`
 
 ### Configuration
 
