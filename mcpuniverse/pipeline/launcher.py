@@ -25,7 +25,7 @@ from mcpuniverse.mcp.manager import MCPManager, Context
 from mcpuniverse.benchmark.task import TaskConfig
 from mcpuniverse.pipeline import AGENT_TASK
 from mcpuniverse.pipeline.celery_config import send_task, purge_queue
-from mcpuniverse.pipeline.mq.kafka_consumer import Consumer
+from mcpuniverse.pipeline.mq.factory import MQFactory
 from mcpuniverse.pipeline.utils import deserialize_task_output
 
 logging.basicConfig(level="INFO")
@@ -167,7 +167,7 @@ class AgentPipeline(metaclass=AutodocABCMeta):
             self,
             config_path: str,
             max_queue_size: int = 100,
-            auto_offset_reset: str = "earliest"
+            mq_type: Literal["kafka", "rabbitmq"] = "kafka"
     ):
         """
         Initialize the pipeline launcher with agent configuration.
@@ -175,7 +175,7 @@ class AgentPipeline(metaclass=AutodocABCMeta):
         Args:
             config_path: Path to the YAML agent collection configuration file.
             max_queue_size: The maximum Celery queue size.
-            auto_offset_reset: Offset reset strategy ('earliest', 'latest') for Kafka.
+            mq_type: Message queue type ('kafka' or 'rabbitmq').
         """
         agent_launcher = AgentLauncher(config_path=config_path)
         self._agent_collection = agent_launcher.create_agents(project_id="pipeline")
@@ -183,12 +183,10 @@ class AgentPipeline(metaclass=AutodocABCMeta):
         self._agent_indices = {name: 0 for name in self._agent_collection}
         self._max_queue_size = max_queue_size
         self._redis_client = AgentPipeline._build_redis_client()
-        self._mq_consumer = Consumer(
-            host=os.environ.get("KAFKA_HOST", "localhost"),
-            port=int(os.environ.get("KAFKA_PORT", 9092)),
-            topic=os.environ.get("KAFKA_TOPIC", "agent-task-mq"),
-            value_deserializer=deserialize_task_output,
-            auto_offset_reset=auto_offset_reset
+        self._mq_consumer = MQFactory.create_consumer(
+            mq_type=mq_type,
+            topic=os.environ.get("MQ_TOPIC", "agent-task-mq"),
+            value_deserializer=deserialize_task_output
         )
 
     @staticmethod

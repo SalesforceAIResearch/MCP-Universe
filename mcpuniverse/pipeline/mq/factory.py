@@ -1,7 +1,7 @@
 """Message queue factory for creating producers and consumers."""
 
 import os
-from typing import Callable, Literal
+from typing import Callable, Literal, Optional
 from mcpuniverse.common.misc import AutodocABCMeta
 from mcpuniverse.pipeline.mq.base import BaseProducer, BaseConsumer
 from mcpuniverse.pipeline.mq.kafka_producer import Producer as KafkaProducer
@@ -16,10 +16,10 @@ class MQFactory(metaclass=AutodocABCMeta):
     @staticmethod
     def create_producer(
             mq_type: MQType,
-            host: str,
-            port: str,
             topic: str,
             value_serializer: Callable,
+            host: Optional[str] = None,
+            port: Optional[int] = None,
             **kwargs
     ) -> BaseProducer:
         """
@@ -27,10 +27,10 @@ class MQFactory(metaclass=AutodocABCMeta):
         
         Args:
             mq_type: Message queue type ('kafka' or 'rabbitmq').
-            host: Broker host.
-            port: Broker port.
             topic: Default topic for messages.
             value_serializer: Function to serialize message values.
+            host: Broker host.
+            port: Broker port.
             **kwargs: Additional producer configuration.
             
         Returns:
@@ -54,10 +54,10 @@ class MQFactory(metaclass=AutodocABCMeta):
     @staticmethod
     def create_consumer(
             mq_type: MQType,
-            host: str,
-            port: str,
             topic: str,
             value_deserializer: Callable,
+            host: Optional[str] = None,
+            port: Optional[int] = None,
             **kwargs
     ) -> BaseConsumer:
         """
@@ -65,10 +65,10 @@ class MQFactory(metaclass=AutodocABCMeta):
         
         Args:
             mq_type: Message queue type ('kafka' or 'rabbitmq').
-            host: Broker host.
-            port: Broker port.
             topic: Topic to subscribe to.
             value_deserializer: Function to deserialize message values.
+            host: Broker host.
+            port: Broker port.
             **kwargs: Additional consumer configuration.
             
         Returns:

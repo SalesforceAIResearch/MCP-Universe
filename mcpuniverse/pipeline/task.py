@@ -8,6 +8,7 @@ tasks asynchronously in a distributed pipeline environment.
 import asyncio
 import json
 import os
+from typing import Literal
 from contextlib import AsyncExitStack
 from dotenv import load_dotenv
 from pydantic import BaseModel
@@ -18,7 +19,7 @@ from mcpuniverse.pipeline.launcher import AgentLauncher
 from mcpuniverse.agent.base import BaseAgent
 from mcpuniverse.tracer import Tracer
 from mcpuniverse.tracer.collectors import MemoryCollector
-from mcpuniverse.pipeline.mq.kafka_producer import Producer
+from mcpuniverse.pipeline.mq.factory import MQFactory
 from mcpuniverse.pipeline.utils import serialize_task_output
 
 load_dotenv()
@@ -43,16 +44,22 @@ class AgentTask(CeleryTask):
     Celery task for executing agent tasks asynchronously.
     """
 
-    def __init__(self, agent_collection_config: str):
+    def __init__(
+            self,
+            agent_collection_config: str,
+            mq_type: Literal["kafka", "rabbitmq"] = "kafka"
+    ):
         """
         Initialize the agent task with an agent collection.
         
         Args:
             agent_collection_config: Path to the agent collection configuration file.
+            mq_type: Message queue type ('kafka' or 'rabbitmq').
         """
         self._logger = get_logger(self.__class__.__name__)
         launcher = AgentLauncher(config_path=agent_collection_config)
         self._agent_collection = launcher.create_agents(project_id="celery")
+        self._mq_type = mq_type
 
     def run(self, *args, **kwargs):
         """
@@ -77,10 +84,9 @@ class AgentTask(CeleryTask):
             task_output = asyncio.run(self._run_task(task_input))
             self._logger.info(task_output)
             if task_output:
-                mq = Producer(
-                    host=os.environ.get("KAFKA_HOST", "localhost"),
-                    port=int(os.environ.get("KAFKA_PORT", 9092)),
-                    topic=os.environ.get("KAFKA_TOPIC", "agent-task-mq"),
+                mq = MQFactory.create_producer(
+                    mq_type=self._mq_type,
+                    topic=os.environ.get("MQ_TOPIC", "agent-task-mq"),
                     value_serializer=serialize_task_output
                 )
                 if not mq.send(task_output):
