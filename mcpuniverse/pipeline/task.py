@@ -33,10 +33,12 @@ class TaskInput(BaseModel):
         agent_collection_name: Name of the agent collection to use.
         agent_index: Index of the specific agent within the collection.
         task_config: Configuration for the task to be executed.
+        agent_state: Internal agent state.
     """
     agent_collection_name: str
     agent_index: int
     task_config: TaskConfig
+    agent_state: str = ""
 
 
 class AgentTask(CeleryTask):
