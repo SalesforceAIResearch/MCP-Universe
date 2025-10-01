@@ -1,13 +1,13 @@
-"""MQ producer"""
+"""Kafka message queue producer."""
 # pylint: disable=broad-exception-caught
 from typing import Callable, Any, Optional, List
 from kafka import KafkaProducer
 from kafka.errors import KafkaError, KafkaTimeoutError, MessageSizeTooLargeError
-from mcpuniverse.common.misc import AutodocABCMeta
 from mcpuniverse.common.logger import get_logger
+from mcpuniverse.pipeline.mq.base import BaseProducer
 
 
-class Producer(metaclass=AutodocABCMeta):
+class Producer(BaseProducer):
     """
     Production-ready Kafka producer with robust error handling and configuration.
     
@@ -42,9 +42,7 @@ class Producer(metaclass=AutodocABCMeta):
             batch_size: Batch size for batching messages.
             **kwargs: Additional KafkaProducer configuration.
         """
-        self._host = host
-        self._port = port
-        self._topic = topic
+        super().__init__(host=host, port=port, topic=topic, value_serializer=value_serializer)
         self._logger = get_logger(self.__class__.__name__)
 
         servers = bootstrap_servers if bootstrap_servers else [f"{host}:{port}"]
@@ -67,16 +65,13 @@ class Producer(metaclass=AutodocABCMeta):
             self._logger.error("Failed to initialize Kafka producer: %s", str(e))
             raise
 
-    def __del__(self):
-        """Cleanup Kafka client"""
-        self.close()
-
     def send(
             self,
             obj: Any,
             topic: Optional[str] = None,
             key: Any = None,
-            partition: Optional[int] = None
+            partition: Optional[int] = None,
+            **kwargs
     ) -> bool:
         """
         Send a message to Kafka with robust error handling.
@@ -191,7 +186,7 @@ class Producer(metaclass=AutodocABCMeta):
             self._logger.error("Producer flush failed: %s", str(e))
             return False
 
-    def close(self, timeout: Optional[float] = None):
+    def close(self, timeout: Optional[float] = None, **kwargs):
         """
         Close the producer and release resources.
         

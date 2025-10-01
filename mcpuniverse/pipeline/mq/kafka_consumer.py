@@ -1,14 +1,14 @@
-"""Kafka message queue consumer implementation."""
+"""Kafka message queue consumer."""
 # pylint: disable=broad-exception-caught
 import time
-from typing import Callable, Any, Optional, List, Generator
+from typing import Callable, Optional, List, Generator
 from kafka import KafkaConsumer
 from kafka.errors import KafkaTimeoutError
-from mcpuniverse.common.misc import AutodocABCMeta
 from mcpuniverse.common.logger import get_logger
+from mcpuniverse.pipeline.mq.base import BaseConsumer
 
 
-class Consumer(metaclass=AutodocABCMeta):
+class Consumer(BaseConsumer):
     """Kafka consumer with robust error handling and generator-based message consumption."""
 
     def __init__(
@@ -39,9 +39,7 @@ class Consumer(metaclass=AutodocABCMeta):
             enable_auto_commit: Whether to auto-commit offsets.
             **kwargs: Additional KafkaConsumer configuration.
         """
-        self._host = host
-        self._port = port
-        self._topic = topic
+        super().__init__(host=host, port=port, topic=topic, value_deserializer=value_deserializer)
         self._logger = get_logger(self.__class__.__name__)
 
         servers = bootstrap_servers if bootstrap_servers else [f"{host}:{port}"]
@@ -63,15 +61,12 @@ class Consumer(metaclass=AutodocABCMeta):
             self._logger.error("Failed to initialize Kafka consumer: %s", str(e))
             raise
 
-    def __del__(self):
-        """Cleanup Kafka client."""
-        self.close()
-
     def consume_messages(
             self,
             timeout_ms: int = 1000,
-            max_messages: Optional[int] = None
-    ) -> Generator[Any, None, None]:
+            max_messages: Optional[int] = None,
+            **kwargs
+    ) -> Generator:
         """
         Generator that yields messages from Kafka topics.
         
@@ -149,7 +144,7 @@ class Consumer(metaclass=AutodocABCMeta):
         except Exception as e:
             self._logger.error("Error seeking to end: %s", str(e))
 
-    def close(self, timeout: Optional[float] = None):
+    def close(self, timeout: Optional[float] = None, **kwargs):
         """
         Close the consumer and release resources.
         
