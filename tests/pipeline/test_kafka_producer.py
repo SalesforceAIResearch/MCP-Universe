@@ -5,7 +5,7 @@ import json
 import random
 import time
 from dotenv import load_dotenv
-from mcpuniverse.pipeline.mq.producer import Producer
+from mcpuniverse.pipeline.mq.kafka_producer import Producer
 
 load_dotenv()
 

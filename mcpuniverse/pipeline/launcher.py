@@ -25,7 +25,7 @@ from mcpuniverse.mcp.manager import MCPManager, Context
 from mcpuniverse.benchmark.task import TaskConfig
 from mcpuniverse.pipeline import AGENT_TASK
 from mcpuniverse.pipeline.celery_config import send_task, purge_queue
-from mcpuniverse.pipeline.mq.consumer import Consumer
+from mcpuniverse.pipeline.mq.kafka_consumer import Consumer
 from mcpuniverse.pipeline.utils import deserialize_task_output
 
 logging.basicConfig(level="INFO")

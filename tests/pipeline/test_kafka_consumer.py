@@ -3,7 +3,7 @@ import unittest
 import pytest
 import json
 from dotenv import load_dotenv
-from mcpuniverse.pipeline.mq.consumer import Consumer
+from mcpuniverse.pipeline.mq.kafka_consumer import Consumer
 
 load_dotenv()
 

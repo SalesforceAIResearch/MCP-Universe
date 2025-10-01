@@ -18,7 +18,7 @@ from mcpuniverse.pipeline.launcher import AgentLauncher
 from mcpuniverse.agent.base import BaseAgent
 from mcpuniverse.tracer import Tracer
 from mcpuniverse.tracer.collectors import MemoryCollector
-from mcpuniverse.pipeline.mq.producer import Producer
+from mcpuniverse.pipeline.mq.kafka_producer import Producer
 from mcpuniverse.pipeline.utils import serialize_task_output
 
 load_dotenv()
