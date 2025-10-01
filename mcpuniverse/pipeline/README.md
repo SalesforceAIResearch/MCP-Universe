@@ -88,7 +88,42 @@ KAFKA_PORT=9092
 MQ_TOPIC=agent-task-mq
 ```
 
-## Usage (For testing purpose)
+### Agent Collection Configuration
+
+Agent collections define how agents are deployed and managed in the pipeline. The configuration follows a YAML structure that specifies agent properties, deployment parameters, and execution context.
+You can find an example in the folder `tests/data/collection`.
+
+#### Basic Structure
+
+```yaml
+kind: collection
+spec:
+  name: "my-agent-collection"
+  config: "./path/to/agent-config.yaml"
+  number: 3
+  context:
+    - env:
+        GITHUB_PERSONAL_ACCESS_TOKEN: xxx
+        GITHUB_PERSONAL_ACCOUNT_NAME: xxx
+    - env:
+        GITHUB_PERSONAL_ACCESS_TOKEN: yyy
+        GITHUB_PERSONAL_ACCOUNT_NAME: yyy
+```
+
+#### Configuration Parameters
+
+- **`kind`**: Always set to `"collection"` for agent collections
+- **`spec.name`**: Unique identifier for the agent collection
+- **`spec.config`**: Path to the individual agent configuration file
+- **`spec.number`**: Number of agent instances to deploy
+- **`spec.context`**: Execution context including environment variables
+
+Note that `spec.number` specifies the number of agents to create for **each context**:
+- If `spec.context` is not set, or contains only one context, the total number of created agents equals `spec.number`.
+- If `spec.context` includes multiple contexts, `spec.number` agents will be created for each one. 
+- If you define multiple contexts because some tools have concurrency issues, you must set `spec.number` to `1`.
+
+## Usage (For local test)
 
 ### 1. Launching the Pipeline
 
@@ -114,13 +149,14 @@ make dropredis
 make dropkafka
 ```
 
-#### Using CLI (Recommended)
+#### Start Celery Workers
 
+Open a new terminal and run the following command, keeping it running in the background:
 ```bash
 # Start workers with default settings
 python -m mcpuniverse.pipeline start-workers --agent-collection /path/to/config.yaml
 
-# Start workers with cleanup and custom settings
+# Or start workers with cleanup and custom settings
 python -m mcpuniverse.pipeline start-workers \
   --agent-collection /path/to/config.yaml \
   --clean \
@@ -128,29 +164,15 @@ python -m mcpuniverse.pipeline start-workers \
   --max-queue-size 200
 ```
 
-#### Programmatic Launch
-
-```python
-from mcpuniverse.pipeline.launcher import AgentPipeline
-
-# Initialize pipeline
-pipeline = AgentPipeline(
-    config_path="/path/to/agent-config.yaml",
-    max_queue_size=100,
-    mq_type="kafka"
-)
-
-# Clean existing tasks (optional)
-pipeline.delete_all_tasks()
-
-# Start Celery workers
-pipeline.start_celery_workers()
-```
-
 ### 2. Sending Tasks
 
+This package provides a simple interface to send tasks:
 ```python
 from mcpuniverse.benchmark.task import TaskConfig
+from mcpuniverse.pipeline.launcher import AgentPipeline
+
+# Initialize pipeline (config_path should be the same as the one used to launch Celery workers)
+pipeline = AgentPipeline(config_path="/path/to/agent-config.yaml")
 
 # Create task configuration
 task_config = TaskConfig(
@@ -159,12 +181,11 @@ task_config = TaskConfig(
     # ... other task parameters
 )
 
-# Send task to agent collection
+# Send task to agent collection (`agent_collection_name` should match the collection name defined in the config)
 success = pipeline.send_task(
-    agent_collection_name="my-agents",
+    agent_collection_name="my-agent-collection",
     task_config=task_config
 )
-
 if success:
     print("Task submitted successfully")
 else:
@@ -175,6 +196,7 @@ else:
 
 #### Real-time Consumption
 
+The following code snippet can be used to implement a PyTorch dataset:
 ```python
 # Consume all results (blocks until interrupted)
 for result in pipeline.pull_task_outputs():
@@ -183,110 +205,10 @@ for result in pipeline.pull_task_outputs():
     print(f"Trace: {result['trace']}")
 ```
 
-#### CLI Consumption
+#### CLI Consumption (for testing purpose)
 
 ```bash
 # Consume results with message limit
 python -m mcpuniverse.pipeline consume-outputs \
-  --agent-collection /path/to/config.yaml \
-  --max-messages 100
+  --agent-collection /path/to/config.yaml
 ```
-
-### 4. Task Management
-
-#### Clean All Tasks
-
-```python
-# Programmatically
-pipeline.delete_all_tasks()
-```
-
-```bash
-# Via CLI
-python -m mcpuniverse.pipeline clean-tasks --agent-collection /path/to/config.yaml
-```
-
-#### Monitor Queue Status
-
-```python
-# Check queue sizes
-queue_size = pipeline._get_queue_size("agent_queue_name")
-print(f"Queue size: {queue_size}")
-```
-
-## Configuration Examples
-
-### Agent Collection Configuration
-
-```yaml
-# agent-config.yaml
-kind: collection
-spec:
-  name: "text-processing-agents"
-  config: "./agents/text-agent.yaml"
-  number: 3
-  context:
-    - env:
-        MODEL_NAME: "gpt-4"
-        MAX_TOKENS: "2000"
-```
-
-### Environment Configuration
-
-```bash
-# .env file
-AGENT_COLLECTION_CONFIG_FILE=./configs/agent-collection.yaml
-REDIS_HOST=localhost
-REDIS_PORT=6379
-KAFKA_HOST=localhost
-KAFKA_PORT=9092
-MQ_TOPIC=agent-task-results
-```
-
-## Advanced Features
-
-### Multiple Message Queue Support
-
-```python
-# Use RabbitMQ instead of Kafka
-pipeline = AgentPipeline(
-    config_path="/path/to/config.yaml",
-    mq_type="rabbitmq"  # Will be supported when implemented
-)
-```
-
-### Queue Size Management
-
-```python
-# Initialize with custom queue limits
-pipeline = AgentPipeline(
-    config_path="/path/to/config.yaml",
-    max_queue_size=500  # Prevent queue overflow
-)
-```
-
-### Error Handling
-
-```python
-try:
-    pipeline.start_celery_workers()
-except KeyboardInterrupt:
-    print("Shutting down gracefully...")
-except Exception as e:
-    print(f"Pipeline error: {e}")
-```
-
-## Performance Considerations
-
-- **Worker Scaling**: Add more Celery workers to increase throughput
-- **Queue Management**: Monitor queue sizes to prevent memory issues
-- **Redis Connection**: Use Redis clustering for high availability
-- **Message Queue**: Configure Kafka partitions for better parallelism
-- **Task Batching**: Group related tasks to reduce overhead
-
-## Monitoring and Debugging
-
-- **Celery Monitoring**: Use Flower for Celery worker monitoring
-- **Queue Monitoring**: Monitor Redis and Kafka metrics
-- **Logging**: Enable debug logging for detailed execution traces
-- **Health Checks**: Regular Redis/Kafka connection health checks
