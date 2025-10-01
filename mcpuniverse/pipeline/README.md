@@ -210,3 +210,37 @@ for result in pipeline.pull_task_outputs():
 python -m mcpuniverse.pipeline consume-outputs \
   --agent-collection /path/to/config.yaml
 ```
+
+## Running Pipeline Unit Tests
+
+To test the pipeline functionality, run the following unit tests in separate terminals:
+
+### 1. Test Celery Worker Startup
+
+Open a new terminal and run:
+```bash
+python tests/pipeline/test_pipeline_start_celery.py
+```
+
+This test verifies that Celery workers can be started and properly configured.
+
+### 2. Test Task Result Pulling
+
+Open another new terminal and run:
+```bash
+python tests/pipeline/test_pipeline_pull_task.py
+```
+
+This test ensures that the pipeline can successfully pull task outputs from the message queue.
+
+### 3. Test Task Sending
+
+Open a third new terminal and run:
+```bash
+python tests/pipeline/test_pipeline_send_task.py
+```
+then monitoring the outputs in the terminal created in the previous step.
+
+This test validates that tasks can be properly sent to the agent collection for processing.
+
+**Note**: Make sure Redis and Kafka are running before executing these tests, and that the Celery workers are started as described in the "Usage" section.
