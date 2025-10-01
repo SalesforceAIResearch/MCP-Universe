@@ -167,7 +167,7 @@ def consume_outputs(
     message_count = 0
     try:
         for output in pipeline.pull_task_outputs():
-            click.echo(f"Received output: {output}")
+            click.echo(f"Received output:\n{output}")
             message_count += 1
     except KeyboardInterrupt:
         click.echo(f"\nConsumed {message_count} messages before interruption")
