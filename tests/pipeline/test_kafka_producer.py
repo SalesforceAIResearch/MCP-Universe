@@ -17,7 +17,7 @@ class TestMQProducer(unittest.TestCase):
         producer = Producer(
             host=os.environ.get("KAFKA_HOST", "localhost"),
             port=int(os.environ.get("KAFKA_PORT", 9092)),
-            topic=os.environ.get("KAFKA_TOPIC", "agent-task-mq"),
+            topic="drivers",
             value_serializer=lambda v: json.dumps(v).encode("utf-8")
         )
         while True:

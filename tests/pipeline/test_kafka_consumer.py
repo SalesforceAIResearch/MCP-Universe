@@ -15,7 +15,7 @@ class TestMQConsumer(unittest.TestCase):
         consumer = Consumer(
             host=os.environ.get("KAFKA_HOST", "localhost"),
             port=int(os.environ.get("KAFKA_PORT", 9092)),
-            topic=os.environ.get("KAFKA_TOPIC", "agent-task-mq"),
+            topic="drivers",
             value_deserializer=lambda x: json.loads(x.decode("utf-8"))
         )
         for location in consumer.consume_messages():
