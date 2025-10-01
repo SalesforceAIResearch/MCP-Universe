@@ -134,7 +134,6 @@ Before starting the pipeline, ensure Redis and Kafka are running:
 ```bash
 # Start Redis (required for Celery backend)
 make redis
-
 # Start Kafka (required for message queue)
 make kafka
 ```
@@ -144,7 +143,6 @@ To stop and clean up the services when done:
 ```bash
 # Stop Redis
 make dropredis
-
 # Stop Kafka
 make dropkafka
 ```
