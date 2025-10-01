@@ -262,5 +262,5 @@ class AgentStreamingDataset(IterableDataset):
     def __iter__(self):
         for data in self.pipeline.pull_task_outputs():
             # Perform any necessary preprocessing on 'data'
-            yield data
+            yield preprocessing(data)
 ```
