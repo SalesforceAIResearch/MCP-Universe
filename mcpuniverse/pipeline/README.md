@@ -10,6 +10,7 @@ The Agent Pipeline package provides a scalable, distributed infrastructure for e
 - **Asynchronous Execution**: Non-blocking task submission and result retrieval
 - **Scalable Architecture**: Add/remove workers dynamically based on load
 - **Multi-Queue Support**: Support for different message queue backends (Kafka, RabbitMQ)
+- **Cloud Deployment**: Can be deployed separately in Kubernetes for production-scale operations
 
 ## Architecture Design
 
