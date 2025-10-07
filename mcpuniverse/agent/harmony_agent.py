@@ -251,7 +251,7 @@ Return the final answer in the final channel.
                         action=action,
                         result=tool_result,
                     )
-                
+
                 if not parsed_response["tool_call"] and parsed_response["final"] is not None:
 
                     await self._send_callback_message(

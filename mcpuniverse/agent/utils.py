@@ -379,15 +379,30 @@ NEXT_TAG_RE = re.compile(r"(<\|start\|>|<\|end\|>|<\|call\|>)", re.DOTALL)
 # assistantcommentary to=functions.server__tool json{...}
 # assistantfinal {...}
 COMPACT_COMMENTARY_RE = re.compile(
-    r"\bassistant(?:<\|channel\|>)?commentary\b(?P<after>.*?)(?=(\bassistant(?:<\|channel\|>)?commentary\b|\bassistant(?:<\|channel\|>)?final\b|<\|start\|>|<\|end\|>|\Z))",
+    r"\bassistant(?:<\|channel\|>)?commentary\b"
+    r"(?P<after>.*?)"
+    r"(?=("
+    r"\bassistant(?:<\|channel\|>)?commentary\b|"
+    r"\bassistant(?:<\|channel\|>)?final\b|"
+    r"<\|start\|>|"
+    r"<\|end\|>|"
+    r"\Z"
+    r"))",
     re.DOTALL,
 )
 
 COMPACT_FINAL_RE = re.compile(
-    r"\bassistant(?:<\|channel\|>)?final\b(?P<after>.*?)(?=(\bassistant(?:<\|channel\|>)?commentary\b|\bassistant(?:<\|channel\|>)?final\b|<\|start\|>|<\|end\|>|\Z))",
+    r"\bassistant(?:<\|channel\|>)?final\b"
+    r"(?P<after>.*?)"
+    r"(?=("
+    r"\bassistant(?:<\|channel\|>)?commentary\b|"
+    r"\bassistant(?:<\|channel\|>)?final\b|"
+    r"<\|start\|>|"
+    r"<\|end\|>|"
+    r"\Z"
+    r"))",
     re.DOTALL,
 )
-
 
 # ---------- Balanced JSON/Array scanner ----------
 def _scan_balanced_json_like(s: str, start_idx: int) -> Optional[Dict[str, Any]]:

@@ -3,16 +3,16 @@ OpenRouter LLMs
 """
 # pylint: disable=broad-exception-caught
 import os
-import re
 import time
 import logging
-import requests
 from dataclasses import dataclass
 from typing import Dict, Union, Optional, Type, List
 from openai import OpenAI
 from openai import RateLimitError, APIError, APITimeoutError
 from dotenv import load_dotenv
 from pydantic import BaseModel as PydanticBaseModel
+
+import requests
 
 from mcpuniverse.common.config import BaseConfig
 from mcpuniverse.common.context import Context
