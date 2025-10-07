@@ -149,7 +149,7 @@ class Consumer(BaseConsumer):
                         if not self._auto_ack and method_frame:
                             self._channel.basic_nack(
                                 delivery_tag=method_frame.delivery_tag,
-                                requeue=True
+                                requeue=False
                             )
 
                 except (AMQPConnectionError, ConnectionClosed) as e:
