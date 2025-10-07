@@ -45,7 +45,6 @@ class BenchmarkReport:
 
         for benchmark_idx, (benchmark_config, benchmark_result) in enumerate(
                 zip(self.benchmark_configs, self.benchmark_results)):
-
             # Generate different sections of the report
             section_config = self._generate_config_section(benchmark_config)
             section_summary = self._generate_summary_section()
@@ -188,7 +187,7 @@ class BenchmarkReport:
     def _add_resource_metrics(self, task_details, trace_id):
         """Add resource utilization metrics."""
         llm_traces = [t for t in self.trace_collector.get(trace_id)
-                     if t.records and t.records[0].data.get('type') == 'llm']
+                      if t.records and t.records[0].data.get('type') == 'llm']
 
         if not llm_traces:
             return
@@ -238,14 +237,14 @@ class BenchmarkReport:
             'timestamp': task_trace.timestamp,
             'record_count': len(task_trace.records),
             'iter_type': (first_record.data.get('type', 'unknown')
-                        if first_record else 'unknown'),
+                          if first_record else 'unknown'),
             'iter_tool_name': (first_record.data.get('tool_name', '')
-                             if first_record else ''),
+                               if first_record else ''),
             'iter_prompt_tokens': usage_data.get('prompt_tokens', ''),
             'iter_completion_tokens': usage_data.get('completion_tokens', ''),
             'iter_total_tokens': usage_data.get('total_tokens', ''),
             'iter_error': (first_record.data.get('error', '')
-                         if first_record else ''),
+                           if first_record else ''),
         }
 
     def _format_trace_structure(self, task_details, trace_structure):
@@ -255,7 +254,7 @@ class BenchmarkReport:
             for child in children:
                 # Basic trace information
                 trace_line = (f"    - Child: {child['id']} (span: {child['span_index']}, "
-                            f"time: {child['running_time']:.2f}s, type: {child['iter_type']})")
+                              f"time: {child['running_time']:.2f}s, type: {child['iter_type']})")
                 task_details.append(trace_line)
 
                 # Detailed trace metadata
@@ -307,9 +306,11 @@ class BenchmarkReport:
 
     def write_to_report(self, report_str):
         """Write a report in MD format."""
+        REPORT_FOLDER.mkdir(parents=True, exist_ok=True)
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         unique_id = uuid.uuid4()
         if self.log_dir and self.log_name:
+            (REPORT_FOLDER / f"{self.log_dir}").mkdir(parents=True, exist_ok=True)
             report_name = REPORT_FOLDER / f"{self.log_dir}" / f"{self.log_name}"
         else:
             report_name = REPORT_FOLDER / f"report_{timestamp}_{unique_id}.md"
