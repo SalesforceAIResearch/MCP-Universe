@@ -22,8 +22,6 @@ class Consumer(BaseConsumer):
             port: int,
             topic: str,
             value_deserializer: Callable,
-            username: Optional[str] = None,
-            password: Optional[str] = None,
             exchange: str = "",
             durable: bool = True,
             auto_ack: bool = False,
@@ -38,8 +36,6 @@ class Consumer(BaseConsumer):
             port: RabbitMQ broker port.
             topic: Queue name to consume from.
             value_deserializer: Function to deserialize message values.
-            username: RabbitMQ username for authentication.
-            password: RabbitMQ password for authentication.
             exchange: Exchange name (empty string for default exchange).
             durable: Whether the queue should be durable.
             auto_ack: Whether to automatically acknowledge messages.
@@ -48,8 +44,6 @@ class Consumer(BaseConsumer):
         """
         super().__init__(host=host, port=port, topic=topic, value_deserializer=value_deserializer)
         self._logger = get_logger(self.__class__.__name__)
-        self._username = username
-        self._password = password
         self._exchange = exchange
         self._durable = durable
         self._auto_ack = auto_ack
@@ -61,12 +55,9 @@ class Consumer(BaseConsumer):
 
     def _connect(self, **kwargs):
         """Establish connection to RabbitMQ broker."""
-        credentials = None
-        if self._username and self._password:
-            credentials = pika.PlainCredentials(self._username, self._password)
-        connection_params = pika.ConnectionParameters(
-            host=self._host, port=self._port, credentials=credentials, **kwargs)
         try:
+            connection_params = pika.ConnectionParameters(
+                host=self._host, port=self._port, **kwargs)
             self._connection = pika.BlockingConnection(connection_params)
             self._channel = self._connection.channel()
             self._channel.queue_declare(queue=self._topic, durable=self._durable)
@@ -112,12 +103,12 @@ class Consumer(BaseConsumer):
         message_count = 0
 
         try:
-            self._ensure_connection()
             while True:
                 if max_messages is not None and message_count >= max_messages:
                     self._logger.info("Reached maximum message limit: %d", max_messages)
                     break
                 try:
+                    self._ensure_connection()
                     method_frame, _, body = self._channel.basic_get(
                         queue=target_queue,
                         auto_ack=self._auto_ack
@@ -155,15 +146,12 @@ class Consumer(BaseConsumer):
                 except (AMQPConnectionError, ConnectionClosed) as e:
                     self._logger.error("RabbitMQ connection error: %s", str(e))
                     time.sleep(5)
-                    self._ensure_connection()
                 except AMQPChannelError as e:
                     self._logger.error("RabbitMQ channel error: %s", str(e))
                     time.sleep(2)
-                    self._ensure_connection()
                 except Exception as e:
                     self._logger.error("Unexpected error during message consumption: %s", str(e))
                     time.sleep(2)
-                    self._ensure_connection()
 
         except KeyboardInterrupt:
             self._logger.info("Consumer stopped by user")

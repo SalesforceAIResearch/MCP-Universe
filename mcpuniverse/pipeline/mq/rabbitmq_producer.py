@@ -21,8 +21,6 @@ class Producer(BaseProducer):
             port: int,
             topic: str,
             value_serializer: Callable,
-            username: Optional[str] = None,
-            password: Optional[str] = None,
             exchange: str = "",
             durable: bool = True,
             **kwargs
@@ -35,16 +33,12 @@ class Producer(BaseProducer):
             port: RabbitMQ broker port.
             topic: Default queue/topic for messages.
             value_serializer: Function to serialize message values.
-            username: RabbitMQ username for authentication.
-            password: RabbitMQ password for authentication.
             exchange: Exchange name (empty string for default exchange).
             durable: Whether to make queues durable.
             **kwargs: Additional pika connection parameters.
         """
         super().__init__(host=host, port=port, topic=topic, value_serializer=value_serializer)
         self._logger = get_logger(self.__class__.__name__)
-        self._username = username
-        self._password = password
         self._exchange = exchange
         self._durable = durable
         self._connection = None
@@ -54,12 +48,9 @@ class Producer(BaseProducer):
 
     def _connect(self, **kwargs):
         """Establish connection to RabbitMQ broker."""
-        credentials = None
-        if self._username and self._password:
-            credentials = pika.PlainCredentials(self._username, self._password)
-        connection_params = pika.ConnectionParameters(
-            host=self._host, port=self._port, credentials=credentials, **kwargs)
         try:
+            connection_params = pika.ConnectionParameters(
+                host=self._host, port=self._port, **kwargs)
             self._connection = pika.BlockingConnection(connection_params)
             self._channel = self._connection.channel()
             self._channel.queue_declare(queue=self._topic, durable=self._durable)
