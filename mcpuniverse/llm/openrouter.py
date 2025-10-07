@@ -12,6 +12,8 @@ from openai import RateLimitError, APIError, APITimeoutError
 from dotenv import load_dotenv
 from pydantic import BaseModel as PydanticBaseModel
 
+import requests
+
 from mcpuniverse.common.config import BaseConfig
 from mcpuniverse.common.context import Context
 from .base import BaseLLM
@@ -77,6 +79,52 @@ class OpenRouterModel(BaseLLM):
         super().__init__()
         self.config = OpenRouterModel.config_class.load(config)
 
+    def _get_model_endpoints(self, model_name: str) -> Optional[list[dict]]:
+        """
+        Fetches endpoints for the model from OpenRouter, with metadata including provider, quantization, etc.
+        """
+        # model_name should be something like "qwen/qwen3-max"
+        url = f"https://openrouter.ai/api/v1/models/{model_name}/endpoints"
+        headers = {
+            "Authorization": f"Bearer {self.config.api_key}"
+        }
+        try:
+            resp = requests.get(url, headers=headers, timeout=10)
+            resp.raise_for_status()
+            data = resp.json().get("data", {})
+            endpoints = data.get("endpoints", [])
+            return endpoints
+        except Exception as e:
+            logging.warning("Failed to fetch endpoints for model %s: %s", model_name, e)
+            return None
+
+    def _choose_non_fp4_provider(self, model_name: str) -> Optional[list[str]]:
+        """
+        Returns a list of provider slugs (or endpoints) excluding those with 'fp4' quantization.
+        """
+        endpoints = self._get_model_endpoints(model_name)
+        if not endpoints:
+            return None
+
+        # Filter out endpoints whose quantization mention "fp4"
+        good = []
+        for ep in endpoints:
+            quant = ep.get("quantization", "")
+            provider = ep.get("provider_name")
+            name = ep.get("name", "")
+            # if any of these contains "fp4", skip
+            if quant and "fp4" in quant.lower():
+                continue
+            if name and "fp4" in name.lower():
+                continue
+            # provider_name might also include quant info in some deployments
+            if provider and "fp4" in provider.lower():
+                continue
+            good.append(provider)
+        # dedupe
+        good_unique = list(dict.fromkeys([p for p in good if p]))
+        return good_unique or None
+
     def _generate(
             self,
             messages: List[dict[str, str]],
@@ -108,9 +156,25 @@ class OpenRouterModel(BaseLLM):
         # Map model name to OpenRouter model name
         model_name = model_name_map.get(self.config.model_name, self.config.model_name)
 
+        # Attempt to filter out fp4 providers
+        non_fp4 = self._choose_non_fp4_provider(model_name)
+        provider_hint = {}
+        if non_fp4:
+            # instruct OpenRouter to ignore all other providers
+            provider_hint["only"] = non_fp4
+            provider_hint["allow_fallbacks"] = True
+            logging.info("Using only non-fp4 providers: %s", non_fp4)
+
+        # incorporate provider hints into kwargs
+        call_kwargs = dict(kwargs)
+        # If provider_hint is specified, incorporate it into extra_body
+        if provider_hint is not None:
+            call_kwargs.setdefault("extra_body", {})["provider"] = provider_hint
+
         for attempt in range(max_retries + 1):
             try:
                 client = OpenAI(api_key=self.config.api_key, base_url="https://openrouter.ai/api/v1")
+
                 if response_format is None:
                     if messages[0]['role']=="raw":
                         chat = client.completions.create(
@@ -123,6 +187,7 @@ class OpenRouterModel(BaseLLM):
                             frequency_penalty=self.config.frequency_penalty,
                             presence_penalty=self.config.presence_penalty,
                             seed=self.config.seed,
+                            **call_kwargs
                         )
                         return chat.choices[0].text
 
