@@ -26,6 +26,7 @@ claude-code-sdk==0.0.20
 openai-agents==0.2.11
 tiktoken==0.11.0
 kafka-python==2.2.15
+pika==1.3.2
 
 # MCP servers
 wikipedia-api==0.8.1

@@ -45,4 +45,11 @@ dropkafka:
 	docker stop kafka
 	docker container rm kafka
 
-.PHONY: test sqlc redis dropredis postgres droppostgres createdb dropdb new_migration migrateup migratedown dashboard kafka dropkafka
+rabbitmq:
+	docker run --name rabbitmq -p 5672:5672 -p 15672:15672 -d rabbitmq:4.1.4-management
+
+droprabbitmq:
+	docker stop rabbitmq
+	docker container rm rabbitmq
+
+.PHONY: test sqlc redis dropredis postgres droppostgres createdb dropdb new_migration migrateup migratedown dashboard kafka dropkafka rabbitmq droprabbitmq
