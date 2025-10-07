@@ -6,6 +6,8 @@ from mcpuniverse.common.misc import AutodocABCMeta
 from mcpuniverse.pipeline.mq.base import BaseProducer, BaseConsumer
 from mcpuniverse.pipeline.mq.kafka_producer import Producer as KafkaProducer
 from mcpuniverse.pipeline.mq.kafka_consumer import Consumer as KafkaConsumer
+from mcpuniverse.pipeline.mq.rabbitmq_producer import Producer as RabbitMQProducer
+from mcpuniverse.pipeline.mq.rabbitmq_consumer import Consumer as RabbitMQConsumer
 
 MQType = Literal["kafka", "rabbitmq"]
 
@@ -48,7 +50,13 @@ class MQFactory(metaclass=AutodocABCMeta):
                 **kwargs
             )
         if mq_type == "rabbitmq":
-            raise NotImplementedError("RabbitMQ producer not yet implemented")
+            return RabbitMQProducer(
+                host=host or os.environ.get("RABBITMQ_HOST", "localhost"),
+                port=port or int(os.environ.get("RABBITMQ_PORT", 5672)),
+                topic=topic,
+                value_serializer=value_serializer,
+                **kwargs
+            )
         raise ValueError(f"Unsupported MQ type: {mq_type}")
 
     @staticmethod
@@ -86,5 +94,11 @@ class MQFactory(metaclass=AutodocABCMeta):
                 **kwargs
             )
         if mq_type == "rabbitmq":
-            raise NotImplementedError("RabbitMQ consumer not yet implemented")
+            return RabbitMQConsumer(
+                host=host or os.environ.get("RABBITMQ_HOST", "localhost"),
+                port=port or int(os.environ.get("RABBITMQ_PORT", 5672)),
+                topic=topic,
+                value_deserializer=value_deserializer,
+                **kwargs
+            )
         raise ValueError(f"Unsupported MQ type: {mq_type}")
