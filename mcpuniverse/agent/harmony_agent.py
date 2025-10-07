@@ -202,12 +202,9 @@ Return the final answer in the final channel.
                     )
                     if response:
                         break
-                if response is None:
+                if response is None or response == '{}':
                     continue
                 parsed_response = parse_harmony(response)
-
-                if "analysis" not in parsed_response:
-                    raise ValueError("Invalid response format: missing analysis")
 
                 if parsed_response["tool_call"]:
                     action = parsed_response["tool_call"][0]
@@ -254,7 +251,7 @@ Return the final answer in the final channel.
                         action=action,
                         result=tool_result,
                     )
-
+                
                 if not parsed_response["tool_call"] and parsed_response["final"] is not None:
 
                     await self._send_callback_message(
@@ -273,9 +270,9 @@ Return the final answer in the final channel.
                     format_error_count += 1
                     if format_error_count <= 5:
                         analysis = (
-                            parsed_response["analysis"]
+                            parsed_response["raw"]
                             + "\n\n"
-                            + "Cannot find <|channel|>commentary or <|channel|>final. "
+                            + "Cannot find <|channel|>commentary or <|channel|>final in the response above. "
                               "In your next step, be careful with the channel format."
                         )
                         await self._send_callback_message(

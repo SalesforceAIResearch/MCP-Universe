@@ -331,8 +331,8 @@ def render_harmony_chain(
     # --- rounds of tool calls with required analysis
     for idx, step in enumerate(rounds):
         # enforce required fields
-        if "analysis" not in step or not isinstance(step["analysis"], str) or not step["analysis"].strip():
-            raise ValueError(f"Round {idx} missing non-empty 'analysis'.")
+        if "analysis" not in step:
+            raise ValueError(f"Round {idx} missing 'analysis'.")
 
         # 1. Assistant analysis
         parts.append("<|start|>assistant<|channel|>analysis<|message|>")
@@ -367,81 +367,6 @@ COMMENTARY_HEADER_RE = re.compile(
     r"<\|start\|>\s*assistant.*?<\|channel\|>\s*commentary\b.*?<\|message\|>",
     re.DOTALL,
 )
-TO_NAME_RE = re.compile(r"\bto=functions\.([^\s<{]+)")
-# Stop at any structural tag that can follow args, including optional <|call|>
-NEXT_TAG_RE = re.compile(r"(<\|start\|>|<\|end\|>|<\|call\|>)", re.DOTALL)
-
-# Compact form, e.g.:
-# assistantcommentary to=functions.server__tool json{...}
-# assistantcommentary   to=functions.tool   { ... }
-COMPACT_COMMENTARY_RE = re.compile(
-    (
-        r"\bassistantcommentary\b(?P<after>.*?)(?="
-        r"(\bassistantcommentary\b|\bassistantfinal\b|<\|start\|>|<\|end\|>|\Z))"
-    ),
-    re.DOTALL,
-)
-
-# ---------- Balanced JSON scanner ----------
-def _scan_balanced_json(s: str, start_idx: int) -> Optional[Dict[str, Any]]:
-    """Scan for balanced JSON object starting at start_idx; returns dict with raw/end/value or None."""
-    if start_idx >= len(s) or s[start_idx] != "{":
-        return None
-    depth, in_str, esc = 0, False, False
-    j = start_idx
-    while j < len(s):
-        ch = s[j]
-        if in_str:
-            if esc:
-                esc = False
-            elif ch == "\\":
-                esc = True
-            elif ch == '"':
-                in_str = False
-        else:
-            if ch == '"':
-                in_str = True
-            elif ch == "{":
-                depth += 1
-            elif ch == "}":
-                depth -= 1
-                if depth == 0:
-                    raw = s[start_idx : j + 1]
-                    try:
-                        val = json.loads(raw)
-                    except (json.JSONDecodeError, ValueError):
-                        val = raw
-                    return {"raw": raw, "end": j + 1, "value": val}
-        j += 1
-    return None
-
-
-# ---------- Helpers ----------
-def _split_server_tool(tool_name: Optional[str]) -> Tuple[str, str]:
-    """Split a fully-qualified tool name into (server, tool)."""
-    if not tool_name:
-        return "", ""
-    for sep in ("__", ".", "_"):
-        if sep in tool_name:
-            a, b = tool_name.split(sep, 1)
-            return a, b
-    return "", tool_name
-
-
-def _slice_until_next_tag(text: str, start: int) -> Tuple[str, int]:
-    """Return (slice, next_index) from start until next structural tag (or end)."""
-    m = NEXT_TAG_RE.search(text, start)
-    if not m:
-        return text[start:].strip(), len(text)
-    return text[start:m.start()].strip(), m.start()
-
-
-# ---------- Parsers ----------
-# ---------- Regex ----------
-COMMENTARY_HEADER_RE = re.compile(
-    r"<\|start\|>\s*assistant.*?<\|channel\|>\s*commentary\b.*?<\|message\|>",
-    re.DOTALL,
-)
 FINAL_HEADER_RE = re.compile(
     r"<\|start\|>\s*assistant.*?<\|channel\|>\s*final\b.*?<\|message\|>",
     re.DOTALL,
@@ -450,33 +375,27 @@ TO_NAME_RE = re.compile(r"\bto=functions\.([^\s<{]+)")
 # Stop at any structural tag that can follow args, including optional <|call|>
 NEXT_TAG_RE = re.compile(r"(<\|start\|>|<\|end\|>|<\|call\|>)", re.DOTALL)
 
-# Compact form, e.g.:
+# Compact forms, e.g.:
 # assistantcommentary to=functions.server__tool json{...}
-# assistantcommentary   to=functions.tool   { ... }
-COMPACT_COMMENTARY_RE = re.compile(
-    (
-        r"\bassistantcommentary\b(?P<after>.*?)(?="
-        r"(\bassistantcommentary\b|\bassistantfinal\b|<\|start\|>|<\|end\|>|\Z))"
-    ),
-    re.DOTALL,
-)
-# Compact final form, e.g.:
 # assistantfinal {...}
-# assistantfinal [ ... ]
-# assistantfinal plain text...
-COMPACT_FINAL_RE = re.compile(
-    (
-        r"\bassistantfinal\b(?P<after>.*?)(?="
-        r"(\bassistantcommentary\b|\bassistantfinal\b|<\|start\|>|<\|end\|>|\Z))"
-    ),
+COMPACT_COMMENTARY_RE = re.compile(
+    r"\bassistant(?:<\|channel\|>)?commentary\b(?P<after>.*?)(?=(\bassistant(?:<\|channel\|>)?commentary\b|\bassistant(?:<\|channel\|>)?final\b|<\|start\|>|<\|end\|>|\Z))",
     re.DOTALL,
 )
+
+COMPACT_FINAL_RE = re.compile(
+    r"\bassistant(?:<\|channel\|>)?final\b(?P<after>.*?)(?=(\bassistant(?:<\|channel\|>)?commentary\b|\bassistant(?:<\|channel\|>)?final\b|<\|start\|>|<\|end\|>|\Z))",
+    re.DOTALL,
+)
+
 
 # ---------- Balanced JSON/Array scanner ----------
 def _scan_balanced_json_like(s: str, start_idx: int) -> Optional[Dict[str, Any]]:
     """
     Scan starting at either '{' or '[' and return a parsed JSON value (or raw text) plus end index.
-    Supports strings/escapes and nested braces/brackets.
+    Handles strings/escapes and nested braces/brackets.
+    Returns:
+        {"raw": <str>, "end": <int>, "value": <Any>} or None
     """
     if start_idx >= len(s) or s[start_idx] not in "{[":
         return None
@@ -513,9 +432,8 @@ def _scan_balanced_json_like(s: str, start_idx: int) -> Optional[Dict[str, Any]]
     return None
 
 
-# Backward-compat: keep the old name for code that imports it elsewhere.
 def _scan_balanced_json(s: str, start_idx: int) -> Optional[Dict[str, Any]]:  # type: ignore[override]
-    """Compatibility wrapper for _scan_balanced_json_like (object-only)."""
+    """Compatibility wrapper for _scan_balanced_json_like (object/array)."""
     return _scan_balanced_json_like(s, start_idx)
 
 
@@ -539,14 +457,17 @@ def _slice_until_next_tag(text: str, start: int) -> Tuple[str, int]:
     return text[start:m.start()].strip(), m.start()
 
 
+def _normalize_args(val: Any) -> Dict[str, Any]:
+    """Ensure arguments is a dict."""
+    return val if isinstance(val, dict) else {"value": val}
+
+
 # ---------- Parsers ----------
 def parse_analysis(text: str) -> str:
     """
     Return the analysis as a single string.
-
-    Analysis is the plain text at the top, before the first structural marker.
-    We stop at the earliest of: <|start|>, 'assistantcommentary', or <|end|>.
-    If no analysis text is found, return an empty string.
+    Analysis is the plain text at the top, before the first structural marker:
+      earliest of <|start|>, 'assistantcommentary', or <|end|>.
     """
     idx_start = text.find("<|start|>")
     m_compact = re.search(r"\bassistantcommentary\b", text)
@@ -557,8 +478,7 @@ def parse_analysis(text: str) -> str:
     cutoff = min(candidates) if candidates else -1
 
     prefix = text if cutoff == -1 else text[:cutoff]
-    prefix = prefix.strip()
-    return prefix
+    return prefix.strip()
 
 
 def _parse_tool_call_harmony(text: str) -> List[Dict[str, Any]]:
@@ -576,18 +496,11 @@ def _parse_tool_call_harmony(text: str) -> List[Dict[str, Any]]:
 
         if i < n and text[i] in "{[":
             parsed = _scan_balanced_json_like(text, i)
-            if parsed:
-                args_val = parsed["value"]
-            else:
-                slice_text, _ = _slice_until_next_tag(text, i)
-                args_val = slice_text
+            args_val: Any = parsed["value"] if parsed else _slice_until_next_tag(text, i)[0]
         else:
-            slice_text, _ = _slice_until_next_tag(text, i)
-            args_val = slice_text
+            args_val = _slice_until_next_tag(text, i)[0]
 
-        calls.append(
-            {"tool_name": tool_name, "server": server, "tool": tool, "arguments": args_val}
-        )
+        calls.append({"tool_name": tool_name, "server": server, "tool": tool, "arguments": args_val})
     return calls
 
 
@@ -610,33 +523,26 @@ def _parse_tool_call_compact(text: str) -> List[Dict[str, Any]]:
             idx = block.find(ch, start_search_pos)
             if idx != -1:
                 brace_idx = min(brace_idx, idx)
+
         args_val: Any = ""
         if brace_idx != len(block):
             parsed = _scan_balanced_json_like(block, brace_idx)
-            if parsed:
-                args_val = parsed["value"]
-            else:
-                args_val = block[brace_idx:].strip()
+            args_val = parsed["value"] if parsed else block[brace_idx:].strip()
 
-        calls.append(
-            {"tool_name": tool_name, "server": server, "tool": tool, "arguments": args_val}
-        )
+        calls.append({"tool_name": tool_name, "server": server, "tool": tool, "arguments": args_val})
     return calls
 
 
 def parse_tool_call(text: str) -> List[Dict[str, Any]]:
-    """Parse tool calls from both Harmony and compact styles; normalize arguments."""
+    """Parse tool calls from both Harmony and compact styles; normalize arguments to dict."""
     calls = _parse_tool_call_harmony(text)
     calls.extend(_parse_tool_call_compact(text))
-    # Normalize: ensure arguments is always a dict
     for c in calls:
-        args_val = c.get("arguments")
-        if not isinstance(args_val, dict):
-            c["arguments"] = {"value": args_val}
+        c["arguments"] = _normalize_args(c.get("arguments"))
     return calls
 
 
-# ---------- Final answer parsers (JSON-only) ----------
+# ---------- Final answer (JSON-only) ----------
 def _final_json_after_idx(text: str, i: int) -> Optional[Any]:
     """Return a parsed JSON value starting at i if it begins with '{' or '['; else None."""
     n = len(text)
@@ -652,9 +558,7 @@ def _final_json_after_idx(text: str, i: int) -> Optional[Any]:
 def _parse_final_harmony_json(text: str) -> Optional[Any]:
     """Extract JSON payload from Harmony final block."""
     m = FINAL_HEADER_RE.search(text)
-    if not m:
-        return None
-    return _final_json_after_idx(text, m.end())
+    return _final_json_after_idx(text, m.end()) if m else None
 
 
 def _parse_final_compact_json(text: str) -> Optional[Any]:
@@ -684,4 +588,5 @@ def parse_harmony(text: str) -> Dict[str, Any]:
         "analysis": parse_analysis(text),  # always a string (may be empty)
         "tool_call": parse_tool_call(text),
         "final": parse_final(text),  # dict/list or None
+        "raw": text,
     }
