@@ -35,6 +35,7 @@ class GeminiConfig(BaseConfig):
         presence_penalty (float): Penalizes repeated topics (default: 0.0).
         max_completion_tokens (int): Maximum number of tokens in the completion (default: 2048).
         seed (int): Random seed for reproducibility (default: 12345).
+        disable_automatic_function_calling (bool): Disable automatic function calling (default: False).
     """
     model_name: str = "gemini-2.5-flash"
     api_key: str = os.getenv("GEMINI_API_KEY", "")
@@ -44,6 +45,7 @@ class GeminiConfig(BaseConfig):
     presence_penalty: float = 0.0
     max_completion_tokens: int = 10000
     seed: int = 12345
+    disable_automatic_function_calling: bool = False
 
 
 class GeminiModel(BaseLLM):
@@ -117,7 +119,10 @@ class GeminiModel(BaseLLM):
                     "frequency_penalty": self.config.frequency_penalty,
                     "presence_penalty": self.config.presence_penalty,
                     "max_output_tokens": self.config.max_completion_tokens,
-                    "seed": self.config.seed
+                    "seed": self.config.seed,
+                    "automatic_function_calling": types.AutomaticFunctionCallingConfig(
+                        disable=self.config.disable_automatic_function_calling
+                    ),
                 }
 
                 # Handle tools if provided - convert from OpenAI format to Gemini format
