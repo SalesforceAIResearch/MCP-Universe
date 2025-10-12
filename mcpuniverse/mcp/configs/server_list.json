@@ -1,13 +1,13 @@
 {
   "date": {
     "stdio": {
-      "command": "python3",
+      "command": "python",
       "args": [
         "-m", "mcpuniverse.mcp.servers.date"
       ]
     },
     "sse": {
-      "command": "python3",
+      "command": "python",
       "args": [
         "-m", "mcpuniverse.mcp.servers.date",
         "--transport", "sse",
@@ -18,13 +18,13 @@
 
   "weather": {
     "stdio": {
-      "command": "python3",
+      "command": "python",
       "args": [
         "-m", "mcpuniverse.mcp.servers.weather"
       ]
     },
     "sse": {
-      "command": "python3",
+      "command": "python",
       "args": [
         "-m", "mcpuniverse.mcp.servers.weather",
         "--transport", "sse",
@@ -35,13 +35,13 @@
 
   "echo": {
     "stdio": {
-      "command": "python3",
+      "command": "python",
       "args": [
         "-m", "mcpuniverse.mcp.servers.echo"
       ]
     },
     "sse": {
-      "command": "python3",
+      "command": "python",
       "args": [
         "-m", "mcpuniverse.mcp.servers.echo",
         "--transport", "sse",
@@ -52,13 +52,13 @@
 
   "google-search": {
     "stdio": {
-      "command": "python3",
+      "command": "python",
       "args": [
         "-m", "mcpuniverse.mcp.servers.google_search"
       ]
     },
     "sse": {
-      "command": "python3",
+      "command": "python",
       "args": [
         "-m", "mcpuniverse.mcp.servers.google_search",
         "--transport", "sse",
@@ -72,13 +72,13 @@
 
   "wikipedia": {
     "stdio": {
-      "command": "python3",
+      "command": "python",
       "args": [
         "-m", "mcpuniverse.mcp.servers.wikipedia"
       ]
     },
     "sse": {
-      "command": "python3",
+      "command": "python",
       "args": [
         "-m", "mcpuniverse.mcp.servers.wikipedia",
         "--transport", "sse",
@@ -102,7 +102,7 @@
 
   "fetch": {
     "stdio": {
-      "command": "python3",
+      "command": "python",
       "args": [
         "-m", "mcp_server_fetch",
         "--ignore-robots-txt"
@@ -146,13 +146,13 @@
 
   "google-sheets": {
     "stdio": {
-      "command": "python3",
+      "command": "python",
       "args": [
         "-m", "mcpuniverse.mcp.servers.google_sheets"
       ]
     },
     "sse": {
-      "command": "python3",
+      "command": "python",
       "args": [
         "-m", "mcpuniverse.mcp.servers.google_sheets",
         "--transport", "sse",
@@ -203,7 +203,7 @@
 
   "calculator": {
     "stdio": {
-      "command": "python3",
+      "command": "python",
       "args": [
         "-m", "mcp_server_calculator"
       ]
@@ -212,13 +212,13 @@
 
   "yfinance": {
     "stdio": {
-      "command": "python3",
+      "command": "python",
       "args": [
         "-m", "mcpuniverse.mcp.servers.yahoo_finance"
       ]
     },
     "sse": {
-      "command": "python3",
+      "command": "python",
       "args": [
         "-m", "mcpuniverse.mcp.servers.yahoo_finance",
         "--transport", "sse",
@@ -229,7 +229,7 @@
 
   "blender": {
     "stdio": {
-      "command": "python3",
+      "command": "python",
       "args": [
         "-m", "mcpuniverse.mcp.servers.blender"
       ]
