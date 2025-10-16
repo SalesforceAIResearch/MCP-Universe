@@ -19,7 +19,7 @@ class TestMCPManager(unittest.IsolatedAsyncioTestCase):
         manager = MCPManager()
         servers = manager.list_server_names()
         servers = [s for s in servers if s not in ["markitdown", "filesystem", "postgres", "paypal"]]
-        results = await asyncio.gather(*[manager.list_tools(s) for s in servers])
+        results = await manager.list_tools(server_names=servers)
         print(results)
 
 

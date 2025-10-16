@@ -9,6 +9,7 @@ import copy
 # pylint: disable=broad-exception-caught
 import os
 import json
+import asyncio
 from typing import Dict, List, Union, Any, Optional
 from contextlib import AsyncExitStack
 from functools import lru_cache
@@ -256,27 +257,31 @@ class MCPManager(metaclass=AutodocABCMeta):
 
     async def list_tools(
             self,
-            server_name: str,
+            server_names: str | list[str],
             transport: str = "stdio",
     ) -> list[Any]:
         """
         Retrieves a list of available tools of a MCP server.
 
         Args:
-            server_name (str): The name of the MCP server to connect to.
+            server_names (str): The names of the MCP servers to connect to.
             transport (str, optional): The transport type, either "stdio" or "sse". Defaults to "stdio".
 
         Returns:
             list[Any]: A list of available tools.
         """
+        if isinstance(server_names, str):
+            server_names = [server_names]
         async with AsyncExitStack():
-            client = await self.build_client(server_name=server_name, transport=transport)
+            clients = [await self.build_client(server_name=name, transport=transport) for name in server_names]
             try:
-                result = await client.list_tools()
-                await client.cleanup()
-                return result
+                results = await asyncio.gather(*[client.list_tools() for client in clients])
+                for client in clients[::-1]:
+                    await client.cleanup()
+                return results
             except Exception as e:
-                await client.cleanup()
+                for client in clients[::-1]:
+                    await client.cleanup()
                 raise e
 
     def add_server_config(self, server_name: str, config: Dict[str, Any]):
