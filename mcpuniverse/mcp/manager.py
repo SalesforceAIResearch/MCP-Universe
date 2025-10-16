@@ -254,6 +254,31 @@ class MCPManager(metaclass=AutodocABCMeta):
                 await client.cleanup()
                 raise e
 
+    async def list_tools(
+            self,
+            server_name: str,
+            transport: str = "stdio",
+    ) -> list[Any]:
+        """
+        Retrieves a list of available tools of a MCP server.
+
+        Args:
+            server_name (str): The name of the MCP server to connect to.
+            transport (str, optional): The transport type, either "stdio" or "sse". Defaults to "stdio".
+
+        Returns:
+            list[Any]: A list of available tools.
+        """
+        async with AsyncExitStack():
+            client = await self.build_client(server_name=server_name, transport=transport)
+            try:
+                result = await client.list_tools()
+                await client.cleanup()
+                return result
+            except Exception as e:
+                await client.cleanup()
+                raise e
+
     def add_server_config(self, server_name: str, config: Dict[str, Any]):
         """
         Dynamically add a new server configuration to the manager.
