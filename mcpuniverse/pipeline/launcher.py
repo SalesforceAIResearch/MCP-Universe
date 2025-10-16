@@ -12,6 +12,7 @@ import tempfile
 import subprocess
 import logging
 import time
+import uuid
 from queue import Queue
 from threading import Thread
 from typing import List, Dict, Literal, Generator
@@ -217,9 +218,10 @@ class AgentPipeline(metaclass=AutodocABCMeta):
         commands = []
         for name, agents in self._agent_collection.items():
             for i in range(len(agents)):
-                agent_name = f"{name}_{i}"
+                queue_name = f"{name}_{i}"
+                agent_name = str(uuid.uuid4())
                 commands.append(f"AGENT_COLLECTION_CONFIG_FILE={self._agent_collection_config} "
-                                f"celery -A mcpuniverse.pipeline.worker worker -Q {agent_name} "
+                                f"celery -A mcpuniverse.pipeline.worker worker -Q {queue_name} "
                                 f"--loglevel=info -n {agent_name}@%h -c 1 &")
         return "\n".join(commands)
 
@@ -265,8 +267,8 @@ class AgentPipeline(metaclass=AutodocABCMeta):
         agent_index = self._agent_indices[agent_collection_name]
         self._agent_indices[agent_collection_name] = (
                 (agent_index + 1) % len(self._agent_collection[agent_collection_name]))
-        agent_name = f"{agent_collection_name}_{agent_index}"
-        if self._get_queue_size(agent_name) > self._max_queue_size:
+        queue_name = f"{agent_collection_name}_{agent_index}"
+        if self._get_queue_size(queue_name) > self._max_queue_size:
             return False
 
         try:
@@ -277,7 +279,7 @@ class AgentPipeline(metaclass=AutodocABCMeta):
                     "agent_index": agent_index,
                     "task_config": json.dumps(task_config.model_dump(mode="json"))
                 },
-                queue=agent_name
+                queue=queue_name
             )
             return True
         except Exception as e:
