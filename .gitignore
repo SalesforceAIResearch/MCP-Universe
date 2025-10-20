@@ -183,8 +183,6 @@ notebook/
 # debug logs
 log/
 
-# run script
-run*.sh
 
 # cursor results
 cursor_results/

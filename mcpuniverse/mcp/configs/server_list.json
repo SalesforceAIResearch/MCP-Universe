@@ -261,11 +261,17 @@
 
   "playwright": {
     "stdio": {
-      "command": "npx",
+      "command": "docker",
       "args": [
-        "@playwright/mcp@latest",
-        "--headless",
-        "--isolated"
+        "run",
+        "--rm",
+        "-i",
+        "--ipc=host",
+        "--net=host",
+        "--cap-add=SYS_ADMIN",
+        "playwright-mcp:latest",
+        "--isolated",
+        "--headless"
       ]
     }
   },
