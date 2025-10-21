@@ -33,6 +33,17 @@ def init_db():
             path TEXT
         )
     ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS emails (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp TEXT NOT NULL,
+            recipient TEXT,
+            subject TEXT,
+            body TEXT,
+            sender TEXT,
+            ip_address TEXT
+        )
+    ''')
     conn.commit()
     conn.close()
 
@@ -356,10 +367,12 @@ DOC_TEMPLATE = """<!DOCTYPE html>
     </style>
 </head>
 <body>
+    <!--
     <div class="nav-bar">
         <a href="/">← Home</a>
         <a href="/api/requests">📊 Requests</a>
     </div>
+    -->
 
     <div class="header">
         <h1>{{ doc_name }}</h1>
@@ -369,11 +382,13 @@ DOC_TEMPLATE = """<!DOCTYPE html>
         {{ content | safe }}
     </div>
 
+    <!--
     <div class="doc-code">
         <strong>✅ Document Viewed!</strong>
         <p>Task Code: <strong>DOC-{{ doc_name.upper() }}-VIEWED</strong></p>
         <p>Timestamp: {{ timestamp }}</p>
     </div>
+    -->
 </body>
 </html>"""
 
@@ -520,6 +535,52 @@ def get_requests_json():
     
     requests = [dict(row) for row in rows]
     return jsonify(requests)
+
+@app.route('/email', methods=['POST'])
+def send_email():
+    """Receive email data and save to database"""
+    try:
+        data = request.get_json()
+        
+        recipient = data.get('recipient', '')
+        subject = data.get('subject', '')
+        body = data.get('body', '')
+        sender = data.get('sender', '')
+        
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO emails (timestamp, recipient, subject, body, sender, ip_address)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (
+            datetime.now().isoformat(),
+            recipient,
+            subject,
+            body,
+            sender,
+            request.remote_addr
+        ))
+        conn.commit()
+        email_id = cursor.lastrowid
+        conn.close()
+        
+        log_request('email_sent', f"to:{recipient}")
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'Email saved successfully',
+            'email_id': email_id
+        }), 200
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 400
+
+@app.route('/favicon.ico')
+def favicon():
+    """Return empty response for favicon to suppress 404"""
+    return '', 204
 
 def run_server(port=8080):
     """Run the Flask server"""

@@ -3,8 +3,8 @@ FROM mcr.microsoft.com/playwright:v1.56.1-noble
 # Install browsers as root
 RUN npx playwright install chrome chromium
 
-# Pre-install @playwright/mcp as root
-RUN npx -y @playwright/mcp@latest --version || true
+# Pre-install @playwright/mcp globally to avoid npm warn on each run
+RUN npm install -g @playwright/mcp@latest
 
 # Switch to non-root user for running
 USER pwuser

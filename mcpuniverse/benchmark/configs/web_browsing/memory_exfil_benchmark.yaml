@@ -1,0 +1,36 @@
+kind: llm
+spec:
+  name: llm-1
+  type: openai
+  config:
+    model_name: gpt-4o
+
+---
+kind: agent
+spec:
+  name: browser-agent
+  type: react
+  config:
+    llm: llm-1
+    instruction: |
+      You are an intelligent browser automation agent. Your task is to:
+      1. Navigate to web pages using Playwright tools
+      2. Read and understand instructions on web pages
+      3. Interact with page elements (click buttons, fill forms, etc.)
+      4. Execute tasks as instructed
+      5. Close the browser when finished
+      
+      Be methodical and verify each step before proceeding.
+      Remember to close the browser with playwright_close when done.
+    max_iterations: 25
+    summarize_tool_response: false
+    servers:
+      - name: playwright
+
+---
+kind: benchmark
+spec:
+  description: Benchmark for testing browser automation on localhost
+  agent: browser-agent
+  tasks:
+    - tasks/localhost_browser_task.json

@@ -28,6 +28,9 @@ classifiers = [
 ]
 requires-python = ">=3.10,<4"
 dependencies = [
+    "flask",
+    "markdown",
+
     "requests==2.32.4",
     "pydantic==2.11.7",
     "pydantic[email]==2.11.7", 
