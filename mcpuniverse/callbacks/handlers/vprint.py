@@ -39,7 +39,7 @@ class VPrintListToolsCallback(BaseCallback):
                     'event' in message.metadata and message.metadata['event'] == 'list_tools' and
                     'data' in message.metadata and isinstance(message.metadata['data'], BaseAgent)
             ):
-                vprint = partial(_print, delay=0.01)
+                vprint = partial(_print, delay=0.0001)
                 agent = message.metadata['data']
                 # pylint: disable=protected-access
                 for server_name in agent._mcp_clients.keys():
@@ -69,7 +69,7 @@ class VPrintTaskDescriptionCallback(BaseCallback):
                     'event' in message.metadata and message.metadata['event'] == 'task_description' and
                     'data' in message.metadata and isinstance(message.metadata['data'], Task)
             ):
-                vprint = partial(_print, delay=0.03)
+                vprint = partial(_print, delay=0.0001)
                 task = message.metadata['data']
                 vprint("\n")
                 vprint("=" * 66)

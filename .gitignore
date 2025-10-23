@@ -184,8 +184,7 @@ notebook/
 log/
 
 # run script
-run.sh
-run1.sh
+run*.sh
 
 # cursor results
 cursor_results/
@@ -205,3 +204,4 @@ temp_environments/
 github_state/
 tests/data/postgres/
 tests/data/playwright_webarena/
+tests/benchmark/*_run_many_llms*.py

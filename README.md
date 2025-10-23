@@ -182,7 +182,7 @@ async def test():
     # Run the specified benchmark
     results = await benchmark.run(trace_collector=trace_collector)
     # Get traces
-    trace_id = results[0].task_trace_ids["dummy/tasks/weather.json"]
+    trace_id = results[0].task_trace_ids["dummy/tasks/weather_1.json"]
     trace_records = trace_collector.get(trace_id)
 ```
 

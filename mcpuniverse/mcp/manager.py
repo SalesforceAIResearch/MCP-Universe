@@ -5,9 +5,11 @@ The MCPManager class is responsible for loading and managing server configuratio
 setting parameters, and building clients for MCP servers. It supports both stdio
 and SSE (Server-Sent Events) transport types.
 """
+import copy
 # pylint: disable=broad-exception-caught
 import os
 import json
+import asyncio
 from typing import Dict, List, Union, Any, Optional
 from contextlib import AsyncExitStack
 from functools import lru_cache
@@ -88,7 +90,7 @@ class MCPManager(metaclass=AutodocABCMeta):
         self._server_configs = {}
         for name, conf in configs.items():
             try:
-                self._server_configs[name] = ServerConfig.from_dict(conf)
+                self._server_configs[name] = ServerConfig.from_dict(copy.deepcopy(conf))
             except Exception as e:
                 self._logger.error("Failed to load config of server `%s`: %s", name, str(e))
                 raise e
@@ -180,7 +182,8 @@ class MCPManager(metaclass=AutodocABCMeta):
             server_name: str,
             transport: str = "stdio",
             timeout: int = 30,
-            mcp_gateway_address: str = ""
+            mcp_gateway_address: str = "",
+            permissions: Optional[List[Dict[str, str]]] = None
     ) -> MCPClient:
         """
         Builds and returns an MCP client for a specified server.
@@ -190,6 +193,7 @@ class MCPManager(metaclass=AutodocABCMeta):
             transport (str, optional): The transport type, either "stdio" or "sse". Defaults to "stdio".
             timeout (int, optional): Connection timeout in seconds. Defaults to 30.
             mcp_gateway_address (str, optional): A specified MCP gateway server address.
+            permissions (List[dict], optional): A list of tool permissions.
 
         Returns:
             MCPClient: An MCP client connected to the specified server.
@@ -205,7 +209,7 @@ class MCPManager(metaclass=AutodocABCMeta):
                 raise RuntimeError(f"Server {server_name} has unspecified parameters: "
                                    f"{server_config.list_unspecified_params()}")
 
-        client = MCPClient(name=f"{server_name}_client")
+        client = MCPClient(name=f"{server_name}_client", permissions=permissions)
         if transport == "stdio":
             await client.connect_to_stdio_server(server_config, timeout=timeout)
         else:
@@ -223,7 +227,8 @@ class MCPManager(metaclass=AutodocABCMeta):
             server_name: str,
             tool_name: str,
             arguments: Dict[str, Any],
-            transport: str = "stdio"
+            transport: str = "stdio",
+            permissions: Optional[List[Dict[str, str]]] = None
     ) -> Any:
         """
         Execute a function provided by an MCP server. This method will first create an MCP client,
@@ -234,18 +239,49 @@ class MCPManager(metaclass=AutodocABCMeta):
             tool_name (str): The name of a tool provided by the MCP server.
             arguments (Dict): The input arguments for the tool.
             transport (str, optional): The transport type, either "stdio" or "sse". Defaults to "stdio".
+            permissions (List[dict], optional): A list of tool permissions.
 
         Returns:
             Any: The result of the tool execution.
         """
         async with AsyncExitStack():
-            client = await self.build_client(server_name=server_name, transport=transport)
+            client = await self.build_client(
+                server_name=server_name, transport=transport, permissions=permissions)
             try:
                 result = await client.execute_tool(tool_name=tool_name, arguments=arguments)
                 await client.cleanup()
                 return result
             except Exception as e:
                 await client.cleanup()
+                raise e
+
+    async def list_tools(
+            self,
+            server_names: str | list[str],
+            transport: str = "stdio",
+    ) -> list[Any]:
+        """
+        Retrieves a list of available tools of a MCP server.
+
+        Args:
+            server_names (str): The names of the MCP servers to connect to.
+            transport (str, optional): The transport type, either "stdio" or "sse". Defaults to "stdio".
+
+        Returns:
+            list[Any]: A list of available tools.
+        """
+        if isinstance(server_names, str):
+            server_names = [server_names]
+        async with AsyncExitStack():
+            clients = [await self.build_client(server_name=name, transport=transport) for name in server_names]
+            try:
+                results = await asyncio.gather(*[client.list_tools() for client in clients])
+                for client in clients[::-1]:
+                    await client.cleanup()
+                return results
+            except Exception as e:
+                for client in clients[::-1]:
+                    await client.cleanup()
                 raise e
 
     def add_server_config(self, server_name: str, config: Dict[str, Any]):

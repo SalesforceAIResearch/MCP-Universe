@@ -1,0 +1,28 @@
+name: Publish to pip
+
+on:
+  release:
+    types: [ published ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -y
+          python -m pip install --upgrade pip setuptools wheel build
+          python -m pip install pytest pytest-asyncio pytest-postgresql pylint
+      - name: Build package
+        run: |
+          python -m build
+      - name: Publish distribution 📦 to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}

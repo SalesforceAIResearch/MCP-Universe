@@ -17,6 +17,7 @@ from pydantic import BaseModel
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 from mcp.client.sse import sse_client
+from mcp.types import CallToolResult, TextContent
 from mcpuniverse.common.misc import AutodocABCMeta
 from mcpuniverse.mcp.config import ServerConfig
 from mcpuniverse.common.logger import get_logger
@@ -28,6 +29,7 @@ from mcpuniverse.callbacks.base import (
     Event,
     send_message
 )
+from mcpuniverse.mcp.permission import ToolPermission, check_permissions
 
 load_dotenv()
 
@@ -40,7 +42,7 @@ class MCPClient(metaclass=AutodocABCMeta):
     list available tools, and execute tools.
     """
 
-    def __init__(self, name: str):
+    def __init__(self, name: str, permissions: Optional[List[Dict[str, str]]] = None):
         self._session: Optional[ClientSession] = None
         self._exit_stack = AsyncExitStack()
         self._cleanup_lock: asyncio.Lock = asyncio.Lock()
@@ -51,6 +53,10 @@ class MCPClient(metaclass=AutodocABCMeta):
         self._stdio_context: Union[Any, None] = None
         # Server parameters
         self._server_params = None
+        # Permissions
+        self._permissions = None
+        if permissions:
+            self._permissions = [ToolPermission.model_validate(p) for p in permissions]
 
     async def connect_to_stdio_server(self, config: ServerConfig, timeout: int = 20):
         """
@@ -178,6 +184,13 @@ class MCPClient(metaclass=AutodocABCMeta):
         """
         if not self._session:
             raise RuntimeError(f"Client {self._name} not initialized")
+
+        status = check_permissions(self._permissions, tool_name=tool_name, arguments=arguments)
+        if not status.approved:
+            send_message(callbacks, message=CallbackMessage(
+                source=self.id, type=MessageType.ERROR, data=status.reason,
+                project_id=self._project_id))
+            return CallToolResult(content=[TextContent(text=status.reason)])
 
         send_message(callbacks, message=CallbackMessage(
             source=self.id, type=MessageType.EVENT, data=Event.BEFORE_CALL,
