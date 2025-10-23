@@ -3,7 +3,7 @@ spec:
   name: llm-1
   type: openai
   config:
-    model_name: gpt-4o
+    model_name: gpt-4o-mini
 
 ---
 kind: agent
@@ -24,4 +24,4 @@ spec:
   agent: ReAct-agent
   tasks:
     - dummy/tasks/weather_1.json
-    - dummy/tasks/weather_2.json
+    # - dummy/tasks/weather_2.json

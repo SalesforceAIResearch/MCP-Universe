@@ -1,0 +1,36 @@
+{
+    "category": "easyr1",
+    "question": "The EasyR1 repository has several Qwen3-related issues that were closed but need to be reopened for further investigation. Qwen3 is an important model variant that requires continued attention. I need you to find and reopen all closed issues related to Qwen3 and properly tag them for tracking.\n\n**Step 1: Find All Closed Qwen3 Issues**\nSearch for ALL closed issues that mention 'qwen3' (case-insensitive) in either the title or body. Make note of each issue number and title.\n\n**Step 2: Reopen Each Qwen3 Issue**\nFor every closed issue that contains 'qwen3' (regardless of when it was closed or any other factors), reopen it by changing its state from closed to open.\n\n**Step 3: Add Tracking Label**\nAfter reopening each issue, add the label `qwen3-related` to it. This will help track all Qwen3-related issues in the future.\n\n**Step 4: Create Summary Issue**\nCreate a new issue titled \"Reopened Qwen3 Issues Summary\" with the following content in the body:\n```\n# Qwen3 Issues Reopened\n\nThe following closed issues containing 'qwen3' have been reopened:\n\n[List each reopened issue as: - #NUMBER: TITLE]\n\nTotal issues reopened: [NUMBER]\n\nAll reopened issues have been tagged with the `qwen3-related` label for easy tracking.\n```\n\nAdd the label `qwen3-related` to this summary issue as well.\n\nThis straightforward workflow ensures all Qwen3-related closed issues are reopened and properly tagged for visibility.",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "github_mcpmark"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "mcpmark_github.verify_qwen3_issue_management",
+            "value": "completed",
+            "op_args": {
+                "owner": "{{GITHUB_EVAL_ORG}}",
+                "repo": "EasyR1"
+            },
+            "desc": "Verify all Qwen3 issues are reopened, tagged with 'qwen3-related', and summary issue created"
+        }
+    ],
+    "prepares": [
+        {
+            "prepare_func": "mcpmark_github_setup",
+            "prepare_args": {}
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "mcpmark",
+            "tool": "",
+            "cleanup_func": "github_cleanup",
+            "cleanup_args": {}
+        }
+    ]
+}

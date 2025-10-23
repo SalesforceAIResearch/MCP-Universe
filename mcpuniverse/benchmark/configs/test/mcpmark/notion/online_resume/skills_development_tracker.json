@@ -1,0 +1,33 @@
+{
+    "category": "online_resume",
+    "question": "Create a comprehensive skills audit system by performing the following tasks:\n\n**Task Requirements:**\n1. Create a new database named \"Skills Development Tracker\" as a child database in the main resume page with the following properties:\n   - Name (title property)\n   - Current Skill (relation to Skills database)\n   - Current Proficiency (rollup from related skill's \"Skill Level\" property)\n   - Target Proficiency (number property with format \"percent\")\n   - Gap (formula: Target Proficiency - Current Proficiency)\n   - Learning Resources (rich text property)\n   - Progress Notes (rich text property)\n\n2. Populate the Skills Development Tracker database with entries for all skills that have a proficiency level below 70% (0.7):\n   - For each qualifying skill, create an entry with:\n     - Name: \"[Skill Name] Development Plan\"\n     - Link to the corresponding skill in Skills database\n     - Target Proficiency: Set to Current + 25% (capped at 95%)\n     - Learning Resources: \"Online courses and practice projects\"\n     - Progress Notes: \"Initial assessment completed\"\n\n3. Create a callout block immediately after the Skills section (after the Skills database) with:\n   - Background color: blue_background\n   - Icon: 🎯 (target emoji)\n   - Content: \"Focus Areas: [3 skills with lowest current proficiency]\"",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "notion_mcpmark"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "mcpmark.notion.verify_skills_development_tracker",
+            "value": "completed",
+            "op_args": {},
+            "desc": "Verify Skills Development Tracker database created with entries for skills below 70% and callout with focus areas"
+        }
+    ],
+    "prepares": [
+        {
+            "prepare_func": "mcpmark_notion_setup",
+            "prepare_args": {}
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "mcpmark",
+            "tool": "",
+            "cleanup_func": "notion_cleanup",
+            "cleanup_args": {}
+        }
+    ]
+}

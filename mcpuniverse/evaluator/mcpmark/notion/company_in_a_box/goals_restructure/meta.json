@@ -1,0 +1,23 @@
+{
+  "task_id": "goals_restructure",
+  "task_name": "Goals Restructure",
+  "category_id": "company_in_a_box",
+  "category_name": "Company In A Box",
+  "description": "Restructure the Current Goals section on the Company In A Box page by adding a new goal heading and converting all goal headings to toggles with content inside.",
+  "author": "Zijian Wu",
+  "created_at": "2025-07-27",
+  "difficulty": "L3",
+  "tags": [
+    "content organization",
+    "visual formatting"
+  ],
+  "mcp": [
+    "notion"
+  ],
+  "meta_data": {
+    "stateType": "url",
+    "stateContent": null,
+    "stateUrl": "https://painted-tennis-ebc.notion.site/Company-In-A-Box-23d81626b6d7800098f3d0e64a706cd8",
+    "stateOriginalUrl": "https://www.notion.so/marketplace/templates/company-in-a-box"
+  }
+}

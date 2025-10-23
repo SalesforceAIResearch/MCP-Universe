@@ -1,0 +1,23 @@
+{
+  "task_id": "database_security_policies",
+  "task_name": "Database Security Policies",
+  "category_id": "lego",
+  "category_name": "Lego",
+  "description": "Implement Row-Level Security policies with role-based access control for theme-based data isolation in LEGO database.",
+  "author": "Jiawei Wang",
+  "created_at": "2025-08-15",
+  "difficulty": "L3",
+  "tags": [
+    "security and access control",
+    "stored procedures and functions"
+  ],
+  "mcp": [
+    "postgres"
+  ],
+  "meta_data": {
+    "stateType": "text",
+    "stateContent": "Table \"lego_colors\" {\n  \"id\" int4 [pk, not null, increment]\n  \"name\" varchar(255) [not null]\n  \"rgb\" varchar(6) [not null]\n  \"is_trans\" bpchar(1) [not null]\n}\n\nTable \"lego_inventories\" {\n  \"id\" int4 [pk, not null, increment]\n  \"version\" int4 [not null]\n  \"set_num\" varchar(255) [not null]\n}\n\nTable \"lego_inventory_parts\" {\n  \"inventory_id\" int4 [not null]\n  \"part_num\" varchar(255) [not null]\n  \"color_id\" int4 [not null]\n  \"quantity\" int4 [not null]\n  \"is_spare\" bool [not null]\n}\n\nTable \"lego_inventory_sets\" {\n  \"inventory_id\" int4 [not null]\n  \"set_num\" varchar(255) [not null]\n  \"quantity\" int4 [not null]\n}\n\nTable \"lego_part_categories\" {\n  \"id\" int4 [pk, not null, increment]\n  \"name\" varchar(255) [not null]\n}\n\nTable \"lego_parts\" {\n  \"part_num\" varchar(255) [pk, not null]\n  \"name\" text [not null]\n  \"part_cat_id\" int4 [not null]\n}\n\nTable \"lego_sets\" {\n  \"set_num\" varchar(255) [pk, not null]\n  \"name\" varchar(255) [not null]\n  \"year\" int4\n  \"theme_id\" int4\n  \"num_parts\" int4\n}\n\nTable \"lego_themes\" {\n  \"id\" int4 [pk, not null, increment]\n  \"name\" varchar(255) [not null]\n  \"parent_id\" int4\n}\n",
+    "stateUrl": null,
+    "stateOriginalUrl": "https://github.com/neondatabase-labs/postgres-sample-dbs/blob/main/lego.sql"
+  }
+}

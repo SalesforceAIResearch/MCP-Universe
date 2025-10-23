@@ -66,6 +66,10 @@ class BenchmarkReport:
                 iter_names = []
 
                 for task_trace in self.trace_collector.get(trace_id):
+                    # Skip task traces with empty records
+                    if not task_trace.records:
+                        continue
+                    
                     iter_type = task_trace.records[0].data['type']
                     iter_name = iter_type
                     if iter_type == 'llm':

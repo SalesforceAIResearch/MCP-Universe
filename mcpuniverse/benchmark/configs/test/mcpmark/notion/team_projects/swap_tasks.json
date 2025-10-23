@@ -1,0 +1,33 @@
+{
+    "category": "team_projects",
+    "question": "Go to the Team Projects page, find the person responsible for the most tasks and the person responsible for the fewest tasks, then swap their assigned tasks.",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "notion_mcpmark"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "mcpmark.notion.verify_swap_tasks",
+            "value": "completed",
+            "op_args": {},
+            "desc": "Verify tasks swapped between person with most tasks and person with fewest tasks"
+        }
+    ],
+    "prepares": [
+        {
+            "prepare_func": "mcpmark_notion_setup",
+            "prepare_args": {}
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "mcpmark",
+            "tool": "",
+            "cleanup_func": "notion_cleanup",
+            "cleanup_args": {}
+        }
+    ]
+}

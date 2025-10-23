@@ -69,7 +69,7 @@ class MCPClient(metaclass=AutodocABCMeta):
         """
         command = (
             shutil.which(config.stdio.command)
-            if config.stdio.command in ["npx", "docker", "python", "python3"]
+            if config.stdio.command in ["npx", "docker", "python", "python3", "uvx"]
             else config.stdio.command
         )
         if command is None or command == "":

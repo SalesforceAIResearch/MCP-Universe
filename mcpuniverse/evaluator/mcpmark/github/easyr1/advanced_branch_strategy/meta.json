@@ -1,0 +1,23 @@
+{
+  "task_id": "advanced_branch_strategy",
+  "task_name": "Advanced Branch Strategy",
+  "category_id": "easyr1",
+  "category_name": "EasyR1",
+  "description": "Implement GitFlow branching strategy with develop, release, and feature branches to replace risky direct-to-main development.",
+  "author": "Xiangyan Liu",
+  "created_at": "2025-08-15",
+  "difficulty": "L3",
+  "tags": [
+    "pr workflows",
+    "release coordination"
+  ],
+  "mcp": [
+    "github"
+  ],
+  "meta_data": {
+    "stateType": "url",
+    "stateContent": null,
+    "stateUrl": "https://github.com/mcpmark-source/EasyR1",
+    "stateOriginalUrl": "https://github.com/hiyouga/EasyR1"
+  }
+}

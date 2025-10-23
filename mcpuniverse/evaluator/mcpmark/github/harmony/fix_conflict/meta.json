@@ -1,0 +1,22 @@
+{
+  "task_id": "fix_conflict",
+  "task_name": "Fix Conflict",
+  "category_id": "harmony",
+  "category_name": "Harmony",
+  "description": "Resolve merge conflicts by creating missing infrastructure and ensuring conflicted PRs can merge cleanly.",
+  "author": "Zijian Wu",
+  "created_at": "2025-08-15",
+  "difficulty": "L3",
+  "tags": [
+    "pr workflows"
+  ],
+  "mcp": [
+    "github"
+  ],
+  "meta_data": {
+    "stateType": "url",
+    "stateContent": null,
+    "stateUrl": "https://github.com/mcpmark-source/harmony",
+    "stateOriginalUrl": "https://github.com/openai/harmony"
+  }
+}

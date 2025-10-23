@@ -1,0 +1,13 @@
+TankSearchCount|2
+ZeroResultsCount|1
+HighestUseTerm|hollister:19
+Results20to30Term|Antonia Racer Tank:23|tanks:23
+Hits15PlusCount|1
+ID10to15MaxResults|Antonia Racer Tank:23
+DefaultStoreViewCount|7
+OneResultTerm|hollister:19|WP10:1
+HighestResultLastSearch|Antonia Racer Tank:23
+Position3Bestseller|Sprite Stasis Ball 65 cm:6
+TopUseTerm|hollister:19
+FirstNonZeroResult|WP10:1
+TotalUniqueTerms|7

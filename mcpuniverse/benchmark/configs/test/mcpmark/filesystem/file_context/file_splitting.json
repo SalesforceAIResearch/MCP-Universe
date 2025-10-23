@@ -1,0 +1,33 @@
+{
+    "category": "file_context",
+    "question": "Please use FileSystem tools to finish the following task:\n\n### Task Description\n\nYou need to split a large text file into multiple smaller files with equal character counts. The task involves creating a new directory and splitting the content into exactly 10 files.\n\n### Task Objectives\n\n1. **Create a new directory** named `split` in the test directory\n2. **Split the file** `large_file.txt` into exactly 10 files with equal character counts\n3. **Name the files** as `split_01.txt`, `split_02.txt`, ..., `split_10.txt` in the `split` directory\n4. **Ensure equal distribution** - all split files should have the same number of characters\n5. **Preserve content integrity** - concatenating all split files should recreate the original file exactly\n\n### Expected Output\n\n- Directory: `split/`\n- Files: `split_01.txt` to `split_10.txt`\n- All files should have equal character length\n- No loss or modification of content",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "filesystem_mcpmark"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "mcpmark.filesystem.file_context.verify_file_splitting",
+            "value": "completed",
+            "op_args": {},
+            "desc": "Verify file splitting with 10 equal-length files and content integrity"
+        }
+    ],
+    "prepares": [
+        {
+            "prepare_func": "mcpmark_filesystem_setup",
+            "prepare_args": {}
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "mcpmark",
+            "tool": "",
+            "cleanup_func": "filesystem_cleanup",
+            "cleanup_args": {}
+        }
+    ]
+}

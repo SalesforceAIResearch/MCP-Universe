@@ -1,0 +1,24 @@
+{
+  "task_id": "employee_project_tracking",
+  "task_name": "Employee Project Tracking",
+  "category_id": "employees",
+  "category_name": "Employees",
+  "description": "Build project tracking system from scratch with tables for projects, assignments, milestones, and performance indexes.",
+  "author": "Lingxiao Du",
+  "created_at": "2025-08-14",
+  "difficulty": "L3",
+  "tags": [
+    "schema design",
+    "data migration",
+    "data integrity enforcement"
+  ],
+  "mcp": [
+    "postgres"
+  ],
+  "meta_data": {
+    "stateType": "text",
+    "stateContent": "Enum \"employees\".\"employee_gender\" {\n  \"M\"\n  \"F\"\n}\n\nTable \"employees\".\"department\" {\n  \"id\" bpchar(4) [pk, not null]\n  \"dept_name\" varchar(40) [unique, not null]\n}\n\nTable \"employees\".\"department_employee\" {\n  \"employee_id\" int8 [not null]\n  \"department_id\" bpchar(4) [not null]\n  \"from_date\" date [not null]\n  \"to_date\" date [not null]\n\n  Indexes {\n    (employee_id, department_id) [type: btree, name: \"idx_16982_primary\"]\n    department_id [type: btree, name: \"idx_16982_dept_no\"]\n  }\n}\n\nTable \"employees\".\"department_manager\" {\n  \"employee_id\" int8 [not null]\n  \"department_id\" bpchar(4) [not null]\n  \"from_date\" date [not null]\n  \"to_date\" date [not null]\n\n  Indexes {\n    (employee_id, department_id) [type: btree, name: \"idx_16985_primary\"]\n    department_id [type: btree, name: \"idx_16985_dept_no\"]\n  }\n}\n\nTable \"employees\".\"employee\" {\n  \"id\" int8 [pk, not null, increment]\n  \"birth_date\" date [not null]\n  \"first_name\" varchar(14) [not null]\n  \"last_name\" varchar(16) [not null]\n  \"gender\" employees.employee_gender [not null]\n  \"hire_date\" date [not null]\n}\n\nTable \"employees\".\"salary\" {\n  \"employee_id\" int8 [not null]\n  \"amount\" int8 [not null]\n  \"from_date\" date [not null]\n  \"to_date\" date [not null]\n\n  Indexes {\n    (employee_id, from_date) [type: btree, name: \"idx_16991_primary\"]\n  }\n}\n\nTable \"employees\".\"title\" {\n  \"employee_id\" int8 [not null]\n  \"title\" varchar(50) [not null]\n  \"from_date\" date [not null]\n  \"to_date\" date\n\n  Indexes {\n    (employee_id, title, from_date) [type: btree, name: \"idx_16994_primary\"]\n  }\n}\n\nRef \"dept_emp_ibfk_1\":\"employees\".\"employee\".\"id\" < \"employees\".\"department_employee\".\"employee_id\" [update: restrict, delete: cascade]\n\nRef \"dept_emp_ibfk_2\":\"employees\".\"department\".\"id\" < \"employees\".\"department_employee\".\"department_id\" [update: restrict, delete: cascade]\n\nRef \"dept_manager_ibfk_1\":\"employees\".\"employee\".\"id\" < \"employees\".\"department_manager\".\"employee_id\" [update: restrict, delete: cascade]\n\nRef \"dept_manager_ibfk_2\":\"employees\".\"department\".\"id\" < \"employees\".\"department_manager\".\"department_id\" [update: restrict, delete: cascade]\n\nRef \"salaries_ibfk_1\":\"employees\".\"employee\".\"id\" < \"employees\".\"salary\".\"employee_id\" [update: restrict, delete: cascade]\n\nRef \"titles_ibfk_1\":\"employees\".\"employee\".\"id\" < \"employees\".\"title\".\"employee_id\" [update: restrict, delete: cascade]\n",
+    "stateUrl": null,
+    "stateOriginalUrl": "https://github.com/neondatabase-labs/postgres-sample-dbs/blob/main/employees.sql.gz"
+  }
+}

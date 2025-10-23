@@ -1,0 +1,22 @@
+{
+    "task_id": "cloudflare_turnstile_challenge",
+    "task_name": "Cloudflare Turnstile Challenge",
+    "category_id": "eval_web",
+    "category_name": "Eval Web",
+    "description": "Navigate websites with Cloudflare Turnstile protection, handle security challenges, bypass bot detection mechanisms, and successfully access protected content using automated browser interactions.",
+    "author": "Allison Zhan",
+    "created_at": "2025-07-27",
+    "difficulty": "L3",
+    "tags": [
+        "user interaction"
+    ],
+    "mcp": [
+        "playwright"
+    ],
+    "meta_data": {
+        "stateType": "video",
+        "stateContent": null,
+        "stateUrl": "https://storage.mcpmark.ai/tasks_state/playwright_video/mcpmark-eval-website.mp4",
+        "stateOriginalUrl": "https://mcp-eval-website.vercel.app/auth/turnstile"
+    }
+}

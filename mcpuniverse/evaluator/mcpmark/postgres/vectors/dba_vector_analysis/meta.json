@@ -1,0 +1,24 @@
+{
+  "task_id": "dba_vector_analysis",
+  "task_name": "DBA Vector Analysis",
+  "category_id": "vectors",
+  "category_name": "Vectors",
+  "description": "Analyze pgvector database storage, identify vector columns, assess space utilization and performance for RAG applications.",
+  "author": "Fanshi Zhang",
+  "created_at": "2025-08-18",
+  "difficulty": "L3",
+  "tags": [
+    "performance optimization",
+    "audit and compliance",
+    "statistical aggregation"
+  ],
+  "mcp": [
+    "postgres"
+  ],
+  "meta_data": {
+    "stateType": "text",
+    "stateContent": "Table \"documents\" {\n  \"id\" int4 [pk, not null, increment]\n  \"title\" text [not null]\n  \"content\" text [not null]\n  \"source_url\" text\n  \"document_type\" varchar(50) [default: 'article']\n  \"created_at\" timestamp [default: `CURRENT_TIMESTAMP`]\n  \"updated_at\" timestamp [default: `CURRENT_TIMESTAMP`]\n  \"word_count\" int4\n  \"embedding\" public.vector\n\n  Indexes {\n    created_at [type: btree, name: \"documents_created_idx\"]\n    embedding [type: hnsw, name: \"documents_embedding_idx\"]\n    title [type: btree, name: \"documents_title_idx\"]\n    document_type [type: btree, name: \"documents_type_idx\"]\n  }\n}\n\nTable \"document_chunks\" {\n  \"id\" int4 [pk, not null, increment]\n  \"document_id\" int4\n  \"chunk_index\" int4 [not null]\n  \"chunk_text\" text [not null]\n  \"chunk_size\" int4\n  \"overlap_size\" int4 [default: 0]\n  \"created_at\" timestamp [default: `CURRENT_TIMESTAMP`]\n  \"embedding\" public.vector\n\n  Indexes {\n    document_id [type: btree, name: \"chunks_doc_id_idx\"]\n    embedding [type: hnsw, name: \"chunks_embedding_idx\"]\n    chunk_index [type: btree, name: \"chunks_index_idx\"]\n  }\n}\n\nTable \"user_queries\" {\n  \"id\" int4 [pk, not null, increment]\n  \"query_text\" text [not null]\n  \"user_id\" varchar(100)\n  \"session_id\" varchar(100)\n  \"created_at\" timestamp [default: `CURRENT_TIMESTAMP`]\n  \"response_time_ms\" int4\n  \"embedding\" public.vector\n\n  Indexes {\n    created_at [type: btree, name: \"queries_created_idx\"]\n    embedding [type: hnsw, name: \"queries_embedding_idx\"]\n    user_id [type: btree, name: \"queries_user_idx\"]\n  }\n}\n\nTable \"embedding_models\" {\n  \"id\" int4 [pk, not null, increment]\n  \"model_name\" varchar(100) [unique, not null]\n  \"provider\" varchar(50) [not null]\n  \"dimensions\" int4 [not null]\n  \"max_tokens\" int4\n  \"cost_per_token\" numeric(10,8)\n  \"created_at\" timestamp [default: `CURRENT_TIMESTAMP`]\n  \"is_active\" bool [default: true]\n}\n\nTable \"knowledge_base\" {\n  \"id\" int4 [pk, not null, increment]\n  \"kb_name\" varchar(100) [not null]\n  \"description\" text\n  \"domain\" varchar(50)\n  \"language\" varchar(10) [default: 'en']\n  \"total_documents\" int4 [default: 0]\n  \"total_chunks\" int4 [default: 0]\n  \"total_storage_mb\" numeric(10,2)\n  \"created_at\" timestamp [default: `CURRENT_TIMESTAMP`]\n  \"updated_at\" timestamp [default: `CURRENT_TIMESTAMP`]\n}\n\nTable \"search_cache\" {\n  \"id\" int4 [pk, not null, increment]\n  \"query_hash\" varchar(64) [not null]\n  \"query_text\" text [not null]\n  \"results_json\" jsonb\n  \"result_count\" int4\n  \"search_time_ms\" int4\n  \"similarity_threshold\" numeric(4,3)\n  \"created_at\" timestamp [default: `CURRENT_TIMESTAMP`]\n  \"expires_at\" timestamp\n\n  Indexes {\n    expires_at [type: btree, name: \"cache_expires_idx\"]\n    query_hash [type: btree, name: \"cache_hash_idx\"]\n  }\n}\n\nRef \"document_chunks_document_id_fkey\":\"documents\".\"id\" < \"document_chunks\".\"document_id\" [delete: cascade]\n",
+    "stateUrl": null,
+    "stateOriginalUrl": null
+  }
+}

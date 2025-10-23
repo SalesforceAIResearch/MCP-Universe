@@ -1,0 +1,24 @@
+{
+  "task_id": "assign_contributor_labels",
+  "task_name": "Assign Contributor Labels",
+  "category_id": "missing-semester",
+  "category_name": "Missing Semester",
+  "description": "Assign labels to open issues and PRs based on contributors mentioned in comments or the most frequent contributor from past 100 commits, using assigned-username format.",
+  "author": "Zijian Wu",
+  "created_at": "2025-08-15",
+  "difficulty": "L3",
+  "tags": [
+    "issue management",
+    "label automation",
+    "contributor analysis"
+  ],
+  "mcp": [
+    "github"
+  ],
+  "meta_data": {
+    "stateType": "url",
+    "stateContent": null,
+    "stateUrl": "https://github.com/mcpmark-source/missing-semester",
+    "stateOriginalUrl": "https://github.com/missing-semester/missing-semester"
+  }
+}

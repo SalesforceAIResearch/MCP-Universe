@@ -1,0 +1,22 @@
+- Total_NBA_Posts|20
+- Top1_Title|Hamby claims [WNBA Champ] Aces 'unprofessional' after trade
+- Top1_Votes|614
+- Top1_Comments|170
+- Top1_Author|Responsible-Lunch815
+- Top2_Title|Heat place literally every player on injury report after receiving NBA fine ahead of Mexico City game
+- Top2_Votes|1266
+- Top2_Comments|145
+- Top2_Author|XXmynameisNeganXX
+- Top3_Title|[ESPN] Announced attendance at the Alamodome tonight|68,323, a new single-game NBA record, in the Spurs' first game there since Game 4 of the 2002 Western Conference Semifinals.
+- Top3_Votes|1511
+- Top3_Comments|101
+- Top3_Author|dragon8811
+- Top4_Title|Phoenix Mercury confirm Brittney Griner’s return to WNBA
+- Top4_Votes|0
+- Top4_Comments|42
+- Top4_Author|rejs7
+- Top5_Title|Perspective | Kyrie Irving lit a flame. The NBA, top to bottom, watched the fire spread.
+- Top5_Votes|74
+- Top5_Comments|32
+- Top5_Author|tomyland
+- BCLetsRide69_Total_Posts|48

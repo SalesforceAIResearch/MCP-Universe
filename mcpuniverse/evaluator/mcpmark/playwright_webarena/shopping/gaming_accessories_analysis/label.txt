@@ -1,0 +1,8 @@
+Products70Plus|7
+CheapestReviewedSKU|B014HDAUAA
+CheapestReviewedPrice|$0.99
+ComparisonCount|2
+N64Subtotal|$84.95
+CheckoutEmail|test.buyer@example.com
+ShippingState|California
+ShippingMethods|1

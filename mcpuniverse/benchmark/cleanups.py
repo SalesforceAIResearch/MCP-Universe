@@ -4,10 +4,13 @@ Cleanup functions for tasks.
 # pylint: disable=unused-argument
 import asyncio
 import random
+import logging
 from typing import Callable
 
 import requests
 from mcpuniverse.common.context import Context
+
+logger = logging.getLogger(__name__)
 
 CLEANUP_FUNCTIONS = {}
 
@@ -107,3 +110,333 @@ async def notion_delete_page(page: str, owner: str = "", **kwargs):
         await asyncio.sleep(delay_time)
         delay_time *= random.uniform(1, 1.5)
     raise RuntimeError("`notion_delete_page` Reached the max retries")
+
+
+# =============================================================================
+# MCPMark State Manager Integration Functions
+# =============================================================================
+
+@cleanup_func("mcpmark", "github_cleanup")
+async def mcpmark_github_cleanup(context: Context = None, **kwargs):
+    """
+    Cleanup GitHub environment for MCPMark tasks.
+    
+    This function mimics the GitHubStateManager.clean_up() behavior:
+    - Deletes created repositories
+    - Cleans up evaluation workspace
+    
+    Args:
+        context: Context object (automatically passed by framework)
+        **kwargs: Additional arguments from cleanup_args in task config
+    """
+    try:
+        if not context:
+            logger.warning("No context provided for GitHub cleanup")
+            return "No context for cleanup"
+        
+        # Get state manager from context
+        state_manager = context.env.get("MCPMARK_GITHUB_STATE_MANAGER")
+        task = context.env.get("MCPMARK_GITHUB_TASK")
+        
+        if not state_manager:
+            logger.info("No GitHub state manager found in context - likely setup was not performed or failed")
+            return "No state manager to cleanup"
+        
+        if not task:
+            logger.warning("No task object found in context")
+            return "No task object to cleanup"
+        
+        # Call cleanup
+        logger.info(f"Cleaning up GitHub environment for task: {task.name}")
+        success = state_manager.clean_up(task)
+        
+        # Clear from context
+        context.env.pop("MCPMARK_GITHUB_STATE_MANAGER", None)
+        context.env.pop("MCPMARK_GITHUB_TASK", None)
+        
+        if success:
+            logger.info("GitHub environment cleanup completed successfully")
+            return "GitHub environment cleanup completed"
+        else:
+            logger.warning("GitHub cleanup completed with some failures")
+            return "GitHub cleanup completed with warnings"
+            
+    except Exception as e:
+        logger.error(f"Failed to cleanup GitHub environment: {e}")
+        raise
+
+
+@cleanup_func("mcpmark", "notion_cleanup")
+async def mcpmark_notion_cleanup(context: Context = None, **kwargs):
+    """
+    Cleanup Notion environment for MCPMark tasks.
+    
+    This function mimics the NotionStateManager.clean_up() behavior:
+    - Deletes duplicated pages
+    - Cleans up evaluation workspace
+    
+    Args:
+        context: Context object (automatically passed by framework)
+        **kwargs: Additional arguments from cleanup_args in task config
+    """
+    try:
+        if not context:
+            logger.warning("No context provided for Notion cleanup")
+            return "No context for cleanup"
+        
+        # Get state manager from context
+        state_manager = context.env.get("MCPMARK_NOTION_STATE_MANAGER")
+        task = context.env.get("MCPMARK_NOTION_TASK")
+        
+        if not state_manager:
+            logger.info("No Notion state manager found in context - likely setup was not performed or failed")
+            return "No state manager to cleanup"
+        
+        if not task:
+            logger.warning("No task object found in context")
+            return "No task object to cleanup"
+        
+        # Call cleanup in a separate thread to avoid asyncio/Playwright conflict
+        # Playwright sync API cannot run inside an asyncio loop
+        import asyncio
+        logger.info(f"Cleaning up Notion environment for task: {task.name}")
+        success = await asyncio.to_thread(state_manager.clean_up, task)
+        
+        # Clear from context
+        context.env.pop("MCPMARK_NOTION_STATE_MANAGER", None)
+        context.env.pop("MCPMARK_NOTION_TASK", None)
+        context.env.pop("MCPMARK_NOTION_PAGE_URL", None)
+        # Note: We don't clear NOTION_API_KEY from context as it might be used by other tasks
+        
+        if success:
+            logger.info("Notion environment cleanup completed successfully")
+            return "Notion environment cleanup completed"
+        else:
+            logger.warning("Notion cleanup completed with some failures")
+            return "Notion cleanup completed with warnings"
+            
+    except Exception as e:
+        logger.error(f"Failed to cleanup Notion environment: {e}")
+        raise
+
+
+@cleanup_func("mcpmark", "filesystem_cleanup")
+async def mcpmark_filesystem_cleanup(context: Context = None, **kwargs):
+    """
+    Cleanup Filesystem environment for MCPMark tasks.
+    
+    This function mimics the FilesystemStateManager.clean_up() behavior:
+    - Cleans up backup directories
+    - Removes temporary resources
+    
+    Args:
+        context: Context object (automatically passed by framework)
+        **kwargs: Additional arguments from cleanup_args in task config
+    """
+    try:
+        if not context:
+            logger.warning("No context provided for Filesystem cleanup")
+            return "No context for cleanup"
+        
+        # Get state manager from context
+        state_manager = context.env.get("MCPMARK_FILESYSTEM_STATE_MANAGER")
+        task = context.env.get("MCPMARK_FILESYSTEM_TASK")
+        
+        if not state_manager:
+            logger.info("No Filesystem state manager found in context - likely setup was not performed or failed")
+            return "No state manager to cleanup"
+        
+        if not task:
+            logger.warning("No task object found in context")
+            return "No task object to cleanup"
+        
+        # Call cleanup in a separate thread for consistency
+        import asyncio
+        logger.info(f"Cleaning up Filesystem environment for task: {task.name}")
+        success = await asyncio.to_thread(state_manager.clean_up, task)
+        
+        # Clear from context
+        context.env.pop("MCPMARK_FILESYSTEM_STATE_MANAGER", None)
+        context.env.pop("MCPMARK_FILESYSTEM_TASK", None)
+        context.env.pop("MCPMARK_FILESYSTEM_TEST_DIR", None)
+        
+        if success:
+            logger.info("Filesystem environment cleanup completed successfully")
+            return "Filesystem environment cleanup completed"
+        else:
+            logger.warning("Filesystem cleanup completed with some failures")
+            return "Filesystem cleanup completed with warnings"
+            
+    except Exception as e:
+        logger.error(f"Failed to cleanup Filesystem environment: {e}")
+        raise
+
+
+@cleanup_func("mcpmark", "playwright_cleanup")
+async def mcpmark_playwright_cleanup(context: Context = None, **kwargs):
+    """
+    Cleanup Playwright environment for MCPMark tasks.
+    
+    Playwright cleanup is minimal - just clears tracked resources.
+    No browser state needs to be cleaned up.
+    
+    Args:
+        context: Context object (automatically passed by framework)
+        **kwargs: Additional arguments from cleanup_args in task config
+    """
+    try:
+        if not context:
+            logger.warning("No context provided for Playwright cleanup")
+            return "No context for cleanup"
+        
+        # Get state manager from context
+        state_manager = context.env.get("MCPMARK_PLAYWRIGHT_STATE_MANAGER")
+        task = context.env.get("MCPMARK_PLAYWRIGHT_TASK")
+        
+        if not state_manager:
+            logger.info("No Playwright state manager found in context - likely setup was not performed or failed")
+            return "No state manager to cleanup"
+        
+        if not task:
+            logger.warning("No task object found in context")
+            return "No task object to cleanup"
+        
+        # Call cleanup - Playwright cleanup is lightweight (just clears resources)
+        logger.info(f"Cleaning up Playwright environment for task: {task.name}")
+        success = state_manager.clean_up(task)
+        
+        # Clear from context
+        context.env.pop("MCPMARK_PLAYWRIGHT_STATE_MANAGER", None)
+        context.env.pop("MCPMARK_PLAYWRIGHT_TASK", None)
+        context.env.pop("MCPMARK_PLAYWRIGHT_TEST_URL", None)
+        context.env.pop("MCP_MESSAGES", None)
+        
+        # Clean up MCP_MESSAGES from os.environ as well
+        import os
+        os.environ.pop("MCP_MESSAGES", None)
+        
+        if success:
+            logger.info("Playwright environment cleanup completed successfully")
+            return "Playwright environment cleanup completed"
+        else:
+            logger.warning("Playwright cleanup completed with some failures")
+            return "Playwright cleanup completed with warnings"
+            
+    except Exception as e:
+        logger.error(f"Failed to cleanup Playwright environment: {e}")
+        raise
+
+
+@cleanup_func("mcpmark", "playwright_webarena_cleanup")
+async def mcpmark_playwright_webarena_cleanup(context: Context = None, **kwargs):
+    """
+    Cleanup Playwright WebArena environment for MCPMark tasks.
+    
+    This function:
+    - Stops and removes Docker containers
+    - Cleans up WebArena environment
+    
+    Args:
+        context: Context object (automatically passed by framework)
+        **kwargs: Additional arguments from cleanup_args in task config
+    """
+    try:
+        if not context:
+            logger.warning("No context provided for Playwright WebArena cleanup")
+            return "No context for cleanup"
+        
+        # Get state manager from context
+        state_manager = context.env.get("MCPMARK_PLAYWRIGHT_WEBARENA_STATE_MANAGER")
+        task = context.env.get("MCPMARK_PLAYWRIGHT_WEBARENA_TASK")
+        
+        if not state_manager:
+            logger.info("No Playwright WebArena state manager found in context - likely setup was not performed or failed")
+            return "No state manager to cleanup"
+        
+        if not task:
+            logger.warning("No task object found in context")
+            return "No task object to cleanup"
+        
+        # Call cleanup in a separate thread (Docker operations are synchronous)
+        import asyncio
+        logger.info(f"Cleaning up Playwright WebArena environment for task: {task.name}")
+        success = await asyncio.to_thread(state_manager.clean_up, task)
+        
+        # Clear from context
+        context.env.pop("MCPMARK_PLAYWRIGHT_WEBARENA_STATE_MANAGER", None)
+        context.env.pop("MCPMARK_PLAYWRIGHT_WEBARENA_TASK", None)
+        context.env.pop("MCPMARK_PLAYWRIGHT_WEBARENA_URL", None)
+        context.env.pop("MCP_MESSAGES", None)
+        
+        # Clean up MCP_MESSAGES from os.environ as well
+        import os
+        os.environ.pop("MCP_MESSAGES", None)
+        
+        if success:
+            logger.info("Playwright WebArena environment cleanup completed successfully")
+            return "Playwright WebArena environment cleanup completed"
+        else:
+            logger.warning("Playwright WebArena cleanup completed with some failures")
+            return "Playwright WebArena cleanup completed with warnings"
+            
+    except Exception as e:
+        logger.error(f"Failed to cleanup Playwright WebArena environment: {e}")
+        raise
+
+
+@cleanup_func("mcpmark", "postgres_cleanup")
+async def mcpmark_postgres_cleanup(context: Context = None, **kwargs):
+    """
+    Cleanup Postgres environment for MCPMark tasks.
+    
+    This function:
+    - Drops the task-specific database
+    - Cleans up environment variables
+    
+    Args:
+        context: Context object (automatically passed by framework)
+        **kwargs: Additional arguments from cleanup_args in task config
+    """
+    try:
+        if not context:
+            logger.warning("No context provided for Postgres cleanup")
+            return "No context for cleanup"
+        
+        # Get state manager from context
+        state_manager = context.env.get("MCPMARK_POSTGRES_STATE_MANAGER")
+        task = context.env.get("MCPMARK_POSTGRES_TASK")
+        
+        if not state_manager:
+            logger.info("No Postgres state manager found in context - likely setup was not performed or failed")
+            return "No state manager to cleanup"
+        
+        if not task:
+            logger.warning("No task object found in context")
+            return "No task object to cleanup"
+        
+        logger.info(f"Cleaning up Postgres environment for task: {task.name}")
+        
+        # Call cleanup (synchronous but fast)
+        success = state_manager.clean_up(task)
+        
+        # Clear from context
+        context.env.pop("MCPMARK_POSTGRES_STATE_MANAGER", None)
+        context.env.pop("MCPMARK_POSTGRES_TASK", None)
+        context.env.pop("POSTGRES_DATABASE", None)
+        context.env.pop("POSTGRES_DATABASE_URL", None)
+        
+        # Clean up environment variables
+        import os
+        os.environ.pop("POSTGRES_DATABASE", None)
+        os.environ.pop("POSTGRES_DATABASE_URL", None)
+        
+        if success:
+            logger.info("Postgres environment cleanup completed successfully")
+            return "Postgres environment cleanup completed"
+        else:
+            logger.warning("Postgres cleanup completed with some failures")
+            return "Postgres cleanup completed with warnings"
+            
+    except Exception as e:
+        logger.error(f"Failed to cleanup Postgres environment: {e}")
+        raise

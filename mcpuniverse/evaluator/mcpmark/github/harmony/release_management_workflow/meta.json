@@ -1,0 +1,23 @@
+{
+  "task_id": "release_management_workflow",
+  "task_name": "Release Management Workflow",
+  "category_id": "harmony",
+  "category_name": "Harmony",
+  "description": "Implement comprehensive release management workflow including bug fixes, version updates, changelog creation, and PR merging.",
+  "author": "Zijian Wu",
+  "created_at": "2025-08-15",
+  "difficulty": "L3",
+  "tags": [
+    "release coordination",
+    "pr workflows"
+  ],
+  "mcp": [
+    "github"
+  ],
+  "meta_data": {
+    "stateType": "url",
+    "stateContent": null,
+    "stateUrl": "https://github.com/mcpmark-source/harmony",
+    "stateOriginalUrl": "https://github.com/openai/harmony"
+  }
+}

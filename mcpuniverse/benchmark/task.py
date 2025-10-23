@@ -18,6 +18,23 @@ from mcpuniverse.common.logger import get_logger
 from mcpuniverse.mcp.manager import MCPManager
 from mcpuniverse.common.context import Context
 from .cleanups import CLEANUP_FUNCTIONS
+from .prepares import PREPARE_FUNCTIONS
+
+
+class TaskPrepareConfig(BaseModel):
+    """
+    Task preparation configuration.
+
+    Example:
+        {
+            "prepare_func": "prepare_vector_database",
+            "prepare_args": {
+                "database": "test_db"
+            }
+        }
+    """
+    prepare_func: str = Field(default="", description="The function to prepare task environment")
+    prepare_args: dict = Field(default_factory=dict, description="The arguments for preparation")
 
 
 class TaskCleanupConfig(BaseModel):
@@ -52,6 +69,7 @@ class TaskConfig(BaseModel):
     output_format: dict = Field(default_factory=dict, description="JSON output format")
     mcp_servers: List[dict] = Field(default_factory=list, description="MCP servers in this task")
     evaluators: List[EvaluatorConfig] = Field(default_factory=list, description="Evaluator configurations")
+    prepares: List[TaskPrepareConfig] = Field(default_factory=list, description="Preparation configurations")
     cleanups: List[TaskCleanupConfig] = Field(default_factory=list, description="Cleanup configurations")
     use_specified_server: bool = (
         Field(default=False, description="Whether to let agent only use the servers specified in this config"))
@@ -123,6 +141,28 @@ class Task(metaclass=AutodocABCMeta):
         """
         return [await evaluator.evaluate(x) for evaluator in self._evaluators]
 
+    async def prepare(self):
+        """
+        Prepare the task environment before agent execution.
+        """
+        for config in self._config.prepares:
+            try:
+                self._logger.info("Running task preparation: prepare_func `%s`", config.prepare_func)
+                if config.prepare_func in PREPARE_FUNCTIONS:
+                    func = PREPARE_FUNCTIONS[config.prepare_func]
+                    input_args = config.prepare_args.copy()
+                    input_args["context"] = self._context
+                    # Automatically pass task category to prepare functions
+                    input_args["category"] = self._config.category
+                    response = await func(**input_args)
+                    if response:
+                        self._logger.info("Task preparation succeeded: %s", str(response))
+                else:
+                    self._logger.warning("Prepare function `%s` not found", config.prepare_func)
+            except Exception as e:
+                self._logger.error("Failed to run task preparation: %s", str(e))
+                raise
+
     async def reset(self, trace_records: List[TraceRecord]):
         """
         Reset the task status/environment changed by agents via MCP servers.
@@ -167,6 +207,8 @@ class Task(metaclass=AutodocABCMeta):
             input_args = self._parse_cleanup_args(cleanup_config.cleanup_args, tool_call)
             if (cleanup_config.server, cleanup_config.cleanup_func) in CLEANUP_FUNCTIONS:
                 func = CLEANUP_FUNCTIONS[(cleanup_config.server, cleanup_config.cleanup_func)]
+                # Automatically pass context to cleanup functions (similar to prepare functions)
+                input_args["context"] = self._context
                 return await func(**input_args)
             return await self._mcp_manager.execute(
                 server_name=cleanup_config.server,

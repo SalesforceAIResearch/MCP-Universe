@@ -1,0 +1,36 @@
+{
+    "category": "shopping_admin",
+    "question": "Perform customer segmentation setup and analysis in the Magento Admin panel to establish new customer groups and manage customer profiles.\n\n**Important:** The Magento Admin panel is accessible at http://localhost:7780/admin\n\n**Task Requirements:**\n\n1. Access the Magento Admin panel at http://localhost:7780/admin to begin customer segmentation setup. If you need to login, use username 'admin' and password 'admin1234'\n\n2. Establish baseline metrics for customer groups:\n   - Record the exact number shown in \"records found\" at the top of the grid\n   - This will be your initial groups count\n\n3. Create a specialized customer group for European premium customers:\n   - Group Name: Premium Europe\n   - Tax Class: Retail Customer\n   - Save the group\n\n4. Verify the customer group creation was successful:\n   - After saving, return to Customer Groups list\n   - Record the new total shown in \"records found\"\n\n5. Establish baseline metrics for all customers database:\n   - Record the exact number shown in \"records found\" at the top of the grid\n   - This will be your initial customers count\n\n6. Add a representative customer to the new premium group:\n   - Create a new customer with the following details:\n   - First Name: Isabella\n   - Last Name: Romano\n   - Email: isabella.romano@premium.eu\n   - Associate to Website: Main Website\n   - Group: The group you just created\n   - Save the customer\n\n7. Verify the customer creation was successful:\n   - After saving, return to All Customers list\n   - Record the new total shown in \"records found\"\n\n8. Analyze recent customer activity patterns:\n   - Navigate to Dashboard\n   - Look at the \"Last Orders\" section\n   - Record the customer name in the last row of the table\n\n9. Compile all your findings and output them in the following exact format:\n\n```\n<answer>\nInitialGroups|count\nFinalGroups|count  \nInitialCustomers|count\nFinalCustomers|count\nLastOrderCustomer|name\n</answer>\n```\n\n**Example Output:**\n```\n<answer>\nInitialGroups|XX\nFinalGroups|XX\nInitialCustomers|XXX\nFinalCustomers|XXX\nLastOrderCustomer|XXX\n</answer>\n```",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "playwright"
+        }
+    ],
+    "output_format": {
+        "segmentation_results": "Structured answer format"
+    },
+    "prepares": [
+        {
+            "prepare_func": "mcpmark_playwright_webarena_setup",
+            "prepare_args": {}
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "mcpmark",
+            "tool": "",
+            "cleanup_func": "playwright_webarena_cleanup",
+            "cleanup_args": {}
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "mcpmark.playwright.verify_customer_segmentation_setup",
+            "value": "completed",
+            "op_args": {},
+            "desc": "Verify AI agent completed customer segmentation setup task with correct structured output and browser verification"
+        }
+    ]
+}

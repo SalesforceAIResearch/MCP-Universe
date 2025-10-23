@@ -1,0 +1,36 @@
+{
+    "category": "eval_web",
+    "question": "# Web Data Extraction Task\n\nUse Playwright MCP tools to extract all data from the specified website and present it in CSV format.\n\n## Requirements:\n\n1. Navigate to https://eval-web.mcpmark.ai/extraction\n2. Wait for the page to fully load\n3. Extract all data content from the page, including:\n   - Title\n   - Rating\n   - Likes\n   - Views\n   - Replies\n4. Organize the extracted data into CSV format\n5. Ensure data completeness and accuracy\n6. Output ONLY the complete CSV formatted data (no additional text or explanations)\n\n## CSV Data Example:\n\n```csv\nTitle, Rating, Likes, Views, Replies\nSEO Optimization, \"4.6\", 756, 10123, 72\nVue 3 Composition API, \"4.5\", 743, 9876, 67\nAdvanced TypeScript Types Guide, \"4.9\", 924, 15432, 102\nNode.js Performance Optimization, \"4.2\", 567, 8765, 45\nFrontend Engineering Best Practices, \"4.7\", 812, 11234, 78\n```\n\n## Notes:\n\n- Ensure extraction of all visible data rows\n- Maintain data format consistency\n- All numeric data (Rating, Likes, Views, Replies) should NOT have quotes, only text data containing commas should be wrapped in quotes\n- Wait for the page to fully load before starting data extraction\n- Verify the quantity and format of extracted data are correct\n- **IMPORTANT: Final output must contain ONLY CSV data - no explanatory text, descriptions, or other content**",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "playwright"
+        }
+    ],
+    "output_format": {
+        "csv_data": "Complete CSV formatted data"
+    },
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "mcpmark.playwright.verify_extraction_table",
+            "value": "completed",
+            "op_args": {},
+            "desc": "Verify CSV data extraction with correct format and row count"
+        }
+    ],
+    "prepares": [
+        {
+            "prepare_func": "mcpmark_playwright_setup",
+            "prepare_args": {}
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "mcpmark",
+            "tool": "",
+            "cleanup_func": "playwright_cleanup",
+            "cleanup_args": {}
+        }
+    ]
+}

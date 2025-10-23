@@ -1,0 +1,23 @@
+{
+  "task_id": "file_merging",
+  "task_name": "File Merging",
+  "category_id": "file_context",
+  "category_name": "File Context",
+  "description": "Identify the 10 smallest text files in the directory, then merge their content in alphabetical order into a single consolidated file.",
+  "author": "Lingjun Chen",
+  "created_at": "2025-08-07",
+  "difficulty": "L3",
+  "tags": [
+    "content transformation",
+    "file organization"
+  ],
+  "mcp": [
+    "filesystem"
+  ],
+  "meta_data": {
+    "stateType": "text",
+    "stateContent": "file_context/\n    ├── file_01.txt\n    ├── file_02.txt\n    ├── file_03.txt\n    ├── file_04.txt\n    ├── file_05.txt\n    ├── file_06.txt\n    ├── file_07.txt\n    ├── file_08.txt\n    ├── file_09.txt\n    ├── file_10.txt\n    ├── file_11.txt\n    ├── file_12.txt\n    ├── file_13.txt\n    ├── file_14.txt\n    ├── file_15.txt\n    ├── file_16.txt\n    ├── file_17.txt\n    ├── file_18.txt\n    ├── file_19.txt\n    ├── file_20.txt\n    └── large_file.txt",
+    "stateUrl": "https://storage.mcpmark.ai/filesystem/file_context.zip",
+    "stateOriginalUrl": null
+  }
+}

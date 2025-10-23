@@ -1,0 +1,22 @@
+{
+  "task_id": "extraction_table",
+  "task_name": "Extraction Table",
+  "category_id": "eval_web",
+  "category_name": "Eval Web",
+  "description": "Extract structured data from complex web tables, parse multi-level headers, handle dynamic content loading, transform data formats, and export comprehensive datasets.",
+  "author": "Arvin Xu",
+  "created_at": "2025-08-18",
+  "difficulty": "L3",
+  "tags": [
+    "data extraction"
+  ],
+  "mcp": [
+    "playwright"
+  ],
+  "meta_data": {
+    "stateType": "video",
+    "stateContent": null,
+    "stateUrl": "https://storage.mcpmark.ai/tasks_state/playwright_video/mcpmark-eval-website.mp4",
+    "stateOriginalUrl": "https://eval-web.mcpmark.ai/extraction"
+  }
+}

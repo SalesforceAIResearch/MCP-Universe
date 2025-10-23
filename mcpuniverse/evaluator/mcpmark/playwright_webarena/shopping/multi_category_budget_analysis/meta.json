@@ -1,0 +1,26 @@
+{
+  "task_id": "multi_category_budget_analysis",
+  "task_name": "Multi Category Budget Analysis",
+  "category_id": "shopping",
+  "category_name": "Shopping",
+  "description": "Analyze spending patterns across multiple product categories, optimize budget allocation, identify cost-saving opportunities, and generate comprehensive financial planning report with purchase recommendations.",
+  "author": "Yaoqi Ye",
+  "created_at": "2025-08-17",
+  "difficulty": "L3",
+  "tags": [
+    "data extraction",
+    "search aggregation",
+    "content submission",
+    "comparative analysis",
+    "inventory management"
+  ],
+  "mcp": [
+    "playwright"
+  ],
+  "meta_data": {
+    "stateType": "video",
+    "stateContent": null,
+    "stateUrl": "https://storage.mcpmark.ai/tasks_state/playwright_video/one-stop-market.mp4",
+    "stateOriginalUrl": "https://github.com/web-arena-x/webarena/tree/main/environment_docker"
+  }
+}

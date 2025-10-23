@@ -1,0 +1,23 @@
+{
+  "task_id": "requirements_writing",
+  "task_name": "Requirements Writing",
+  "category_id": "votenet",
+  "category_name": "VoteNet",
+  "description": "Generate a complete requirements.txt file containing all necessary Python dependencies for running the VoteNet codebase successfully.",
+  "author": "Lingjun Chen",
+  "created_at": "2025-08-13",
+  "difficulty": "L3",
+  "tags": [
+    "code exploration",
+    "cross-referencing"
+  ],
+  "mcp": [
+    "filesystem"
+  ],
+  "meta_data": {
+    "stateType": "text",
+    "stateContent": "votenet/\n    ├── doc/\n    │       ├── teaser.jpg\n    │       └── tips.md\n    ├── models/\n    │       ├── ap_helper.py\n    │       ├── backbone_module.py\n    │       ├── boxnet.py\n    │       ├── dump_helper.py\n    │       ├── loss_helper.py\n    │       ├── loss_helper_boxnet.py\n    │       ├── proposal_module.py\n    │       ├── votenet.py\n    │       └── voting_module.py\n    ├── pointnet2/\n    │       ├── _ext_src/\n    │       │       ├── include/\n    │       │       │       ├── ball_query.h\n    │       │       │       ├── cuda_utils.h\n    │       │       │       ├── group_points.h\n    │       │       │       ├── interpolate.h\n    │       │       │       ├── sampling.h\n    │       │       │       └── utils.h\n    │       │       └── src/\n    │       │               ├── ball_query.cpp\n    │       │               ├── ball_query_gpu.cu\n    │       │               ├── bindings.cpp\n    │       │               ├── group_points.cpp\n    │       │               ├── group_points_gpu.cu\n    │       │               ├── interpolate.cpp\n    │       │               ├── interpolate_gpu.cu\n    │       │               ├── sampling.cpp\n    │       │               └── sampling_gpu.cu\n    │       ├── pointnet2_modules.py\n    │       ├── pointnet2_test.py\n    │       ├── pointnet2_utils.py\n    │       ├── pytorch_utils.py\n    │       └── setup.py\n    ├── scannet/\n    │       ├── meta_data/\n    │       │       ├── scannet_means.npz\n    │       │       ├── scannet_train.txt\n    │       │       ├── scannetv2-labels.combined.tsv\n    │       │       ├── scannetv2_test.txt\n    │       │       ├── scannetv2_train.txt\n    │       │       └── scannetv2_val.txt\n    │       ├── scans/\n    │       ├── batch_load_scannet_data.py\n    │       ├── data_viz.py\n    │       ├── load_scannet_data.py\n    │       ├── model_util_scannet.py\n    │       ├── README.md\n    │       ├── scannet_detection_dataset.py\n    │       └── scannet_utils.py\n    ├── sunrgbd/\n    │       ├── matlab/\n    │       │       ├── extract_rgbd_data_v1.m\n    │       │       ├── extract_rgbd_data_v2.m\n    │       │       └── extract_split.m\n    │       ├── OFFICIAL_SUNRGBD/\n    │       ├── sunrgbd_trainval/\n    │       ├── model_util_sunrgbd.py\n    │       ├── README.md\n    │       ├── sunrgbd_data.py\n    │       ├── sunrgbd_detection_dataset.py\n    │       └── sunrgbd_utils.py\n    ├── utils/\n    │       ├── box_util.py\n    │       ├── eval_det.py\n    │       ├── metric_util.py\n    │       ├── nms.py\n    │       ├── nn_distance.py\n    │       ├── pc_util.py\n    │       ├── tf_logger.py\n    │       └── tf_visualizer.py\n    ├── CODE_OF_CONDUCT.md\n    ├── CONTRIBUTING.md\n    ├── demo.py\n    ├── eval.py\n    ├── LICENSE\n    ├── README.md\n    └── train.py",
+    "stateUrl": "https://storage.mcpmark.ai/filesystem/votenet.zip",
+    "stateOriginalUrl": "https://github.com/facebookresearch/votenet"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "task_id": "qwen3_issue_management",
+  "task_name": "Qwen3 Issue Management",
+  "category_id": "easyr1",
+  "category_name": "EasyR1",
+  "description": "Find and reopen all closed Qwen3-related issues with proper tagging for continued tracking and investigation.",
+  "author": "Zijian Wu",
+  "created_at": "2025-08-15",
+  "difficulty": "L3",
+  "tags": [
+    "issue management"
+  ],
+  "mcp": [
+    "github"
+  ],
+  "meta_data": {
+    "stateType": "url",
+    "stateContent": null,
+    "stateUrl": "https://github.com/mcpmark-source/EasyR1",
+    "stateOriginalUrl": "https://github.com/hiyouga/EasyR1"
+  }
+}

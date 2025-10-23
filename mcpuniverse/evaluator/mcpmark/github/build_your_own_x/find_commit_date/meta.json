@@ -1,0 +1,22 @@
+{
+  "task_id": "find_commit_date",
+  "task_name": "Find Commit Date",
+  "category_id": "build_your_own_x",
+  "category_name": "Build Your Own X",
+  "description": "Find when Voxel Engine entries were first created by Daniel Stefanovic and document the date.",
+  "author": "Xiangyan Liu",
+  "created_at": "2025-08-15",
+  "difficulty": "L3",
+  "tags": [
+    "repository analysis"
+  ],
+  "mcp": [
+    "github"
+  ],
+  "meta_data": {
+    "stateType": "url",
+    "stateContent": null,
+    "stateUrl": "https://github.com/mcpmark-source/build-your-own-x",
+    "stateOriginalUrl": "https://github.com/codecrafters-io/build-your-own-x"
+  }
+}

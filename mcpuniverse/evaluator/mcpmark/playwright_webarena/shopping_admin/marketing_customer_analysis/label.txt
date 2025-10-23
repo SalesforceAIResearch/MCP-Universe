@@ -1,0 +1,9 @@
+Top2SearchTerms|hollister:19,Joust Bag:4
+ZeroResultTerm|nike:3
+TotalSearchTerms|7
+CouponCodes|H20:$4 Luma water bottle (save 70%)
+ActiveRulesCount|4
+SubscribedCount|1
+EmailVerification|john.smith.xyz@gmail.com:yes,admin@magento.com:no
+TopProduct|Sprite Stasis Ball 65 cm:6
+TotalRevenue|$0.00

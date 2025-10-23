@@ -1,0 +1,16 @@
+<answer>
+AdvancedSearchResults|2906
+Battery1Name|LOOPACELL AG13 LR44
+Battery1Price|$3.72
+Battery2Name|Energizer MAX C
+Battery2Price|$14.87
+ComparisonCount|2
+TeaSKU|B0040WHKIY
+TeaRating|95%
+TeaReviews|4
+V8Position|3rd
+CartUniqueProducts|2
+CartTotalQuantity|3
+InitialSubtotal|$53.19
+FinalSubtotal|$72.55
+</answer>

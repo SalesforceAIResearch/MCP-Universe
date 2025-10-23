@@ -1,0 +1,33 @@
+{
+    "category": "folder_structure",
+    "question": "Please use FileSystem tools to finish the following task:\n\n### Task\n\nCopy the entire directory structure of `complex_structure/` to `complex_structure_mirror/` without copying any file contents. Do not use python code.\n\n### Requirements\n\n- Create the entire directory structure in `complex_structure_mirror/`\n- Do not copy any file contents, only create directories\n- In each empty directory, create a `placeholder.txt` file containing the absolute path of that directory\n- Handle nested directories of any depth\n- You should also follow 2 rules:\n  1. **Discard any directory that directly contains more than 2 files (only count the immediate folder).**\n  2. **If a directory name contains numbers, append \"_processed\" to the mirror directory name**\n\n### Expected Output\n\nAfter completing the task:\n- `complex_structure_mirror/` directory exists\n- All directories from `complex_structure/` are mirrored with modified names (if they contain numbers)\n- Directories with more than 2 files are excluded\n- Each empty directory contains a `placeholder.txt` file with the absolute path\n- No file contents from the source directory are copied",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "filesystem_mcpmark"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "mcpmark.filesystem.folder_structure.verify_structure_mirror",
+            "value": "completed",
+            "op_args": {},
+            "desc": "Verify directory structure mirroring with smart placeholders and rule compliance"
+        }
+    ],
+    "prepares": [
+        {
+            "prepare_func": "mcpmark_filesystem_setup",
+            "prepare_args": {}
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "mcpmark",
+            "tool": "",
+            "cleanup_func": "filesystem_cleanup",
+            "cleanup_args": {}
+        }
+    ]
+}

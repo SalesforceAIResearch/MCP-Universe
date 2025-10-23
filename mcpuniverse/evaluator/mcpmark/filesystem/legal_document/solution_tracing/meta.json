@@ -1,0 +1,23 @@
+{
+  "task_id": "solution_tracing",
+  "task_name": "Solution Tracing",
+  "category_id": "legal_document",
+  "category_name": "Legal Document",
+  "description": "Trace the evolution of clause resolutions across document versions to identify who first proposed each final accepted solution.",
+  "author": "Lingjun Chen",
+  "created_at": "2025-08-15",
+  "difficulty": "L3",
+  "tags": [
+    "cross-referencing",
+    "pattern analysis"
+  ],
+  "mcp": [
+    "filesystem"
+  ],
+  "meta_data": {
+    "stateType": "text",
+    "stateContent": "legal_document/\n    └── legal_files/\n            ├── Preferred_Stock_Purchase_Agreement_v0.txt\n            ├── Preferred_Stock_Purchase_Agreement_v1.txt\n            ├── Preferred_Stock_Purchase_Agreement_v2.txt\n            ├── Preferred_Stock_Purchase_Agreement_v3.txt\n            ├── Preferred_Stock_Purchase_Agreement_v4.txt\n            ├── Preferred_Stock_Purchase_Agreement_v5.txt\n            ├── Preferred_Stock_Purchase_Agreement_v6.txt\n            ├── Preferred_Stock_Purchase_Agreement_v7.txt\n            ├── Preferred_Stock_Purchase_Agreement_v8.txt\n            ├── Preferred_Stock_Purchase_Agreement_v9.txt\n            └── Preferred_Stock_Purchase_Agreement_v10.txt",
+    "stateUrl": "https://storage.mcpmark.ai/filesystem/legal_document.zip",
+    "stateOriginalUrl": "https://www.cooleygo.com/documents/nvca-financing-documents"
+  }
+}

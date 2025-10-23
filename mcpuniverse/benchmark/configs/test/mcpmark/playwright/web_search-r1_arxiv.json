@@ -1,0 +1,36 @@
+{
+    "category": "web_search",
+    "question": "# Web Search Task\n\nUse Playwright MCP tools to search for the DeepSeek R1 research paper and extract all the paragraphs of the Conclusion section.\n\n## Requirements:\n\n1. Search for the DeepSeek R1 research paper\n2. Navigate to the paper and find the Conclusion section\n3. Extract **ALL the paragraphs** of the Conclusion section\n4. **Provide the content in Markdown format - no explanations, no additional text**\n\n## Important Notes:\n\n- **Output ALL the paragraphs of text**\n- **Do NOT include any explanations, summaries, or additional content**\n- **The response should contain ONLY the Conclusion section content formatted in Markdown**\n\n## Expected Output:\nAll the paragraphs of the Conclusion section from the DeepSeek R1 paper, formatted in Markdown with proper paragraph structure and formatting.",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "playwright"
+        }
+    ],
+    "output_format": {
+        "conclusion_content": "Markdown formatted conclusion section"
+    },
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "mcpmark.playwright.verify_r1_arxiv",
+            "value": "completed",
+            "op_args": {},
+            "desc": "Verify AI agent extracted correct DeepSeek R1 conclusion content"
+        }
+    ],
+    "prepares": [
+        {
+            "prepare_func": "mcpmark_playwright_setup",
+            "prepare_args": {}
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "mcpmark",
+            "tool": "",
+            "cleanup_func": "playwright_cleanup",
+            "cleanup_args": {}
+        }
+    ]
+}

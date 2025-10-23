@@ -1,0 +1,25 @@
+{
+  "task_id": "hyperfocus_analysis_report",
+  "task_name": "Hyperfocus Analysis Report",
+  "category_id": "self_assessment",
+  "category_name": "Self Assessment",
+  "description": "Create a hyperfocus analysis report by analyzing high-productivity sessions with challenges.",
+  "author": "Xiangyan Liu",
+  "created_at": "2025-07-27",
+  "difficulty": "L3",
+  "tags": [
+    "conditional filtering",
+    "data aggregation",
+    "report generation",
+    "visual formatting"
+  ],
+  "mcp": [
+    "notion"
+  ],
+  "meta_data": {
+    "stateType": "url",
+    "stateContent": null,
+    "stateUrl": "https://painted-tennis-ebc.notion.site/Self-Assessment-24381626b6d780fe9f56c2ba14ea042d",
+    "stateOriginalUrl": "https://painted-tennis-ebc.notion.site/Self-Assessment-24381626b6d780fe9f56c2ba14ea042d"
+  }
+}

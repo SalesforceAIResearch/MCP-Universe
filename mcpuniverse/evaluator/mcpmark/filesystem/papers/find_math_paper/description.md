@@ -1,0 +1,3 @@
+Please use FileSystem tools to finish the following task:
+
+You are given a directory containing multiple paper files. Please help me find a math-related benchmark paper. I don’t remember its name, but I remember it not only checks whether the answer is correct, but also analyzes whether the model suffers from insufficient knowledge, lacks generalization ability, or relies on rote memorization. After finding this paper, rename its corresponding HTML file to `answer.html`.

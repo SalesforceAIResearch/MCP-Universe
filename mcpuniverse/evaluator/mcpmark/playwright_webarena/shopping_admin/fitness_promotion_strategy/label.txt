@@ -1,0 +1,11 @@
+Bestseller1|Sprite Stasis Ball 65 cm:$27.00:6:24-WG082-blue:100:Enabled
+Bestseller2|Quest Lumaflex™ Band:$19.00:6:24-UG01:100:Enabled
+Bestseller3|Sprite Yoga Strap 6 foot:$14.00:6:24-WG085:100:Enabled
+TotalRevenue|$0.00
+BestsellerInSearch|No:0
+PercentageDiscountRule|20% OFF Ever $200-plus purchase!*:20%
+ActiveRulesCount|4
+TotalOrders|308
+MostRecentOrderID|000000299
+TopCustomer|Sarah Miller:sarah.miller@example.com:General
+SameGroupCustomers|70

@@ -1,0 +1,23 @@
+{
+  "task_id": "issue_pr_commit_workflow",
+  "task_name": "Issue Pr Commit Workflow",
+  "category_id": "harmony",
+  "category_name": "Harmony",
+  "description": "Implement complete bug tracking workflow demonstrating proper cross-referencing between issues, PRs, and commits for race condition fixes.",
+  "author": "Zijian Wu",
+  "created_at": "2025-08-15",
+  "difficulty": "L3",
+  "tags": [
+    "issue management",
+    "pr workflows"
+  ],
+  "mcp": [
+    "github"
+  ],
+  "meta_data": {
+    "stateType": "url",
+    "stateContent": null,
+    "stateUrl": "https://github.com/mcpmark-source/harmony",
+    "stateOriginalUrl": "https://github.com/openai/harmony"
+  }
+}

@@ -1,0 +1,36 @@
+{
+    "category": "harmony",
+    "question": "I need you to create a comprehensive commit history report by aggregating changes from multiple branches. Here's what you need to do:\n\n**Step 1: Create Analysis Branch**\nCreate a new branch called 'history-report-2025' from the main branch.\n\n**Step 2: Generate Branch Commits Report**\nIn the 'history-report-2025' branch, create a file called `BRANCH_COMMITS.json` that contains a JSON object with the following structure:\n- For each of these branches: ['pr/45-googlefan256-main', 'pr/25-neuralsorcerer-patch-1', 'pr/41-amirhosseinghanipour-fix-race-conditions-and-offline-api']\n- List the 3 most recent commits for each branch\n- Each commit must include: SHA, GitHub username, commit message, and files changed count\n- The JSON structure should be:\n```json\n{\n  \"pr/45-googlefan256-main\": [\n    {\n      \"sha\": \"commit_sha\",\n      \"author\": \"github_username\",\n      \"message\": \"commit message\",\n      \"files_changed\": number\n    }\n  ],\n  \"pr/25-neuralsorcerer-patch-1\": [...],\n  \"pr/41-amirhosseinghanipour-fix-race-conditions-and-offline-api\": [...]\n}\n```\n\n**Step 3: Create Cross-Branch Analysis**\nCreate a file `CROSS_BRANCH_ANALYSIS.md` that contains:\n- A section \"## Top Contributors\" listing the 3 contributors with the most commits on the main branch, sorted by commit count (format: \"github_username: X commits\")\n- Must include keywords: \"contributors\"\n\n**Step 4: Generate Merge Timeline**\nCreate a file `MERGE_TIMELINE.txt` that lists the 10 most recent merge commits from the main branch:\n- Format: `DATE | MERGE_COMMIT_MESSAGE | COMMIT_SHA`\n- List in reverse chronological order (newest first)\n- Only include actual merge commits (commits that have exactly 2 parent commits)\n- Note: While the commit messages reference PR numbers, those PRs no longer exist in the repository",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "github_mcpmark"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "mcpmark_github.verify_multi_branch_commit_aggregation",
+            "value": "completed",
+            "op_args": {
+                "owner": "{{GITHUB_EVAL_ORG}}",
+                "repo": "harmony"
+            },
+            "desc": "Verify analysis branch with BRANCH_COMMITS.json, CROSS_BRANCH_ANALYSIS.md, and MERGE_TIMELINE.txt"
+        }
+    ],
+    "prepares": [
+        {
+            "prepare_func": "mcpmark_github_setup",
+            "prepare_args": {}
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "mcpmark",
+            "tool": "",
+            "cleanup_func": "github_cleanup",
+            "cleanup_args": {}
+        }
+    ]
+}

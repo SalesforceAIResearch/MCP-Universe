@@ -1,0 +1,23 @@
+{
+  "task_id": "customer_data_migration",
+  "task_name": "Customer Data Migration",
+  "category_id": "chinook",
+  "category_name": "Chinook",
+  "description": "Migrate customer data from acquired company MelodyMart into Chinook database using bulk operations and business logic.",
+  "author": "Lingxiao Du",
+  "created_at": "2025-08-12",
+  "difficulty": "L3",
+  "tags": [
+    "data migration",
+    "transactional operations"
+  ],
+  "mcp": [
+    "postgres"
+  ],
+  "meta_data": {
+    "stateType": "text",
+    "stateContent": "Table \"Album\" {\n  \"AlbumId\" int4 [pk, not null]\n  \"Title\" varchar(160) [not null]\n  \"ArtistId\" int4 [not null]\n\n  Indexes {\n    ArtistId [type: btree, name: \"IFK_AlbumArtistId\"]\n  }\n}\n\nTable \"Artist\" {\n  \"ArtistId\" int4 [pk, not null]\n  \"Name\" varchar(120)\n}\n\nTable \"Customer\" {\n  \"CustomerId\" int4 [pk, not null]\n  \"FirstName\" varchar(40) [not null]\n  \"LastName\" varchar(20) [not null]\n  \"Company\" varchar(80)\n  \"Address\" varchar(70)\n  \"City\" varchar(40)\n  \"State\" varchar(40)\n  \"Country\" varchar(40)\n  \"PostalCode\" varchar(10)\n  \"Phone\" varchar(24)\n  \"Fax\" varchar(24)\n  \"Email\" varchar(60) [not null]\n  \"SupportRepId\" int4\n\n  Indexes {\n    SupportRepId [type: btree, name: \"IFK_CustomerSupportRepId\"]\n  }\n}\n\nTable \"Employee\" {\n  \"EmployeeId\" int4 [pk, not null]\n  \"LastName\" varchar(20) [not null]\n  \"FirstName\" varchar(20) [not null]\n  \"Title\" varchar(30)\n  \"ReportsTo\" int4\n  \"BirthDate\" timestamp\n  \"HireDate\" timestamp\n  \"Address\" varchar(70)\n  \"City\" varchar(40)\n  \"State\" varchar(40)\n  \"Country\" varchar(40)\n  \"PostalCode\" varchar(10)\n  \"Phone\" varchar(24)\n  \"Fax\" varchar(24)\n  \"Email\" varchar(60)\n\n  Indexes {\n    ReportsTo [type: btree, name: \"IFK_EmployeeReportsTo\"]\n  }\n}\n\nTable \"Genre\" {\n  \"GenreId\" int4 [pk, not null]\n  \"Name\" varchar(120)\n}\n\nTable \"Invoice\" {\n  \"InvoiceId\" int4 [pk, not null]\n  \"CustomerId\" int4 [not null]\n  \"InvoiceDate\" timestamp [not null]\n  \"BillingAddress\" varchar(70)\n  \"BillingCity\" varchar(40)\n  \"BillingState\" varchar(40)\n  \"BillingCountry\" varchar(40)\n  \"BillingPostalCode\" varchar(10)\n  \"Total\" numeric(10,2) [not null]\n\n  Indexes {\n    CustomerId [type: btree, name: \"IFK_InvoiceCustomerId\"]\n  }\n}\n\nTable \"InvoiceLine\" {\n  \"InvoiceLineId\" int4 [pk, not null]\n  \"InvoiceId\" int4 [not null]\n  \"TrackId\" int4 [not null]\n  \"UnitPrice\" numeric(10,2) [not null]\n  \"Quantity\" int4 [not null]\n\n  Indexes {\n    InvoiceId [type: btree, name: \"IFK_InvoiceLineInvoiceId\"]\n    TrackId [type: btree, name: \"IFK_InvoiceLineTrackId\"]\n  }\n}\n\nTable \"MediaType\" {\n  \"MediaTypeId\" int4 [pk, not null]\n  \"Name\" varchar(120)\n}\n\nTable \"Playlist\" {\n  \"PlaylistId\" int4 [pk, not null]\n  \"Name\" varchar(120)\n}\n\nTable \"PlaylistTrack\" {\n  \"PlaylistId\" int4 [not null]\n  \"TrackId\" int4 [not null]\n\n  Indexes {\n    (PlaylistId, TrackId) [type: btree, name: \"PK_PlaylistTrack\"]\n    TrackId [type: btree, name: \"IFK_PlaylistTrackTrackId\"]\n  }\n}\n\nTable \"Track\" {\n  \"TrackId\" int4 [pk, not null]\n  \"Name\" varchar(200) [not null]\n  \"AlbumId\" int4\n  \"MediaTypeId\" int4 [not null]\n  \"GenreId\" int4\n  \"Composer\" varchar(220)\n  \"Milliseconds\" int4 [not null]\n  \"Bytes\" int4\n  \"UnitPrice\" numeric(10,2) [not null]\n\n  Indexes {\n    AlbumId [type: btree, name: \"IFK_TrackAlbumId\"]\n    GenreId [type: btree, name: \"IFK_TrackGenreId\"]\n    MediaTypeId [type: btree, name: \"IFK_TrackMediaTypeId\"]\n  }\n}\n\nRef \"FK_AlbumArtistId\":\"Artist\".\"ArtistId\" < \"Album\".\"ArtistId\"\n\nRef \"FK_CustomerSupportRepId\":\"Employee\".\"EmployeeId\" < \"Customer\".\"SupportRepId\"\n\nRef \"FK_EmployeeReportsTo\":\"Employee\".\"EmployeeId\" < \"Employee\".\"ReportsTo\"\n\nRef \"FK_InvoiceCustomerId\":\"Customer\".\"CustomerId\" < \"Invoice\".\"CustomerId\"\n\nRef \"FK_InvoiceLineInvoiceId\":\"Invoice\".\"InvoiceId\" < \"InvoiceLine\".\"InvoiceId\"\n\nRef \"FK_InvoiceLineTrackId\":\"Track\".\"TrackId\" < \"InvoiceLine\".\"TrackId\"\n\nRef \"FK_PlaylistTrackPlaylistId\":\"Playlist\".\"PlaylistId\" < \"PlaylistTrack\".\"PlaylistId\"\n\nRef \"FK_PlaylistTrackTrackId\":\"Track\".\"TrackId\" < \"PlaylistTrack\".\"TrackId\"\n\nRef \"FK_TrackAlbumId\":\"Album\".\"AlbumId\" < \"Track\".\"AlbumId\"\n\nRef \"FK_TrackGenreId\":\"Genre\".\"GenreId\" < \"Track\".\"GenreId\"\n\nRef \"FK_TrackMediaTypeId\":\"MediaType\".\"MediaTypeId\" < \"Track\".\"MediaTypeId\"\n",
+    "stateUrl": null,
+    "stateOriginalUrl": "https://github.com/neondatabase-labs/postgres-sample-dbs/blob/main/chinook.sql"
+  }
+}

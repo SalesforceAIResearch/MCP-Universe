@@ -1,0 +1,41 @@
+{
+    "category": "chinook",
+    "question": "Manage employee hierarchy and customer assignments through systematic CRUD operations.\n\n## Your Mission:\n\nChinook needs to reorganize their employee structure and reassign customer relationships. Complete a series of precise database modifications to update the employee hierarchy.\n\n## Tasks to Complete:\n\n### 1. **INSERT: Add New Employees**\nInsert exactly 2 new employees into the Employee table:\n- EmployeeId: 9, FirstName: 'Sarah', LastName: 'Johnson', Title: 'Sales Support Agent', ReportsTo: 2, BirthDate: '1985-03-15', HireDate: '2009-01-10', Address: '123 Oak Street', City: 'Calgary', State: 'AB', Country: 'Canada', PostalCode: 'T2P 5G3', Phone: '+1 (403) 555-0123', Fax: '+1 (403) 555-0124', Email: 'sarah.johnson@chinookcorp.com'\n- EmployeeId: 10, FirstName: 'Mike', LastName: 'Chen', Title: 'Sales Support Agent', ReportsTo: 2, BirthDate: '1982-08-22', HireDate: '2009-01-10', Address: '456 Pine Ave', City: 'Calgary', State: 'AB', Country: 'Canada', PostalCode: 'T2P 5G4', Phone: '+1 (403) 555-0125', Fax: '+1 (403) 555-0126', Email: 'mike.chen@chinookcorp.com'\n\n### 2. **UPDATE: Modify Existing Employee Information**\n- Change Andrew Adams (EmployeeId = 1) title from 'General Manager' to 'CEO'\n- Update Nancy Edwards (EmployeeId = 2) phone number to '+1 (403) 555-9999'\n- Change all employees with Title = 'IT Staff' to have Title = 'IT Specialist'\n\n### 3. **UPDATE: Reassign Some Customers to New Employees**\n- Update customers with CustomerId 1, 2, 3 to have SupportRepId = 9 (Sarah Johnson)\n- Update customers with CustomerId 4, 5, 6 to have SupportRepId = 10 (Mike Chen)\n\n### 4. **UPDATE: Reorganize Reporting Structure**\n- Change Sarah Johnson (EmployeeId = 9) to report to Andrew Adams (EmployeeId = 1) instead of Nancy Edwards\n- Change Mike Chen (EmployeeId = 10) to also report to Andrew Adams (EmployeeId = 1)\n\n### 5. **INSERT: Create Employee Performance Table**\nCreate a new table called `employee_performance`:\n- `employee_id` (integer, foreign key to Employee)\n- `customers_assigned` (integer)\n- `performance_score` (decimal)\n\nInsert records for employees 9 and 10 by calculating their actual customer assignments:\n- Sarah Johnson: calculate actual number of customers assigned to her, performance score 4.5\n- Mike Chen: calculate actual number of customers assigned to him, performance score 4.2\n\n### 6. **DELETE: Remove IT Department Employee**\n- Delete Robert King (EmployeeId = 7) from the Employee table\n- Before deletion, handle all relationships:\n  - Find who Robert reports to and reassign any employees who report to Robert to report to Robert's manager instead\n  - Find all customers assigned to Robert as their support rep and reassign them to Robert's manager\n\n### 7. **UPDATE: Promote Remaining IT Staff**\n- Promote Laura Callahan (EmployeeId = 8) from 'IT Specialist' to 'Senior IT Specialist'  \n- Update her salary information by adding a new column `salary` to Employee table (decimal type)\n- Set Laura's salary to 75000.00 and all other employees to 50000.00\n\n### 8. **Final Verification Query**\nExecute this exact query to verify all changes:\n\n```sql\nSELECT \n    COUNT(*) as total_employees,\n    COUNT(CASE WHEN \"Title\" = 'CEO' THEN 1 END) as ceo_count,\n    COUNT(CASE WHEN \"Title\" = 'IT Specialist' THEN 1 END) as it_specialist_count,\n    COUNT(CASE WHEN \"ReportsTo\" = 1 THEN 1 END) as reports_to_ceo\nFROM \"Employee\";\n```",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "postgres-pro"
+        }
+    ],
+    "output_format": {
+        "hierarchy_status": "Employee hierarchy management completion report"
+    },
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "postgres_employee_hierarchy_verifier",
+            "value": "success",
+            "op_args": {
+                "total_employees": "9",
+                "ceo_count": "1",
+                "it_specialist_count": "1",
+                "reports_to_ceo": "4"
+            },
+            "desc": "Check if the AI agent completed the employee hierarchy management with correct verification results"
+        }
+    ],
+    "prepares": [
+        {
+            "prepare_func": "mcpmark_postgres_setup",
+            "prepare_args": {}
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "mcpmark",
+            "tool": "",
+            "cleanup_func": "postgres_cleanup",
+            "cleanup_args": {}
+        }
+    ]
+}

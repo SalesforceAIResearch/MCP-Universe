@@ -1,0 +1,13 @@
+- Total_Year_Posts|1
+- Top1_Title|Who will win the Oscar for ACTRESS IN A SUPPORTING ROLE?
+- Top1_Upvotes|9933
+- Top1_Comments|23
+- Top2_Title|Who will win the Oscar for FILM EDITING?
+- Top2_Upvotes|7720
+- Top2_Comments|20
+- Top3_Title|Cindy Williams Dies: 'Laverne & Shirley' Star Who Appeared In 'American Graffiti' & 'The Conversation' Was 75
+- Top3_Upvotes|5268
+- Top3_Comments|190
+- Rittenhouse_Upvotes|2761
+- Rittenhouse_Comments|182
+- Total_Image_Posts_5Pages|6

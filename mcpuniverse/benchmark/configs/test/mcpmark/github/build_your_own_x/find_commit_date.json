@@ -1,0 +1,37 @@
+{
+    "category": "build_your_own_x",
+    "question": "See the current repository that you have access to. Find out when the entries in the Voxel Engine section were first created by Daniel Stefanovic. After finding this information, create an ANSWER.md file in the repository with the content being the date in [YYYY]-[MM]-[DD] format (e.g., 2000-06-02).",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "github_mcpmark"
+        }
+    ],
+    "prepares": [
+        {
+            "prepare_func": "mcpmark_github_setup",
+            "prepare_args": {}
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "mcpmark",
+            "tool": "",
+            "cleanup_func": "github_cleanup",
+            "cleanup_args": {}
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "mcpmark_github.verify_commit_date",
+            "value": "2018-07-07",
+            "op_args": {
+                "owner": "{{GITHUB_EVAL_ORG}}",
+                "repo": "build-your-own-x",
+                "branch": "master"
+            },
+            "desc": "Verify that ANSWER.md contains the correct date when Voxel Engine entries were first created"
+        }
+    ]
+}

@@ -1,0 +1,33 @@
+{
+    "category": "japan_travel_planner",
+    "question": "Please find the restaurants that appear in Day 1 of the Travel Itinerary database, then create corresponding entries in the Expenses database, one restaurant per entry. Set the date uniformly to Jan 1, 2025, and the cost uniformly to $120. Display the restaurant name in the Expense field. Set Category to Dining. For Comment, use the Description from the corresponding restaurant page. Leave other properties empty.",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "notion_mcpmark"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "mcpmark.notion.verify_restaurant_expenses_sync",
+            "value": "completed",
+            "op_args": {},
+            "desc": "Verify Day 1 restaurants synced to Expenses database with correct properties"
+        }
+    ],
+    "prepares": [
+        {
+            "prepare_func": "mcpmark_notion_setup",
+            "prepare_args": {}
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "mcpmark",
+            "tool": "",
+            "cleanup_func": "notion_cleanup",
+            "cleanup_args": {}
+        }
+    ]
+}

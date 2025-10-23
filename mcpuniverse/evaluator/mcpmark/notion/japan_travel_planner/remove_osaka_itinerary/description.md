@@ -1,0 +1,1 @@
+Go to Japan Travel Planner and remove the itinerary in OSAKA after 6 PM (excluding 6 PM) in Day 1 and Day 2.

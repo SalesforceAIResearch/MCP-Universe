@@ -1,0 +1,36 @@
+{
+    "category": "shopping_admin",
+    "question": "Our company is planning to expand sales operations to New York state and needs a comprehensive analysis of our current sales performance and tax implications. Please help me gather critical data for our expansion feasibility report.\n\n\n**Important:** The Magento Admin panel is accessible at http://localhost:7780/admin\n\n**Task Requirements:**\n\n1. Log in with username 'admin' and password 'admin1234'\n\n2. First, analyze our current sales performance on the dashboard:\n   - Check the 'Lifetime Sales' amount displayed\n   - In the Bestsellers table, identify which product has lowest price and record its exact name, price, and quantity sold\n   - Find if this same product appears in the 'Last Orders' table, and if so, note which customer(s) ordered it, if no, note 'No'\n\n3. Since we're expanding to New York, we need check tax:\n   - Find and record the exact tax rate for New York state\n   - Compare it with California's tax rate - record which state has a higher rate\n   - Count how many different US states currently have tax configurations\n\n4. You need to understand our order status of stores processing for the NY market:\n   - Filter orders to show only statuses that are 'Visible On Storefront = Yes'\n   - Among these visible statuses, identify if exists one has the status code 'processing' (Yes or No),\n   - Check if this 'processing' status is set as a 'Default Status' (Yes or No)\n\n\n5. Since New York orders might need special handling, check all stores:\n   - Note the number of website configured\n   - Record the store code for the first Main Website Store\n\n6. For inventory planning, check the sources of it:\n   - Check if the Default Source is currently 'Enabled' or shows as 'Disabled' for Pickup Location\n   - Click the 'Edit' link for the Default Source and check if there's a 'State/Province' field (Yes or No)\n\n7. Finally, return to the Dashboard and examine the revenue metrics:\n   - Record the current Revenue amount shown\n   - Check if Tax and Shipping amounts are both $0.00 (Yes or No)\n\n**Please provide your findings in the following exact format:**\n\n```\n<answer>\nLifetime_Sales_Amount|amount\nCheap_Bestseller_Name|name\nSecond_Bestseller_Price|price\nSecond_Bestseller_Quantity|quantity\nProduct_In_Last_Orders|yes_or_no\nNY_Tax_Rate|rate\nCA_Tax_Rate|rate\nHigher_Tax_State|state\nTotal_States_With_Tax|count\nProcessing_Visible_Storefront|Yes_or_No\nProcessing_Default_Status|Yes_or_No\nNumber_Of_Websites|count\nMain_Store_Code|code\nDefault_Source_Pickup_Status|status\nDefault_Source_State|state_or_none\nDashboard_Revenue|amount\nTax_Shipping_Zero|yes_or_no\n</answer>\n```\n\n**Example Output:**\n```\n<answer>\nLifetime_Sales_Amount|$XX.XX\nCheap_Bestseller_Name|Product Name Here\nSecond_Bestseller_Price|$XX.XX\nSecond_Bestseller_Quantity|XX\nProduct_In_Last_Orders|Yes/No\nNY_Tax_Rate|X.XXXX\nCA_Tax_Rate|X.XXXX\nHigher_Tax_State|XX\nTotal_States_With_Tax|XX\nProcessing_Visible_Storefront|Yes/No\nProcessing_Default_Status|Yes/No\nNumber_Of_Websites|X\nMain_Store_Code|code_here\nDefault_Source_Pickup_Status|Enabled/Disabled\nDefault_Source_State|State or None\nDashboard_Revenue|$XX.XX\nTax_Shipping_Zero|Yes/No\n</answer>\n```",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "playwright"
+        }
+    ],
+    "output_format": {
+        "expansion_analysis": "Structured answer format"
+    },
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "mcpmark.playwright.verify_ny_expansion_analysis",
+            "value": "completed",
+            "op_args": {},
+            "desc": "Verify AI agent completed NY expansion analysis task with correct structured output"
+        }
+    ],
+    "prepares": [
+        {
+            "prepare_func": "mcpmark_playwright_webarena_setup",
+            "prepare_args": {}
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "mcpmark",
+            "tool": "",
+            "cleanup_func": "playwright_webarena_cleanup",
+            "cleanup_args": {}
+        }
+    ]
+}

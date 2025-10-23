@@ -1,0 +1,23 @@
+{
+  "task_id": "issue_management_workflow",
+  "task_name": "Issue Management Workflow",
+  "category_id": "mcpmark-cicd",
+  "category_name": "MCPMark CI/CD",
+  "description": "Build intelligent issue management automation with auto-triage, task breakdown for epics, and first-time contributor handling.",
+  "author": "Zijian Wu",
+  "created_at": "2025-08-15",
+  "difficulty": "L3",
+  "tags": [
+    "issue management",
+    "workflow automation"
+  ],
+  "mcp": [
+    "github"
+  ],
+  "meta_data": {
+    "stateType": "url",
+    "stateContent": null,
+    "stateUrl": "https://github.com/mcpmark-source/mcpmark-cicd",
+    "stateOriginalUrl": null
+  }
+}

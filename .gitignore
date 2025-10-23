@@ -198,3 +198,10 @@ tests/gpt-oss/
 mcpuniverse/evaluator/blender/check_functions/evaluated_results/
 mcpuniverse/evaluator/blender/blend_files/
 tests/cursor/
+
+# mcpmark test environments and data
+test_environments/
+temp_environments/
+github_state/
+tests/data/postgres/
+tests/data/playwright_webarena/

@@ -1,0 +1,17 @@
+Lifetime_Sales_Amount|$0.00
+Cheap_Bestseller_Name|Sprite Yoga Strap 6 foot
+Second_Bestseller_Price|$14.00
+Second_Bestseller_Quantity|6
+Product_In_Last_Orders|No
+NY_Tax_Rate|8.3750
+CA_Tax_Rate|8.2500
+Higher_Tax_State|NY
+Total_States_With_Tax|2
+Processing_Visible_Storefront|Yes
+Processing_Default_Status|Yes
+Number_Of_Websites|1
+Main_Store_Code|main_website_store
+Default_Source_Pickup_Status|Enabled
+Default_Source_State|No
+Dashboard_Revenue|$0.00
+Tax_Shipping_Zero|Yes

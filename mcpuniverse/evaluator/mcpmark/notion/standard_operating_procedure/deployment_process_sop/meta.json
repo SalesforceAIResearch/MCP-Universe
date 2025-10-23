@@ -1,0 +1,25 @@
+{
+  "task_id": "deployment_process_sop",
+  "task_name": "Deployment Process SOP",
+  "category_id": "standard_operating_procedure",
+  "category_name": "Standard Operating Procedure",
+  "description": "Complete the SOP template with comprehensive content for a Software Deployment Process with interconnected sections.",
+  "author": "Xiangyan Liu",
+  "created_at": "2025-07-27",
+  "difficulty": "L3",
+  "tags": [
+    "template population",
+    "cross-reference linking",
+    "content organization",
+    "visual formatting"
+  ],
+  "mcp": [
+    "notion"
+  ],
+  "meta_data": {
+    "stateType": "url",
+    "stateContent": null,
+    "stateUrl": "https://painted-tennis-ebc.notion.site/Standard-Operating-Procedure-24381626b6d780a8b678f9e62ae5b152",
+    "stateOriginalUrl": "https://www.notion.so/marketplace/templates/standard-operating-procedure"
+  }
+}

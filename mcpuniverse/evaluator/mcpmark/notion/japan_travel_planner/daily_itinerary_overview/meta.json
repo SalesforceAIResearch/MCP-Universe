@@ -1,0 +1,25 @@
+{
+  "task_id": "daily_itinerary_overview",
+  "task_name": "Daily Itinerary Overview",
+  "category_id": "japan_travel_planner",
+  "category_name": "Japan Travel Planner",
+  "description": "Create a comprehensive daily itinerary overview page to organize Japan travel plans with structured day-by-day activities.",
+  "author": "Xiangyan Liu",
+  "created_at": "2025-07-27",
+  "difficulty": "L3",
+  "tags": [
+    "database manipulation",
+    "data aggregation",
+    "report generation",
+    "visual formatting",
+    "status tracking"
+  ],
+  "mcp": [
+    "notion"
+  ],
+  "meta_data": {
+    "stateType": "url",
+    "stateContent": null,
+    "stateUrl": "https://painted-tennis-ebc.notion.site/Japan-Travel-Planner-23181626b6d781c4b6bedb12786b5abe"
+  }
+}

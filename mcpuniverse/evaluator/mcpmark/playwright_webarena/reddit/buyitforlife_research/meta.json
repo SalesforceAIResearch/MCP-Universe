@@ -1,0 +1,25 @@
+{
+  "task_id": "buyitforlife_research",
+  "task_name": "Buy It For Life Research",
+  "category_id": "reddit",
+  "category_name": "Reddit",
+  "description": "Research durable lifetime-quality products by creating forum account, analyzing community recommendations, extracting product data, and compiling comprehensive durability report with voting metrics.",
+  "author": "Fanqing Meng",
+  "created_at": "2025-08-12",
+  "difficulty": "L3",
+  "tags": [
+    "user interaction",
+    "data extraction",
+    "search aggregation",
+    "content submission"
+  ],
+  "mcp": [
+    "playwright"
+  ],
+  "meta_data": {
+    "stateType": "video",
+    "stateContent": null,
+    "stateUrl": "https://storage.mcpmark.ai/tasks_state/playwright_video/postmill.mp4",
+    "stateOriginalUrl": "https://github.com/web-arena-x/webarena/tree/main/environment_docker"
+  }
+}

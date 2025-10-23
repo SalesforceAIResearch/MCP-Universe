@@ -1,0 +1,33 @@
+{
+    "category": "desktop",
+    "question": "Please use FileSystem tools to finish the following task:\n\nRead all the files under current path, extract every time/plan information that clearly indicates 2024, and integrate them into a list and create a file in main directory called `timeline.txt`. Write the timeline in the file in the following format.\n\n### Rules\n- If a task only shows month without day, use the 1st day of that month\n- If a task only shows year without month and day, skip it.\n- If a file shows multiple tasks on the same date, count only once per date\n\n### Output Format\n- Each line format: `file_path:time`\n    - `file_path`: The file path where this time information appears (**relative to the current path**)\n    - `time`: Specific time, if it's a time period, write the start time (YYYY-MM-DD)\n\n### Sorting Requirements\n- Sort by chronological order",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "filesystem_mcpmark"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "mcpmark.filesystem.desktop.verify_timeline_extraction",
+            "value": "completed",
+            "op_args": {},
+            "desc": "Verify timeline extraction with correct date format, chronological order, and all expected entries"
+        }
+    ],
+    "prepares": [
+        {
+            "prepare_func": "mcpmark_filesystem_setup",
+            "prepare_args": {}
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "mcpmark",
+            "tool": "",
+            "cleanup_func": "filesystem_cleanup",
+            "cleanup_args": {}
+        }
+    ]
+}

@@ -1,0 +1,7 @@
+- Deeplearning_Post_Count|25
+- ChatGPT_Tool_Vote_Count|2655
+- Transformer_Third_Result|[R] The Table Feature Transformation Library Release
+- Page2_Top_Post_Title|[D]GPT-4 might be able to tell you if it hallucinated
+- Page2_Top_Post_Votes|634
+- Page2_Last_Comment_Username|Nous_AI
+- Page2_Last_Comment_Text|Fascinating.

@@ -1,0 +1,36 @@
+{
+    "category": "dvdrental",
+    "question": "Fix the customer analysis query that is producing incorrect results.\n\n## Background\n\nThe data analytics team attempted to create a customer behavior analysis query to identify active customers and analyze their spending patterns and preferences. The requirements are:\n- Only count rentals that have associated payment records (paid rentals)\n- Only include customers with at least 15 paid rentals\n- Only include customers with valid email addresses\n\nHowever, they're getting incorrect results - the query is over-counting rentals and calculating wrong spending amounts. \n\nYour task is to fix this query to produce accurate results.",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "postgres-pro"
+        }
+    ],
+    "output_format": {
+        "fix_status": "Customer analysis query fix completion report"
+    },
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "postgres_customer_analysis_fix_verifier",
+            "value": "success",
+            "op_args": {},
+            "desc": "Check if the AI agent fixed the customer analysis query to produce accurate results"
+        }
+    ],
+    "prepares": [
+        {
+            "prepare_func": "mcpmark_postgres_setup",
+            "prepare_args": {}
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "mcpmark",
+            "tool": "",
+            "cleanup_func": "postgres_cleanup",
+            "cleanup_args": {}
+        }
+    ]
+}
