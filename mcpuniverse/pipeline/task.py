@@ -11,7 +11,7 @@ import os
 from typing import Literal
 from contextlib import AsyncExitStack
 from dotenv import load_dotenv
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from celery import Task as CeleryTask
 from mcpuniverse.common.logger import get_logger
 from mcpuniverse.benchmark.task import TaskConfig, Task
@@ -39,6 +39,7 @@ class TaskInput(BaseModel):
     agent_index: int
     task_config: TaskConfig
     agent_state: str = ""
+    metadata: dict = Field(default_factory=dict)
 
 
 class AgentTask(CeleryTask):
@@ -150,6 +151,7 @@ class AgentTask(CeleryTask):
             await agent.cleanup()
 
             return {
+                "metadata": task_input.metadata,
                 "result": result,
                 "evaluation_results": evaluation_results,
                 "trace": trace_records
