@@ -13,7 +13,8 @@ class TestBenchmarkRunnerMCPMarkGitHub(unittest.IsolatedAsyncioTestCase):
         """Test MCPMark GitHub tasks (Build Your Own X + Claude Code)."""
         trace_collector = FileCollector(log_file="log/mcpmark_github.log")
         benchmark = BenchmarkRunner("test/mcpmark_github.yaml")
-        benchmark_results = await benchmark.run(trace_collector=trace_collector, callbacks=get_vprint_callbacks())
+        benchmark_results = await benchmark.run(trace_collector=trace_collector,
+                                                callbacks=get_vprint_callbacks())
         report = BenchmarkReport(benchmark, trace_collector=trace_collector)
         report.dump()
 
@@ -29,7 +30,8 @@ class TestBenchmarkRunnerMCPMarkGitHub(unittest.IsolatedAsyncioTestCase):
                 print("op:", eval_result.config.op)
                 print("op_args:", eval_result.config.op_args)
                 print("value:", eval_result.config.value)
-                print('Passed?:', "\033[32mTrue\033[0m" if eval_result.passed else "\033[31mFalse\033[0m")
+                print('Passed?:', "\033[32mTrue\033[0m" if eval_result.
+                      passed else "\033[31mFalse\033[0m")
                 print('-' * 66)
 
 
