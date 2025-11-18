@@ -1,9 +1,13 @@
+"""Verification module for Faq Column Layout task in Notion workspace."""
+
+# pylint: disable=duplicate-code,import-error,astroid-error
+
 import sys
 from notion_client import Client
 from mcpuniverse.evaluator.mcpmark.notion.utils import notion_utils
 
 
-def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
+def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:  # pylint: disable=too-many-branches,too-many-locals,too-many-return-statements,too-many-statements
     """
     Verifies that the FAQ toggle has been properly reorganized with a column list.
     """
@@ -68,11 +72,11 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
     # Check if any of these are heading_3 or paragraph blocks (Q&A content)
     for block in direct_faq_children:
         if block.get("type") in ["heading_3", "paragraph"]:
-            print(
-                f"Error: Found Q&A content outside column_list: {notion_utils.get_block_plain_text(block)[:50]}...",
-                file=sys.stderr,
-            )
-            return False, f"Error: Found Q&A content outside column_list: {notion_utils.get_block_plain_text(block)[:50]}..."
+            block_text = notion_utils.get_block_plain_text(block)[:50]
+            msg = (f"Error: Found Q&A content outside column_list: "
+                   f"{block_text}...")
+            print(msg, file=sys.stderr)
+            return False, msg
 
     # Find the two columns
     columns = []
@@ -133,7 +137,7 @@ def main():
     """
     notion = notion_utils.get_notion_client()
     main_id = sys.argv[1] if len(sys.argv) > 1 else None
-    success, error_msg = verify(notion, main_id)
+    success, _error_msg = verify(notion, main_id)
     if success:
         sys.exit(0)
     else:

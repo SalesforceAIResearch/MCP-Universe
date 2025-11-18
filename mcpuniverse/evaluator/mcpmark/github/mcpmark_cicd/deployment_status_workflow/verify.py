@@ -1,8 +1,12 @@
+"""Verification module for deployment status workflow in mcpmark-cicd repository."""
+# pylint: disable=R0912,R1702,astroid-error,duplicate-code,import-error
+import datetime
 import sys
 import os
-import requests
 import time
 from typing import Dict, List, Optional, Tuple
+import re
+import requests
 from dotenv import load_dotenv
 
 
@@ -15,12 +19,11 @@ def _get_github_api(
         response = requests.get(url, headers=headers)
         if response.status_code == 200:
             return True, response.json()
-        elif response.status_code == 404:
+        if response.status_code == 404:
             return False, None
-        else:
-            print(f"API error for {endpoint}: {response.status_code}", file=sys.stderr)
-            return False, None
-    except Exception as e:
+        print(f"API error for {endpoint}: {response.status_code}", file=sys.stderr)
+        return False, None
+    except (requests.RequestException, IOError, OSError, ValueError) as e:
         print(f"Exception for {endpoint}: {e}", file=sys.stderr)
         return False, None
 
@@ -35,10 +38,9 @@ def _search_github_issues(
         if response.status_code == 200:
             data = response.json()
             return True, data.get("items", [])
-        else:
-            print(f"Search API error: {response.status_code}", file=sys.stderr)
-            return False, None
-    except Exception as e:
+        print(f"Search API error: {response.status_code}", file=sys.stderr)
+        return False, None
+    except (requests.RequestException, IOError, OSError, ValueError) as e:
         print(f"Search exception: {e}", file=sys.stderr)
         return False, None
 
@@ -88,9 +90,9 @@ def _wait_for_workflow_completion(
                     # Wait until NO workflows are running
                     if running_count == 0:
                         if failed_count > 0:
-                            print(
-                                f"⚠️ Warning: {failed_count} workflow runs failed, but continuing verification..."
-                            )
+                            msg = (f"⚠️ Warning: {failed_count} workflow runs "
+                                   f"failed, but continuing verification...")
+                            print(msg)
 
                         print(
                             f"✅ All workflows completed. Found {completed_count} completed runs."
@@ -105,22 +107,20 @@ def _wait_for_workflow_completion(
                     # No workflow runs found
                     no_workflow_check_count += 1
                     if no_workflow_check_count == 1:
-                        print(
-                            "   No workflow runs found yet, waiting 5 seconds and checking once more..."
-                        )
+                        print("   No workflow runs found yet, waiting 5 "
+                              "seconds and checking once more...")
                         time.sleep(5)
                         continue
-                    elif no_workflow_check_count >= 2:
-                        print(
-                            "⚠️ No workflow runs detected after 2 checks. Workflow may not have been triggered."
-                        )
+                    if no_workflow_check_count >= 2:
+                        print("⚠️ No workflow runs detected after 2 checks. "
+                              "Workflow may not have been triggered.")
                         print("   Continuing with verification...")
                         return False
 
             print(f"⏳ Still waiting... ({int(time.time() - start_time)}s elapsed)")
             time.sleep(5)
 
-        except Exception as e:
+        except (requests.RequestException, IOError, OSError, ValueError, KeyError, TypeError) as e:
             print(f"⚠️ Error checking workflow status: {e}")
             time.sleep(5)
 
@@ -198,7 +198,6 @@ def _verify_workflow_runs(
 
         if len(job_times) >= 3:
             # Check that jobs ran in correct sequence
-            import datetime
 
             times = {
                 name: datetime.datetime.fromisoformat(time.replace("Z", "+00:00"))
@@ -263,7 +262,8 @@ def _verify_deployment_issue(
     # Check that issue is closed
     if deployment_issue.get("state") != "closed":
         errors.append(
-            f"Deployment issue #{issue_number} is not closed (state: {deployment_issue.get('state')})"
+            f"Deployment issue #{issue_number} is not closed "
+            f"(state: {deployment_issue.get('state')})"
         )
     else:
         print(f"   ✅ Deployment issue #{issue_number} is closed")
@@ -362,7 +362,6 @@ def _verify_deployment_issue(
 
         # Extract and verify previous commit SHA
         if "**Previous Commit**:" in rollback_comment:
-            import re
 
             prev_sha_match = re.search(
                 r"\*\*Previous Commit\*\*:\s*([a-f0-9]{40})", rollback_comment
@@ -467,7 +466,8 @@ def verify() -> tuple[bool, str]:
         print("🎉 All Deployment Status Workflow verifications PASSED!")
         print("\n📋 Summary:")
         print(
-            "   ✅ Workflow runs with correct 3 sequential jobs: pre-deployment, rollback-preparation, post-deployment"
+            "   ✅ Workflow runs with correct 3 sequential jobs: "
+            "pre-deployment, rollback-preparation, post-deployment"
         )
         print("   ✅ Deployment tracking issue created and closed with proper labels")
         print("   ✅ Issue contains rollback plan with all required elements")
@@ -477,15 +477,14 @@ def verify() -> tuple[bool, str]:
             "\n🤖 The GitHub Actions deployment status workflow is working correctly!"
         )
         return True, ""
-    else:
-        print("❌ Deployment Status Workflow verification FAILED!")
-        print("   Some components did not meet the expected automation requirements.")
-        return False, "Deployment Status Workflow verification failed"
+    print("❌ Deployment Status Workflow verification FAILED!")
+    print("   Some components did not meet the expected automation requirements.")
+    return False, "Deployment Status Workflow verification failed"
 
 
 def main():
     """Main verification function."""
-    success, error_msg = verify()
+    success, _error_msg = verify()
     if success:
         sys.exit(0)
     else:

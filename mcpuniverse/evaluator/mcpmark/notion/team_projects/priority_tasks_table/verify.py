@@ -1,3 +1,7 @@
+"""Verification module for Priority Tasks Table task in Notion workspace."""
+
+# pylint: disable=duplicate-code,import-error,astroid-error
+
 import sys
 from datetime import datetime
 from notion_client import Client
@@ -95,14 +99,14 @@ def _parse_date(value: str):
         return None
 
 
-def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
+def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:  # pylint: disable=too-many-branches,too-many-locals,too-many-return-statements,too-many-statements
     """Verify that the last table in the 'Team Projects' page matches EXPECTED_ROWS and headers."""
     page_id = None
     if main_id:
         found_id, object_type = notion_utils.find_page_or_database_by_id(notion, main_id)
         if found_id and object_type == 'page':
             page_id = found_id
-    
+
     if not page_id:
         page_id = notion_utils.find_page(notion, "Team Projects")
     if not page_id:
@@ -129,8 +133,10 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
     header_cells = rows[0].get("table_row", {}).get("cells", [])
     headers = [_plain_text_from_cell(c) for c in header_cells]
     if headers != EXPECTED_HEADERS:
-        print(f"Error: Table headers mismatch. Found {headers}, expected {EXPECTED_HEADERS}.", file=sys.stderr)
-        return False, f"Table headers mismatch. Found {headers}, expected {EXPECTED_HEADERS}"
+        msg = (f"Error: Table headers mismatch. Found {headers}, "
+               f"expected {EXPECTED_HEADERS}.")
+        print(msg, file=sys.stderr)
+        return False, msg
 
     # Parse data rows
     data_rows = []
@@ -154,8 +160,12 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
         data_rows.append(row_dict)
 
     if len(data_rows) != len(EXPECTED_ROWS):
-        print(f"Error: Expected {len(EXPECTED_ROWS)} data rows, found {len(data_rows)}.", file=sys.stderr)
-        return False, f"Expected {len(EXPECTED_ROWS)} data rows, found {len(data_rows)}"
+        expected_count = len(EXPECTED_ROWS)
+        found_count = len(data_rows)
+        msg = (f"Error: Expected {expected_count} data rows, "
+               f"found {found_count}.")
+        print(msg, file=sys.stderr)
+        return False, msg
 
     # Verify sorting by End Date ascending
     parsed_end_dates = [_parse_date(r["End Date"]) for r in data_rows]
@@ -181,27 +191,41 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
         actual_hours = actual["Eng Hours"]
         if expected_hours is None:
             if actual_hours is not None:
-                print(f"Error: Eng Hours for '{proj}' expected to be empty/N\u204aA but found '{actual_hours}'.", file=sys.stderr)
-                return False, f"Eng Hours for '{proj}' expected to be empty/N/A but found '{actual_hours}'"
+                msg = (f"Error: Eng Hours for '{proj}' expected to be "
+                       f"empty/N/A but found '{actual_hours}'.")
+                print(msg, file=sys.stderr)
+                return False, msg
         else:
             if actual_hours is None or abs(actual_hours - expected_hours) > 1e-2:
-                print(f"Error: Eng Hours for '{proj}' mismatch. Expected {expected_hours}, found {actual_hours}.", file=sys.stderr)
-                return False, f"Eng Hours for '{proj}' mismatch. Expected {expected_hours}, found {actual_hours}"
+                msg = (f"Error: Eng Hours for '{proj}' mismatch. "
+                       f"Expected {expected_hours}, found {actual_hours}.")
+                print(msg, file=sys.stderr)
+                return False, msg
 
         # Compare Progress with tolerance
         expected_progress = expected["Progress"]
         actual_progress = actual["Progress"]
         if actual_progress is None or abs(actual_progress - expected_progress) > 1e-2:
-            print(f"Error: Progress for '{proj}' mismatch. Expected {expected_progress}, found {actual_progress}.", file=sys.stderr)
-            return False, f"Progress for '{proj}' mismatch. Expected {expected_progress}, found {actual_progress}"
+            msg = (f"Error: Progress for '{proj}' mismatch. "
+                   f"Expected {expected_progress}, found {actual_progress}.")
+            print(msg, file=sys.stderr)
+            return False, msg
 
         # Compare Start and End Dates (string equality)
         if actual["Start Date"] != expected["Start Date"]:
-            print(f"Error: Start Date for '{proj}' mismatch. Expected {expected['Start Date']}, found {actual['Start Date']}.", file=sys.stderr)
-            return False, f"Start Date for '{proj}' mismatch. Expected {expected['Start Date']}, found {actual['Start Date']}"
+            expected_start = expected['Start Date']
+            actual_start = actual['Start Date']
+            msg = (f"Error: Start Date for '{proj}' mismatch. "
+                   f"Expected {expected_start}, found {actual_start}.")
+            print(msg, file=sys.stderr)
+            return False, msg
         if actual["End Date"] != expected["End Date"]:
-            print(f"Error: End Date for '{proj}' mismatch. Expected {expected['End Date']}, found {actual['End Date']}.", file=sys.stderr)
-            return False, f"End Date for '{proj}' mismatch. Expected {expected['End Date']}, found {actual['End Date']}"
+            expected_end = expected['End Date']
+            actual_end = actual['End Date']
+            msg = (f"Error: End Date for '{proj}' mismatch. "
+                   f"Expected {expected_end}, found {actual_end}.")
+            print(msg, file=sys.stderr)
+            return False, msg
 
     print("Success: Verified table block contents and order successfully.")
     return True, ""
@@ -211,7 +235,7 @@ def main():
     """Main verification function."""
     notion = notion_utils.get_notion_client()
     main_id = sys.argv[1] if len(sys.argv) > 1 else None
-    success, error_msg = verify(notion, main_id)
+    success, _error_msg = verify(notion, main_id)
     if success:
         sys.exit(0)
     else:
@@ -219,4 +243,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main() 
+    main()

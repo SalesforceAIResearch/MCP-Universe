@@ -1,8 +1,10 @@
+"""Verification module for issue management workflow in mcpmark-cicd repository."""
+# pylint: disable=R1702,astroid-error,duplicate-code,import-error
 import sys
 import os
-import requests
 import time
 from typing import Dict, List, Optional, Tuple
+import requests
 from dotenv import load_dotenv
 
 
@@ -15,12 +17,11 @@ def _get_github_api(
         response = requests.get(url, headers=headers)
         if response.status_code == 200:
             return True, response.json()
-        elif response.status_code == 404:
+        if response.status_code == 404:
             return False, None
-        else:
-            print(f"API error for {endpoint}: {response.status_code}", file=sys.stderr)
-            return False, None
-    except Exception as e:
+        print(f"API error for {endpoint}: {response.status_code}", file=sys.stderr)
+        return False, None
+    except (requests.RequestException, IOError, OSError, ValueError) as e:
         print(f"Exception for {endpoint}: {e}", file=sys.stderr)
         return False, None
 
@@ -35,10 +36,9 @@ def _search_github_issues(
         if response.status_code == 200:
             data = response.json()
             return True, data.get("items", [])
-        else:
-            print(f"Search API error: {response.status_code}", file=sys.stderr)
-            return False, None
-    except Exception as e:
+        print(f"Search API error: {response.status_code}", file=sys.stderr)
+        return False, None
+    except (requests.RequestException, IOError, OSError, ValueError) as e:
         print(f"Search exception: {e}", file=sys.stderr)
         return False, None
 
@@ -91,9 +91,9 @@ def _wait_for_workflow_completion(
                     # Wait until NO workflows are running and we have enough completed runs
                     if running_count == 0 and completed_count >= expected_runs:
                         if failed_count > 0:
-                            print(
-                                f"⚠️ Warning: {failed_count} workflow runs failed, but continuing verification..."
-                            )
+                            msg = (f"⚠️ Warning: {failed_count} workflow runs "
+                                   f"failed, but continuing verification...")
+                            print(msg)
 
                         print(
                             f"✅ All workflows completed. Found {completed_count} completed runs."
@@ -106,26 +106,23 @@ def _wait_for_workflow_completion(
                     # No workflow runs found
                     no_workflow_check_count += 1
                     if no_workflow_check_count == 1:
-                        print(
-                            "   No workflow runs found yet, waiting 5 seconds and checking once more..."
-                        )
+                        print("   No workflow runs found yet, waiting 5 "
+                              "seconds and checking once more...")
                         time.sleep(5)
                         continue
-                    elif no_workflow_check_count >= 2:
-                        print(
-                            "⚠️ No workflow runs detected after 2 checks. Workflow may not have been triggered."
-                        )
+                    if no_workflow_check_count >= 2:
+                        print("⚠️ No workflow runs detected after 2 checks. "
+                              "Workflow may not have been triggered.")
                         print("   Continuing with verification...")
                         return False
                 else:
-                    print(
-                        f"   Waiting for workflow runs... Found {len(runs)}, expected {expected_runs}"
-                    )
+                    print(f"   Waiting for workflow runs... Found {len(runs)}, "
+                          f"expected {expected_runs}")
 
             print(f"⏳ Still waiting... ({int(time.time() - start_time)}s elapsed)")
             time.sleep(5)
 
-        except Exception as e:
+        except (requests.RequestException, IOError, OSError, ValueError, KeyError, TypeError) as e:
             print(f"⚠️ Error checking workflow status: {e}")
             time.sleep(5)
 
@@ -264,9 +261,9 @@ def _check_epic_checklist(
     for number in subtask_numbers:
         # Check for checkbox format: - [ ] #number
         if f"- [ ] #{number}" not in body:
-            errors.append(
-                f"Sub-issue #{number} not found in Epic Tasks checklist format (expected: '- [ ] #{number}')"
-            )
+            msg = (f"Sub-issue #{number} not found in Epic Tasks "
+                   f"checklist format (expected: '- [ ] #{number}')")
+            errors.append(msg)
 
     # Also verify the expected task names are present
     expected_tasks = [
@@ -423,7 +420,8 @@ def _verify_epic_issue(
             errors.extend(checklist_errors)
         else:
             print(
-                f"   ✅ Epic Tasks checklist verified with correct issue references: {subtask_numbers}"
+                f"   ✅ Epic Tasks checklist verified with correct "
+                f"issue references: {subtask_numbers}"
             )
 
     return len(errors) == 0, errors
@@ -549,26 +547,22 @@ def verify() -> tuple[bool, str]:
     if all_passed:
         print("🎉 All Issue Management Workflow verifications PASSED!")
         print("\n📋 Summary:")
-        print(
-            "   ✅ Bug issue: labels (including first-time-contributor), milestone, and auto-response verified"
-        )
-        print(
-            "   ✅ Epic issue: labels, milestone, 4 sub-issues with checklist, and correct issue references verified"
-        )
-        print(
-            "   ✅ Maintenance issue: labels, no milestone, and auto-response verified"
-        )
+        print("   ✅ Bug issue: labels (including first-time-contributor), "
+              "milestone, and auto-response verified")
+        print("   ✅ Epic issue: labels, milestone, 4 sub-issues with "
+              "checklist, and correct issue references verified")
+        print("   ✅ Maintenance issue: labels, no milestone, and "
+              "auto-response verified")
         print("\n🤖 The GitHub Actions workflow automation is working correctly!")
         return True, ""
-    else:
-        print("❌ Issue Management Workflow verification FAILED!")
-        print("   Some issues did not meet the expected automation requirements.")
-        return False, "Issue Management Workflow verification failed"
+    print("❌ Issue Management Workflow verification FAILED!")
+    print("   Some issues did not meet the expected automation requirements.")
+    return False, "Issue Management Workflow verification failed"
 
 
 def main():
     """Main verification function."""
-    success, error_msg = verify()
+    success, _error_msg = verify()
     if success:
         sys.exit(0)
     else:

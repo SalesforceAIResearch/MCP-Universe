@@ -63,4 +63,3 @@ TopCustomer|Customer Name:email@example.com:Group Name
 SameGroupCustomers|X
 </answer>
 ```
-

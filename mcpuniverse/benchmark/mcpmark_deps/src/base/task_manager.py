@@ -13,10 +13,10 @@ import sys
 from abc import ABC
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
-from src.logger import get_logger
-from src.results_reporter import TaskResult
+from src.logger import get_logger  # pylint: disable=import-error
+from src.results_reporter import TaskResult  # pylint: disable=import-error
 
 logger = get_logger(__name__)
 
@@ -109,8 +109,11 @@ class BaseTaskManager(ABC):
                     logger.debug("Found task: %s", task.name)
 
         # Sort and cache
-        # Sort by category_id and a stringified task_id to handle both numeric IDs and slugs uniformly
-        self._tasks_cache = sorted(tasks, key=lambda t: (t.category_id, str(t.task_id)))
+        # Sort by category_id and a stringified task_id to handle both
+        # numeric IDs and slugs uniformly
+        self._tasks_cache = sorted(
+            tasks, key=lambda t: (t.category_id, str(t.task_id))
+        )
         logger.info(
             "Discovered %d %s tasks across all categories",
             len(self._tasks_cache),
@@ -186,10 +189,10 @@ class BaseTaskManager(ABC):
             agent_error = agent_result.get("error", "Agent execution failed")
             # Standardize MCP network errors
             agent_error = self._standardize_error_message(agent_error)
-            
-            logger.error(f"| ✗ Agent execution failed for task")
-            logger.error(f"| ⚠️ Error: {agent_error}")
-            logger.info(f"| - Proceeding with verification despite agent failure")
+
+            logger.error("| ✗ Agent execution failed for task")
+            logger.error("| ⚠️ Error: %s", agent_error)
+            logger.info("| - Proceeding with verification despite agent failure")
 
         try:
             # Always run verification regardless of agent success
@@ -198,19 +201,23 @@ class BaseTaskManager(ABC):
             # Process verification results
             verification_success = verify_result.returncode == 0
             verification_output = verify_result.stdout
-            
+
             # Log verification output
             if verification_output:
                 print(verification_output)
-            
+
             # Capture verification error if failed
             if not verification_success:
-                verification_error = verify_result.stderr if verify_result.stderr else "Verification failed with no error message"
+                verification_error = (
+                    verify_result.stderr
+                    if verify_result.stderr
+                    else "Verification failed with no error message"
+                )
 
             if verification_success:
-                logger.info(f"| Verification Result: \033[92m✓ PASSED\033[0m")
+                logger.info("| Verification Result: \033[92m✓ PASSED\033[0m")
             else:
-                logger.error(f"| Verification Result: \033[91m✗ FAILED\033[0m")
+                logger.error("| Verification Result: \033[91m✗ FAILED\033[0m")
                 if verification_error:
                     logger.error(f"| Verification Error: {verification_error}")
 
@@ -227,13 +234,13 @@ class BaseTaskManager(ABC):
                 turn_count=agent_result.get("turn_count", -1),
             )
 
-        except Exception as e:
-            logger.error(f"| Task verification failed: {e}", exc_info=True)
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            logger.error("| Task verification failed: %s", exc, exc_info=True)
             return TaskResult(
                 task_name=task.name,
                 success=False,
                 error_message=agent_error,  # Keep agent error if any
-                verification_error=str(e),  # Verification exception
+                verification_error=str(exc),  # Verification exception
                 verification_output=None,
                 category_id=task.category_id,
                 task_id=task.task_id,
@@ -253,6 +260,7 @@ class BaseTaskManager(ABC):
             capture_output=True,  # Capture stdout and stderr for logging
             text=True,
             timeout=300,
+            check=False,  # Don't raise on non-zero exit
         )
 
     # =========================================================================
@@ -331,26 +339,50 @@ class BaseTaskManager(ABC):
 
         return task_files
 
+    def _load_meta_json(
+        self, meta_path: Path, default_category_id: str, default_task_id: str
+    ) -> Tuple[str, str]:
+        """
+        Load category_id and task_id from meta.json if it exists.
+
+        Args:
+            meta_path: Path to meta.json file
+            default_category_id: Default category_id to use if meta.json doesn't exist
+            default_task_id: Default task_id to use if meta.json doesn't exist
+
+        Returns:
+            Tuple of (category_id, task_id)
+        """
+        final_category_id = default_category_id
+        task_id = default_task_id
+
+        if meta_path.exists():
+            try:
+                with open(meta_path, 'r', encoding='utf-8') as f:
+                    meta_data = json.load(f)
+                    # Use values from meta.json if available
+                    final_category_id = meta_data.get("category_id", default_category_id)
+                    task_id = meta_data.get("task_id", default_task_id)
+            except Exception as exc:  # pylint: disable=broad-exception-caught
+                logger.warning(
+                    "Failed to load meta.json from %s: %s",
+                    meta_path,
+                    exc
+                )
+
+        return final_category_id, task_id
+
     def _create_task_from_files(
         self, category_id: str, task_files_info: Dict[str, Any]
     ) -> Optional[BaseTask]:
         """Create a task from file information with meta.json support."""
         # Check for meta.json
         meta_path = task_files_info["instruction_path"].parent / "meta.json"
-        # Default to directory names
-        task_id = task_files_info["task_id"]
-        final_category_id = category_id
-        
-        if meta_path.exists():
-            try:
-                with open(meta_path, 'r') as f:
-                    meta_data = json.load(f)
-                    # Use values from meta.json if available
-                    final_category_id = meta_data.get("category_id", category_id)
-                    task_id = meta_data.get("task_id", task_id)
-            except Exception as e:
-                logger.warning(f"Failed to load meta.json from {meta_path}: {e}")
-        
+        # Load meta.json if available
+        final_category_id, task_id = self._load_meta_json(
+            meta_path, category_id, task_files_info["task_id"]
+        )
+
         return self.task_class(
             task_instruction_path=task_files_info["instruction_path"],
             task_verification_path=task_files_info["verification_path"],
@@ -365,10 +397,11 @@ class BaseTaskManager(ABC):
 
     def _format_task_instruction(self, base_instruction: str) -> str:
         """Format task instruction with Notion-specific additions."""
-        return (
-            base_instruction
-            + "\n\nNote: Based on your understanding, solve the task all at once by yourself, don't ask for my opinions on anything."
+        note = (
+            "\n\nNote: Based on your understanding, solve the task all at once "
+            "by yourself, don't ask for my opinions on anything."
         )
+        return base_instruction + note
 
     def _get_verification_command(self, task: BaseTask) -> List[str]:
         """Get the command to run task verification (default implementation)."""
@@ -376,6 +409,10 @@ class BaseTaskManager(ABC):
 
     def _standardize_error_message(self, error_message: str) -> str:
         """Standardize error messages for consistent reporting."""
-        from src.errors import standardize_error_message
+        from src.errors import (  # pylint: disable=import-error, import-outside-toplevel
+            standardize_error_message
+        )
 
-        return standardize_error_message(error_message, mcp_service=self.mcp_service)
+        return standardize_error_message(
+            error_message, mcp_service=self.mcp_service
+        )

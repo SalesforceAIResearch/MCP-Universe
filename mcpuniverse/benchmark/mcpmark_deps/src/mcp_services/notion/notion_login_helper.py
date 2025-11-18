@@ -6,11 +6,11 @@ This module provides a utility class and CLI script for logging into Notion
 using Playwright. It saves the authenticated session state to a file,
 which can be used for subsequent automated tasks.
 """
-
+# pylint: disable=import-error
 import argparse
+from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Optional
-from abc import ABC, abstractmethod
 
 from playwright.sync_api import (
     BrowserContext,
@@ -19,22 +19,26 @@ from playwright.sync_api import (
     sync_playwright,
 )
 
-# from src.base.login_helper import BaseLoginHelper
 from src.logger import get_logger
 
 # Initialize logger
 logger = get_logger(__name__)
 
 
-class BaseLoginHelper(ABC):
+class BaseLoginHelper(ABC):  # pylint: disable=too-few-public-methods
     """Abstract base class for login helpers."""
 
     def __init__(self):
-        pass
+        """Initialize the base login helper."""
 
     @abstractmethod
     def login(self, **kwargs):
-        pass
+        """
+        Perform login operation.
+
+        Args:
+            **kwargs: Login parameters specific to the service
+        """
 
 
 
@@ -64,8 +68,10 @@ class NotionLoginHelper(BaseLoginHelper):
         """
         super().__init__()
         if browser not in self.SUPPORTED_BROWSERS:
+            browsers_str = ', '.join(self.SUPPORTED_BROWSERS)
             raise ValueError(
-                f"Unsupported browser '{browser}'. Supported browsers are: {', '.join(self.SUPPORTED_BROWSERS)}"
+                f"Unsupported browser '{browser}'. "
+                f"Supported browsers are: {browsers_str}"
             )
 
         self.url = url or "https://www.notion.so/login"
@@ -78,7 +84,7 @@ class NotionLoginHelper(BaseLoginHelper):
         self._playwright = None
         self._browser = None
 
-    def login(self) -> BrowserContext:
+    def login(self, **kwargs) -> BrowserContext:  # pylint: disable=unused-argument
         """
         Launches a browser, performs login, and saves the session state.
         """
@@ -158,9 +164,11 @@ class NotionLoginHelper(BaseLoginHelper):
             email_input.wait_for(state="visible", timeout=120_000)
             email_input.fill(email)
             email_input.press("Enter")
-        except PlaywrightTimeoutError:
-            raise RuntimeError("Timed out waiting for the email input field.")
-        except Exception:
+        except PlaywrightTimeoutError as exc:
+            raise RuntimeError(
+                "Timed out waiting for the email input field."
+            ) from exc
+        except Exception:  # pylint: disable=broad-exception-caught
             page.get_by_role("button", name="Continue", exact=True).click()
 
         try:
@@ -169,9 +177,11 @@ class NotionLoginHelper(BaseLoginHelper):
             code = input("Enter the verification code from your email: ").strip()
             code_input.fill(code)
             code_input.press("Enter")
-        except PlaywrightTimeoutError:
-            raise RuntimeError("Timed out waiting for the verification code input.")
-        except Exception:
+        except PlaywrightTimeoutError as exc:
+            raise RuntimeError(
+                "Timed out waiting for the verification code input."
+            ) from exc
+        except Exception:  # pylint: disable=broad-exception-caught
             page.get_by_role("button", name="Continue", exact=True).click()
 
         try:

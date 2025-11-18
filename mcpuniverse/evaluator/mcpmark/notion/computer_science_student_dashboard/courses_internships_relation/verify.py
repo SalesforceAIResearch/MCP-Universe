@@ -1,4 +1,9 @@
+"""Verification module for Courses Internships Relation task in Notion workspace."""
+
+# pylint: disable=duplicate-code,import-error,astroid-error
+
 import sys
+from typing import Optional
 from notion_client import Client
 from mcpuniverse.evaluator.mcpmark.notion.utils import notion_utils
 
@@ -20,7 +25,7 @@ INTERNSHIP_COMPANIES = {"OpenAI", "Google"}
 # ---------------------------------------------------------------------------
 
 
-def _locate_main_page(notion: Client, main_id: str | None) -> str | None:
+def _locate_main_page(notion: Client, main_id: Optional[str]) -> Optional[str]:
     """Return the page_id of the dashboard page or None if not found."""
     page_id = None
     if main_id:
@@ -32,7 +37,7 @@ def _locate_main_page(notion: Client, main_id: str | None) -> str | None:
     return page_id
 
 
-def _locate_database(notion: Client, parent_page_id: str, db_title: str) -> str | None:
+def _locate_database(notion: Client, parent_page_id: str, db_title: str) -> Optional[str]:
     """Recursively search for a child database by title and return its id."""
     return notion_utils.find_database_in_block(notion, parent_page_id, db_title)
 
@@ -42,7 +47,7 @@ def _locate_database(notion: Client, parent_page_id: str, db_title: str) -> str 
 # ---------------------------------------------------------------------------
 
 
-def verify(notion: Client, main_id: str | None = None) -> tuple[bool, str]:
+def verify(notion: Client, main_id: Optional[str] = None) -> tuple[bool, str]:  # pylint: disable=too-many-branches,too-many-locals,too-many-return-statements,too-many-statements
     """Verify completion of the Courses ↔ Internship relation task."""
     # ------------------------------------------------------------------
     # Locate main page and databases -----------------------------------
@@ -134,11 +139,10 @@ def verify(notion: Client, main_id: str | None = None) -> tuple[bool, str]:
         # Relation must point to at least one internship
         relations = props.get(COURSE_RELATION_NAME, {}).get("relation", [])
         if not (name_ok and credits_ok and status_ok and relations):
-            print(
-                f"Error: Course '{code_val}' is missing required property values or relations, or wrong values.",
-                file=sys.stderr,
-            )
-            return False, f"Course '{code_val}' is missing required property values or relations, or wrong values"
+            msg = (f"Error: Course '{code_val}' is missing required property "
+                   "values or relations, or wrong values.")
+            print(msg, file=sys.stderr)
+            return False, msg
 
         # Collect IDs for further mutual check
         course_page_id_set.add(page["id"])
@@ -146,11 +150,10 @@ def verify(notion: Client, main_id: str | None = None) -> tuple[bool, str]:
         valid_course_count += 1
 
     if valid_course_count != 3:
-        print(
-            f"Error: Expected exactly 3 new course pages with codes {COURSE_CODES}, found {valid_course_count}.",
-            file=sys.stderr,
-        )
-        return False, f"Expected exactly 3 new course pages with codes {COURSE_CODES}, found {valid_course_count}"
+        msg = (f"Error: Expected exactly 3 new course pages with codes "
+               f"{COURSE_CODES}, found {valid_course_count}.")
+        print(msg, file=sys.stderr)
+        return False, msg
 
     # ------------------------------------------------------------------
     # Validate internship pages ----------------------------------------
@@ -177,22 +180,20 @@ def verify(notion: Client, main_id: str | None = None) -> tuple[bool, str]:
         relations = props.get(INTERNSHIP_RELATION_NAME, {}).get("relation", [])
 
         if not (role_ok and status_ok and relations):
-            print(
-                f"Error: Internship at '{company}' is missing required property values or relations, or wrong values.",
-                file=sys.stderr,
-            )
-            return False, f"Internship at '{company}' is missing required property values or relations, or wrong values"
+            msg = (f"Error: Internship at '{company}' is missing required "
+                   "property values or relations, or wrong values.")
+            print(msg, file=sys.stderr)
+            return False, msg
 
         internship_page_ids.add(page["id"])
         course_ids_seen_from_intern.update(rel["id"] for rel in relations)
         valid_intern_count += 1
 
     if valid_intern_count != 2:
-        print(
-            f"Error: Expected exactly 2 new internship pages for companies {INTERNSHIP_COMPANIES}, found {valid_intern_count}.",
-            file=sys.stderr,
-        )
-        return False, f"Expected exactly 2 new internship pages for companies {INTERNSHIP_COMPANIES}, found {valid_intern_count}"
+        msg = (f"Error: Expected exactly 2 new internship pages for "
+               f"companies {INTERNSHIP_COMPANIES}, found {valid_intern_count}.")
+        print(msg, file=sys.stderr)
+        return False, msg
 
     # ------------------------------------------------------------------
     # Mutual relation consistency --------------------------------------
@@ -228,7 +229,7 @@ def main() -> None:
     """Main verification function."""
     notion = notion_utils.get_notion_client()
     main_id = sys.argv[1] if len(sys.argv) > 1 else None
-    success, error_msg = verify(notion, main_id)
+    success, _error_msg = verify(notion, main_id)
     if success:
         sys.exit(0)
     else:

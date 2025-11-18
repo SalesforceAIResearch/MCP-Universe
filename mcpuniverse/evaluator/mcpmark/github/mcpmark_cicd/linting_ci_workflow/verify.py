@@ -1,11 +1,13 @@
+"""Verification module for linting CI workflow in mcpmark-cicd repository."""
+# pylint: disable=R0911,R0912,R0914,R0915,astroid-error,duplicate-code,import-error
 import sys
 import os
-import requests
-from typing import Dict, List, Optional, Tuple
-import base64
-from dotenv import load_dotenv
 import time
 import json
+import base64
+from typing import Dict, List, Optional, Tuple
+import requests
+from dotenv import load_dotenv
 
 
 def _get_github_api(
@@ -18,12 +20,11 @@ def _get_github_api(
         response = requests.get(url, headers=headers)
         if response.status_code == 200:
             return True, response.json()
-        elif response.status_code == 404:
+        if response.status_code == 404:
             return False, None
-        else:
-            print(f"API error for {endpoint}: {response.status_code}", file=sys.stderr)
-            return False, None
-    except Exception as e:
+        print(f"API error for {endpoint}: {response.status_code}", file=sys.stderr)
+        return False, None
+    except (requests.RequestException, IOError, OSError, ValueError) as e:
         print(f"Exception for {endpoint}: {e}", file=sys.stderr)
         return False, None
 
@@ -53,7 +54,7 @@ def _get_file_content(
     try:
         content = base64.b64decode(result.get("content", "")).decode("utf-8")
         return content
-    except Exception as e:
+    except (IOError, OSError, UnicodeDecodeError) as e:
         print(f"Content decode error for {file_path}: {e}", file=sys.stderr)
         return None
 
@@ -116,22 +117,22 @@ def _get_workflow_runs_for_commit(
     return runs.get("workflow_runs", [])
 
 
-def verify() -> bool:
+def verify() -> tuple[bool, str]:
     """
     Programmatically verify that the ESLint CI workflow setup
     meets the requirements described in description.md.
     """
     # Configuration constants
-    BRANCH_NAME = "ci/add-eslint-workflow"
-    PR_KEYWORD = "eslint workflow"
+    branch_name = "ci/add-eslint-workflow"
+    pr_keyword = "eslint workflow"
 
     # Expected files and their content checks
-    ESLINT_CONFIG_PATH = ".eslintrc.json"
-    WORKFLOW_PATH = ".github/workflows/lint.yml"
-    EXAMPLE_FILE_PATH = "src/example.js"
+    eslint_config_path = ".eslintrc.json"
+    workflow_path = ".github/workflows/lint.yml"
+    example_file_path = "src/example.js"
 
     # Expected workflow content keywords
-    WORKFLOW_KEYWORDS = [
+    workflow_keywords = [
         "Code Linting",
         "ubuntu-latest",
         "actions/setup-node",
@@ -165,15 +166,15 @@ def verify() -> bool:
 
     # 1. Check that branch exists
     print("1. Verifying CI branch exists...")
-    if not _check_branch_exists(BRANCH_NAME, headers, github_org):
-        print(f"Error: Branch '{BRANCH_NAME}' not found", file=sys.stderr)
-        return False, f"Branch '{BRANCH_NAME}' not found"
+    if not _check_branch_exists(branch_name, headers, github_org):
+        print(f"Error: Branch '{branch_name}' not found", file=sys.stderr)
+        return False, f"Branch '{branch_name}' not found"
     print("✓ CI branch created")
 
     # 2. Check ESLint configuration file
     print("2. Verifying .eslintrc.json...")
     eslint_content = _get_file_content(
-        ESLINT_CONFIG_PATH, headers, github_org, "mcpmark-cicd", BRANCH_NAME
+        eslint_config_path, headers, github_org, "mcpmark-cicd", branch_name
     )
     if not eslint_content:
         print("Error: .eslintrc.json not found", file=sys.stderr)
@@ -201,14 +202,14 @@ def verify() -> bool:
     # 3. Check GitHub Actions workflow file
     print("3. Verifying .github/workflows/lint.yml...")
     workflow_content = _get_file_content(
-        WORKFLOW_PATH, headers, github_org, "mcpmark-cicd", BRANCH_NAME
+        workflow_path, headers, github_org, "mcpmark-cicd", branch_name
     )
     if not workflow_content:
         print("Error: .github/workflows/lint.yml not found", file=sys.stderr)
         return False, ".github/workflows/lint.yml not found"
 
     # Check workflow contains required keywords
-    missing_keywords = [kw for kw in WORKFLOW_KEYWORDS if kw not in workflow_content]
+    missing_keywords = [kw for kw in workflow_keywords if kw not in workflow_content]
     if missing_keywords:
         print(f"Error: Workflow missing keywords: {missing_keywords}", file=sys.stderr)
         return False, f"Workflow missing keywords: {missing_keywords}"
@@ -223,7 +224,7 @@ def verify() -> bool:
     # 4. Check example file with linting errors initially exists
     print("4. Verifying src/example.js...")
     example_content = _get_file_content(
-        EXAMPLE_FILE_PATH, headers, github_org, "mcpmark-cicd", BRANCH_NAME
+        example_file_path, headers, github_org, "mcpmark-cicd", branch_name
     )
     if not example_content:
         print("Error: src/example.js not found", file=sys.stderr)
@@ -233,7 +234,7 @@ def verify() -> bool:
 
     # 5. Find and verify the linting PR
     print("5. Verifying linting pull request...")
-    lint_pr = _find_pr_by_title_keyword(PR_KEYWORD, headers, github_org)
+    lint_pr = _find_pr_by_title_keyword(pr_keyword, headers, github_org)
     if not lint_pr:
         # Try alternative keywords
         lint_pr = _find_pr_by_title_keyword("eslint", headers, github_org)
@@ -306,10 +307,9 @@ def verify() -> bool:
                 )
                 time.sleep(5)
                 continue
-            elif no_workflow_check_count >= 2:
-                print(
-                    "⚠️ No workflow runs detected after 2 checks. Workflows may not have been triggered."
-                )
+            if no_workflow_check_count >= 2:
+                print("⚠️ No workflow runs detected after 2 checks. "
+                      "Workflows may not have been triggered.")
                 print("   Continuing with verification...")
                 break
 
@@ -336,7 +336,7 @@ def verify() -> bool:
                 first_commit_status = "failed"
                 print("✓ First commit workflow failed as expected")
                 break
-            elif conclusion == "success":
+            if conclusion == "success":
                 first_commit_status = "passed"
                 break
 
@@ -356,7 +356,7 @@ def verify() -> bool:
                 second_commit_status = "passed"
                 print("✓ Second commit workflow passed as expected")
                 break
-            elif conclusion in ["failure", "cancelled"]:
+            if conclusion in ["failure", "cancelled"]:
                 second_commit_status = "failed"
                 break
 
@@ -374,7 +374,7 @@ def verify() -> bool:
     # 7. Verify the final state shows clean code
     print("7. Verifying final file state...")
     final_example_content = _get_file_content(
-        EXAMPLE_FILE_PATH, headers, github_org, "mcpmark-cicd", BRANCH_NAME
+        example_file_path, headers, github_org, "mcpmark-cicd", branch_name
     )
 
     if final_example_content:
@@ -393,7 +393,7 @@ def verify() -> bool:
     print("\n✅ All verification checks passed!")
     print("ESLint CI workflow setup completed successfully:")
     print(f"  - Linting PR #{pr_number}")
-    print(f"  - Branch: {BRANCH_NAME}")
+    print(f"  - Branch: {branch_name}")
     print(
         "  - Files created: .eslintrc.json, .github/workflows/lint.yml, src/example.js"
     )
@@ -401,16 +401,17 @@ def verify() -> bool:
     print(
         f"  - Total workflow runs found: {len(first_commit_runs) + len(second_commit_runs)}"
     )
-    print(
-        f"  - First commit runs: {len(first_commit_runs)}, Second commit runs: {len(second_commit_runs)}"
-    )
+    first_count = len(first_commit_runs)
+    second_count = len(second_commit_runs)
+    print(f"  - First commit runs: {first_count}, "
+          f"Second commit runs: {second_count}")
 
     return True, ""
 
 
 def main():
     """Main verification function."""
-    success, error_msg = verify()
+    success, _error_msg = verify()
     if success:
         sys.exit(0)
     else:

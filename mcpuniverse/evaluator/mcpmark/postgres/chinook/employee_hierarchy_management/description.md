@@ -42,14 +42,14 @@ Insert records for employees 9 and 10 by calculating their actual customer assig
   - Find all customers assigned to Robert as their support rep and reassign them to Robert's manager
 
 ### 7. **UPDATE: Promote Remaining IT Staff**
-- Promote Laura Callahan (EmployeeId = 8) from 'IT Specialist' to 'Senior IT Specialist'  
+- Promote Laura Callahan (EmployeeId = 8) from 'IT Specialist' to 'Senior IT Specialist'
 - Update her salary information by adding a new column `salary` to Employee table (decimal type)
 - Set Laura's salary to 75000.00 and all other employees to 50000.00
 
 ### 8. **Final Verification Query**
 Execute this exact query to verify all changes:
 ```sql
-SELECT 
+SELECT
     COUNT(*) as total_employees,
     COUNT(CASE WHEN "Title" = 'CEO' THEN 1 END) as ceo_count,
     COUNT(CASE WHEN "Title" = 'IT Specialist' THEN 1 END) as it_specialist_count,

@@ -1,9 +1,18 @@
+"""
+Base state manager for MCP services.
+
+This module provides the abstract base class for state management
+across different MCP services.
+"""
+import os
+import shutil
 import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from src.logger import get_logger
+from src.logger import get_logger  # pylint: disable=import-error
 from .task_manager import BaseTask
 
 # Initialize logger
@@ -45,23 +54,25 @@ class BaseStateManager(ABC):
         """
         try:
             logger.info(
-                f"| Setting up initial state for {self.service_name} task: {task.name}"
+                "| Setting up initial state for %s task: %s",
+                self.service_name,
+                task.name
             )
 
             # Create initial state
             initial_state_info = self._create_initial_state(task)
             if not initial_state_info:
-                logger.error(f"| Failed to create initial state for {task.name}")
+                logger.error("| Failed to create initial state for %s", task.name)
                 return False
 
             # Store initial state info in task
             self._store_initial_state_info(task, initial_state_info)
 
-            logger.info(f"| ✓ Initial state setup completed for {task.name}")
+            logger.info("| ✓ Initial state setup completed for %s", task.name)
             return True
 
-        except Exception as e:
-            logger.error(f"| Setup failed for {task.name}: {e}")
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            logger.error("| Setup failed for %s: %s", task.name, exc)
             return False
 
     def clean_up(self, task: BaseTask = None) -> bool:
@@ -79,7 +90,9 @@ class BaseStateManager(ABC):
             # Task-specific cleanup
             if task:
                 logger.info(
-                    f"| ○ Cleaning up initial state for {self.service_name} task: {task.name}"
+                    "| ○ Cleaning up initial state for %s task: %s",
+                    self.service_name,
+                    task.name
                 )
                 if not self._cleanup_task_initial_state(task):
                     cleanup_success = False
@@ -89,16 +102,17 @@ class BaseStateManager(ABC):
                 cleanup_success = False
 
             if cleanup_success:
-                logger.info(f"| ✓ Cleanup completed for {self.service_name}")
+                logger.info("| ✓ Cleanup completed for %s", self.service_name)
             else:
                 logger.warning(
-                    f"| Cleanup completed with some failures for {self.service_name}"
+                    "| Cleanup completed with some failures for %s",
+                    self.service_name
                 )
 
             return cleanup_success
 
-        except Exception as e:
-            logger.error(f"Cleanup failed for {self.service_name}: {e}")
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            logger.error("Cleanup failed for %s: %s", self.service_name, exc)
             return False
 
     def track_resource(
@@ -146,7 +160,6 @@ class BaseStateManager(ABC):
         to set specific environment variables for their verification scripts.
         The default implementation sets MCP_MESSAGES if provided.
         """
-        import os
         if messages_path:
             os.environ["MCP_MESSAGES"] = str(messages_path)
 
@@ -158,13 +171,28 @@ class BaseStateManager(ABC):
             try:
                 if not self._cleanup_single_resource(resource):
                     cleanup_success = False
-            except Exception as e:
-                logger.error(f"Failed to cleanup resource {resource}: {e}")
+            except Exception as exc:  # pylint: disable=broad-exception-caught
+                logger.error("Failed to cleanup resource %s: %s", resource, exc)
                 cleanup_success = False
 
         # Clear resources after cleanup attempt
         self.tracked_resources.clear()
         return cleanup_success
+
+    def _remove_macosx_folder(self, macosx_path: Path) -> None:
+        """
+        Remove __MACOSX folder if it exists (macOS metadata from zip extraction).
+
+        Args:
+            macosx_path: Path to the __MACOSX folder
+        """
+        if macosx_path.exists():
+            logger.info("| ○ Cleaning up macOS metadata...")
+            try:
+                shutil.rmtree(macosx_path)
+                logger.info("| ✓ Removed __MACOSX folder")
+            except Exception as exc:  # pylint: disable=broad-exception-caught
+                logger.warning("| Failed to remove __MACOSX folder: %s", exc)
 
     # =========================================================================
     # Abstract methods for service-specific behavior (simplified)
@@ -182,7 +210,7 @@ class BaseStateManager(ABC):
         Returns:
             InitialStateInfo object or None if creation failed
         """
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def _store_initial_state_info(
@@ -194,7 +222,7 @@ class BaseStateManager(ABC):
             task: Task object to update
             state_info: Initial state information to store
         """
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def _cleanup_task_initial_state(self, task: BaseTask) -> bool:
@@ -206,7 +234,7 @@ class BaseStateManager(ABC):
         Returns:
             True if cleanup successful, False otherwise
         """
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def _cleanup_single_resource(self, resource: Dict[str, Any]) -> bool:
@@ -218,4 +246,4 @@ class BaseStateManager(ABC):
         Returns:
             True if cleanup successful, False otherwise
         """
-        pass
+        raise NotImplementedError

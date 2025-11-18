@@ -1,7 +1,10 @@
+"""Verification module for fixing conflicts in harmony repository."""
+# pylint: disable=R0911,astroid-error,duplicate-code,import-error
 import sys
 import os
-import requests
 from typing import Dict, Optional, Tuple
+import re
+import requests
 from dotenv import load_dotenv
 
 
@@ -14,12 +17,11 @@ def _get_github_api(
         response = requests.get(url, headers=headers)
         if response.status_code == 200:
             return True, response.json()
-        elif response.status_code == 404:
+        if response.status_code == 404:
             return False, None
-        else:
-            print(f"API error for {endpoint}: {response.status_code}", file=sys.stderr)
-            return False, None
-    except Exception as e:
+        print(f"API error for {endpoint}: {response.status_code}", file=sys.stderr)
+        return False, None
+    except (requests.RequestException, IOError, OSError, ValueError) as e:
         print(f"Exception for {endpoint}: {e}", file=sys.stderr)
         return False, None
 
@@ -47,7 +49,6 @@ def _check_pr_comments(
         return False
 
     # Look for "PR #123" pattern (case insensitive)
-    import re
 
     for comment in comments:
         body = comment.get("body", "")
@@ -121,10 +122,12 @@ def verify() -> tuple[bool, str]:
     ci_exists = _check_ci_file_exists(".github/workflows/CI.yml", headers, github_org)
     if not ci_exists:
         ci_exists = _check_ci_file_exists(".github/workflows/ci.yml", headers, github_org)
-    
+
     if not ci_exists:
-        print("Error: Neither .github/workflows/CI.yml nor .github/workflows/ci.yml found in main", file=sys.stderr)
-        return False, "Neither .github/workflows/CI.yml nor .github/workflows/ci.yml found in main"
+        msg = ("Error: Neither .github/workflows/CI.yml nor "
+               ".github/workflows/ci.yml found in main")
+        print(msg, file=sys.stderr)
+        return False, msg
 
     # 2. Find infrastructure PR with required title and body content
     print("2. Finding infrastructure PR with required content...")
@@ -138,10 +141,9 @@ def verify() -> tuple[bool, str]:
             "Required title: 'Add CI infrastructure' and 'resolve conflicts'",
             file=sys.stderr,
         )
-        print(
-            "Required body: reference with 'Fixes #' or 'Resolves #', 'prepares infrastructure', 'missing .github directory', 'workflow conflicts'",
-            file=sys.stderr,
-        )
+        print("Required body: reference with 'Fixes #' or 'Resolves #', "
+              "'prepares infrastructure', 'missing .github directory', "
+              "'workflow conflicts'", file=sys.stderr)
         return False, "No infrastructure PR found with required title and body content"
 
     print(f"Found infrastructure PR #{infra_pr.get('number')}: {infra_pr.get('title')}")
@@ -172,12 +174,14 @@ def verify() -> tuple[bool, str]:
             f"Error: PR #24 missing comment linking to infrastructure PR #{infra_pr.get('number')}",
             file=sys.stderr,
         )
-        return False, f"PR #24 missing comment linking to infrastructure PR #{infra_pr.get('number')}"
+        infra_pr_num = infra_pr.get('number')
+        return False, (f"PR #24 missing comment linking to infrastructure "
+                      f"PR #{infra_pr_num}")
 
     print("\n✓ Task completed successfully!")
-    print(
-        f"Infrastructure PR #{infra_pr.get('number')} extracted content from PR #24 and resolved conflicts"
-    )
+    infra_pr_num = infra_pr.get('number')
+    print(f"Infrastructure PR #{infra_pr_num} extracted content from "
+          f"PR #24 and resolved conflicts")
     print(
         "PR #24 is now merged cleanly and has a comment linking to the infrastructure PR"
     )
@@ -186,7 +190,7 @@ def verify() -> tuple[bool, str]:
 
 def main():
     """Main verification function."""
-    success, error_msg = verify()
+    success, _error_msg = verify()
     if success:
         sys.exit(0)
     else:

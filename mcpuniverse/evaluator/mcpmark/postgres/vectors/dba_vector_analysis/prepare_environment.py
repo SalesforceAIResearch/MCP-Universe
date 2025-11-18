@@ -4,14 +4,14 @@ Environment preparation script for Vector Database DBA Analysis task.
 This script imports and uses the shared vector database setup utilities.
 """
 
-import sys
 import logging
+import sys
 from pathlib import Path
 
 # Add the vectors directory to import the shared utilities
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
-from vectors_setup import prepare_vector_environment
+from vectors_setup import prepare_vector_environment  # pylint: disable=wrong-import-position
 
 logger = logging.getLogger(__name__)
 

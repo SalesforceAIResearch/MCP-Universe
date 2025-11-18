@@ -22,4 +22,3 @@ ReviewRating|XX%
 Subtotal|$XX.XX
 </answer>
 ```
-

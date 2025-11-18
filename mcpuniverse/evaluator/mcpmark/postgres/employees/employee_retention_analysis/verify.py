@@ -1,11 +1,13 @@
+# pylint: disable=too-many-return-statements,duplicate-code
 """
 Verification script for PostgreSQL Task 2: Employee Retention Analysis
 """
 
 import os
 import sys
-import psycopg2
 from decimal import Decimal
+
+import psycopg2
 
 def rows_match(actual_row, expected_row):
     """
@@ -15,21 +17,21 @@ def rows_match(actual_row, expected_row):
     """
     if len(actual_row) != len(expected_row):
         return False
-    
+
     for actual, expected in zip(actual_row, expected_row):
         if isinstance(actual, Decimal) and isinstance(expected, Decimal):
             if abs(float(actual) - float(expected)) > 0.1:
                 return False
         elif actual != expected:
             return False
-    
+
     return True
 
 def get_connection_params() -> dict:
     """Get database connection parameters."""
     return {
         "host": os.getenv("POSTGRES_HOST", "localhost"),
-        "port": int(os.getenv("POSTGRES_PORT", 5432)),
+        "port": int(os.getenv("POSTGRES_PORT", "5432")),
         "database": os.getenv("POSTGRES_DATABASE"),
         "user": os.getenv("POSTGRES_USERNAME"),
         "password": os.getenv("POSTGRES_PASSWORD")
@@ -40,13 +42,13 @@ def verify_retention_analysis_results(conn) -> tuple[bool, str]:
     with conn.cursor() as cur:
         # Get actual results from the created table
         cur.execute("""
-            SELECT department_name, total_employees_ever, current_employees, 
+            SELECT department_name, total_employees_ever, current_employees,
                    former_employees, retention_rate
             FROM employees.employee_retention_analysis
             ORDER BY department_name
         """)
         actual_results = cur.fetchall()
-        
+
         # Execute ground truth query
         cur.execute("""
             SELECT
@@ -66,8 +68,14 @@ def verify_retention_analysis_results(conn) -> tuple[bool, str]:
         expected_results = cur.fetchall()
 
         if len(actual_results) != len(expected_results):
-            print(f"❌ Expected {len(expected_results)} retention analysis results, got {len(actual_results)}")
-            return False, f"Expected {len(expected_results)} retention analysis results, got {len(actual_results)}"
+            print(
+                f"❌ Expected {len(expected_results)} retention analysis "
+                f"results, got {len(actual_results)}"
+            )
+            return False, (
+                f"Expected {len(expected_results)} retention analysis "
+                f"results, got {len(actual_results)}"
+            )
 
         mismatches = 0
         for i, (actual, expected) in enumerate(zip(actual_results, expected_results)):
@@ -88,13 +96,13 @@ def verify_high_risk_results(conn) -> tuple[bool, str]:
     with conn.cursor() as cur:
         # Get actual results from the created table
         cur.execute("""
-            SELECT employee_id, full_name, current_department, tenure_days, 
+            SELECT employee_id, full_name, current_department, tenure_days,
                    current_salary, risk_category
             FROM employees.high_risk_employees
             ORDER BY employee_id
         """)
         actual_results = cur.fetchall()
-        
+
         # Execute ground truth query - only current employees
         cur.execute("""
             WITH current_salary AS (
@@ -153,8 +161,14 @@ def verify_high_risk_results(conn) -> tuple[bool, str]:
         expected_results = cur.fetchall()
 
         if len(actual_results) != len(expected_results):
-            print(f"❌ Expected {len(expected_results)} high risk analysis results, got {len(actual_results)}")
-            return False, f"Expected {len(expected_results)} high risk analysis results, got {len(actual_results)}"
+            print(
+                f"❌ Expected {len(expected_results)} high risk analysis "
+                f"results, got {len(actual_results)}"
+            )
+            return False, (
+                f"Expected {len(expected_results)} high risk analysis "
+                f"results, got {len(actual_results)}"
+            )
 
         mismatches = 0
         for i, (actual, expected) in enumerate(zip(actual_results, expected_results)):
@@ -180,7 +194,7 @@ def verify_turnover_trend_results(conn) -> tuple[bool, str]:
             ORDER BY departure_year
         """)
         actual_results = cur.fetchall()
-        
+
         # Execute ground truth query - simplified version
         cur.execute("""
             WITH last_non_current_salary AS (
@@ -228,8 +242,14 @@ def verify_turnover_trend_results(conn) -> tuple[bool, str]:
         expected_results = cur.fetchall()
 
         if len(actual_results) != len(expected_results):
-            print(f"❌ Expected {len(expected_results)} turnover trend results, got {len(actual_results)}")
-            return False, f"Expected {len(expected_results)} turnover trend results, got {len(actual_results)}"
+            print(
+                f"❌ Expected {len(expected_results)} turnover trend "
+                f"results, got {len(actual_results)}"
+            )
+            return False, (
+                f"Expected {len(expected_results)} turnover trend "
+                f"results, got {len(actual_results)}"
+            )
 
         mismatches = 0
         for i, (actual, expected) in enumerate(zip(actual_results, expected_results)):
@@ -265,12 +285,12 @@ def verify() -> tuple[bool, str]:
         if not success:
             conn.close()
             return False, error_msg
-        
+
         success, error_msg = verify_high_risk_results(conn)
         if not success:
             conn.close()
             return False, error_msg
-        
+
         success, error_msg = verify_turnover_trend_results(conn)
         if not success:
             conn.close()
@@ -284,13 +304,13 @@ def verify() -> tuple[bool, str]:
     except psycopg2.Error as e:
         print(f"❌ Database error: {e}")
         return False, f"Database error: {e}"
-    except Exception as e:
+    except (ValueError, KeyError, TypeError) as e:
         print(f"❌ Verification error: {e}")
         return False, f"Verification error: {e}"
 
 def main():
     """Main verification function."""
-    success, error_msg = verify()
+    success, _error_msg = verify()
     if success:
         sys.exit(0)
     else:

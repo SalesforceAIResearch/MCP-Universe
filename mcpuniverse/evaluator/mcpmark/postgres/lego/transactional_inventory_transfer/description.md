@@ -31,7 +31,7 @@ Create a PostgreSQL function to handle inventory part transfers between LEGO set
    ```
 
 3. **Implement enhanced validation** — The function must perform these validations:
-   
+
    **Validation A: Basic Checks**
    - Verify both inventory IDs exist in `lego_inventories` table
    - Verify part exists in `lego_parts` table
@@ -45,7 +45,7 @@ Create a PostgreSQL function to handle inventory part transfers between LEGO set
    - Source and target must be different inventories
 
 4. **Implement transactional logic** — The function must perform these operations within a single transaction:
-   
+
    **Step A: Pre-validation**
    - Lock both inventory records using `SELECT ... FOR UPDATE`
    - Perform all validation checks

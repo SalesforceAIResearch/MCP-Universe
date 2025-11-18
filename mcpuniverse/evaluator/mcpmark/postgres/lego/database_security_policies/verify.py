@@ -2,18 +2,20 @@
 Verification script for PostgreSQL LEGO Task 4: Database Security and RLS Implementation
 (Version 2 - Improved Robustness)
 """
+# pylint: disable=too-many-return-statements,too-many-branches,duplicate-code
 
 import os
 import sys
+from typing import Dict
+
 import psycopg2
 import psycopg2.errors
-from typing import Dict
 
 def get_connection_params() -> Dict[str, any]:
     """Get database connection parameters from environment variables."""
     return {
         "host": os.getenv("POSTGRES_HOST", "localhost"),
-        "port": int(os.getenv("POSTGRES_PORT", 5432)),
+        "port": int(os.getenv("POSTGRES_PORT", "5432")),
         "database": os.getenv("POSTGRES_DATABASE"),
         "user": os.getenv("POSTGRES_USERNAME"),
         "password": os.getenv("POSTGRES_PASSWORD"),
@@ -53,7 +55,7 @@ def verify_role_creation(conn) -> tuple[bool, str]:
         for table in all_tables:
             cur.execute(
                 """
-                SELECT 
+                SELECT
                     has_table_privilege('theme_analyst', %s, 'INSERT') OR
                     has_table_privilege('theme_analyst', %s, 'UPDATE') OR
                     has_table_privilege('theme_analyst', %s, 'DELETE');
@@ -61,10 +63,16 @@ def verify_role_creation(conn) -> tuple[bool, str]:
                 (table, table, table)
             )
             if cur.fetchone()[0]:
-                print(f"❌ FAIL: 'theme_analyst' role has unauthorized INSERT, UPDATE, or DELETE permission on '{table}'.")
-                return False, f"'theme_analyst' role has unauthorized INSERT, UPDATE, or DELETE permission on '{table}'"
+                print(
+                    f"❌ FAIL: 'theme_analyst' role has unauthorized "
+                    f"INSERT, UPDATE, or DELETE permission on '{table}'."
+                )
+                return False, (
+                    f"'theme_analyst' role has unauthorized "
+                    f"INSERT, UPDATE, or DELETE permission on '{table}'"
+                )
         print("✅ OK: Role does not have modification permissions.")
-        
+
         print("✅ PASS: 'theme_analyst' role created with correct permissions.")
         return True, ""
 
@@ -84,7 +92,7 @@ def verify_rls_enabled(conn) -> tuple[bool, str]:
                 print(f"❌ FAIL: RLS is not enabled on table '{table}'.")
                 return False, f"RLS is not enabled on table '{table}'"
             print(f"✅ OK: RLS is enabled on table '{table}'.")
-    
+
     print("✅ PASS: Row-Level Security is enabled on all required tables.")
     return True, ""
 
@@ -108,7 +116,7 @@ def verify_rls_policies(conn) -> tuple[bool, str]:
                 print(f"❌ FAIL: RLS policy '{policy_name}' not found on table '{table}'.")
                 return False, f"RLS policy '{policy_name}' not found on table '{table}'"
             print(f"✅ OK: RLS policy '{policy_name}' found on table '{table}'.")
-    
+
     print("✅ PASS: All required RLS policies are created.")
     return True, ""
 
@@ -132,15 +140,21 @@ def verify_theme_function(conn) -> tuple[bool, str]:
             cur.execute("SELECT get_user_theme_id();")
             theme_id = cur.fetchone()[0]
             cur.execute("RESET ROLE;") # IMPORTANT: Switch back
-            
+
             if theme_id != 18:
-                print(f"❌ FAIL: get_user_theme_id() returned {theme_id} for 'theme_analyst', but expected 18.")
-                return False, f"get_user_theme_id() returned {theme_id} for 'theme_analyst', but expected 18"
-            
+                print(
+                    f"❌ FAIL: get_user_theme_id() returned {theme_id} "
+                    f"for 'theme_analyst', but expected 18."
+                )
+                return False, (
+                    f"get_user_theme_id() returned {theme_id} "
+                    f"for 'theme_analyst', but expected 18"
+                )
+
             print("✅ OK: Function returns correct theme_id (18) for 'theme_analyst'.")
             print("✅ PASS: Theme assignment function is correct.")
             return True, ""
-        except Exception as e:
+        except (psycopg2.Error, ValueError, KeyError, TypeError) as e:
             conn.rollback() # Rollback any failed transaction state
             print(f"❌ FAIL: Error testing get_user_theme_id() function: {e}")
             return False, f"Error testing get_user_theme_id() function: {e}"
@@ -159,7 +173,7 @@ def test_theme_analyst_access(conn) -> tuple[bool, str]:
             cur.execute("SELECT set_num FROM lego_sets ORDER BY set_num;")
             star_wars_sets = [row[0] for row in cur.fetchall()]
             expected_sets = ['65081-1', 'K8008-1']
-            
+
             if sorted(star_wars_sets) != sorted(expected_sets):
                 print(f"❌ FAIL: Expected Star Wars sets {expected_sets}, but got {star_wars_sets}.")
                 cur.execute("RESET ROLE;")
@@ -170,9 +184,15 @@ def test_theme_analyst_access(conn) -> tuple[bool, str]:
             cur.execute("SELECT COUNT(*) FROM lego_sets WHERE theme_id = 1;")
             technic_count = cur.fetchone()[0]
             if technic_count != 0:
-                print(f"❌ FAIL: Technic sets should be blocked, but query returned {technic_count} sets.")
+                print(
+                    f"❌ FAIL: Technic sets should be blocked, but "
+                    f"query returned {technic_count} sets."
+                )
                 cur.execute("RESET ROLE;")
-                return False, f"Technic sets should be blocked, but query returned {technic_count} sets"
+                return False, (
+                    f"Technic sets should be blocked, but query returned "
+                    f"{technic_count} sets"
+                )
             print("✅ PASS: Technic theme is correctly blocked (0 sets returned).")
 
             # Test 3: Check reference tables are fully accessible
@@ -189,7 +209,7 @@ def test_theme_analyst_access(conn) -> tuple[bool, str]:
                 print("❌ FAIL: No inventories are visible for the allowed sets.")
                 cur.execute("RESET ROLE;")
                 return False, "No inventories are visible for the allowed sets"
-            
+
             cur.execute("SELECT COUNT(*) FROM lego_inventory_parts;")
             if cur.fetchone()[0] == 0:
                 print("❌ FAIL: No inventory parts are visible for the allowed sets.")
@@ -200,14 +220,14 @@ def test_theme_analyst_access(conn) -> tuple[bool, str]:
             # IMPORTANT: Always reset the role at the end
             cur.execute("RESET ROLE;")
             return True, ""
-    except Exception as e:
+    except (psycopg2.Error, ValueError, KeyError, TypeError) as e:
         conn.rollback() # Ensure transaction is clean
         print(f"❌ FAIL: An error occurred while testing data access as 'theme_analyst': {e}")
         # Try to reset role even on failure to clean up session state
         try:
             with conn.cursor() as cleanup_cur:
                 cleanup_cur.execute("RESET ROLE;")
-        except:
+        except psycopg2.Error:
             pass
         return False, f"An error occurred while testing data access as 'theme_analyst': {e}"
 
@@ -225,31 +245,31 @@ def verify() -> tuple[bool, str]:
     conn = None
     try:
         conn = psycopg2.connect(**conn_params)
-        
+
         success, error_msg = verify_role_creation(conn)
         if not success:
             if conn:
                 conn.close()
             return False, error_msg
-        
+
         success, error_msg = verify_rls_enabled(conn)
         if not success:
             if conn:
                 conn.close()
             return False, error_msg
-        
+
         success, error_msg = verify_rls_policies(conn)
         if not success:
             if conn:
                 conn.close()
             return False, error_msg
-        
+
         success, error_msg = verify_theme_function(conn)
         if not success:
             if conn:
                 conn.close()
             return False, error_msg
-        
+
         success, error_msg = test_theme_analyst_access(conn)
         if not success:
             if conn:
@@ -262,11 +282,14 @@ def verify() -> tuple[bool, str]:
         return True, ""
 
     except psycopg2.OperationalError as e:
-        print(f"❌ CRITICAL: Could not connect to the database. Check credentials and host. Details: {e}")
+        print(
+            f"❌ CRITICAL: Could not connect to the database. "
+            f"Check credentials and host. Details: {e}"
+        )
         if conn:
             conn.close()
         return False, f"Could not connect to the database. Details: {e}"
-    except Exception as e:
+    except (psycopg2.Error, ValueError, KeyError, TypeError) as e:
         print(f"❌ CRITICAL: An unexpected error occurred. Details: {e}")
         if conn:
             conn.close()
@@ -274,7 +297,7 @@ def verify() -> tuple[bool, str]:
 
 def main():
     """Main verification function."""
-    success, error_msg = verify()
+    success, _error_msg = verify()
     if success:
         sys.exit(0)
     else:

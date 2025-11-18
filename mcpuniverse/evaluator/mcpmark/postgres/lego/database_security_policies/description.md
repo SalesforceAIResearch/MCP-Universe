@@ -9,19 +9,19 @@ Implement a comprehensive database security system with Row-Level Security (RLS)
 
 2. **Enable Row-Level Security** — Enable RLS on the following tables:
    * `lego_sets`
-   * `lego_inventories` 
+   * `lego_inventories`
    * `lego_inventory_parts`
 
 3. **Create RLS policies** — Implement theme-based data isolation policies:
-   
+
    **Policy 1: `theme_sets_policy` on `lego_sets`**
    * Allows access only to sets where `theme_id = 18` (Star Wars theme)
    * Policy should use a function that checks the current user's theme assignment
-   
+
    **Policy 2: `theme_inventories_policy` on `lego_inventories`**
    * Allows access only to inventories for sets with `theme_id = 18`
    * Must join with `lego_sets` table to check theme_id
-   
+
    **Policy 3: `theme_inventory_parts_policy` on `lego_inventory_parts`**
    * Allows access only to inventory parts for sets with `theme_id = 18`
    * Must join through `lego_inventories` and `lego_sets` to check theme_id
@@ -55,7 +55,8 @@ Implement a comprehensive database security system with Row-Level Security (RLS)
 
 When the `theme_analyst` role queries the database:
 - `lego_sets` should return only 2 Star Wars sets
-- `lego_inventories` should return only inventories for those 2 sets  
+- `lego_inventories` should return only inventories for those 2 sets
 - `lego_inventory_parts` should return only parts for those 2 sets
 - All reference tables should return complete data
 - Queries for other themes should return empty results
+

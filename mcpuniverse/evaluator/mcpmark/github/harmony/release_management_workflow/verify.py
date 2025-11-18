@@ -1,8 +1,10 @@
+"""Verification module for release management workflow in harmony repository."""
+# pylint: disable=R0911,astroid-error,duplicate-code,import-error
 import sys
 import os
-import requests
-from typing import Dict, List, Optional, Tuple
 import base64
+from typing import Dict, List, Optional, Tuple
+import requests
 from dotenv import load_dotenv
 
 
@@ -15,12 +17,11 @@ def _get_github_api(
         response = requests.get(url, headers=headers)
         if response.status_code == 200:
             return True, response.json()
-        elif response.status_code == 404:
+        if response.status_code == 404:
             return False, None
-        else:
-            print(f"API error for {endpoint}: {response.status_code}", file=sys.stderr)
-            return False, None
-    except Exception as e:
+        print(f"API error for {endpoint}: {response.status_code}", file=sys.stderr)
+        return False, None
+    except (requests.RequestException, IOError, OSError, ValueError) as e:
         print(f"Exception for {endpoint}: {e}", file=sys.stderr)
         return False, None
 
@@ -52,7 +53,7 @@ def _check_file_content(
         try:
             content = base64.b64decode(result.get("content", "")).decode("utf-8")
             return all(keyword in content for keyword in keywords)
-        except Exception as e:
+        except (IOError, OSError, UnicodeDecodeError) as e:
             print(f"Content decode error for {file_path}: {e}", file=sys.stderr)
             return False
 
@@ -80,7 +81,7 @@ def _check_specific_file_content(
             content = base64.b64decode(result.get("content", "")).decode("utf-8")
             # Check both that expected content exists and file has reasonable content
             return expected_content in content and len(content) >= min_length
-        except Exception as e:
+        except (IOError, OSError, UnicodeDecodeError) as e:
             print(f"Content decode error for {file_path}: {e}", file=sys.stderr)
             return False
 
@@ -168,17 +169,17 @@ def verify() -> tuple[bool, str]:
         return False, "GITHUB_EVAL_ORG environment variable not set"
 
     # Configuration constants
-    RELEASE_BRANCH = "release-v1.1.0"
+    release_branch = "release-v1.1.0"
 
     # Expected content checks with minimum file sizes to ensure files aren't just stubs
-    METASEP_FIX = 'FormattingToken::MetaSep => "<|meta_sep|>"'
-    REGISTRY_FIX = '(FormattingToken::MetaSep, "<|meta_sep|>")'
-    METAEND_FIX = '(FormattingToken::MetaEnd, "<|meta_end|>")'
-    UTILS_CONTENT = "export function cn(...inputs: ClassValue[])"
-    GITIGNORE_ADDITION = "!demo/harmony-demo/src/lib"
-    VERSION_110 = 'version = "1.1.0"'
+    metasep_fix = 'FormattingToken::MetaSep => "<|meta_sep|>"'
+    registry_fix = '(FormattingToken::MetaSep, "<|meta_sep|>")'
+    metaend_fix = '(FormattingToken::MetaEnd, "<|meta_end|>")'
+    utils_content = "export function cn(...inputs: ClassValue[])"
+    gitignore_addition = "!demo/harmony-demo/src/lib"
+    version_110 = 'version = "1.1.0"'
 
-    CHANGELOG_KEYWORDS = [
+    changelog_keywords = [
         "## [1.1.0] - 2025-08-07",
         "MetaSep token mapping bug",
         "shadcn utils.ts file",
@@ -196,14 +197,14 @@ def verify() -> tuple[bool, str]:
 
     # 1. Check release branch exists
     print("1. Verifying release branch exists...")
-    if not _check_branch_exists(RELEASE_BRANCH, headers, github_org):
-        print(f"Error: Branch '{RELEASE_BRANCH}' not found", file=sys.stderr)
-        return False, f"Branch '{RELEASE_BRANCH}' not found"
+    if not _check_branch_exists(release_branch, headers, github_org):
+        print(f"Error: Branch '{release_branch}' not found", file=sys.stderr)
+        return False, f"Branch '{release_branch}' not found"
 
     # 2. Check MetaSep fix in encoding.rs (with min content length to ensure file wasn't gutted)
     print("2. Verifying MetaSep token fix in encoding.rs...")
     if not _check_specific_file_content(
-        "main", "src/encoding.rs", METASEP_FIX, headers, github_org, min_length=500
+        "main", "src/encoding.rs", metasep_fix, headers, github_org, min_length=500
     ):
         print(
             "Error: MetaSep token fix not found in src/encoding.rs or file is too small",
@@ -214,7 +215,7 @@ def verify() -> tuple[bool, str]:
     # 3. Check registry updates (both MetaSep and MetaEnd)
     print("3. Verifying MetaSep and MetaEnd registry additions...")
     if not _check_specific_file_content(
-        "main", "src/registry.rs", REGISTRY_FIX, headers, github_org, min_length=500
+        "main", "src/registry.rs", registry_fix, headers, github_org, min_length=500
     ):
         print(
             "Error: MetaSep registry fix not found in src/registry.rs or file is too small",
@@ -222,7 +223,7 @@ def verify() -> tuple[bool, str]:
         )
         return False, "MetaSep registry fix not found in src/registry.rs or file is too small"
     if not _check_specific_file_content(
-        "main", "src/registry.rs", METAEND_FIX, headers, github_org, min_length=500
+        "main", "src/registry.rs", metaend_fix, headers, github_org, min_length=500
     ):
         print(
             "Error: MetaEnd registry fix not found in src/registry.rs", file=sys.stderr
@@ -234,7 +235,7 @@ def verify() -> tuple[bool, str]:
     if not _check_specific_file_content(
         "main",
         "demo/harmony-demo/src/lib/utils.ts",
-        UTILS_CONTENT,
+        utils_content,
         headers,
         github_org,
         min_length=50,
@@ -245,7 +246,7 @@ def verify() -> tuple[bool, str]:
     # 5. Check .gitignore update
     print("5. Verifying .gitignore update...")
     if not _check_specific_file_content(
-        "main", ".gitignore", GITIGNORE_ADDITION, headers, github_org, min_length=100
+        "main", ".gitignore", gitignore_addition, headers, github_org, min_length=100
     ):
         print("Error: .gitignore update not found", file=sys.stderr)
         return False, ".gitignore update not found"
@@ -253,7 +254,7 @@ def verify() -> tuple[bool, str]:
     # 6. Check version update in Cargo.toml only (pyproject.toml uses dynamic versioning)
     print("6. Verifying version update in Cargo.toml...")
     if not _check_specific_file_content(
-        "main", "Cargo.toml", VERSION_110, headers, github_org, min_length=200
+        "main", "Cargo.toml", version_110, headers, github_org, min_length=200
     ):
         print("Error: Version 1.1.0 not found in Cargo.toml", file=sys.stderr)
         return False, "Version 1.1.0 not found in Cargo.toml"
@@ -261,7 +262,7 @@ def verify() -> tuple[bool, str]:
     # 7. Check CHANGELOG.md exists with required content
     print("7. Verifying CHANGELOG.md...")
     if not _check_file_content(
-        "main", "CHANGELOG.md", CHANGELOG_KEYWORDS, headers, github_org
+        "main", "CHANGELOG.md", changelog_keywords, headers, github_org
     ):
         print(
             "Error: CHANGELOG.md not found or missing required content", file=sys.stderr
@@ -293,7 +294,7 @@ def verify() -> tuple[bool, str]:
 
 def main():
     """Main verification function."""
-    success, error_msg = verify()
+    success, _error_msg = verify()
     if success:
         sys.exit(0)
     else:

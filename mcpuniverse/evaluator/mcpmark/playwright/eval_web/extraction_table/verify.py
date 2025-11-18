@@ -32,26 +32,29 @@ def get_model_response():
         return None
 
     try:
-        with open(messages_path, 'r') as f:
+        with open(messages_path, 'r', encoding='utf-8') as f:
             messages = json.load(f)
 
         # Find the last assistant message with status completed
         for message in reversed(messages):
-            if (message.get('role') == 'assistant' and
-                message.get('status') == 'completed' and
-                message.get('type') == 'message'):
-                content = message.get('content', [])
-                # Extract text from content
-                if isinstance(content, list):
-                    for item in content:
-                        if isinstance(item, dict) and item.get('type') in ['text', 'output_text']:
-                            return item.get('text', '')
-                elif isinstance(content, str):
-                    return content
+            # Check if this is a completed assistant message
+            if not (message.get('role') == 'assistant' and
+                    message.get('status') == 'completed' and
+                    message.get('type') == 'message'):
+                continue
+
+            content = message.get('content', [])
+            # Extract text from content
+            if isinstance(content, list):
+                for item in content:
+                    if isinstance(item, dict) and item.get('type') in ['text', 'output_text']:
+                        return item.get('text', '')
+            elif isinstance(content, str):
+                return content
 
         print("| Warning: No completed assistant message found", file=sys.stderr)
         return None
-    except Exception as e:
+    except (IOError, OSError, json.JSONDecodeError, UnicodeDecodeError) as e:
         print(f"| Error reading messages file: {str(e)}", file=sys.stderr)
         return None
 
@@ -82,7 +85,7 @@ def extract_csv_from_response(response):
         csv_lines = []
         for line in lines[csv_start:]:
             line = line.strip()
-            if not line or not (',' in line):
+            if not line or ',' not in line:
                 if csv_lines:  # If we already have data, stop at empty line
                     break
                 continue
@@ -95,6 +98,68 @@ def extract_csv_from_response(response):
     return None
 
 
+def _validate_numeric_column(value, col_name, row_num):
+    """Validate a numeric column value."""
+    # Check for quotes (should not have any)
+    if value.startswith('"') and value.endswith('"'):
+        return False, f"| Row {row_num} {col_name} should not have quotes, actual: {value}"
+
+    # Check numeric format
+    if col_name == "Rating":
+        try:
+            float(value)
+        except ValueError:
+            return False, f"| Row {row_num} {col_name} should be a number, actual: {value}"
+    else:
+        if not value.isdigit():
+            return False, f"| Row {row_num} {col_name} should be pure digits, actual: {value}"
+
+    return True, None
+
+
+def _validate_data_row(row, row_num):
+    """Validate a single data row."""
+    # Check if each column has data
+    if not all(cell.strip() for cell in row):
+        return False, f"| Row {row_num} contains empty data"
+
+    # Check numeric column format
+    for col_idx, col_name in [(1, "Rating"), (2, "Likes"), (3, "Views"), (4, "Replies")]:
+        value = row[col_idx].strip()
+        is_valid, error_msg = _validate_numeric_column(value, col_name, row_num)
+        if not is_valid:
+            return False, error_msg
+
+    return True, None
+
+
+def _validate_csv_structure(lines, rows):
+    """Validate CSV structure (row count, header, column count)."""
+    # Check total number of rows
+    expected_total_rows = EXPECTED_DATA_ROWS + 1
+    if len(lines) != expected_total_rows:
+        msg = (f"| CSV total row count mismatch, expected: "
+               f"{expected_total_rows} rows, actual: {len(lines)} rows")
+        return False, msg
+
+    # Check header row format
+    header_line = lines[0].strip()
+    if header_line != EXPECTED_HEADER_LINE:
+        msg = (f"| Header format mismatch, expected: "
+               f"'{EXPECTED_HEADER_LINE}', actual: '{header_line}'")
+        return False, msg
+
+    # Check column count for each row
+    expected_columns = len(EXPECTED_HEADERS)
+    for i, row in enumerate(rows):
+        if len(row) != expected_columns:
+            msg = (f"| Row {i+1} column count incorrect, expected: "
+                   f"{expected_columns} columns, actual: {len(row)} columns")
+            return False, msg
+
+    return True, None
+
+
 def validate_csv_data(csv_text):
     """
     Validate CSV data format and content, must match data.csv exactly.
@@ -104,61 +169,33 @@ def validate_csv_data(csv_text):
 
     try:
         lines = csv_text.strip().split('\n')
-
-        # Check total number of rows (1 header row + data rows)
-        expected_total_rows = EXPECTED_DATA_ROWS + 1
-        if len(lines) != expected_total_rows:
-            return False, f"| CSV total row count mismatch, expected: {expected_total_rows} rows, actual: {len(lines)} rows"
-
-        # Check header row format (must match exactly)
-        header_line = lines[0].strip()
-        if header_line != EXPECTED_HEADER_LINE:
-            return False, f"| Header format mismatch, expected: '{EXPECTED_HEADER_LINE}', actual: '{header_line}'"
-
-        # Parse CSV to validate structure
         csv_reader = csv.reader(StringIO(csv_text))
         rows = list(csv_reader)
 
-        # Check column count for each row
-        expected_columns = len(EXPECTED_HEADERS)
-        for i, row in enumerate(rows):
-            if len(row) != expected_columns:
-                return False, f"| Row {i+1} column count incorrect, expected: {expected_columns} columns, actual: {len(row)} columns"
+        # Validate structure
+        is_valid, error_msg = _validate_csv_structure(lines, rows)
+        if not is_valid:
+            return False, error_msg
 
         # Validate data row format
         valid_rows = 0
         for i, row in enumerate(rows[1:], 2):  # Skip header, start from row 2
-            # Check if each column has data
-            if not all(cell.strip() for cell in row):
-                return False, f"| Row {i} contains empty data"
-
-            # Check numeric column format (Rating, Likes, Views, Replies should not have quotes)
-            for col_idx, col_name in [(1, "Rating"), (2, "Likes"), (3, "Views"), (4, "Replies")]:
-                value = row[col_idx].strip()
-
-                # Check for quotes (should not have any)
-                if value.startswith('"') and value.endswith('"'):
-                    return False, f"| Row {i} {col_name} should not have quotes, actual: {value}"
-
-                # Check numeric format
-                if col_name == "Rating":
-                    try:
-                        float(value)
-                    except ValueError:
-                        return False, f"| Row {i} {col_name} should be a number, actual: {value}"
-                else:
-                    if not value.isdigit():
-                        return False, f"| Row {i} {col_name} should be pure digits, actual: {value}"
-
+            is_valid, error_msg = _validate_data_row(row, i)
+            if not is_valid:
+                return False, error_msg
             valid_rows += 1
 
         # Validate number of data rows
         if valid_rows != EXPECTED_DATA_ROWS:
-            return False, f"| Valid data row count mismatch, expected: {EXPECTED_DATA_ROWS} rows, actual: {valid_rows} rows"
+            msg = (f"| Valid data row count mismatch, expected: "
+                   f"{EXPECTED_DATA_ROWS} rows, actual: {valid_rows} rows")
+            return False, msg
 
-        return True, f"| CSV validation successful: format matches data.csv exactly, {valid_rows} valid data rows"
+        msg = (f"| CSV validation successful: format matches data.csv "
+               f"exactly, {valid_rows} valid data rows")
+        return True, msg
 
-    except Exception as e:
+    except (ValueError, KeyError, TypeError, AttributeError, csv.Error) as e:
         return False, f"| CSV format parsing error: {str(e)}"
 
 
@@ -190,16 +227,15 @@ def verify() -> tuple[bool, str]:
     if is_valid:
         print(f"|\n| ✓ {message}", file=sys.stderr)
         return True, ""
-    else:
-        print(f"|\n| ✗ CSV validation failed: {message}", file=sys.stderr)
-        return False, f"CSV validation failed: {message}"
+    print(f"|\n| ✗ CSV validation failed: {message}", file=sys.stderr)
+    return False, f"CSV validation failed: {message}"
 
 
 def main():
     """
     Executes the verification process and exits with a status code.
     """
-    success, error_msg = verify()
+    success, _error_msg = verify()
     sys.exit(0 if success else 1)
 
 

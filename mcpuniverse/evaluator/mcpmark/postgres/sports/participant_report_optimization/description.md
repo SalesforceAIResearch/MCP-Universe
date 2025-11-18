@@ -20,17 +20,17 @@ Add constraint: CHECK (participant_id > 0)
 ### 2. Execute and Optimize the Slow Query
 The following query is currently running very slowly. Your task is to:
 1. **Identify why the query is slow**
-2. **Create appropriate indexes to optimize it** 
+2. **Create appropriate indexes to optimize it**
 3. **Populate the report table with the query results**
 
 ```sql
-SELECT 
+SELECT
     pe.participant_id,
     COUNT(pe.event_id) as event_count,
     (SELECT COUNT(*) FROM stats s WHERE s.stat_holder_id = pe.participant_id AND s.stat_holder_type = 'persons') as stat_count,
     (SELECT COUNT(DISTINCT s.stat_repository_type) FROM stats s WHERE s.stat_holder_id = pe.participant_id AND s.stat_holder_type = 'persons') as stat_type_count,
     (SELECT MAX(e.start_date_time) FROM events e JOIN participants_events pe2 ON e.id = pe2.event_id WHERE pe2.participant_id = pe.participant_id) as last_event_date
-FROM participants_events pe 
+FROM participants_events pe
 WHERE pe.participant_id <= 50
 GROUP BY pe.participant_id
 ORDER BY pe.participant_id;

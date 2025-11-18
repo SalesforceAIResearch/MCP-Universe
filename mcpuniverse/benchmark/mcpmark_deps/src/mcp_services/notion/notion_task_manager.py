@@ -10,7 +10,7 @@ The task manager is responsible for:
 - Task verification and result processing
 - Task-specific logic (NOT LLM execution)
 """
-
+# pylint: disable=import-error
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -35,16 +35,17 @@ class NotionTask(BaseTask):
 
     def __post_init__(self):
         # Ensure base class fields are set if not provided
+        # Access properties after they're defined
         if (
             not hasattr(self, "task_instruction_path")
-            or self.task_instruction_path is None
+            or getattr(self, "task_instruction_path", None) is None
         ):
-            self.task_instruction_path = self.description_path
+            object.__setattr__(self, "task_instruction_path", self.description_path)
         if (
             not hasattr(self, "task_verification_path")
-            or self.task_verification_path is None
+            or getattr(self, "task_verification_path", None) is None
         ):
-            self.task_verification_path = self.verify_path
+            object.__setattr__(self, "task_verification_path", self.verify_path)
 
     @property
     def description_path(self) -> Path:
@@ -64,7 +65,7 @@ class NotionTask(BaseTask):
         return ""
 
 
-class NotionTaskManager(BaseTaskManager):
+class NotionTaskManager(BaseTaskManager):  # pylint: disable=too-few-public-methods
     """Manages task discovery, filtering, and verification for Notion-based MCPMark evaluation."""
 
     def __init__(self, tasks_root: Path = None):
@@ -92,24 +93,15 @@ class NotionTaskManager(BaseTaskManager):
         self, category_id: str, task_files_info: Dict[str, Any]
     ) -> Optional[NotionTask]:
         """Instantiate a `NotionTask` from the dictionary returned by `_find_task_files`."""
-        import json
-        
         # Check for meta.json
         meta_path = task_files_info["instruction_path"].parent / "meta.json"
-        final_category_id = category_id
-        task_id = task_files_info["task_id"]
-        
-        if meta_path.exists():
-            try:
-                with open(meta_path, 'r') as f:
-                    meta_data = json.load(f)
-                    # Use values from meta.json if available
-                    final_category_id = meta_data.get("category_id", category_id)
-                    task_id = meta_data.get("task_id", task_id)
-            except Exception as e:
-                logger.warning(f"Failed to load meta.json from {meta_path}: {e}")
+        # Load meta.json if available
+        final_category_id, task_id = self._load_meta_json(
+            meta_path, category_id, task_files_info["task_id"]
+        )
 
-        return NotionTask(
+        # Create task - BaseTask fields are inherited from dataclass
+        task = NotionTask(  # pylint: disable=unexpected-keyword-arg
             task_instruction_path=task_files_info["instruction_path"],
             task_verification_path=task_files_info["verification_path"],
             service="notion",
@@ -117,6 +109,7 @@ class NotionTaskManager(BaseTaskManager):
             task_id=task_id,
             task_name=task_files_info["task_id"],
         )
+        return task
 
     def _get_verification_command(self, task: NotionTask) -> List[str]:
         """Get the verification command for Notion tasks.

@@ -1,8 +1,10 @@
+"""Verification module for automated changelog generation in claude-code repository."""
+# pylint: disable=R0911,R0912,R0915,astroid-error,duplicate-code,import-error
 import sys
 import os
-import requests
-from typing import Dict, List, Optional, Tuple
 import base64
+from typing import Dict, List, Optional, Tuple
+import requests
 from dotenv import load_dotenv
 
 
@@ -16,12 +18,11 @@ def _get_github_api(
         response = requests.get(url, headers=headers)
         if response.status_code == 200:
             return True, response.json()
-        elif response.status_code == 404:
+        if response.status_code == 404:
             return False, None
-        else:
-            print(f"API error for {endpoint}: {response.status_code}", file=sys.stderr)
-            return False, None
-    except Exception as e:
+        print(f"API error for {endpoint}: {response.status_code}", file=sys.stderr)
+        return False, None
+    except (requests.RequestException, IOError, OSError, ValueError) as e:
         print(f"Exception for {endpoint}: {e}", file=sys.stderr)
         return False, None
 
@@ -51,7 +52,7 @@ def _get_file_content(
     try:
         content = base64.b64decode(result.get("content", "")).decode("utf-8")
         return content
-    except Exception as e:
+    except (IOError, OSError, UnicodeDecodeError) as e:
         print(f"Content decode error for {file_path}: {e}", file=sys.stderr)
         return None
 
@@ -122,15 +123,15 @@ def verify() -> tuple[bool, str]:
     meets the requirements described in description.md.
     """
     # Configuration constants - these are known to us but not explicitly told to the model
-    DOCS_BRANCH_NAME = "docs/changelog-and-migration"
-    DOCS_PR_KEYWORD = "Generated changelog and migration"
+    docs_branch_name = "docs/changelog-and-migration"
+    docs_pr_keyword = "Generated changelog and migration"
 
     # Known issue and PR numbers for verification
-    EXPECTED_BUG_ISSUES = [12, 13, 15, 21, 22, 23, 25, 37, 39, 48, 50]
-    EXPECTED_OPEN_PRS = [51, 52, 53]
+    expected_bug_issues = [12, 13, 15, 21, 22, 23, 25, 37, 39, 48, 50]
+    expected_open_prs = [51, 52, 53]
 
     # Expected file sections
-    CHANGELOG_SECTIONS = [
+    changelog_sections = [
         "# Changelog - Recent Fixes",
         "### 🐛 Bug Fixes",
         "### 📚 Documentation",
@@ -138,16 +139,16 @@ def verify() -> tuple[bool, str]:
         "### 📊 Statistics",
     ]
 
-    MIGRATION_GUIDE_SECTIONS = ["# Migration Guide for Pending Features"]
+    migration_guide_sections = ["# Migration Guide for Pending Features"]
 
-    ISSUE_ANALYSIS_SECTIONS = [
+    issue_analysis_sections = [
         "# Issue Analysis Report",
         "## Closed Issues by Category",
         "## Resolution Patterns",
         "## Platform Impact Analysis",
     ]
 
-    PR_INTEGRATION_SECTIONS = [
+    pr_integration_sections = [
         "# Pull Request Integration Strategy",
         "## Open PRs Overview",
         "## Dependencies and Conflicts",
@@ -180,34 +181,34 @@ def verify() -> tuple[bool, str]:
 
     # 1. Check that documentation branch exists
     print("1. Verifying documentation branch exists...")
-    if not _check_branch_exists(DOCS_BRANCH_NAME, headers, github_org):
-        print(f"Error: Branch '{DOCS_BRANCH_NAME}' not found", file=sys.stderr)
-        return False, f"Branch '{DOCS_BRANCH_NAME}' not found"
+    if not _check_branch_exists(docs_branch_name, headers, github_org):
+        print(f"Error: Branch '{docs_branch_name}' not found", file=sys.stderr)
+        return False, f"Branch '{docs_branch_name}' not found"
     print("✓ Documentation branch created")
 
     # 2. Check changelog file
     print("2. Verifying CHANGELOG-GENERATED.md...")
     changelog_content = _get_file_content(
-        "CHANGELOG-GENERATED.md", headers, github_org, "claude-code", DOCS_BRANCH_NAME
+        "CHANGELOG-GENERATED.md", headers, github_org, "claude-code", docs_branch_name
     )
     if not changelog_content:
         print("Error: CHANGELOG-GENERATED.md not found", file=sys.stderr)
         return False, "CHANGELOG-GENERATED.md not found"
 
-    if not _check_file_sections(changelog_content, CHANGELOG_SECTIONS):
+    if not _check_file_sections(changelog_content, changelog_sections):
         print(
             "Error: CHANGELOG-GENERATED.md missing required sections", file=sys.stderr
         )
         return False, "CHANGELOG-GENERATED.md missing required sections"
 
     # Check that bug issues are referenced
-    bug_refs = _check_issue_references(changelog_content, EXPECTED_BUG_ISSUES)
+    bug_refs = _check_issue_references(changelog_content, expected_bug_issues)
     if bug_refs < 8:  # At least 8 of the bug issues
-        print(
-            f"Error: CHANGELOG-GENERATED.md only references {bug_refs} bug issues, expected at least 8",
-            file=sys.stderr,
-        )
-        return False, f"CHANGELOG-GENERATED.md only references {bug_refs} bug issues, expected at least 8"
+        msg = (f"Error: CHANGELOG-GENERATED.md only references "
+               f"{bug_refs} bug issues, expected at least 8")
+        print(msg, file=sys.stderr)
+        return False, (f"CHANGELOG-GENERATED.md only references "
+                       f"{bug_refs} bug issues, expected at least 8")
 
     # Check for platform and area statistics
     if (
@@ -225,18 +226,18 @@ def verify() -> tuple[bool, str]:
     # 3. Check migration guide
     print("3. Verifying MIGRATION_GUIDE.md...")
     migration_content = _get_file_content(
-        "docs/MIGRATION_GUIDE.md", headers, github_org, "claude-code", DOCS_BRANCH_NAME
+        "docs/MIGRATION_GUIDE.md", headers, github_org, "claude-code", docs_branch_name
     )
     if not migration_content:
         print("Error: docs/MIGRATION_GUIDE.md not found", file=sys.stderr)
         return False, "docs/MIGRATION_GUIDE.md not found"
 
-    if not _check_file_sections(migration_content, MIGRATION_GUIDE_SECTIONS):
+    if not _check_file_sections(migration_content, migration_guide_sections):
         print("Error: MIGRATION_GUIDE.md missing required sections", file=sys.stderr)
         return False, "MIGRATION_GUIDE.md missing required sections"
 
     # Check that all expected open PRs are mentioned
-    pr_refs = _check_pr_references(migration_content, EXPECTED_OPEN_PRS)
+    pr_refs = _check_pr_references(migration_content, expected_open_prs)
     if pr_refs < 3:
         print(
             f"Error: MIGRATION_GUIDE.md only references {pr_refs}/3 open PRs",
@@ -253,13 +254,13 @@ def verify() -> tuple[bool, str]:
         headers,
         github_org,
         "claude-code",
-        DOCS_BRANCH_NAME,
+        docs_branch_name,
     )
     if not issue_analysis_content:
         print("Error: reports/ISSUE_ANALYSIS.md not found", file=sys.stderr)
         return False, "reports/ISSUE_ANALYSIS.md not found"
 
-    if not _check_file_sections(issue_analysis_content, ISSUE_ANALYSIS_SECTIONS):
+    if not _check_file_sections(issue_analysis_content, issue_analysis_sections):
         print("Error: ISSUE_ANALYSIS.md missing required sections", file=sys.stderr)
         return False, "ISSUE_ANALYSIS.md missing required sections"
 
@@ -279,20 +280,20 @@ def verify() -> tuple[bool, str]:
         headers,
         github_org,
         "claude-code",
-        DOCS_BRANCH_NAME,
+        docs_branch_name,
     )
     if not pr_plan_content:
         print("Error: reports/PR_INTEGRATION_PLAN.md not found", file=sys.stderr)
         return False, "reports/PR_INTEGRATION_PLAN.md not found"
 
-    if not _check_file_sections(pr_plan_content, PR_INTEGRATION_SECTIONS):
+    if not _check_file_sections(pr_plan_content, pr_integration_sections):
         print(
             "Error: PR_INTEGRATION_PLAN.md missing required sections", file=sys.stderr
         )
         return False, "PR_INTEGRATION_PLAN.md missing required sections"
 
     # Check that all open PRs are analyzed
-    pr_refs_in_plan = _check_pr_references(pr_plan_content, EXPECTED_OPEN_PRS)
+    pr_refs_in_plan = _check_pr_references(pr_plan_content, expected_open_prs)
     if pr_refs_in_plan < 3:
         print(
             f"Error: PR_INTEGRATION_PLAN.md only references {pr_refs_in_plan}/3 open PRs",
@@ -304,7 +305,7 @@ def verify() -> tuple[bool, str]:
 
     # 6. Find and verify the documentation PR
     print("6. Verifying documentation pull request...")
-    docs_pr = _find_pr_by_title_keyword(DOCS_PR_KEYWORD, headers, github_org)
+    docs_pr = _find_pr_by_title_keyword(docs_pr_keyword, headers, github_org)
     if not docs_pr:
         # Try alternative keyword
         docs_pr = _find_pr_by_title_keyword(
@@ -376,17 +377,17 @@ def verify() -> tuple[bool, str]:
     print("\n✅ All verification checks passed!")
     print("Changelog and migration documentation completed successfully:")
     print(f"  - Documentation PR #{pr_number} (merged)")
-    print(f"  - Branch: {DOCS_BRANCH_NAME}")
+    print(f"  - Branch: {docs_branch_name}")
     print("  - Files created: 4 documentation files")
-    print(f"  - Bug issues referenced: {bug_refs}/{len(EXPECTED_BUG_ISSUES)}")
-    print(f"  - Open PRs analyzed: {pr_refs}/{len(EXPECTED_OPEN_PRS)}")
+    print(f"  - Bug issues referenced: {bug_refs}/{len(expected_bug_issues)}")
+    print(f"  - Open PRs analyzed: {pr_refs}/{len(expected_open_prs)}")
 
     return True, ""
 
 
 def main():
     """Main verification function."""
-    success, error_msg = verify()
+    success, _error_msg = verify()
     if success:
         sys.exit(0)
     else:

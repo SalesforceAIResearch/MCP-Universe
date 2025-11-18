@@ -2,19 +2,21 @@
 Verification script for PostgreSQL LEGO Task 1: Parts Consistency Fix & Constraints
 Version 2.1: Relaxed consistency check to allow for one known corner case mismatch.
 """
+# pylint: disable=too-many-return-statements,duplicate-code
 
 import os
 import sys
+from typing import Optional, Tuple
+
 import psycopg2
 import psycopg2.errors
-from typing import Optional, Tuple, List
 
 
 def get_connection_params() -> dict:
     """Get database connection parameters from environment variables."""
     return {
         "host": os.getenv("POSTGRES_HOST", "localhost"),
-        "port": int(os.getenv("POSTGRES_PORT", 5432)),
+        "port": int(os.getenv("POSTGRES_PORT", "5432")),
         "database": os.getenv("POSTGRES_DATABASE"),
         "user": os.getenv("POSTGRES_USERNAME"),
         "password": os.getenv("POSTGRES_PASSWORD"),
@@ -89,9 +91,12 @@ def verify_data_consistency(conn) -> tuple[bool, str]:
         count = get_mismatch_count(cur)
         # RELAXED CONDITION: Allow 0 or 1 mismatch to pass.
         if count > 1:
-            print(f"❌ FAIL: Found {count} sets with inconsistent part counts. Expected 0 or 1 after fix.")
+            print(
+                f"❌ FAIL: Found {count} sets with inconsistent part counts. "
+                f"Expected 0 or 1 after fix."
+            )
             return False, f"Found {count} sets with inconsistent part counts"
-        
+
         print("✅ PASS: Data consistency check passed (allowing for one known mismatch).")
         return True, ""
 
@@ -130,8 +135,7 @@ def verify_constraint_triggers_exist(conn) -> tuple[bool, str]:
     if all_triggers_found:
         print("✅ PASS: Constraint triggers are attached to all required tables.")
         return True, ""
-    else:
-        return False, f"No constraint triggers found on tables: {', '.join(missing_tables)}"
+    return False, f"No constraint triggers found on tables: {', '.join(missing_tables)}"
 
 
 def verify_violation_is_blocked(conn) -> tuple[bool, str]:
@@ -165,8 +169,12 @@ def verify_violation_is_blocked(conn) -> tuple[bool, str]:
             # We expect an error. Specifically, a constraint violation error.
             conn.rollback()
             # 23514 is check_violation, but custom triggers might raise others.
-            # Any error here is considered a success as the transaction was blocked.
-            print(f"✅ PASS: Inconsistent write was correctly blocked by the trigger. (Error: {e.pgcode})")
+            # Any error here is considered a success as the transaction
+            # was blocked.
+            print(
+                f"✅ PASS: Inconsistent write was correctly blocked by "
+                f"the trigger. (Error: {e.pgcode})"
+            )
             return True, ""
 
 
@@ -190,14 +198,19 @@ def verify_deferred_transaction_is_allowed(conn) -> tuple[bool, str]:
             cur.execute("BEGIN;")
             cur.execute("SET CONSTRAINTS ALL DEFERRED;")
             cur.execute(
-                "UPDATE public.lego_inventory_parts SET quantity = quantity + 1 WHERE inventory_id = %s AND part_num = %s AND color_id = %s;",
+                "UPDATE public.lego_inventory_parts "
+                "SET quantity = quantity + 1 "
+                "WHERE inventory_id = %s AND part_num = %s AND color_id = %s;",
                 (inventory_id, part_num, color_id),
             )
             cur.execute(
-                "UPDATE public.lego_sets SET num_parts = num_parts + 1 WHERE set_num = %s;",
+                "UPDATE public.lego_sets SET num_parts = num_parts + 1 "
+                "WHERE set_num = %s;",
                 (set_num,),
             )
-            cur.execute("COMMIT;") # This will fail if constraints are not deferrable or logic is wrong
+            # This will fail if constraints are not deferrable or logic
+            # is wrong
+            cur.execute("COMMIT;")
         print("✅ PASS: Coordinated update with deferred constraints committed successfully.")
 
         # Revert changes to leave DB in its original state
@@ -205,7 +218,9 @@ def verify_deferred_transaction_is_allowed(conn) -> tuple[bool, str]:
             cur.execute("BEGIN;")
             cur.execute("SET CONSTRAINTS ALL DEFERRED;")
             cur.execute(
-                "UPDATE public.lego_inventory_parts SET quantity = quantity - 1 WHERE inventory_id = %s AND part_num = %s AND color_id = %s;",
+                "UPDATE public.lego_inventory_parts "
+                "SET quantity = quantity - 1 "
+                "WHERE inventory_id = %s AND part_num = %s AND color_id = %s;",
                 (inventory_id, part_num, color_id),
             )
             cur.execute(
@@ -241,15 +256,15 @@ def verify() -> tuple[bool, str]:
             success, error_msg = verify_data_consistency(conn)
             if not success:
                 return False, error_msg
-            
+
             success, error_msg = verify_constraint_triggers_exist(conn)
             if not success:
                 return False, error_msg
-            
+
             success, error_msg = verify_violation_is_blocked(conn)
             if not success:
                 return False, error_msg
-            
+
             success, error_msg = verify_deferred_transaction_is_allowed(conn)
             if not success:
                 return False, error_msg
@@ -260,13 +275,13 @@ def verify() -> tuple[bool, str]:
     except psycopg2.OperationalError as e:
         print(f"❌ CRITICAL: Could not connect to the database. Details: {e}")
         return False, f"Could not connect to the database. Details: {e}"
-    except Exception as e:
+    except (psycopg2.Error, ValueError, KeyError, TypeError) as e:
         print(f"❌ CRITICAL: An unexpected error occurred during verification. Details: {e}")
         return False, f"An unexpected error occurred during verification. Details: {e}"
 
 def main():
     """Main verification function."""
-    success, error_msg = verify()
+    success, _error_msg = verify()
     if success:
         sys.exit(0)
     else:

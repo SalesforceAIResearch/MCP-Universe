@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Optional, Dict, Any
 from urllib.parse import urlparse
 
+# pylint: disable=import-error
 import requests
 
 from src.base.state_manager import BaseStateManager, InitialStateInfo
@@ -28,7 +29,8 @@ logger = get_logger(__name__)
 
 
 @dataclass
-class DockerConfig:
+class DockerConfig:  # pylint: disable=too-few-public-methods, too-many-instance-attributes
+    """Configuration for Docker container management."""
     image_name: str = "shopping_admin_final_0719"
     image_tar_path: Optional[Path] = None
     container_name: str = "shopping_admin"
@@ -40,10 +42,11 @@ class DockerConfig:
 
     @property
     def base_url(self) -> str:
+        """Get the base URL for the container."""
         return f"http://localhost:{self.host_port}"
 
 
-class PlaywrightStateManager(BaseStateManager):
+class PlaywrightStateManager(BaseStateManager):  # pylint: disable=too-many-instance-attributes
     """
     Manage Docker lifecycle for WebArena-backed tasks.
 
@@ -51,7 +54,7 @@ class PlaywrightStateManager(BaseStateManager):
       run container and wait until HTTP endpoint is ready.
     - Cleanup: stop and remove the container.
     """
-    
+
     # Category-specific Docker configurations
     CATEGORY_CONFIGS = {
         "reddit": {
@@ -74,7 +77,7 @@ class PlaywrightStateManager(BaseStateManager):
         }
     }
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments, too-many-locals
         self,
         *,
         docker_image_name: str = "shopping_admin_final_0719",
@@ -86,12 +89,12 @@ class PlaywrightStateManager(BaseStateManager):
         readiness_timeout_seconds: int = 600,
         readiness_poll_interval_seconds: float = 2.0,
         # Playwright browser config params (ignored by this state manager)
-        browser: Optional[str] = None,
-        headless: Optional[bool] = None,
-        network_origins: Optional[str] = None,
-        user_profile: Optional[str] = None,
-        viewport_width: Optional[int] = None,
-        viewport_height: Optional[int] = None,
+        browser: Optional[str] = None,  # pylint: disable=unused-argument
+        headless: Optional[bool] = None,  # pylint: disable=unused-argument
+        network_origins: Optional[str] = None,  # pylint: disable=unused-argument
+        user_profile: Optional[str] = None,  # pylint: disable=unused-argument
+        viewport_width: Optional[int] = None,  # pylint: disable=unused-argument
+        viewport_height: Optional[int] = None,  # pylint: disable=unused-argument
         # Debug mode - skip container cleanup
         skip_cleanup: bool = False,
     ) -> None:
@@ -187,10 +190,11 @@ class PlaywrightStateManager(BaseStateManager):
             return False
 
     def _http_ready(self, url: str) -> bool:
+        """Check if HTTP endpoint is ready."""
         try:
             resp = requests.get(url, timeout=3)
             return resp.status_code < 500
-        except Exception:
+        except Exception:  # pylint: disable=broad-exception-caught
             return False
 
     def _get_entry_url(self) -> str:
@@ -262,15 +266,15 @@ class PlaywrightStateManager(BaseStateManager):
         Waits for services to be ready before configuring.
         """
         logger.info("| Running shopping post-start setup")
-        
+
         # Wait for MySQL to be ready first
         if not self._wait_for_mysql_ready():
             logger.warning("| MySQL not ready, attempting configuration anyway")
-        
+
         # Wait for Magento to be ready
         if not self._wait_for_magento_ready():
             logger.warning("| Magento not ready, attempting configuration anyway")
-        
+
         base_url = f"http://localhost:{self.config.host_port}"
 
         cmds = [
@@ -292,7 +296,8 @@ class PlaywrightStateManager(BaseStateManager):
                 "-pMyPassword",
                 "magentodb",
                 "-e",
-                f"UPDATE core_config_data SET value='{base_url}/' WHERE path IN ('web/secure/base_url', 'web/unsecure/base_url');",
+                f"UPDATE core_config_data SET value='{base_url}/' "
+                f"WHERE path IN ('web/secure/base_url', 'web/unsecure/base_url');",
             ],
             [
                 "docker",
@@ -324,15 +329,15 @@ class PlaywrightStateManager(BaseStateManager):
         Waits for services to be ready before configuring.
         """
         logger.info("| Running shopping_admin post-start setup")
-        
+
         # Wait for MySQL to be ready first
         if not self._wait_for_mysql_ready():
             logger.warning("| MySQL not ready, attempting configuration anyway")
-        
+
         # Wait for Magento to be ready
         if not self._wait_for_magento_ready():
             logger.warning("| Magento not ready, attempting configuration anyway")
-        
+
         base_url = f"http://localhost:{self.config.host_port}"
 
         cmds = [
@@ -354,7 +359,8 @@ class PlaywrightStateManager(BaseStateManager):
                 "-pMyPassword",
                 "magentodb",
                 "-e",
-                f"UPDATE core_config_data SET value='{base_url}/' WHERE path IN ('web/secure/base_url', 'web/unsecure/base_url');",
+                f"UPDATE core_config_data SET value='{base_url}/' "
+                f"WHERE path IN ('web/secure/base_url', 'web/unsecure/base_url');",
             ],
             [
                 "docker",
@@ -405,14 +411,18 @@ class PlaywrightStateManager(BaseStateManager):
             # Dynamically update config based on task category
             if hasattr(task, 'category_id') and task.category_id in self.CATEGORY_CONFIGS:
                 category_config = self.CATEGORY_CONFIGS[task.category_id]
-                logger.info(f"| Using category-specific config for '{task.category_id}': {category_config}")
-                
+                logger.info(
+                    "| Using category-specific config for '%s': %s",
+                    task.category_id,
+                    category_config
+                )
+
                 # Update the config with category-specific values
                 self.config.image_name = category_config["image_name"]
                 self.config.container_name = category_config["container_name"]
                 self.config.host_port = category_config["host_port"]
                 self.config.readiness_path = category_config["readiness_path"]
-            
+
             # Ensure image exists (load from tar if configured)
             self._load_image_from_tar_if_needed()
 
@@ -479,7 +489,7 @@ class PlaywrightStateManager(BaseStateManager):
                     "category": task.category_id,
                 },
             )
-        except Exception as exc:
+        except Exception as exc:  # pylint: disable=broad-exception-caught  # pylint: disable=broad-exception-caught
             logger.error("| Failed to create WebArena initial state: %s", exc)
             return None
 
@@ -505,7 +515,7 @@ class PlaywrightStateManager(BaseStateManager):
         try:
             self._stop_and_remove_container(self.config.container_name)
             return True
-        except Exception as exc:
+        except Exception as exc:  # pylint: disable=broad-exception-caught
             logger.error("| Failed to cleanup container for %s: %s", task.name, exc)
             return False
 
@@ -525,7 +535,7 @@ class PlaywrightStateManager(BaseStateManager):
                 "| Unknown resource type for cleanup: %s", resource.get("type")
             )
             return False
-        except Exception as exc:
+        except Exception as exc:  # pylint: disable=broad-exception-caught
             logger.error("| Resource cleanup failed: %s", exc)
             return False
 
@@ -546,13 +556,14 @@ class PlaywrightStateManager(BaseStateManager):
         }
 
     def close_all(self) -> None:
+        """Close all containers and clean up resources."""
         if self.skip_cleanup:
             logger.info("| Skipping container cleanup in close_all (skip_cleanup=True)")
             return
 
         try:
             self._stop_and_remove_container(self.config.container_name)
-        except Exception:
+        except Exception:  # pylint: disable=broad-exception-caught
             # Best effort
             pass
 

@@ -1,9 +1,13 @@
+"""Verification module for Work History Addition task in Notion workspace."""
+
+# pylint: disable=duplicate-code,import-error,astroid-error
+
 import sys
 from notion_client import Client
 from mcpuniverse.evaluator.mcpmark.notion.utils import notion_utils
 
 
-def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
+def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:  # pylint: disable=too-many-branches,too-many-locals,too-many-statements
     """
     Verifies that the new work history entry for 'Research Assistant' has been added correctly.
     """
@@ -35,7 +39,7 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
         if heading_index == -1:
             return None
 
-        for i in range(heading_index + 1, len(blocks)):
+        for i in range(heading_index + 1, len(blocks)):  # pylint: disable=too-many-nested-blocks
             block = blocks[i]
             if block.get("type") in ["heading_1", "heading_2", "heading_3"]:
                 break
@@ -96,7 +100,7 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
         print(f"Error: Could not find the '{heading_text}' heading.", file=sys.stderr)
         return False, f"Error: Could not find the '{heading_text}' heading."
 
-    for i in range(heading_index + 1, len(all_blocks)):
+    for i in range(heading_index + 1, len(all_blocks)):  # pylint: disable=too-many-nested-blocks
         block = all_blocks[i]
         if block.get("type") in ["heading_1", "heading_2", "heading_3"]:
             break
@@ -107,12 +111,17 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
             if len(columns) < 2:
                 continue
 
+            image_column = None
+            text_column = None
             for column in columns:
                 if column.get("type") == "column":
                     if column.get("column", {}).get("width_ratio") == 0.125:
                         image_column = column
                     elif column.get("column", {}).get("width_ratio") == 0.875:
                         text_column = column
+
+            if image_column is None or text_column is None:
+                continue
 
             image_column_blocks = notion_utils.get_all_blocks_recursively(
                 notion, image_column["id"]
@@ -147,7 +156,14 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
                         description_block = text_column_blocks[j + 2]
 
                         date_text = "January - August 2023"
-                        description_text = "Assisted in conducting user experience research projects at my bachelor’s program, supporting data collection, analyzing user feedback, and preparing research reports. Developed strong skills in research methodologies and improved collaboration with interdisciplinary teams."
+                        description_text = (
+                            "Assisted in conducting user experience research "
+                            "projects at my bachelor's program, supporting "
+                            "data collection, analyzing user feedback, and "
+                            "preparing research reports. Developed strong "
+                            "skills in research methodologies and improved "
+                            "collaboration with interdisciplinary teams."
+                        )
 
                         date_annotations = get_block_annotations(date_block)
                         description_annotations = get_block_annotations(
@@ -155,15 +171,15 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
                         )
 
                         if (
-                            date_text in notion_utils.get_block_plain_text(date_block)
+                            date_text in notion_utils.get_block_plain_text(date_block)  # pylint: disable=too-many-boolean-expressions
                             and description_text
                             in notion_utils.get_block_plain_text(description_block)
                             and title_annotations.get("bold")
                             and date_annotations.get("italic")
                             and date_annotations.get("color") == "gray"
                             and description_annotations.get("color") == "default"
-                            and description_annotations.get("italic") != True
-                            and description_annotations.get("bold") != True
+                            and description_annotations.get("italic") is not True
+                            and description_annotations.get("bold") is not True
                         ):
                             print("Success: Verified new work history entry.")
                             return True, ""
@@ -178,7 +194,7 @@ def main():
     """
     notion = notion_utils.get_notion_client()
     main_id = sys.argv[1] if len(sys.argv) > 1 else None
-    success, error_msg = verify(notion, main_id)
+    success, _error_msg = verify(notion, main_id)
     if success:
         sys.exit(0)
     else:

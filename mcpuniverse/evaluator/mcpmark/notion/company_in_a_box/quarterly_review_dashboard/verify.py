@@ -1,3 +1,7 @@
+"""Verification module for Quarterly Review Dashboard task in Notion workspace."""
+
+# pylint: disable=duplicate-code,import-error,astroid-error
+
 import sys
 from typing import List
 from notion_client import Client
@@ -9,21 +13,21 @@ def _contains_keywords(text: str, keywords: List[str]) -> bool:
     return all(kw.lower() in lowered for kw in keywords)
 
 
-def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
+def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:  # pylint: disable=too-many-return-statements,too-many-branches,too-many-locals,too-many-statements
     """Programmatically verify that the dashboard page and its contents meet the
     requirements described in description.md.
     """
-    DASHBOARD_TITLE = "Q4 2024 Business Review Dashboard"
-    PARENT_PAGE_TITLE = "Company In A Box"
-    CALL_OUT_KEYWORDS = ["latam", "enterprise", "employee engagement"]
-    DEPARTMENTS = ["Product", "Marketing", "Sales", "Human Resources"]
-    REQUIRED_DB_PROPERTIES = {
+    DASHBOARD_TITLE = "Q4 2024 Business Review Dashboard"  # pylint: disable=invalid-name
+    PARENT_PAGE_TITLE = "Company In A Box"  # pylint: disable=invalid-name
+    CALL_OUT_KEYWORDS = ["latam", "enterprise", "employee engagement"]  # pylint: disable=invalid-name
+    DEPARTMENTS = ["Product", "Marketing", "Sales", "Human Resources"]  # pylint: disable=invalid-name
+    REQUIRED_DB_PROPERTIES = {  # pylint: disable=invalid-name
         "Task Name": "title",
         "Department": "select",
         "Priority": "select",
         "Status": "status",
     }
-    PRIORITY_OPTIONS = {"High", "Medium", "Low"}
+    PRIORITY_OPTIONS = {"High", "Medium", "Low"}  # pylint: disable=invalid-name
 
     # 1. Locate the dashboard page
     page_id = None
@@ -57,7 +61,7 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
                     file=sys.stderr,
                 )
                 return False, f"Dashboard page is not a direct child of '{PARENT_PAGE_TITLE}'"
-    except Exception:
+    except (ValueError, KeyError, TypeError, AttributeError):
         pass  # parent check is best-effort only
 
     # 2. Verify callout with keywords
@@ -70,11 +74,10 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
                 callout_ok = True
                 break
     if not callout_ok:
-        print(
-            "Error: No callout found that includes all three Current Goal keywords (LATAM, Enterprise, Employee engagement).",
-            file=sys.stderr,
-        )
-        return False, "No callout found that includes all three Current Goal keywords (LATAM, Enterprise, Employee engagement)"
+        msg = ("Error: No callout found that includes all three Current Goal "
+               "keywords (LATAM, Enterprise, Employee engagement).")
+        print(msg, file=sys.stderr)
+        return False, msg
 
     # 3. Verify department section headings
     found_depts = set()
@@ -103,7 +106,7 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
 
     try:
         db = notion.databases.retrieve(database_id=db_id)
-    except Exception as exc:
+    except (ValueError, KeyError, TypeError, AttributeError) as exc:
         print(f"Error: Unable to retrieve database: {exc}", file=sys.stderr)
         return False, f"Unable to retrieve database: {exc}"
 
@@ -117,32 +120,29 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
         actual_type = db_props[prop_name]["type"]
         if isinstance(expected_type, list):
             if actual_type not in expected_type:
-                print(
-                    f"Error: Property '{prop_name}' has type '{actual_type}', expected one of {expected_type}.",
-                    file=sys.stderr,
-                )
-                return False, f"Property '{prop_name}' has type '{actual_type}', expected one of {expected_type}"
+                msg = (f"Error: Property '{prop_name}' has type "
+                       f"'{actual_type}', expected one of {expected_type}.")
+                print(msg, file=sys.stderr)
+                return False, msg
         else:
             if actual_type != expected_type:
-                print(
-                    f"Error: Property '{prop_name}' has type '{actual_type}', expected '{expected_type}'.",
-                    file=sys.stderr,
-                )
-                return False, f"Property '{prop_name}' has type '{actual_type}', expected '{expected_type}'"
+                msg = (f"Error: Property '{prop_name}' has type "
+                       f"'{actual_type}', expected '{expected_type}'.")
+                print(msg, file=sys.stderr)
+                return False, msg
         # Extra check for Priority options
         if prop_name == "Priority":
             options = {opt["name"] for opt in db_props[prop_name]["select"]["options"]}
             if not PRIORITY_OPTIONS.issubset(options):
-                print(
-                    f"Error: Priority property options must include High/Medium/Low. Current options: {options}",
-                    file=sys.stderr,
-                )
-                return False, f"Priority property options must include High/Medium/Low. Current options: {options}"
+                msg = (f"Error: Priority property options must include "
+                       f"High/Medium/Low. Current options: {options}")
+                print(msg, file=sys.stderr)
+                return False, msg
 
     # 5. Verify at least 5 action items exist
     try:
         pages = notion.databases.query(database_id=db_id).get("results", [])
-    except Exception as exc:
+    except (ValueError, KeyError, TypeError, AttributeError) as exc:
         print(f"Error querying database pages: {exc}", file=sys.stderr)
         return False, f"Error querying database pages: {exc}"
 
@@ -183,9 +183,9 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
             )
             return False, f"Action item '{page.get('id')}' must have both Priority and Status set"
 
-    print(
-        "Success: Verified Business Review Dashboard, departmental sections, callout, and Action Items database with ≥5 entries."
-    )
+    msg = ("Success: Verified Business Review Dashboard, departmental "
+           "sections, callout, and Action Items database with ≥5 entries.")
+    print(msg)
     return True, ""
 
 
@@ -193,7 +193,7 @@ def main():
     """Main verification function."""
     notion = notion_utils.get_notion_client()
     main_id = sys.argv[1] if len(sys.argv) > 1 else None
-    success, error_msg = verify(notion, main_id)
+    success, _error_msg = verify(notion, main_id)
     if success:
         sys.exit(0)
     else:

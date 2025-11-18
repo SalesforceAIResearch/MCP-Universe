@@ -38,4 +38,3 @@ ShippingState|California
 ShippingMethods|count
 </answer>
 ```
-

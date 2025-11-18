@@ -1,3 +1,7 @@
+"""Verification module for Change Color task in Notion workspace."""
+
+# pylint: disable=duplicate-code,import-error,astroid-error
+
 import sys
 from notion_client import Client
 from mcpuniverse.evaluator.mcpmark.notion.utils import notion_utils
@@ -23,22 +27,23 @@ def get_page_tags(page_result):
         return [tag.get('name') for tag in tags]
     return []
 
-def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
+def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:  # pylint: disable=too-many-branches,too-many-locals,too-many-return-statements,too-many-statements
     """
     Verifies that all pink colors have been changed in the Toronto Guide page.
-    
+
     Expected pink elements that should be changed:
     1. Callout: "Welcome to Toronto!" with red_background (originally should be pink)
-    2. Activities database tags: 
+    2. Activities database tags:
        - "Parks" tag (High Park, Evergreen Brickworks)
-       - "Neighbourhood" tag (Ossington Strip, Chinatown, Little Italy, Kensington Market, Queen west, The beaches)
+       - "Neighbourhood" tag (Ossington Strip, Chinatown, Little Italy,
+         Kensington Market, Queen west, The beaches)
     3. Food database tags:
        - "Middle Eastern" (Byblos Downtown)
        - "Jamaican" (Crumbs Patties)
        - "Indian" (Leela Indian Food Bar)
     4. Cafes database tag:
        - "Food" (Cafe Landwer)
-    
+
     These elements should exist with the same name/content but different colors.
     Tag distributions should remain the same.
     """
@@ -54,13 +59,13 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
         if not found_id:
             print("Error: Toronto Guide page not found.", file=sys.stderr)
             return False
-    
+
     print(f"Found Toronto Guide page: {found_id}")
-    
+
     # Get all blocks from the page
     all_blocks = notion_utils.get_all_blocks_recursively(notion, found_id)
     print(f"Found {len(all_blocks)} blocks")
-    
+
     # Expected elements and their distributions
     expected_pink_elements = {
         "callout": {
@@ -71,33 +76,40 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
         },
         "activities_tags": {
             "Parks": {
-                "found": False, 
+                "found": False,
                 "has_pink": False,
                 "expected_items": ["High Park", "Evergreen Brickworks"],
                 "actual_items": []
             },
             "Neighbourhood": {
-                "found": False, 
+                "found": False,
                 "has_pink": False,
-                "expected_items": ["Ossington Strip", "Chinatown", "Little Italy", "Kensington Market", "Queen west", "The beaches"],
+                "expected_items": [
+                    "Ossington Strip",
+                    "Chinatown",
+                    "Little Italy",
+                    "Kensington Market",
+                    "Queen west",
+                    "The beaches"
+                ],
                 "actual_items": []
             }
         },
         "food_tags": {
             "Middle Eastern": {
-                "found": False, 
+                "found": False,
                 "has_pink": False,
                 "expected_items": ["Byblos Downtown"],
                 "actual_items": []
             },
             "Jamaican": {
-                "found": False, 
+                "found": False,
                 "has_pink": False,
                 "expected_items": ["Crumbs Patties"],
                 "actual_items": []
             },
             "Indian": {
-                "found": False, 
+                "found": False,
                 "has_pink": False,
                 "expected_items": ["Leela Indian Food Bar"],
                 "actual_items": []
@@ -105,26 +117,26 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
         },
         "cafes_tags": {
             "Food": {
-                "found": False, 
+                "found": False,
                 "has_pink": False,
                 "expected_items": ["Cafe Landwer"],
                 "actual_items": []
             }
         }
     }
-    
+
     # Database IDs
     activities_db_id = None
     food_db_id = None
     cafes_db_id = None
-    
+
     # Step 2: Check all blocks for callouts and find databases
     for block in all_blocks:
         if block is None:
             continue
-            
+
         block_type = block.get("type")
-        
+
         # Check for the specific callout block
         if block_type == "callout":
             callout_text = notion_utils.get_block_plain_text(block)
@@ -137,12 +149,12 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
                     print(f"✗ Callout 'Welcome to Toronto!' still has pink color: {color}")
                 else:
                     print(f"✓ Callout 'Welcome to Toronto!' has non-pink color: {color}")
-        
+
         # Find child databases
         elif block_type == "child_database":
             title = block.get("child_database", {}).get("title", "")
             block_id = block.get("id")
-            
+
             if "Activities" in title:
                 activities_db_id = block_id
                 print(f"Found Activities database: {block_id}")
@@ -152,9 +164,9 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
             elif "Cafes" in title or "Café" in title:
                 cafes_db_id = block_id
                 print(f"Found Cafes database: {block_id}")
-    
+
     # Step 3: Check Activities database for specific tags and their distributions
-    if activities_db_id:
+    if activities_db_id:  # pylint: disable=too-many-nested-blocks
         try:
             # Get database properties
             db_info = notion.databases.retrieve(database_id=activities_db_id)
@@ -164,7 +176,7 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
                 for option in options:
                     tag_name = option.get("name").strip()
                     tag_color = option.get("color")
-                    
+
                     if tag_name in expected_pink_elements["activities_tags"]:
                         expected_pink_elements["activities_tags"][tag_name]["found"] = True
                         if tag_color == "pink":
@@ -172,26 +184,27 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
                             print(f"✗ Activities tag '{tag_name}' still has pink color")
                         else:
                             print(f"✓ Activities tag '{tag_name}' changed to {tag_color}")
-            
+
             # Query database to check tag distributions
             query_result = notion.databases.query(database_id=activities_db_id)
             for page in query_result.get('results', []):
                 page_title = get_page_title(page).strip()
                 page_tags = get_page_tags(page)
-                
+
                 for tag_name in expected_pink_elements["activities_tags"]:
                     if tag_name in page_tags:
-                        expected_pink_elements["activities_tags"][tag_name]["actual_items"].append(page_title)
-                        
-        except Exception as e:
+                        tag_info = expected_pink_elements["activities_tags"][tag_name]
+                        tag_info["actual_items"].append(page_title)
+
+        except (ValueError, KeyError, TypeError, AttributeError) as e:
             print(f"Error checking Activities database: {e}", file=sys.stderr)
             return False, f"Error checking Activities database: {e}"
     else:
         print("Error: Activities database not found", file=sys.stderr)
         return False, "Error: Activities database not found"
-    
+
     # Step 4: Check Food database for specific tags and their distributions
-    if food_db_id:
+    if food_db_id:  # pylint: disable=too-many-nested-blocks
         try:
             # Get database properties
             db_info = notion.databases.retrieve(database_id=food_db_id)
@@ -201,7 +214,7 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
                 for option in options:
                     tag_name = option.get("name").strip()
                     tag_color = option.get("color")
-                    
+
                     if tag_name in expected_pink_elements["food_tags"]:
                         expected_pink_elements["food_tags"][tag_name]["found"] = True
                         if tag_color == "pink":
@@ -209,26 +222,27 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
                             print(f"✗ Food tag '{tag_name}' still has pink color")
                         else:
                             print(f"✓ Food tag '{tag_name}' changed to {tag_color}")
-            
+
             # Query database to check tag distributions
             query_result = notion.databases.query(database_id=food_db_id)
             for page in query_result.get('results', []):
                 page_title = get_page_title(page).strip()
                 page_tags = get_page_tags(page)
-                
+
                 for tag_name in expected_pink_elements["food_tags"]:
                     if tag_name in page_tags:
-                        expected_pink_elements["food_tags"][tag_name]["actual_items"].append(page_title)
-                        
-        except Exception as e:
+                        tag_info = expected_pink_elements["food_tags"][tag_name]
+                        tag_info["actual_items"].append(page_title)
+
+        except (ValueError, KeyError, TypeError, AttributeError) as e:
             print(f"Error checking Food database: {e}", file=sys.stderr)
             return False, f"Error checking Food database: {e}"
     else:
         print("Error: Food database not found", file=sys.stderr)
         return False, "Error: Food database not found"
-    
+
     # Step 5: Check Cafes database for specific tags and their distributions
-    if cafes_db_id:
+    if cafes_db_id:  # pylint: disable=too-many-nested-blocks
         try:
             # Get database properties
             db_info = notion.databases.retrieve(database_id=cafes_db_id)
@@ -238,7 +252,7 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
                 for option in options:
                     tag_name = option.get("name").strip()
                     tag_color = option.get("color")
-                    
+
                     if tag_name in expected_pink_elements["cafes_tags"]:
                         expected_pink_elements["cafes_tags"][tag_name]["found"] = True
                         if tag_color == "pink":
@@ -246,29 +260,30 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
                             print(f"✗ Cafes tag '{tag_name}' still has pink color")
                         else:
                             print(f"✓ Cafes tag '{tag_name}' changed to {tag_color}")
-            
+
             # Query database to check tag distributions
             query_result = notion.databases.query(database_id=cafes_db_id)
             for page in query_result.get('results', []):
                 page_title = get_page_title(page).strip()
                 page_tags = get_page_tags(page)
-                
+
                 for tag_name in expected_pink_elements["cafes_tags"]:
                     if tag_name in page_tags:
-                        expected_pink_elements["cafes_tags"][tag_name]["actual_items"].append(page_title)
-                        
-        except Exception as e:
+                        tag_info = expected_pink_elements["cafes_tags"][tag_name]
+                        tag_info["actual_items"].append(page_title)
+
+        except (ValueError, KeyError, TypeError, AttributeError) as e:
             print(f"Error checking Cafes database: {e}", file=sys.stderr)
             return False, f"Error checking Cafes database: {e}"
     else:
         print("Error: Cafes database not found", file=sys.stderr)
         return False, "Error: Cafes database not found"
-    
+
     # Step 6: Verify all requirements
-    print(f"\nVerification Summary:")
-    
+    print("\nVerification Summary:")
+
     all_passed = True
-    
+
     # Check callout
     if not expected_pink_elements["callout"]["exists"]:
         print("✗ 'Welcome to Toronto!' callout not found", file=sys.stderr)
@@ -278,19 +293,21 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
         all_passed = False
     else:
         print("✓ Callout color changed from pink")
-    
+
     # Check Activities tags
     print("\nActivities Database Tags:")
     for tag_name, tag_info in expected_pink_elements["activities_tags"].items():
         if not tag_info["found"]:
-            print(f"✗ Activities tag '{tag_name}' not found (may have been renamed)", file=sys.stderr)
+            msg = (f"✗ Activities tag '{tag_name}' not found "
+                   "(may have been renamed)")
+            print(msg, file=sys.stderr)
             # Don't fail if tag was renamed, as that's acceptable
         elif tag_info["has_pink"]:
             print(f"✗ Activities tag '{tag_name}' still has pink color", file=sys.stderr)
             all_passed = False
         else:
             print(f"✓ Activities tag '{tag_name}' color changed from pink")
-            
+
         # Check distribution
         expected_set = set(tag_info["expected_items"])
         actual_set = set(tag_info["actual_items"])
@@ -299,11 +316,11 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
             print(f"    Expected: {sorted(expected_set)}", file=sys.stderr)
             print(f"    Actual: {sorted(actual_set)}", file=sys.stderr)
             # Note: We don't fail on distribution mismatch if tag was renamed
-            if not (expected_set - actual_set):  # If all expected items are present
-                print(f"    (Additional items found, but all expected items are present)")
+            if not expected_set - actual_set:  # If all expected items are present
+                print("    (Additional items found, but all expected items are present)")
         elif tag_info["found"]:
             print(f"  ✓ Tag distribution maintained for '{tag_name}'")
-    
+
     # Check Food tags
     print("\nFood Database Tags:")
     for tag_name, tag_info in expected_pink_elements["food_tags"].items():
@@ -315,7 +332,7 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
             all_passed = False
         else:
             print(f"✓ Food tag '{tag_name}' color changed from pink")
-            
+
         # Check distribution
         expected_set = set(tag_info["expected_items"])
         actual_set = set(tag_info["actual_items"])
@@ -325,7 +342,7 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
             print(f"    Actual: {sorted(actual_set)}", file=sys.stderr)
         elif tag_info["found"]:
             print(f"  ✓ Tag distribution maintained for '{tag_name}'")
-    
+
     # Check Cafes tags
     print("\nCafes Database Tags:")
     for tag_name, tag_info in expected_pink_elements["cafes_tags"].items():
@@ -337,7 +354,7 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
             all_passed = False
         else:
             print(f"✓ Cafes tag '{tag_name}' color changed from pink")
-            
+
         # Check distribution
         expected_set = set(tag_info["expected_items"])
         actual_set = set(tag_info["actual_items"])
@@ -347,11 +364,11 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
             print(f"    Actual: {sorted(actual_set)}", file=sys.stderr)
         elif tag_info["found"]:
             print(f"  ✓ Tag distribution maintained for '{tag_name}'")
-    
+
     # Additional check: ensure no other pink elements exist
     print("\nChecking for any other pink elements...")
     other_pink_found = False
-    
+
     # Check all callouts for pink
     for block in all_blocks:
         if block and block.get("type") == "callout":
@@ -361,16 +378,15 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
                 if "Welcome to Toronto!" not in callout_text:
                     print(f"✗ Found unexpected pink callout: {callout_text}...", file=sys.stderr)
                     other_pink_found = True
-    
+
     if other_pink_found:
         all_passed = False
     else:
         print("✓ No unexpected pink elements found")
-    
+
     if all_passed:
         return True, ""
-    else:
-        return False, "Some pink colors still exist or elements are missing"
+    return False, "Some pink colors still exist or elements are missing"
 
 def main():
     """
@@ -378,8 +394,8 @@ def main():
     """
     notion = notion_utils.get_notion_client()
     main_id = sys.argv[1] if len(sys.argv) > 1 else None
-    
-    success, error_msg = verify(notion, main_id)
+
+    success, _error_msg = verify(notion, main_id)
     if success:
         print("\nVerification passed: All expected pink colors have been changed")
         sys.exit(0)

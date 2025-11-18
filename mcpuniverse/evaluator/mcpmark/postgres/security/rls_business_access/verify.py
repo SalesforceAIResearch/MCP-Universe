@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 
+"""Verification module for RLS business access task."""
+# pylint: disable=too-many-branches,too-many-locals,too-many-statements,duplicate-code
 import os
+import sys
+
 import psycopg2
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
-import sys
 
 def verify() -> tuple[bool, str]:
     """
@@ -45,9 +48,14 @@ def verify() -> tuple[bool, str]:
         admin_cur.execute("SELECT current_database();")
         current_db_name = admin_cur.fetchone()[0]
 
-        admin_cur.execute(f"GRANT CONNECT ON DATABASE \"{current_db_name}\" TO test_user;")
+        admin_cur.execute(
+            f"GRANT CONNECT ON DATABASE \"{current_db_name}\" TO test_user;"
+        )
         admin_cur.execute("GRANT USAGE ON SCHEMA public TO test_user;")
-        admin_cur.execute("GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO test_user;")
+        admin_cur.execute(
+            "GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES "
+            "IN SCHEMA public TO test_user;"
+        )
         admin_cur.execute("GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO test_user;")
         admin_cur.execute("GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO test_user;")
 
@@ -88,19 +96,25 @@ def verify() -> tuple[bool, str]:
 
         # Alice tries to update her own profile (should work)
         try:
-            cur.execute("SET app.current_user_id = '11111111-1111-1111-1111-111111111111';")  # Alice
+            # Alice
+            cur.execute(
+                "SET app.current_user_id = '11111111-1111-1111-1111-111111111111';"
+            )
             cur.execute("""
                 UPDATE users
                 SET email = 'alice.updated@example.com'
                 WHERE id = '11111111-1111-1111-1111-111111111111'
             """)
             test_results.append("✓ Users can update their own profile")
-        except Exception as e:
+        except psycopg2.Error as e:
             test_results.append(f"✗ User cannot update own profile: {e}")
 
         # Alice tries to update Bob's profile (should fail)
         try:
-            cur.execute("SET app.current_user_id = '11111111-1111-1111-1111-111111111111';")  # Alice
+            # Alice
+            cur.execute(
+                "SET app.current_user_id = '11111111-1111-1111-1111-111111111111';"
+            )
             cur.execute("""
                 UPDATE users
                 SET email = 'bob.hacked@example.com'
@@ -110,7 +124,10 @@ def verify() -> tuple[bool, str]:
             if cur.rowcount == 0:
                 test_results.append("✓ Users blocked from updating other users' profiles")
             else:
-                test_results.append("✗ User was able to update another user's profile (should be blocked)")
+                test_results.append(
+                    "✗ User was able to update another user's profile "
+                    "(should be blocked)"
+                )
         except psycopg2.Error:
             test_results.append("✓ Users blocked from updating other users' profiles")
 
@@ -119,19 +136,25 @@ def verify() -> tuple[bool, str]:
 
         # Alice (owner of general channel) tries to update her channel
         try:
-            cur.execute("SET app.current_user_id = '11111111-1111-1111-1111-111111111111';")  # Alice
+            # Alice
+            cur.execute(
+                "SET app.current_user_id = '11111111-1111-1111-1111-111111111111';"
+            )
             cur.execute("""
                 UPDATE channels
                 SET description = 'Updated by Alice'
                 WHERE id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
             """)
             test_results.append("✓ Channel owners can update their channels")
-        except Exception as e:
+        except psycopg2.Error as e:
             test_results.append(f"✗ Channel owner cannot update channel: {e}")
 
         # Charlie tries to update Alice's channel (should fail)
         try:
-            cur.execute("SET app.current_user_id = '33333333-3333-3333-3333-333333333333';")  # Charlie
+            # Charlie
+            cur.execute(
+                "SET app.current_user_id = '33333333-3333-3333-3333-333333333333';"
+            )
             cur.execute("""
                 UPDATE channels
                 SET description = 'Hacked by Charlie'
@@ -141,7 +164,10 @@ def verify() -> tuple[bool, str]:
             if cur.rowcount == 0:
                 test_results.append("✓ Non-owners blocked from updating channels")
             else:
-                test_results.append("✗ Non-owner was able to update channel (should be blocked)")
+                test_results.append(
+                    "✗ Non-owner was able to update channel "
+                    "(should be blocked)"
+                )
         except psycopg2.Error:
             test_results.append("✓ Non-owners blocked from updating channels")
 
@@ -150,26 +176,32 @@ def verify() -> tuple[bool, str]:
 
         # Alice (author) tries to update her own post
         try:
-            cur.execute("SET app.current_user_id = '11111111-1111-1111-1111-111111111111';")  # Alice
+            # Alice
+            cur.execute(
+                "SET app.current_user_id = '11111111-1111-1111-1111-111111111111';"
+            )
             cur.execute("""
                 UPDATE posts
                 SET title = 'Updated by Alice'
                 WHERE id = 'dddddddd-dddd-dddd-dddd-dddddddddddd'
             """)
             test_results.append("✓ Post authors can update their posts")
-        except Exception as e:
+        except psycopg2.Error as e:
             test_results.append(f"✗ Post author cannot update post: {e}")
 
         # Bob (moderator of general) tries to update Alice's post (should work)
         try:
-            cur.execute("SET app.current_user_id = '22222222-2222-2222-2222-222222222222';")  # Bob (moderator)
+            # Bob (moderator)
+            cur.execute(
+                "SET app.current_user_id = '22222222-2222-2222-2222-222222222222';"
+            )
             cur.execute("""
                 UPDATE posts
                 SET content = 'Moderated by Bob'
                 WHERE id = 'dddddddd-dddd-dddd-dddd-dddddddddddd'
             """)
             test_results.append("✓ Channel moderators can update posts in their channels")
-        except Exception as e:
+        except psycopg2.Error as e:
             test_results.append(f"✗ Channel moderator cannot update post: {e}")
 
         # Eve tries to update Alice's post (should fail - not author, owner, or moderator)
@@ -184,7 +216,10 @@ def verify() -> tuple[bool, str]:
             if cur.rowcount == 0:
                 test_results.append("✓ Unauthorized users blocked from updating posts")
             else:
-                test_results.append("✗ Unauthorized user was able to update post (should be blocked)")
+                test_results.append(
+                    "✗ Unauthorized user was able to update post "
+                    "(should be blocked)"
+                )
         except psycopg2.Error:
             test_results.append("✓ Unauthorized users blocked from updating posts")
 
@@ -193,26 +228,33 @@ def verify() -> tuple[bool, str]:
 
         # Bob (comment author) tries to update his own comment
         try:
-            cur.execute("SET app.current_user_id = '22222222-2222-2222-2222-222222222222';")  # Bob
+            # Bob
+            cur.execute(
+                "SET app.current_user_id = '22222222-2222-2222-2222-222222222222';"
+            )
             cur.execute("""
                 UPDATE comments
                 SET content = 'Updated by Bob himself'
                 WHERE id = '99999999-9999-9999-9999-999999999999'
             """)
             test_results.append("✓ Comment authors can update their comments")
-        except Exception as e:
+        except psycopg2.Error as e:
             test_results.append(f"✗ Comment author cannot update comment: {e}")
 
-        # Alice (post author) tries to update Bob's comment on her post (should work)
+        # Alice (post author) tries to update Bob's comment on her post
+        # (should work)
         try:
-            cur.execute("SET app.current_user_id = '11111111-1111-1111-1111-111111111111';")  # Alice (post author)
+            # Alice (post author)
+            cur.execute(
+                "SET app.current_user_id = '11111111-1111-1111-1111-111111111111';"
+            )
             cur.execute("""
                 UPDATE comments
                 SET content = 'Moderated by post author Alice'
                 WHERE id = '99999999-9999-9999-9999-999999999999'
             """)
             test_results.append("✓ Post authors can moderate comments on their posts")
-        except Exception as e:
+        except psycopg2.Error as e:
             test_results.append(f"✗ Post author cannot moderate comment: {e}")
 
         # Test 6: Channel moderator assignment controls
@@ -220,18 +262,25 @@ def verify() -> tuple[bool, str]:
 
         # Alice (channel owner) tries to add a moderator
         try:
-            cur.execute("SET app.current_user_id = '11111111-1111-1111-1111-111111111111';")  # Alice (owner of general)
+            # Alice (owner of general)
+            cur.execute(
+                "SET app.current_user_id = '11111111-1111-1111-1111-111111111111';"
+            )
             cur.execute("""
                 INSERT INTO channel_moderators (channel_id, user_id)
                 VALUES ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '33333333-3333-3333-3333-333333333333')
             """)
             test_results.append("✓ Channel owners can add moderators")
-        except Exception as e:
+        except psycopg2.Error as e:
             test_results.append(f"✗ Channel owner cannot add moderator: {e}")
 
-        # Charlie tries to add himself as moderator to Bob's channel (should fail)
+        # Charlie tries to add himself as moderator to Bob's channel
+        # (should fail)
         try:
-            cur.execute("SET app.current_user_id = '33333333-3333-3333-3333-333333333333';")  # Charlie
+            # Charlie
+            cur.execute(
+                "SET app.current_user_id = '33333333-3333-3333-3333-333333333333';"
+            )
             cur.execute("""
                 INSERT INTO channel_moderators (channel_id, user_id)
                 VALUES ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', '33333333-3333-3333-3333-333333333333')
@@ -240,7 +289,10 @@ def verify() -> tuple[bool, str]:
             if cur.rowcount == 0:
                 test_results.append("✓ Non-owners blocked from adding moderators")
             else:
-                test_results.append("✗ Non-owner was able to add moderator (should be blocked)")
+                test_results.append(
+                    "✗ Non-owner was able to add moderator "
+                    "(should be blocked)"
+                )
         except psycopg2.Error:
             test_results.append("✓ Non-owners blocked from adding moderators")
 
@@ -257,10 +309,16 @@ def verify() -> tuple[bool, str]:
         cur.execute("SELECT COUNT(*) FROM posts;")
         eve_posts = cur.fetchone()[0]
 
-        if alice_posts >= 2 and eve_posts >= 1:  # Alice should see posts in channels she has access to
-            test_results.append("✓ Content visibility varies correctly based on user context")
+        # Alice should see posts in channels she has access to
+        if alice_posts >= 2 and eve_posts >= 1:
+            test_results.append(
+                "✓ Content visibility varies correctly based on user context"
+            )
         else:
-            test_results.append(f"✗ Content visibility issue: Alice sees {alice_posts}, Eve sees {eve_posts}")
+            test_results.append(
+                f"✗ Content visibility issue: Alice sees {alice_posts}, "
+                f"Eve sees {eve_posts}"
+            )
 
         # Test 8: Anonymous user access
         print("\n8. Testing anonymous user restrictions...")
@@ -276,12 +334,21 @@ def verify() -> tuple[bool, str]:
             public_users = cur.fetchone()[0] if cur.rowcount > 0 else 0
 
             if anon_users == public_users and anon_users > 0:
-                test_results.append(f"✓ Anonymous users can see {anon_users} public user profiles (correct)")
+                test_results.append(
+                    f"✓ Anonymous users can see {anon_users} "
+                    f"public user profiles (correct)"
+                )
             elif anon_users == 0:
-                test_results.append("✗ Anonymous users cannot see any users (should see public profiles)")
+                test_results.append(
+                    "✗ Anonymous users cannot see any users "
+                    "(should see public profiles)"
+                )
             else:
-                test_results.append(f"✗ Anonymous users can see {anon_users} users but expected {public_users} public users")
-        except Exception as e:
+                test_results.append(
+                    f"✗ Anonymous users can see {anon_users} users "
+                    f"but expected {public_users} public users"
+                )
+        except psycopg2.Error:
             test_results.append("✓ Anonymous users properly restricted")
 
         # Print results
@@ -303,18 +370,17 @@ def verify() -> tuple[bool, str]:
         if failed == 0:
             print("\nAll tests passed.")
             return True, ""
-        else:
-            print(f"\n{failed} test(s) failed.")
-            error_details = [r for r in test_results if r.startswith("✗")]
-            return False, f"{failed} test(s) failed: {'; '.join(error_details[:3])}"
+        print(f"\n{failed} test(s) failed.")
+        error_details = [r for r in test_results if r.startswith("✗")]
+        return False, f"{failed} test(s) failed: {'; '.join(error_details[:3])}"
 
-    except Exception as e:
+    except (psycopg2.Error, ValueError, KeyError, TypeError) as e:
         print(f"Error during verification: {e}")
         return False, f"Error during verification: {e}"
 
 def main():
     """Main verification function."""
-    success, error_msg = verify()
+    success, _error_msg = verify()
     sys.exit(0 if success else 1)
 
 if __name__ == "__main__":

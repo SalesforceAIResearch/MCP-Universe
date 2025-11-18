@@ -7,7 +7,7 @@ The data analytics team attempted to create a customer behavior analysis query t
 - Only include customers with at least 15 paid rentals
 - Only include customers with valid email addresses
 
-However, they're getting incorrect results - the query is over-counting rentals and calculating wrong spending amounts. 
+However, they're getting incorrect results - the query is over-counting rentals and calculating wrong spending amounts.
 
 Your task is to fix this query to produce accurate results.
 
@@ -17,7 +17,7 @@ Here's the buggy query that needs to be fixed:
 
 ```sql
 WITH customer_basic_stats AS (
-    SELECT 
+    SELECT
         c.customer_id,
         c.first_name || ' ' || c.last_name as customer_name,
         ci.city as customer_city,
@@ -38,7 +38,7 @@ WITH customer_basic_stats AS (
     HAVING COUNT(r.rental_id) >= 15
 ),
 customer_categories AS (
-    SELECT 
+    SELECT
         c.customer_id,
         cat.name as category_name,
         COUNT(*) as category_count,
@@ -54,7 +54,7 @@ customer_categories AS (
     GROUP BY c.customer_id, cat.name
 ),
 customer_actors AS (
-    SELECT 
+    SELECT
         c.customer_id,
         a.first_name || ' ' || a.last_name as actor_name,
         COUNT(*) as actor_count,
@@ -70,7 +70,7 @@ customer_actors AS (
     GROUP BY c.customer_id, a.first_name, a.last_name
 ),
 regional_popular_films AS (
-    SELECT 
+    SELECT
         co.country,
         f.title,
         COUNT(*) as rental_count,
@@ -86,7 +86,7 @@ regional_popular_films AS (
     WHERE c.email IS NOT NULL
     GROUP BY co.country, f.title
 )
-SELECT 
+SELECT
     cbs.customer_id,
     cbs.customer_name,
     cbs.customer_city,
@@ -97,7 +97,7 @@ SELECT
     cc.category_name as favorite_category,
     ca.actor_name as favorite_actor,
     cbs.avg_rental_duration,
-    CASE 
+    CASE
         WHEN cbs.total_spent >= 150 THEN 'Premium'
         WHEN cbs.total_spent >= 75 THEN 'Standard'
         ELSE 'Basic'
@@ -117,7 +117,7 @@ When comparing the problematic query results with the expected correct values, t
 
 1. **Rental count discrepancies**: Many customers show higher `total_rentals` counts than expected
 
-2. **Spending amount errors**: The `total_spent` values don't match the correct calculations 
+2. **Spending amount errors**: The `total_spent` values don't match the correct calculations
 
 3. **Incorrect favorite categories and actors**: Many customers show wrong favorite categories and actors compared to the expected results
 

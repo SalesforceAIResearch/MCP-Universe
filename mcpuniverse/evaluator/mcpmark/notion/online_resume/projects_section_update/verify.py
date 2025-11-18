@@ -1,9 +1,13 @@
+"""Verification module for Projects Section Update task in Notion workspace."""
+
+# pylint: disable=duplicate-code,import-error,astroid-error
+
 import sys
 from notion_client import Client
 from mcpuniverse.evaluator.mcpmark.notion.utils import notion_utils
 
 
-def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
+def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:  # pylint: disable=too-many-branches,too-many-locals,too-many-return-statements,too-many-statements
     """
     Verifies that the projects section has been reorganized correctly with cross-section references.
     """
@@ -91,7 +95,11 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
                 return False, "Failure: Zapier project has no description."
 
             description_text = desc_prop[0].get("text", {}).get("content", "")
-            base_desc = "Led the complete redesign of Zapier's main dashboard, focusing on improved usability and modern design patterns. Implemented new navigation system and responsive layouts."
+            base_desc = (
+                "Led the complete redesign of Zapier's main dashboard, "
+                "focusing on improved usability and modern design patterns. "
+                "Implemented new navigation system and responsive layouts."
+            )
             if base_desc not in description_text:
                 print(
                     "Failure: Zapier project description is missing base content.",
@@ -214,7 +222,10 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
     paragraph_content = paragraph_text[0].get("text", {}).get("content", "")
 
     # Check that paragraph contains the base text
-    base_text = "The Zapier Dashboard Redesign represents my most impactful recent work, leveraging my expertise in"
+    base_text = (
+        "The Zapier Dashboard Redesign represents my most impactful recent "
+        "work, leveraging my expertise in"
+    )
     if base_text not in paragraph_content:
         print("Failure: Paragraph does not contain base text.", file=sys.stderr)
         return False, "Failure: Paragraph does not contain base text."
@@ -239,9 +250,10 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
         )
         return False, "Failure: Paragraph does not contain proper ending text."
 
-    print(
-        f"Success: Projects section has been reorganized correctly with cross-section references (highest skill: {highest_skill_name} at {skill_level_percent}%)."
-    )
+    msg = (f"Success: Projects section has been reorganized correctly with "
+           f"cross-section references (highest skill: {highest_skill_name} "
+           f"at {skill_level_percent}%).")
+    print(msg)
     return True, ""
 
 
@@ -251,7 +263,7 @@ def main():
     """
     notion = notion_utils.get_notion_client()
     main_id = sys.argv[1] if len(sys.argv) > 1 else None
-    success, error_msg = verify(notion, main_id)
+    success, _error_msg = verify(notion, main_id)
     if success:
         sys.exit(0)
     else:

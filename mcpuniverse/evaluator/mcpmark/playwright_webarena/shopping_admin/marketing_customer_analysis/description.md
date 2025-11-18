@@ -27,14 +27,14 @@ Perform a comprehensive marketing and customer analysis workflow in the Magento 
 
 5. To support our analysis, we need to create test customer profiles for different segments:
    Create TWO new customers with the following details:
-   
+
    Customer 1:
    - First Name: Marketing1
    - Last Name: Analy
    - Email: marketdata1.analysis@magento.com
    - Associate to Website: Main Website
    - Group: General
-   
+
    Customer 2:
    - First Name: Analytics1
    - Last Name: Report

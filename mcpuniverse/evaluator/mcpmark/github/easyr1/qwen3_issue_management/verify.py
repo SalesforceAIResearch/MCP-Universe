@@ -1,7 +1,9 @@
+"""Verification module for Qwen3 issue management in EasyR1 repository."""
+# pylint: disable=R0911,astroid-error,duplicate-code,import-error
 import sys
 import os
-import requests
 from typing import Dict, List, Optional, Tuple
+import requests
 from dotenv import load_dotenv
 
 load_dotenv(".mcp_env")
@@ -17,12 +19,11 @@ def _get_github_api(
         response = requests.get(url, headers=headers)
         if response.status_code == 200:
             return True, response.json()
-        elif response.status_code == 404:
+        if response.status_code == 404:
             return False, None
-        else:
-            print(f"API error for {endpoint}: {response.status_code}", file=sys.stderr)
-            return False, None
-    except Exception as e:
+        print(f"API error for {endpoint}: {response.status_code}", file=sys.stderr)
+        return False, None
+    except (requests.RequestException, IOError, OSError, ValueError) as e:
         print(f"Exception for {endpoint}: {e}", file=sys.stderr)
         return False, None
 
@@ -37,10 +38,9 @@ def _search_github_issues(
         if response.status_code == 200:
             data = response.json()
             return True, data.get("items", [])
-        else:
-            print(f"Search API error: {response.status_code}", file=sys.stderr)
-            return False, None
-    except Exception as e:
+        print(f"Search API error: {response.status_code}", file=sys.stderr)
+        return False, None
+    except (requests.RequestException, IOError, OSError, ValueError) as e:
         print(f"Search exception: {e}", file=sys.stderr)
         return False, None
 
@@ -201,16 +201,16 @@ def verify() -> tuple[bool, str]:
     print("\n✓ Qwen3 issue reopening workflow successfully completed!")
     print(f"✓ Reopened Issues: {len(reopened_issues)} Qwen3-related issues reopened")
     print("✓ Tagging: All reopened issues tagged with 'qwen3-related' label")
-    print(
-        f"✓ Summary: Issue #{summary_issue.get('number')} created with complete list of reopened issues"
-    )
+    summary_issue_num = summary_issue.get('number')
+    print(f"✓ Summary: Issue #{summary_issue_num} created with complete "
+          f"list of reopened issues")
     print("\nAll Qwen3-related closed issues have been reopened and properly tagged!")
     return True, ""
 
 
 def main():
     """Main verification function."""
-    success, error_msg = verify()
+    success, _error_msg = verify()
     if success:
         sys.exit(0)
     else:

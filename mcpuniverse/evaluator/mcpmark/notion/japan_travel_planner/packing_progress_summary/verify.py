@@ -1,9 +1,13 @@
+"""Verification module for Packing Progress Summary task in Notion workspace."""
+
+# pylint: disable=duplicate-code,import-error,astroid-error
+
 import sys
 from notion_client import Client
 from mcpuniverse.evaluator.mcpmark.notion.utils import notion_utils
 
 
-def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
+def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:  # pylint: disable=too-many-branches,too-many-locals,too-many-return-statements,too-many-statements
     """
     Verifies that:
     1. All Clothes items except hat are marked as packed
@@ -114,7 +118,9 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
                         f"Error: Clothes item '{item['name']}' should be packed but is not.",
                         file=sys.stderr,
                     )
-                    return False, f"Error: Clothes item '{item['name']}' should be packed but is not."
+                    msg = (f"Error: Clothes item '{item['name']}' should be "
+                           "packed but is not.")
+                    return False, msg
 
         print("Success: All Clothes items are correctly marked (packed except hat).")
 
@@ -135,7 +141,7 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
 
         print("Success: SIM Card and Wallet entries are checked.")
 
-    except Exception as e:
+    except (ValueError, KeyError, TypeError, AttributeError) as e:
         print(f"Error querying Packing List database: {e}", file=sys.stderr)
         return False, f"Error querying Packing List database: {e}"
 
@@ -164,7 +170,7 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
     statistics_verified = True
     found_statistics = {}
 
-    if packing_heading_index is not None:
+    if packing_heading_index is not None:  # pylint: disable=too-many-nested-blocks
         # Look for summary in the next few blocks
         for i in range(
             packing_heading_index + 1, min(packing_heading_index + 15, len(all_blocks))
@@ -212,22 +218,20 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
                                 x = int(x_str.strip())
                                 y = int(y_str.strip())
                                 found_statistics[category] = {"packed": x, "total": y}
-                except:
+                except (ValueError, TypeError, AttributeError, KeyError):
                     pass  # Continue if parsing fails
 
     if not summary_found:
-        print(
-            "Error: 'Packing Progress Summary' section not found after Packing List heading.",
-            file=sys.stderr,
-        )
-        return False, "Error: 'Packing Progress Summary' section not found after Packing List heading."
+        msg = ("Error: 'Packing Progress Summary' section not found after "
+               "Packing List heading.")
+        print(msg, file=sys.stderr)
+        return False, msg
 
     if not found_statistics:
-        print(
-            "Error: No valid packing statistics bullet points found in format 'Category: X/Y packed'.",
-            file=sys.stderr,
-        )
-        return False, "Error: No valid packing statistics bullet points found in format 'Category: X/Y packed'."
+        msg = ("Error: No valid packing statistics bullet points found in "
+               "format 'Category: X/Y packed'.")
+        print(msg, file=sys.stderr)
+        return False, msg
 
     # Verify the statistics match the expected values
     for category, stats in expected_stats.items():
@@ -240,10 +244,12 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
         else:
             found = found_statistics[category]
             if found["packed"] != stats["packed"] or found["total"] != stats["total"]:
-                print(
-                    f"Error: Statistics mismatch for '{category}': expected {stats['packed']}/{stats['total']} packed, found {found['packed']}/{found['total']} packed.",
-                    file=sys.stderr,
-                )
+                expected_str = f"{stats['packed']}/{stats['total']}"
+                found_str = f"{found['packed']}/{found['total']}"
+                msg = (f"Error: Statistics mismatch for '{category}': "
+                       f"expected {expected_str} packed, "
+                       f"found {found_str} packed.")
+                print(msg, file=sys.stderr)
                 statistics_verified = False
 
     # Check for extra categories in summary that don't exist in expected
@@ -257,8 +263,11 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
     if not statistics_verified:
         return False, "Error: Statistics verification failed."
 
-    print("Success: Packing Progress Summary section created with correct statistics.")
-    # print(f"Verified statistics: {', '.join(f'{k}: {v['packed']}/{v['total']} packed' for k, v in expected_stats.items())}")
+    msg = ("Success: Packing Progress Summary section created with correct "
+           "statistics.")
+    print(msg)
+    # print(f"Verified statistics: {', '.join(f'{k}: {v['packed']}/"
+    #       f"{v['total']} packed' for k, v in expected_stats.items())}")
 
     return True, ""
 
@@ -269,7 +278,7 @@ def main():
     """
     notion = notion_utils.get_notion_client()
     main_id = sys.argv[1] if len(sys.argv) > 1 else None
-    success, error_msg = verify(notion, main_id)
+    success, _error_msg = verify(notion, main_id)
     if success:
         sys.exit(0)
     else:

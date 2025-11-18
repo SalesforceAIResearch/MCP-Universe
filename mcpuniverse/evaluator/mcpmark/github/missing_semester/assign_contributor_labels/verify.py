@@ -1,7 +1,9 @@
+"""Verification module for assigning contributor labels in missing-semester repository."""
+# pylint: disable=duplicate-code,import-error,astroid-error
 import sys
 import os
-import requests
 from typing import Dict, Optional, Tuple, List
+import requests
 from dotenv import load_dotenv
 
 
@@ -10,17 +12,16 @@ def _get_github_api(
 ) -> Tuple[bool, Optional[Dict]]:
     """Make a GET request to GitHub API and return (success, response)."""
     url = f"https://api.github.com/repos/{org}/{repo}/{endpoint}"
-    
+
     try:
         response = requests.get(url, headers=headers)
         if response.status_code == 200:
             return True, response.json()
-        elif response.status_code == 404:
+        if response.status_code == 404:
             return False, None
-        else:
-            print(f"API error for {endpoint}: {response.status_code}", file=sys.stderr)
-            return False, None
-    except Exception as e:
+        print(f"API error for {endpoint}: {response.status_code}", file=sys.stderr)
+        return False, None
+    except (requests.RequestException, IOError, OSError, ValueError) as e:
         print(f"Exception for {endpoint}: {e}", file=sys.stderr)
         return False, None
 
@@ -35,7 +36,7 @@ def _get_issue_labels(
     success, result = _get_github_api(f"issues/{issue_number}", headers, org, repo)
     if not success or not result:
         return None
-    
+
     labels = result.get("labels", [])
     return [label["name"] for label in labels]
 
@@ -79,29 +80,29 @@ def verify() -> tuple[bool, str]:
         24: ["assigned-anishathalye"],  # PR #24
     }
 
-    all_passed = True
-
     for item_number, expected in expected_labels.items():
         item_type = "Issue" if item_number in [9, 14, 15] else "PR"
         print(f"\nChecking {item_type} #{item_number}...")
-        
+
         labels = _get_issue_labels(item_number, headers, github_org, "missing-semester")
-        
+
         if labels is None:
             print(f"  ❌ Failed to retrieve {item_type} #{item_number}", file=sys.stderr)
             return False, f"Failed to retrieve {item_type} #{item_number}"
-        
+
         # Sort both lists for comparison
         labels_sorted = sorted(labels)
         expected_sorted = sorted(expected)
-        
+
         if labels_sorted == expected_sorted:
             print(f"  ✅ {item_type} #{item_number} has correct labels: {labels_sorted}")
         else:
             print(f"  ❌ {item_type} #{item_number} has incorrect labels", file=sys.stderr)
             print(f"     Expected: {expected_sorted}", file=sys.stderr)
             print(f"     Found: {labels_sorted}", file=sys.stderr)
-            return False, f"{item_type} #{item_number} has incorrect labels. Expected: {expected_sorted}, Found: {labels_sorted}"
+            msg = (f"{item_type} #{item_number} has incorrect labels. "
+                   f"Expected: {expected_sorted}, Found: {labels_sorted}")
+            return False, msg
 
     print("\n✅ All verification checks passed!")
     print("Contributor labels assignment task completed successfully:")
@@ -112,7 +113,7 @@ def verify() -> tuple[bool, str]:
 
 def main():
     """Main verification function."""
-    success, error_msg = verify()
+    success, _error_msg = verify()
     if success:
         sys.exit(0)
     else:

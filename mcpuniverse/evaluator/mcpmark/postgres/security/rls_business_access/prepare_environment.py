@@ -1,14 +1,19 @@
 #!/usr/bin/env python3
+"""Prepare environment for RLS business access task."""
+# pylint: disable=duplicate-code
 
 import os
+import sys
+
 import psycopg2
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
-import sys
 
 def setup_rls_environment():
     """
-    Set up a PostgreSQL environment for a social media platform with RLS policies.
-    Creates Users, Channels, Posts, Comments, and Channel Moderators for testing RLS implementations.
+    Set up a PostgreSQL environment for a social media platform
+    with RLS policies.
+    Creates Users, Channels, Posts, Comments, and Channel Moderators
+    for testing RLS implementations.
     """
 
     # Database connection parameters from environment
@@ -206,7 +211,7 @@ def setup_rls_environment():
         cur.close()
         conn.close()
 
-    except Exception as e:
+    except (psycopg2.Error, OSError, IOError) as e:
         print(f"Error setting up environment: {e}")
         sys.exit(1)
 

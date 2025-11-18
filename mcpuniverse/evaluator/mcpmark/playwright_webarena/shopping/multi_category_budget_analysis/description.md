@@ -47,4 +47,3 @@ cart_item_count|Count
 under_60_budget|YES/NO
 </answer>
 ```
-

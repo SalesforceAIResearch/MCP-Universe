@@ -1,11 +1,13 @@
 """
 Verification script for PostgreSQL Task 1: Monthly Sales Dashboard and Music Charts
 """
+# pylint: disable=too-many-return-statements,duplicate-code
 
 import os
 import sys
-import psycopg2
 from decimal import Decimal
+
+import psycopg2
 
 def rows_match(actual_row, expected_row):
     """
@@ -15,21 +17,21 @@ def rows_match(actual_row, expected_row):
     """
     if len(actual_row) != len(expected_row):
         return False
-    
+
     for actual, expected in zip(actual_row, expected_row):
         if isinstance(actual, Decimal) and isinstance(expected, Decimal):
             if abs(float(actual) - float(expected)) > 0.01:
                 return False
         elif actual != expected:
             return False
-    
+
     return True
 
 def get_connection_params() -> dict:
     """Get database connection parameters."""
     return {
         "host": os.getenv("POSTGRES_HOST", "localhost"),
-        "port": int(os.getenv("POSTGRES_PORT", 5432)),
+        "port": int(os.getenv("POSTGRES_PORT", "5432")),
         "database": os.getenv("POSTGRES_DATABASE"),
         "user": os.getenv("POSTGRES_USERNAME"),
         "password": os.getenv("POSTGRES_PASSWORD")
@@ -40,13 +42,13 @@ def verify_monthly_sales_results(conn) -> tuple[bool, str]:
     with conn.cursor() as cur:
         # Get actual results from the created table
         cur.execute("""
-            SELECT year_month, total_invoices, total_revenue, 
+            SELECT year_month, total_invoices, total_revenue,
                    total_tracks_sold, average_invoice_value, unique_customers
-            FROM monthly_sales_summary 
+            FROM monthly_sales_summary
             ORDER BY year_month
         """)
         actual_results = cur.fetchall()
-        
+
         # Execute ground truth query
         cur.execute("""
             WITH invoice_metrics AS (
@@ -59,13 +61,13 @@ def verify_monthly_sales_results(conn) -> tuple[bool, str]:
             FROM "Invoice" i
             GROUP BY 1
             ),
-            track_metrics AS (         
+            track_metrics AS (
             SELECT
                 DATE_TRUNC('month', i."InvoiceDate") AS ym,
                 SUM(il."Quantity")::INT              AS total_tracks_sold
             FROM "Invoice" i
             JOIN "InvoiceLine" il ON il."InvoiceId" = i."InvoiceId"
-            WHERE il."Quantity" > 0                
+            WHERE il."Quantity" > 0
             GROUP BY 1
             )
             SELECT
@@ -82,8 +84,14 @@ def verify_monthly_sales_results(conn) -> tuple[bool, str]:
         expected_results = cur.fetchall()
 
         if len(actual_results) != len(expected_results):
-            print(f"❌ Expected {len(expected_results)} monthly sales records, got {len(actual_results)}")
-            return False, f"Expected {len(expected_results)} monthly sales records, got {len(actual_results)}"
+            print(
+                f"❌ Expected {len(expected_results)} monthly sales "
+                f"records, got {len(actual_results)}"
+            )
+            return False, (
+                f"Expected {len(expected_results)} monthly sales "
+                f"records, got {len(actual_results)}"
+            )
 
         mismatches = 0
         for i, (actual, expected) in enumerate(zip(actual_results, expected_results)):
@@ -180,8 +188,14 @@ def verify_music_charts_results(conn) -> tuple[bool, str]:
         expected_results = cur.fetchall()
 
         if len(actual_results) != len(expected_results):
-            print(f"❌ Expected {len(expected_results)} music chart records, got {len(actual_results)}")
-            return False, f"Expected {len(expected_results)} music chart records, got {len(actual_results)}"
+            print(
+                f"❌ Expected {len(expected_results)} music chart "
+                f"records, got {len(actual_results)}"
+            )
+            return False, (
+                f"Expected {len(expected_results)} music chart "
+                f"records, got {len(actual_results)}"
+            )
 
         mismatches = 0
         for i, (actual, expected) in enumerate(zip(actual_results, expected_results)):
@@ -232,13 +246,13 @@ def verify() -> tuple[bool, str]:
     except psycopg2.Error as e:
         print(f"❌ Database error: {e}")
         return False, f"Database error: {e}"
-    except Exception as e:
+    except (ValueError, KeyError, TypeError) as e:
         print(f"❌ Verification error: {e}")
         return False, f"Verification error: {e}"
 
 def main():
     """Main verification function."""
-    success, error_msg = verify()
+    success, _error_msg = verify()
     if success:
         sys.exit(0)
     else:

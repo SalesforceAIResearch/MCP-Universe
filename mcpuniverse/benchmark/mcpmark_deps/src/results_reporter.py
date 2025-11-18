@@ -12,14 +12,14 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from src.logger import get_logger
+from src.logger import get_logger  # pylint: disable=import-error
 
 # Initialize logger
 logger = get_logger(__name__)
 
 
 @dataclass
-class TaskResult:
+class TaskResult:  # pylint: disable=too-many-instance-attributes
     """
     Represents the result of a single task evaluation.
 
@@ -102,7 +102,7 @@ class EvaluationReport:
             if result.token_usage:
                 total += (result.token_usage.get("total_tokens") or 0)
         return total
-    
+
     @property
     def total_reasoning_tokens(self) -> int:
         """Calculate total reasoning tokens across all tasks."""
@@ -132,7 +132,7 @@ class EvaluationReport:
         if self.total_tasks == 0:
             return 0.0
         return self.total_tokens / self.total_tasks
-    
+
     @property
     def avg_reasoning_tokens(self) -> float:
         """Calculate average reasoning tokens per task."""
@@ -146,7 +146,7 @@ class EvaluationReport:
         # Use sum of individual task execution times instead of pipeline wall clock time
         # This ensures resume functionality shows correct total time
         return sum(task.task_execution_time for task in self.task_results)
-    
+
     @property
     def total_agent_execution_time(self) -> float:
         """Calculates the total agent execution time (Step 2) across all tasks."""
@@ -216,7 +216,7 @@ class EvaluationReport:
                 ]
                 total_time = sum(r.task_execution_time for r in category_results)
                 stats["avg_execution_time"] = total_time / len(category_results)
-                
+
                 # Add agent execution time stats
                 total_agent_time = sum(r.agent_execution_time for r in category_results)
                 stats["avg_agent_execution_time"] = total_agent_time / len(category_results)
@@ -241,7 +241,6 @@ class ResultsReporter:
 
     def __init__(self):
         """Initialize the results reporter."""
-        pass
 
     def save_messages_json(self, messages: Any, output_path: Path) -> Path:
         """Saves the conversation messages/trajectory as messages.json."""
@@ -250,7 +249,7 @@ class ResultsReporter:
             json.dump(messages, f, indent=2, ensure_ascii=False)
         return output_path
 
-    def save_meta_json(
+    def save_meta_json(  # pylint: disable=too-many-arguments, too-many-positional-arguments
         self,
         task_result: TaskResult,
         model_config: Dict[str, Any],

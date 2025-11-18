@@ -1,3 +1,10 @@
+"""
+Custom evaluator functions for MCPMark Notion tasks.
+
+These functions adapt verification logic from mcpmark/tasks/notion/*/verify.py
+into the MCP-Universe evaluator framework.
+"""
+# pylint: disable=line-too-long,import-outside-toplevel,duplicate-code
 from __future__ import annotations
 
 from typing import Tuple
@@ -9,12 +16,12 @@ from mcpuniverse.evaluator.functions import compare_func
 ##################################################################################
 
 @compare_func(name="mcpmark.notion.verify_employee_onboarding")
-async def verify_employee_onboarding(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_employee_onboarding(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the employee onboarding system task.
-    
+
     Adapted from: mcpuniverse.evaluator.mcpmark.notion.company_in_a_box.employee_onboarding.verify import verify
-    
+
     Checks:
     - Employee Onboarding Checklist database exists with correct schema
     - Database has at least 3 entries with all required properties filled
@@ -25,10 +32,10 @@ async def verify_employee_onboarding(x: dict, *args, **kwargs) -> Tuple[bool, st
     """
     from mcpuniverse.evaluator.mcpmark.notion.company_in_a_box.employee_onboarding.verify import verify
     from mcpuniverse.evaluator.mcpmark.notion.utils import notion_utils
-    
+
     # Get Notion client
     notion = notion_utils.get_notion_client()
-    
+
     # Call the verify function
     passed, error_msg = verify(notion, None)
     return passed, error_msg
@@ -39,12 +46,12 @@ async def verify_employee_onboarding(x: dict, *args, **kwargs) -> Tuple[bool, st
 ##################################################################################
 
 @compare_func(name="mcpmark.notion.verify_goals_restructure")
-async def verify_goals_restructure(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_goals_restructure(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the goals restructure task.
-    
+
     Adapted from: mcpuniverse.evaluator.mcpmark.notion.company_in_a_box.goals_restructure.verify import verify
-    
+
     Checks:
     - Company In A Box page exists
     - Current Goals section exists with 4 toggle blocks
@@ -54,10 +61,10 @@ async def verify_goals_restructure(x: dict, *args, **kwargs) -> Tuple[bool, str]
     """
     from mcpuniverse.evaluator.mcpmark.notion.company_in_a_box.goals_restructure.verify import verify
     from mcpuniverse.evaluator.mcpmark.notion.utils import notion_utils
-    
+
     # Get Notion client
     notion = notion_utils.get_notion_client()
-    
+
     # Call the verify function
     passed, error_msg = verify(notion, None)
     return passed, error_msg
@@ -68,12 +75,12 @@ async def verify_goals_restructure(x: dict, *args, **kwargs) -> Tuple[bool, str]
 ##################################################################################
 
 @compare_func(name="mcpmark.notion.verify_quarterly_review_dashboard")
-async def verify_quarterly_review_dashboard(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_quarterly_review_dashboard(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the quarterly review dashboard task.
-    
+
     Adapted from: mcpuniverse.evaluator.mcpmark.notion.company_in_a_box.quarterly_review_dashboard.verify import verify
-    
+
     Checks:
     - Q4 2024 Business Review Dashboard page exists as child of Company In A Box
     - Callout block contains all three keywords: LATAM, Enterprise, Employee engagement
@@ -84,10 +91,10 @@ async def verify_quarterly_review_dashboard(x: dict, *args, **kwargs) -> Tuple[b
     """
     from mcpuniverse.evaluator.mcpmark.notion.company_in_a_box.quarterly_review_dashboard.verify import verify
     from mcpuniverse.evaluator.mcpmark.notion.utils import notion_utils
-    
+
     # Get Notion client
     notion = notion_utils.get_notion_client()
-    
+
     # Call the verify function
     passed, error_msg = verify(notion, None)
     return passed, error_msg
@@ -98,27 +105,27 @@ async def verify_quarterly_review_dashboard(x: dict, *args, **kwargs) -> Tuple[b
 ##################################################################################
 
 @compare_func(name="mcpmark.notion.verify_code_snippets_go")
-async def verify_code_snippets_go(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_code_snippets_go(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the code snippets Go task.
-    
+
     Adapted from: mcpuniverse.evaluator.mcpmark.notion.computer_science_student_dashboard.code_snippets_go.verify import verify
-    
+
     Checks:
     - Computer Science Student Dashboard page exists
     - Go column exists between Python and JavaScript columns
     - Bold header 'Go' is present
     - Three Go code blocks with correct captions and content:
       - Basic Go program
-      - For loop in Go  
+      - For loop in Go
       - Function definition in Go
     """
     from mcpuniverse.evaluator.mcpmark.notion.computer_science_student_dashboard.code_snippets_go.verify import verify
     from mcpuniverse.evaluator.mcpmark.notion.utils import notion_utils
-    
+
     # Get Notion client
     notion = notion_utils.get_notion_client()
-    
+
     # Call the verify function
     passed, error_msg = verify(notion, None)
     return passed, error_msg
@@ -129,12 +136,12 @@ async def verify_code_snippets_go(x: dict, *args, **kwargs) -> Tuple[bool, str]:
 ##################################################################################
 
 @compare_func(name="mcpmark.notion.verify_courses_internships_relation")
-async def verify_courses_internships_relation(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_courses_internships_relation(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the courses internships relation task.
-    
+
     Adapted from: mcpuniverse.evaluator.mcpmark.notion.computer_science_student_dashboard.courses_internships_relation.verify import verify
-    
+
     Checks:
     - Computer Science Student Dashboard page exists
     - Courses and Internship search databases exist
@@ -145,10 +152,10 @@ async def verify_courses_internships_relation(x: dict, *args, **kwargs) -> Tuple
     """
     from mcpuniverse.evaluator.mcpmark.notion.computer_science_student_dashboard.courses_internships_relation.verify import verify
     from mcpuniverse.evaluator.mcpmark.notion.utils import notion_utils
-    
+
     # Get Notion client
     notion = notion_utils.get_notion_client()
-    
+
     # Call the verify function
     passed, error_msg = verify(notion, None)
     return passed, error_msg
@@ -159,12 +166,12 @@ async def verify_courses_internships_relation(x: dict, *args, **kwargs) -> Tuple
 ##################################################################################
 
 @compare_func(name="mcpmark.notion.verify_study_session_tracker")
-async def verify_study_session_tracker(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_study_session_tracker(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the study session tracker task.
-    
+
     Adapted from: mcpuniverse.evaluator.mcpmark.notion.computer_science_student_dashboard.study_session_tracker.verify import verify
-    
+
     Checks:
     - Computer Science Student Dashboard page exists
     - New 2025-01-29 date section exists with bold date mention
@@ -177,10 +184,10 @@ async def verify_study_session_tracker(x: dict, *args, **kwargs) -> Tuple[bool, 
     """
     from mcpuniverse.evaluator.mcpmark.notion.computer_science_student_dashboard.study_session_tracker.verify import verify
     from mcpuniverse.evaluator.mcpmark.notion.utils import notion_utils
-    
+
     # Get Notion client
     notion = notion_utils.get_notion_client()
-    
+
     # Call the verify function
     passed, error_msg = verify(notion, None)
     return passed, error_msg
@@ -191,12 +198,12 @@ async def verify_study_session_tracker(x: dict, *args, **kwargs) -> Tuple[bool, 
 ##################################################################################
 
 @compare_func(name="mcpmark.notion.verify_asset_retirement_migration")
-async def verify_asset_retirement_migration(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_asset_retirement_migration(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the asset retirement migration task.
-    
+
     Adapted from: mcpuniverse.evaluator.mcpmark.notion.it_trouble_shooting_hub.asset_retirement_migration.verify import verify
-    
+
     Checks:
     - IT Trouble Shooting Hub page exists
     - IT Inventory and IT Asset Retirement Queue databases exist
@@ -208,10 +215,10 @@ async def verify_asset_retirement_migration(x: dict, *args, **kwargs) -> Tuple[b
     """
     from mcpuniverse.evaluator.mcpmark.notion.it_trouble_shooting_hub.asset_retirement_migration.verify import verify
     from mcpuniverse.evaluator.mcpmark.notion.utils import notion_utils
-    
+
     # Get Notion client
     notion = notion_utils.get_notion_client()
-    
+
     # Call the verify function
     passed, error_msg = verify(notion, None)
     return passed, error_msg
@@ -222,12 +229,12 @@ async def verify_asset_retirement_migration(x: dict, *args, **kwargs) -> Tuple[b
 ##################################################################################
 
 @compare_func(name="mcpmark.notion.verify_security_audit_ticket")
-async def verify_security_audit_ticket(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_security_audit_ticket(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the security audit ticket task.
-    
+
     Adapted from: mcpuniverse.evaluator.mcpmark.notion.it_trouble_shooting_hub.security_audit_ticket.verify import verify
-    
+
     Checks:
     - IT Trouble Shooting Hub page exists
     - IT Requests database exists
@@ -238,10 +245,10 @@ async def verify_security_audit_ticket(x: dict, *args, **kwargs) -> Tuple[bool, 
     """
     from mcpuniverse.evaluator.mcpmark.notion.it_trouble_shooting_hub.security_audit_ticket.verify import verify
     from mcpuniverse.evaluator.mcpmark.notion.utils import notion_utils
-    
+
     # Get Notion client
     notion = notion_utils.get_notion_client()
-    
+
     # Call the verify function
     passed, error_msg = verify(notion, None)
     return passed, error_msg
@@ -252,12 +259,12 @@ async def verify_security_audit_ticket(x: dict, *args, **kwargs) -> Tuple[bool, 
 ##################################################################################
 
 @compare_func(name="mcpmark.notion.verify_verification_expired_update")
-async def verify_verification_expired_update(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_verification_expired_update(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the verification expired update task.
-    
+
     Adapted from: mcpuniverse.evaluator.mcpmark.notion.it_trouble_shooting_hub.verification_expired_update.verify import verify
-    
+
     Checks:
     - IT Trouble Shooting Hub page exists
     - IT Homepage and IT Requests databases exist
@@ -269,10 +276,10 @@ async def verify_verification_expired_update(x: dict, *args, **kwargs) -> Tuple[
     """
     from mcpuniverse.evaluator.mcpmark.notion.it_trouble_shooting_hub.verification_expired_update.verify import verify
     from mcpuniverse.evaluator.mcpmark.notion.utils import notion_utils
-    
+
     # Get Notion client
     notion = notion_utils.get_notion_client()
-    
+
     # Call the verify function
     passed, error_msg = verify(notion, None)
     return passed, error_msg
@@ -283,12 +290,12 @@ async def verify_verification_expired_update(x: dict, *args, **kwargs) -> Tuple[
 ##################################################################################
 
 @compare_func(name="mcpmark.notion.verify_daily_itinerary_overview")
-async def verify_daily_itinerary_overview(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_daily_itinerary_overview(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the daily itinerary overview task.
-    
+
     Adapted from: mcpuniverse.evaluator.mcpmark.notion.japan_travel_planner.daily_itinerary_overview.verify import verify
-    
+
     Checks:
     - Japan Travel Planner page exists
     - Daily Itinerary Overview child page created
@@ -299,10 +306,10 @@ async def verify_daily_itinerary_overview(x: dict, *args, **kwargs) -> Tuple[boo
     """
     from mcpuniverse.evaluator.mcpmark.notion.japan_travel_planner.daily_itinerary_overview.verify import verify
     from mcpuniverse.evaluator.mcpmark.notion.utils import notion_utils
-    
+
     # Get Notion client
     notion = notion_utils.get_notion_client()
-    
+
     # Call the verify function
     passed, error_msg = verify(notion, None)
     return passed, error_msg
@@ -313,12 +320,12 @@ async def verify_daily_itinerary_overview(x: dict, *args, **kwargs) -> Tuple[boo
 ##################################################################################
 
 @compare_func(name="mcpmark.notion.verify_packing_progress_summary")
-async def verify_packing_progress_summary(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_packing_progress_summary(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the packing progress summary task.
-    
+
     Adapted from: mcpuniverse.evaluator.mcpmark.notion.japan_travel_planner.packing_progress_summary.verify import verify
-    
+
     Checks:
     - Japan Travel Planner page exists
     - Packing List database found
@@ -330,10 +337,10 @@ async def verify_packing_progress_summary(x: dict, *args, **kwargs) -> Tuple[boo
     """
     from mcpuniverse.evaluator.mcpmark.notion.japan_travel_planner.packing_progress_summary.verify import verify
     from mcpuniverse.evaluator.mcpmark.notion.utils import notion_utils
-    
+
     # Get Notion client
     notion = notion_utils.get_notion_client()
-    
+
     # Call the verify function
     passed, error_msg = verify(notion, None)
     return passed, error_msg
@@ -344,12 +351,12 @@ async def verify_packing_progress_summary(x: dict, *args, **kwargs) -> Tuple[boo
 ##################################################################################
 
 @compare_func(name="mcpmark.notion.verify_remove_osaka_itinerary")
-async def verify_remove_osaka_itinerary(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_remove_osaka_itinerary(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the remove Osaka itinerary task.
-    
+
     Adapted from: mcpuniverse.evaluator.mcpmark.notion.japan_travel_planner.remove_osaka_itinerary.verify import verify
-    
+
     Checks:
     - Japan Travel Planner page exists
     - Travel Itinerary database found
@@ -360,10 +367,10 @@ async def verify_remove_osaka_itinerary(x: dict, *args, **kwargs) -> Tuple[bool,
     """
     from mcpuniverse.evaluator.mcpmark.notion.japan_travel_planner.remove_osaka_itinerary.verify import verify
     from mcpuniverse.evaluator.mcpmark.notion.utils import notion_utils
-    
+
     # Get Notion client
     notion = notion_utils.get_notion_client()
-    
+
     # Call the verify function
     passed, error_msg = verify(notion, None)
     return passed, error_msg
@@ -374,12 +381,12 @@ async def verify_remove_osaka_itinerary(x: dict, *args, **kwargs) -> Tuple[bool,
 ##################################################################################
 
 @compare_func(name="mcpmark.notion.verify_restaurant_expenses_sync")
-async def verify_restaurant_expenses_sync(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_restaurant_expenses_sync(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the restaurant expenses sync task.
-    
+
     Adapted from: mcpuniverse.evaluator.mcpmark.notion.japan_travel_planner.restaurant_expenses_sync.verify import verify
-    
+
     Checks:
     - Japan Travel Planner page exists
     - Travel Itinerary and Expenses databases found
@@ -391,10 +398,10 @@ async def verify_restaurant_expenses_sync(x: dict, *args, **kwargs) -> Tuple[boo
     """
     from mcpuniverse.evaluator.mcpmark.notion.japan_travel_planner.restaurant_expenses_sync.verify import verify
     from mcpuniverse.evaluator.mcpmark.notion.utils import notion_utils
-    
+
     # Get Notion client
     notion = notion_utils.get_notion_client()
-    
+
     # Call the verify function
     passed, error_msg = verify(notion, None)
     return passed, error_msg
@@ -405,12 +412,12 @@ async def verify_restaurant_expenses_sync(x: dict, *args, **kwargs) -> Tuple[boo
 ##################################################################################
 
 @compare_func(name="mcpmark.notion.verify_layout_adjustment")
-async def verify_layout_adjustment(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_layout_adjustment(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the layout adjustment task.
-    
+
     Adapted from: mcpuniverse.evaluator.mcpmark.notion.online_resume.layout_adjustment.verify import verify
-    
+
     Checks:
     - Online Resume page exists
     - Skills database removed from right column
@@ -421,10 +428,10 @@ async def verify_layout_adjustment(x: dict, *args, **kwargs) -> Tuple[bool, str]
     """
     from mcpuniverse.evaluator.mcpmark.notion.online_resume.layout_adjustment.verify import verify
     from mcpuniverse.evaluator.mcpmark.notion.utils import notion_utils
-    
+
     # Get Notion client
     notion = notion_utils.get_notion_client()
-    
+
     # Call the verify function
     passed, error_msg = verify(notion, None)
     return passed, error_msg
@@ -435,12 +442,12 @@ async def verify_layout_adjustment(x: dict, *args, **kwargs) -> Tuple[bool, str]
 ##################################################################################
 
 @compare_func(name="mcpmark.notion.verify_projects_section_update")
-async def verify_projects_section_update(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_projects_section_update(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the projects section update task.
-    
+
     Adapted from: mcpuniverse.evaluator.mcpmark.notion.online_resume.projects_section_update.verify import verify
-    
+
     Checks:
     - Online Resume page exists
     - Projects and Skills databases found
@@ -453,10 +460,10 @@ async def verify_projects_section_update(x: dict, *args, **kwargs) -> Tuple[bool
     """
     from mcpuniverse.evaluator.mcpmark.notion.online_resume.projects_section_update.verify import verify
     from mcpuniverse.evaluator.mcpmark.notion.utils import notion_utils
-    
+
     # Get Notion client
     notion = notion_utils.get_notion_client()
-    
+
     # Call the verify function
     passed, error_msg = verify(notion, None)
     return passed, error_msg
@@ -467,12 +474,12 @@ async def verify_projects_section_update(x: dict, *args, **kwargs) -> Tuple[bool
 ##################################################################################
 
 @compare_func(name="mcpmark.notion.verify_skills_development_tracker")
-async def verify_skills_development_tracker(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_skills_development_tracker(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the skills development tracker task.
-    
+
     Adapted from: mcpuniverse.evaluator.mcpmark.notion.online_resume.skills_development_tracker.verify import verify
-    
+
     Checks:
     - New Online Resume page exists
     - Skills Development Tracker database created with correct schema
@@ -485,10 +492,10 @@ async def verify_skills_development_tracker(x: dict, *args, **kwargs) -> Tuple[b
     """
     from mcpuniverse.evaluator.mcpmark.notion.online_resume.skills_development_tracker.verify import verify
     from mcpuniverse.evaluator.mcpmark.notion.utils import notion_utils
-    
+
     # Get Notion client
     notion = notion_utils.get_notion_client()
-    
+
     # Call the verify function
     passed, error_msg = verify(notion, None)
     return passed, error_msg
@@ -499,12 +506,12 @@ async def verify_skills_development_tracker(x: dict, *args, **kwargs) -> Tuple[b
 ##################################################################################
 
 @compare_func(name="mcpmark.notion.verify_work_history_addition")
-async def verify_work_history_addition(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_work_history_addition(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the work history addition task.
-    
+
     Adapted from: mcpuniverse.evaluator.mcpmark.notion.online_resume.work_history_addition.verify import verify
-    
+
     Checks:
     - Online Resume page exists
     - New "Research Assistant" work history entry added
@@ -515,10 +522,10 @@ async def verify_work_history_addition(x: dict, *args, **kwargs) -> Tuple[bool, 
     """
     from mcpuniverse.evaluator.mcpmark.notion.online_resume.work_history_addition.verify import verify
     from mcpuniverse.evaluator.mcpmark.notion.utils import notion_utils
-    
+
     # Get Notion client
     notion = notion_utils.get_notion_client()
-    
+
     # Call the verify function
     passed, error_msg = verify(notion, None)
     return passed, error_msg
@@ -529,14 +536,14 @@ async def verify_work_history_addition(x: dict, *args, **kwargs) -> Tuple[bool, 
 ##################################################################################
 
 @compare_func(name="mcpmark.notion.verify_expert_level_lessons")
-async def verify_expert_level_lessons(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_expert_level_lessons(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """Verify Expert Level chapter created with 4 lessons and complex prerequisite relationships."""
     from mcpuniverse.evaluator.mcpmark.notion.python_roadmap.expert_level_lessons.verify import verify
     from mcpuniverse.evaluator.mcpmark.notion.utils import notion_utils
-    
+
     # Get Notion client
     notion = notion_utils.get_notion_client()
-    
+
     # Call the verify function
     passed, error_msg = verify(notion, None)
     return passed, error_msg
@@ -547,14 +554,14 @@ async def verify_expert_level_lessons(x: dict, *args, **kwargs) -> Tuple[bool, s
 ##################################################################################
 
 @compare_func(name="mcpmark.notion.verify_learning_metrics_dashboard")
-async def verify_learning_metrics_dashboard(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_learning_metrics_dashboard(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """Verify Learning Metrics Dashboard created with course statistics and completed topics."""
     from mcpuniverse.evaluator.mcpmark.notion.python_roadmap.learning_metrics_dashboard.verify import verify
     from mcpuniverse.evaluator.mcpmark.notion.utils import notion_utils
-    
+
     # Get Notion client
     notion = notion_utils.get_notion_client()
-    
+
     # Call the verify function
     passed, error_msg = verify(notion, None)
     return passed, error_msg
@@ -565,7 +572,7 @@ async def verify_learning_metrics_dashboard(x: dict, *args, **kwargs) -> Tuple[b
 ##################################################################################
 
 @compare_func(name="mcpmark.notion.verify_faq_column_layout")
-async def verify_faq_column_layout(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_faq_column_layout(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the FAQ column layout task.
 
@@ -595,7 +602,7 @@ async def verify_faq_column_layout(x: dict, *args, **kwargs) -> Tuple[bool, str]
 ##################################################################################
 
 @compare_func(name="mcpmark.notion.verify_hyperfocus_analysis_report")
-async def verify_hyperfocus_analysis_report(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_hyperfocus_analysis_report(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the hyperfocus analysis report task.
 
@@ -625,7 +632,7 @@ async def verify_hyperfocus_analysis_report(x: dict, *args, **kwargs) -> Tuple[b
 ##################################################################################
 
 @compare_func(name="mcpmark.notion.verify_numbered_list_emojis")
-async def verify_numbered_list_emojis(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_numbered_list_emojis(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the numbered list emojis task.
 
@@ -639,38 +646,38 @@ async def verify_numbered_list_emojis(x: dict, *args, **kwargs) -> Tuple[bool, s
     """
     from mcpuniverse.evaluator.mcpmark.notion.self_assessment.numbered_list_emojis.verify import verify
     from mcpuniverse.evaluator.mcpmark.notion.utils import notion_utils
-    
+
     # Get Notion client
     notion = notion_utils.get_notion_client()
-    
+
     # Call the verify function
     passed, error_msg = verify(notion, None)
     return passed, error_msg
 
 
 @compare_func(name="mcpmark.notion.verify_priority_tasks_table")
-async def verify_priority_tasks_table(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_priority_tasks_table(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """Verify priority tasks table created with correct filtering and sorting by end date."""
     from mcpuniverse.evaluator.mcpmark.notion.team_projects.priority_tasks_table.verify import verify
     from mcpuniverse.evaluator.mcpmark.notion.utils import notion_utils
-    
+
     # Get Notion client
     notion = notion_utils.get_notion_client()
-    
+
     # Call the verify function
     passed, error_msg = verify(notion, None)
     return passed, error_msg
 
 
 @compare_func(name="mcpmark.notion.verify_swap_tasks")
-async def verify_swap_tasks(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_swap_tasks(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """Verify tasks swapped between person with most tasks and person with fewest tasks."""
     from mcpuniverse.evaluator.mcpmark.notion.team_projects.swap_tasks.verify import verify
     from mcpuniverse.evaluator.mcpmark.notion.utils import notion_utils
-    
+
     # Get Notion client
     notion = notion_utils.get_notion_client()
-    
+
     # Call the verify function
     passed, error_msg = verify(notion, None)
     return passed, error_msg
@@ -681,7 +688,7 @@ async def verify_swap_tasks(x: dict, *args, **kwargs) -> Tuple[bool, str]:
 ##################################################################################
 
 @compare_func(name="mcpmark.notion.verify_deployment_process_sop")
-async def verify_deployment_process_sop(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_deployment_process_sop(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the deployment process SOP task.
 
@@ -713,7 +720,7 @@ async def verify_deployment_process_sop(x: dict, *args, **kwargs) -> Tuple[bool,
 ##################################################################################
 
 @compare_func(name="mcpmark.notion.verify_section_organization")
-async def verify_section_organization(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_section_organization(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the section organization task.
 
@@ -743,7 +750,7 @@ async def verify_section_organization(x: dict, *args, **kwargs) -> Tuple[bool, s
 ##################################################################################
 
 @compare_func(name="mcpmark.notion.verify_change_color")
-async def verify_change_color(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_change_color(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the change color task.
 
@@ -773,7 +780,7 @@ async def verify_change_color(x: dict, *args, **kwargs) -> Tuple[bool, str]:
 ##################################################################################
 
 @compare_func(name="mcpmark.notion.verify_weekend_adventure_planner")
-async def verify_weekend_adventure_planner(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_weekend_adventure_planner(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the weekend adventure planner task.
 

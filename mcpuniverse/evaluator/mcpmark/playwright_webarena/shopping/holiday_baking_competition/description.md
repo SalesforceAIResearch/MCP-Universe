@@ -39,4 +39,3 @@ Page2ThirdProductSKUPrice|sku:$price
 ProductManufacturer|manufacturer
 </answer>
 ```
-

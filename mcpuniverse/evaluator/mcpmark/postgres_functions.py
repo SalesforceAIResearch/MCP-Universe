@@ -11,6 +11,7 @@ Argument conventions (per Evaluator.evaluate):
   - op_args: config.op_args (args[1])
   - context: keyword-only in kwargs
 """
+# pylint: disable=line-too-long,import-outside-toplevel,duplicate-code
 
 from __future__ import annotations
 
@@ -23,12 +24,12 @@ from mcpuniverse.evaluator.functions import compare_func
 ##################################################################################
 
 @compare_func(name="postgres_customer_data_migration_verifier")
-async def postgres_customer_data_migration_verifier(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def postgres_customer_data_migration_verifier(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the Customer Data Migration task.
-    
+
     Adapted from: mcpuniverse/evaluator/mcpmark/postgres/chinook/customer_data_migration/verify.py
-    
+
     Checks:
     - All customer records from MelodyMart are migrated
     - Customer IDs start from next available ID
@@ -37,7 +38,7 @@ async def postgres_customer_data_migration_verifier(x: dict, *args, **kwargs) ->
     - Customer data matches expected values
     """
     from mcpuniverse.evaluator.mcpmark.postgres.chinook.customer_data_migration.verify import verify
-    
+
     # Call the verify function
     passed, error_msg = verify()
     return passed, error_msg
@@ -48,12 +49,12 @@ async def postgres_customer_data_migration_verifier(x: dict, *args, **kwargs) ->
 ##################################################################################
 
 @compare_func(name="postgres_employee_hierarchy_verifier")
-async def postgres_employee_hierarchy_verifier(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def postgres_employee_hierarchy_verifier(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the Employee Hierarchy Management task.
-    
+
     Adapted from: mcpuniverse/evaluator/mcpmark/postgres/chinook/employee_hierarchy_management/verify.py
-    
+
     Checks:
     - Employee count and title changes are correct
     - Specific employee records match expected values
@@ -64,7 +65,7 @@ async def postgres_employee_hierarchy_verifier(x: dict, *args, **kwargs) -> Tupl
     - Salary column exists with correct values
     """
     from mcpuniverse.evaluator.mcpmark.postgres.chinook.employee_hierarchy_management.verify import verify
-    
+
     # Call the verify function
     passed, error_msg = verify()
     return passed, error_msg
@@ -75,12 +76,12 @@ async def postgres_employee_hierarchy_verifier(x: dict, *args, **kwargs) -> Tupl
 ##################################################################################
 
 @compare_func(name="postgres_sales_music_charts_verifier")
-async def postgres_sales_music_charts_verifier(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def postgres_sales_music_charts_verifier(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the Sales and Music Charts task.
-    
+
     Adapted from: mcpuniverse/evaluator/mcpmark/postgres/chinook/sales_and_music_charts/verify.py
-    
+
     Checks:
     - monthly_sales_summary table exists with correct data
     - Monthly sales metrics are calculated correctly
@@ -89,7 +90,7 @@ async def postgres_sales_music_charts_verifier(x: dict, *args, **kwargs) -> Tupl
     - Revenue calculations are accurate
     """
     from mcpuniverse.evaluator.mcpmark.postgres.chinook.sales_and_music_charts.verify import verify
-    
+
     # Call the verify function
     passed, error_msg = verify()
     return passed, error_msg
@@ -100,12 +101,12 @@ async def postgres_sales_music_charts_verifier(x: dict, *args, **kwargs) -> Tupl
 ##################################################################################
 
 @compare_func(name="postgres_customer_analysis_fix_verifier")
-async def postgres_customer_analysis_fix_verifier(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def postgres_customer_analysis_fix_verifier(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the Customer Analysis Query Fix task.
-    
+
     Adapted from: mcpuniverse/evaluator/mcpmark/postgres/dvdrental/customer_analysis_fix/verify.py
-    
+
     Checks:
     - customer_analysis_fixed table exists with correct data
     - Query correctly handles duplicate counting
@@ -115,7 +116,7 @@ async def postgres_customer_analysis_fix_verifier(x: dict, *args, **kwargs) -> T
     - All 587 rows match expected results
     """
     from mcpuniverse.evaluator.mcpmark.postgres.dvdrental.customer_analysis_fix.verify import verify
-    
+
     # Call the verify function
     passed, error_msg = verify()
     return passed, error_msg
@@ -126,18 +127,18 @@ async def postgres_customer_analysis_fix_verifier(x: dict, *args, **kwargs) -> T
 ##################################################################################
 
 @compare_func(name="postgres_customer_analytics_optimization_verifier")
-async def postgres_customer_analytics_optimization_verifier(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def postgres_customer_analytics_optimization_verifier(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the Customer Analytics Query Optimization task.
-    
+
     Adapted from: mcpuniverse/evaluator/mcpmark/postgres/dvdrental/customer_analytics_optimization/verify.py
-    
+
     Checks:
     - Index exists on payment.customer_id column
     - Query performance is optimized
     """
     from mcpuniverse.evaluator.mcpmark.postgres.dvdrental.customer_analytics_optimization.verify import verify
-    
+
     # Call the verify function
     passed, error_msg = verify()
     return passed, error_msg
@@ -148,12 +149,12 @@ async def postgres_customer_analytics_optimization_verifier(x: dict, *args, **kw
 ##################################################################################
 
 @compare_func(name="postgres_film_inventory_verifier")
-async def postgres_film_inventory_verifier(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def postgres_film_inventory_verifier(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the Film Inventory Management task.
-    
+
     Adapted from: mcpuniverse/evaluator/mcpmark/postgres/dvdrental/film_inventory_management/verify.py
-    
+
     Checks:
     - New films added correctly
     - Inventory records added for new films
@@ -163,7 +164,7 @@ async def postgres_film_inventory_verifier(x: dict, *args, **kwargs) -> Tuple[bo
     - film_inventory_summary table created and populated correctly
     """
     from mcpuniverse.evaluator.mcpmark.postgres.dvdrental.film_inventory_management.verify import verify
-    
+
     # Call the verify function
     passed, error_msg = verify()
     return passed, error_msg
@@ -174,12 +175,12 @@ async def postgres_film_inventory_verifier(x: dict, *args, **kwargs) -> Tuple[bo
 ##################################################################################
 
 @compare_func(name="postgres_employee_demographics_verifier")
-async def postgres_employee_demographics_verifier(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def postgres_employee_demographics_verifier(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the Employee Demographics Report task.
-    
+
     Adapted from: mcpuniverse/evaluator/mcpmark/postgres/employees/employee_demographics_report/verify.py
-    
+
     Checks:
     - gender_statistics table with correct data
     - age_group_analysis table with correct statistics
@@ -187,7 +188,7 @@ async def postgres_employee_demographics_verifier(x: dict, *args, **kwargs) -> T
     - hiring_year_summary table with retention rates
     """
     from mcpuniverse.evaluator.mcpmark.postgres.employees.employee_demographics_report.verify import verify
-    
+
     # Call the verify function
     passed, error_msg = verify()
     return passed, error_msg
@@ -198,12 +199,12 @@ async def postgres_employee_demographics_verifier(x: dict, *args, **kwargs) -> T
 ##################################################################################
 
 @compare_func(name="postgres_employee_performance_verifier")
-async def postgres_employee_performance_verifier(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def postgres_employee_performance_verifier(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the Employee Performance Analysis task.
-    
+
     Adapted from: mcpuniverse/evaluator/mcpmark/postgres/employees/employee_performance_analysis/verify.py
-    
+
     Checks:
     - employee_performance_analysis table with performance categories
     - Salary growth rate calculations
@@ -211,7 +212,7 @@ async def postgres_employee_performance_verifier(x: dict, *args, **kwargs) -> Tu
     - department_salary_analysis table with salary metrics
     """
     from mcpuniverse.evaluator.mcpmark.postgres.employees.employee_performance_analysis.verify import verify
-    
+
     # Call the verify function
     passed, error_msg = verify()
     return passed, error_msg
@@ -222,12 +223,12 @@ async def postgres_employee_performance_verifier(x: dict, *args, **kwargs) -> Tu
 ##################################################################################
 
 @compare_func(name="postgres_employee_project_tracking_verifier")
-async def postgres_employee_project_tracking_verifier(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def postgres_employee_project_tracking_verifier(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the Employee Project Tracking task.
-    
+
     Adapted from: mcpuniverse/evaluator/mcpmark/postgres/employees/employee_project_tracking/verify.py
-    
+
     Checks:
     - Three project tracking tables created with correct structure
     - Foreign key constraints exist
@@ -237,7 +238,7 @@ async def postgres_employee_project_tracking_verifier(x: dict, *args, **kwargs) 
     - Milestone data with completion status
     """
     from mcpuniverse.evaluator.mcpmark.postgres.employees.employee_project_tracking.verify import verify
-    
+
     # Call the verify function
     passed, error_msg = verify()
     return passed, error_msg
@@ -248,19 +249,19 @@ async def postgres_employee_project_tracking_verifier(x: dict, *args, **kwargs) 
 ##################################################################################
 
 @compare_func(name="postgres_employee_retention_verifier")
-async def postgres_employee_retention_verifier(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def postgres_employee_retention_verifier(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the Employee Retention Analysis task.
-    
+
     Adapted from: mcpuniverse/evaluator/mcpmark/postgres/employees/employee_retention_analysis/verify.py
-    
+
     Checks:
     - employee_retention_analysis table with retention rates by department
     - high_risk_employees table with risk categorization
     - turnover_trend_analysis table with historical departure data
     """
     from mcpuniverse.evaluator.mcpmark.postgres.employees.employee_retention_analysis.verify import verify
-    
+
     # Call the verify function
     passed, error_msg = verify()
     return passed, error_msg
@@ -271,12 +272,12 @@ async def postgres_employee_retention_verifier(x: dict, *args, **kwargs) -> Tupl
 ##################################################################################
 
 @compare_func(name="postgres_executive_dashboard_automation_verifier")
-async def postgres_executive_dashboard_automation_verifier(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def postgres_executive_dashboard_automation_verifier(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the Executive Dashboard Automation task.
-    
+
     Adapted from: mcpuniverse/evaluator/mcpmark/postgres/employees/executive_dashboard_automation/verify.py
-    
+
     Checks:
     - exec_department_summary materialized view
     - exec_hiring_trends materialized view
@@ -284,7 +285,7 @@ async def postgres_executive_dashboard_automation_verifier(x: dict, *args, **kwa
     - All views contain correct aggregated data
     """
     from mcpuniverse.evaluator.mcpmark.postgres.employees.executive_dashboard_automation.verify import verify
-    
+
     # Call the verify function
     passed, error_msg = verify()
     return passed, error_msg
@@ -295,12 +296,12 @@ async def postgres_executive_dashboard_automation_verifier(x: dict, *args, **kwa
 ##################################################################################
 
 @compare_func(name="postgres_management_structure_analysis_verifier")
-async def postgres_management_structure_analysis_verifier(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def postgres_management_structure_analysis_verifier(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the Management Structure Analysis task.
-    
+
     Adapted from: mcpuniverse/evaluator/mcpmark/postgres/employees/management_structure_analysis/verify.py
-    
+
     Checks:
     - manager_profile table with management history
     - department_leadership table with current managers
@@ -308,7 +309,7 @@ async def postgres_management_structure_analysis_verifier(x: dict, *args, **kwar
     - span_of_control table with team size metrics
     """
     from mcpuniverse.evaluator.mcpmark.postgres.employees.management_structure_analysis.verify import verify
-    
+
     # Call the verify function
     passed, error_msg = verify()
     return passed, error_msg
@@ -319,12 +320,12 @@ async def postgres_management_structure_analysis_verifier(x: dict, *args, **kwar
 ##################################################################################
 
 @compare_func(name="postgres_consistency_enforcement_verifier")
-async def postgres_consistency_enforcement_verifier(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def postgres_consistency_enforcement_verifier(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the LEGO Consistency Enforcement task.
-    
+
     Adapted from: mcpuniverse/evaluator/mcpmark/postgres/lego/consistency_enforcement/verify.py
-    
+
     Checks:
     - Data consistency between lego_sets.num_parts and inventory parts
     - Constraint triggers exist on all required tables
@@ -332,7 +333,7 @@ async def postgres_consistency_enforcement_verifier(x: dict, *args, **kwargs) ->
     - Deferred constraints allow coordinated updates
     """
     from mcpuniverse.evaluator.mcpmark.postgres.lego.consistency_enforcement.verify import verify
-    
+
     # Call the verify function
     passed, error_msg = verify()
     return passed, error_msg
@@ -343,12 +344,12 @@ async def postgres_consistency_enforcement_verifier(x: dict, *args, **kwargs) ->
 ##################################################################################
 
 @compare_func(name="postgres_database_security_policies_verifier")
-async def postgres_database_security_policies_verifier(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def postgres_database_security_policies_verifier(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the LEGO Database Security Policies task.
-    
+
     Adapted from: mcpuniverse/evaluator/mcpmark/postgres/lego/database_security_policies/verify.py
-    
+
     Checks:
     - theme_analyst role created with correct permissions
     - Row-Level Security enabled on required tables
@@ -357,7 +358,7 @@ async def postgres_database_security_policies_verifier(x: dict, *args, **kwargs)
     - Theme-based access control functions as expected
     """
     from mcpuniverse.evaluator.mcpmark.postgres.lego.database_security_policies.verify import verify
-    
+
     # Call the verify function
     passed, error_msg = verify()
     return passed, error_msg
@@ -368,12 +369,12 @@ async def postgres_database_security_policies_verifier(x: dict, *args, **kwargs)
 ##################################################################################
 
 @compare_func(name="postgres_transactional_inventory_transfer_verifier")
-async def postgres_transactional_inventory_transfer_verifier(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def postgres_transactional_inventory_transfer_verifier(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the LEGO Transactional Inventory Transfer task.
-    
+
     Adapted from: mcpuniverse/evaluator/mcpmark/postgres/lego/transactional_inventory_transfer/verify.py
-    
+
     Checks:
     - transfer_parts function exists
     - inventory_transfer_log audit table exists
@@ -386,7 +387,7 @@ async def postgres_transactional_inventory_transfer_verifier(x: dict, *args, **k
     - Exact quantity transfers (source row deletion)
     """
     from mcpuniverse.evaluator.mcpmark.postgres.lego.transactional_inventory_transfer.verify import verify
-    
+
     # Call the verify function
     passed, error_msg = verify()
     return passed, error_msg
@@ -397,12 +398,12 @@ async def postgres_transactional_inventory_transfer_verifier(x: dict, *args, **k
 ##################################################################################
 
 @compare_func(name="postgres_rls_business_access_verifier")
-async def postgres_rls_business_access_verifier(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def postgres_rls_business_access_verifier(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the RLS Business Access task for social media platform.
-    
+
     Adapted from: mcpuniverse/evaluator/mcpmark/postgres/security/rls_business_access/verify.py
-    
+
     Checks:
     - RLS enabled on all required tables (users, channels, posts, comments)
     - Users can only update their own profile
@@ -414,7 +415,7 @@ async def postgres_rls_business_access_verifier(x: dict, *args, **kwargs) -> Tup
     - Anonymous user access restrictions
     """
     from mcpuniverse.evaluator.mcpmark.postgres.security.rls_business_access.verify import verify
-    
+
     # Call the verify function
     passed, error_msg = verify()
     return passed, error_msg
@@ -425,12 +426,12 @@ async def postgres_rls_business_access_verifier(x: dict, *args, **kwargs) -> Tup
 ##################################################################################
 
 @compare_func(name="postgres_security_verifier")
-async def postgres_security_verifier(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def postgres_security_verifier(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the User Permission Audit task for e-commerce database.
-    
+
     Adapted from: mcpuniverse/evaluator/mcpmark/postgres/security/user_permission_audit/verify.py
-    
+
     Checks:
     - security_audit_results table exists with correct summary data
     - security_audit_details table exists with all findings
@@ -440,7 +441,7 @@ async def postgres_security_verifier(x: dict, *args, **kwargs) -> Tuple[bool, st
     - Audit summary contains correct counts
     """
     from mcpuniverse.evaluator.mcpmark.postgres.security.user_permission_audit.verify import verify
-    
+
     # Call the verify function
     passed, error_msg = verify()
     return passed, error_msg
@@ -451,12 +452,12 @@ async def postgres_security_verifier(x: dict, *args, **kwargs) -> Tuple[bool, st
 ##################################################################################
 
 @compare_func(name="postgres_baseball_player_analysis_verifier")
-async def postgres_baseball_player_analysis_verifier(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def postgres_baseball_player_analysis_verifier(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the Baseball Player Analysis task.
-    
+
     Adapted from: mcpuniverse/evaluator/mcpmark/postgres/sports/baseball_player_analysis/verify.py
-    
+
     Checks:
     - baseball_player_analysis table created with correct structure
     - All qualifying players included (games >= 10, at_bats >= 50)
@@ -465,7 +466,7 @@ async def postgres_baseball_player_analysis_verifier(x: dict, *args, **kwargs) -
     - Batting average and fielding percentage formulas correct
     """
     from mcpuniverse.evaluator.mcpmark.postgres.sports.baseball_player_analysis.verify import verify
-    
+
     # Call the verify function
     passed, error_msg = verify()
     return passed, error_msg
@@ -476,12 +477,12 @@ async def postgres_baseball_player_analysis_verifier(x: dict, *args, **kwargs) -
 ##################################################################################
 
 @compare_func(name="postgres_participant_report_optimization_verifier")
-async def postgres_participant_report_optimization_verifier(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def postgres_participant_report_optimization_verifier(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the Participant Report Optimization task.
-    
+
     Adapted from: mcpuniverse/evaluator/mcpmark/postgres/sports/participant_report_optimization/verify.py
-    
+
     Checks:
     - participant_performance_report table created and populated
     - Report data matches ground truth query results
@@ -489,7 +490,7 @@ async def postgres_participant_report_optimization_verifier(x: dict, *args, **kw
     - Query optimization implemented correctly
     """
     from mcpuniverse.evaluator.mcpmark.postgres.sports.participant_report_optimization.verify import verify
-    
+
     # Call the verify function
     passed, error_msg = verify()
     return passed, error_msg
@@ -500,12 +501,12 @@ async def postgres_participant_report_optimization_verifier(x: dict, *args, **kw
 ##################################################################################
 
 @compare_func(name="postgres_team_roster_management_verifier")
-async def postgres_team_roster_management_verifier(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def postgres_team_roster_management_verifier(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the Team Roster Management task.
-    
+
     Adapted from: mcpuniverse/evaluator/mcpmark/postgres/sports/team_roster_management/verify.py
-    
+
     Checks:
     - player_evaluation table created with correct player data
     - Performance scores calculated correctly with injury adjustments
@@ -514,7 +515,7 @@ async def postgres_team_roster_management_verifier(x: dict, *args, **kwargs) -> 
     - All operations completed in correct order
     """
     from mcpuniverse.evaluator.mcpmark.postgres.sports.team_roster_management.verify import verify
-    
+
     # Call the verify function
     passed, error_msg = verify()
     return passed, error_msg
@@ -525,12 +526,12 @@ async def postgres_team_roster_management_verifier(x: dict, *args, **kwargs) -> 
 ##################################################################################
 
 @compare_func(name="postgres_dba_vector_analysis_verifier")
-async def postgres_dba_vector_analysis_verifier(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def postgres_dba_vector_analysis_verifier(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the DBA Vector Analysis task.
-    
+
     Adapted from: mcpuniverse/evaluator/mcpmark/postgres/vectors/dba_vector_analysis/verify.py
-    
+
     Checks:
     - vector_analysis_columns table created with all vector columns identified
     - vector_analysis_storage_consumption table created with storage analysis
@@ -539,8 +540,7 @@ async def postgres_dba_vector_analysis_verifier(x: dict, *args, **kwargs) -> Tup
     - All vector tables, columns, and indexes properly analyzed
     """
     from mcpuniverse.evaluator.mcpmark.postgres.vectors.dba_vector_analysis.verify import verify
-    
+
     # Call the verify function
     passed, error_msg = verify()
     return passed, error_msg
-

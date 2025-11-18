@@ -44,7 +44,7 @@ Perform customer segmentation setup and analysis in the Magento Admin panel to e
 ```
 <answer>
 InitialGroups|count
-FinalGroups|count  
+FinalGroups|count
 InitialCustomers|count
 FinalCustomers|count
 LastOrderCustomer|name

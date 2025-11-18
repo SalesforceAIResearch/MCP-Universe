@@ -1,3 +1,7 @@
+"""Verification module for Goals Restructure task in Notion workspace."""
+
+# pylint: disable=duplicate-code,import-error,astroid-error
+
 import sys
 from typing import List
 from notion_client import Client
@@ -38,14 +42,17 @@ def _is_toggle(block) -> bool:
 
 
 def _get_children(notion: Client, block_id: str) -> List[dict]:
-    """Retrieve **direct** children of a block (no pagination handling needed for small test pages)."""
+    """Retrieve **direct** children of a block.
+
+    No pagination handling needed for small test pages.
+    """
     try:
         return notion.blocks.children.list(block_id=block_id).get("results", [])
-    except Exception:
+    except (ValueError, KeyError, TypeError, AttributeError):
         return []
 
 
-def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
+def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:  # pylint: disable=too-many-return-statements,too-many-branches,too-many-locals,too-many-statements
     """Verifies that the Company in a Box page has been updated per the task requirements."""
     # 1. Locate the main page
     page_id = None
@@ -73,7 +80,7 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
     def _fetch_children(bid: str) -> List[dict]:
         try:
             return notion.blocks.children.list(block_id=bid).get("results", [])
-        except Exception:
+        except (ValueError, KeyError, TypeError, AttributeError):
             return []
 
     goals_section_blocks: List[dict] = []
@@ -157,11 +164,11 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
             # Skip checking the new goal itself, as it does not have a description yet.
             continue
         if not tb.get("has_children", False):
-            print(
-                f"Error: Toggle '{_normalize_string(_plain(tb))}' has no child blocks (description not moved).",
-                file=sys.stderr,
-            )
-            return False, f"Toggle '{_normalize_string(_plain(tb))}' has no child blocks (description not moved)"
+            toggle_name = _normalize_string(_plain(tb))
+            msg = (f"Error: Toggle '{toggle_name}' has no child blocks "
+                   "(description not moved).")
+            print(msg, file=sys.stderr)
+            return False, msg
         children = _get_children(notion, tb["id"])
         # Ensure there is at least one content child (paragraph, list item, etc.)
         content_types = {
@@ -173,11 +180,11 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
             "quote",
         }
         if not any(c.get("type") in content_types for c in children):
-            print(
-                f"Error: Toggle '{_normalize_string(_plain(tb))}' seems to lack any description/content inside it.",
-                file=sys.stderr,
-            )
-            return False, f"Toggle '{_normalize_string(_plain(tb))}' seems to lack any description/content inside it"
+            toggle_name = _normalize_string(_plain(tb))
+            msg = (f"Error: Toggle '{toggle_name}' seems to lack any "
+                   "description/content inside it.")
+            print(msg, file=sys.stderr)
+            return False, msg
 
     # 6. Confirm that there are **no** residual heading_3 blocks (non-toggle) for the goals
     non_toggle_headings = [
@@ -203,7 +210,7 @@ def main():
     """Main verification function."""
     notion = notion_utils.get_notion_client()
     main_id = sys.argv[1] if len(sys.argv) > 1 else None
-    success, error_msg = verify(notion, main_id)
+    success, _error_msg = verify(notion, main_id)
     if success:
         sys.exit(0)
     else:

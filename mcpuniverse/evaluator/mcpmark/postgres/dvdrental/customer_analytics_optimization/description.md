@@ -9,7 +9,7 @@ The business intelligence team is running customer analytics reports, but one of
 Analyze and optimize the performance of this customer analytics query:
 
 ```sql
-SELECT 
+SELECT
     c.customer_id,
     c.first_name,
     c.last_name,
@@ -35,6 +35,6 @@ The query is currently taking over 1000ms to execute and has a very high cost in
 ## Requirements
 
 - Use `EXPLAIN ANALYZE` to identify performance bottlenecks
-- Implement appropriate database optimizations  
+- Implement appropriate database optimizations
 - Ensure queries return accurate results after optimization
 - Document your optimization approach and performance improvements

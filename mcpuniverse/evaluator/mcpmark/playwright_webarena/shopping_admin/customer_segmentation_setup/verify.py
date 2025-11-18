@@ -1,3 +1,5 @@
+"""Verification module for customer segmentation setup task."""
+# pylint: disable=R0911,R0912,R0914,R0915,R1702
 import asyncio
 import sys
 import re
@@ -25,8 +27,8 @@ def get_model_response():
         return None
 
     try:
-        with open(messages_path, "r") as f:
-            messages = json.load(f)
+        with open(messages_path, "r", encoding='utf-8') as file_handle:
+            messages = json.load(file_handle)
 
         # Find the last assistant message
         for message in reversed(messages):
@@ -41,8 +43,8 @@ def get_model_response():
 
         print("Warning: No assistant response found in messages", file=sys.stderr)
         return None
-    except Exception as e:
-        print(f"Error reading messages file: {str(e)}", file=sys.stderr)
+    except (OSError, json.JSONDecodeError) as error:
+        print(f"Error reading messages file: {str(error)}", file=sys.stderr)
         return None
 
 
@@ -83,8 +85,8 @@ def load_expected_answer(label_path):
     Returns a dictionary with the expected values.
     """
     try:
-        with open(label_path, "r") as f:
-            lines = f.read().strip().split("\n")
+        with open(label_path, "r", encoding='utf-8') as file_handle:
+            lines = file_handle.read().strip().split("\n")
 
         expected = {}
         for line in lines:
@@ -93,8 +95,8 @@ def load_expected_answer(label_path):
                 expected[key.strip()] = value.strip()
 
         return expected
-    except Exception as e:
-        print(f"Error reading label file: {str(e)}", file=sys.stderr)
+    except OSError as error:
+        print(f"Error reading label file: {str(error)}", file=sys.stderr)
         return None
 
 
@@ -176,8 +178,8 @@ async def verify() -> tuple[bool, str]:
 
     # Browser verification for actual state
     print("\n=== Starting Browser Verification ===", file=sys.stderr)
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+    async with async_playwright() as playwright:
+        browser = await playwright.chromium.launch(headless=True)
         context = await browser.new_context()
         page = await context.new_page()
 
@@ -243,8 +245,6 @@ async def verify() -> tuple[bool, str]:
                 print(f"Customer Groups count: {count_text}", file=sys.stderr)
 
                 # Extract number
-                import re
-
                 match = re.search(r"(\d+)\s+records found", count_text)
                 if match:
                     groups_count = int(match.group(1))
@@ -282,17 +282,21 @@ async def verify() -> tuple[bool, str]:
                             )
                         else:
                             print(
-                                f"✗ Customer count mismatch: Expected {expected_final} customers, found {customers_count}",
+                                f"✗ Customer count mismatch: Expected {expected_final} customers, "
+                                f"found {customers_count}",
                                 file=sys.stderr,
                             )
-                            return False, f"Customer count mismatch: Expected {expected_final} customers, found {customers_count}"
+                            return False, (
+                                f"Customer count mismatch: Expected {expected_final} customers, "
+                                f"found {customers_count}"
+                            )
 
             # Wait for the customer grid to load properly
             await page.wait_for_timeout(5000)
-            
+
             # Check if Isabella Romano exists - first wait for grid to load
             grid_loaded = False
-            for i in range(3):
+            for _ in range(3):
                 # Look for grid container and wait for it to populate
                 grid_container = page.locator(".admin__data-grid-outer-wrap, .data-grid, table").first
                 if await grid_container.count() > 0:
@@ -302,43 +306,51 @@ async def verify() -> tuple[bool, str]:
                         grid_loaded = True
                         break
                 await page.wait_for_timeout(2000)
-            
+
             if not grid_loaded:
                 print("✗ Customer grid failed to load properly", file=sys.stderr)
                 return False, "Customer grid failed to load properly"
-            
+
             # Now check if Isabella Romano exists in the loaded grid
             isabella_exists = (
                 await page.locator("text=isabella.romano@premium.eu").count() > 0
             )
-            
+
             if not isabella_exists:
                 # Try searching for the customer to be more thorough
                 try:
-                    search_box = page.locator('input[placeholder*="Search by keyword"], input[name="search"], [data-role="search"]').first
+                    search_selectors = (
+                        'input[placeholder*="Search by keyword"], '
+                        'input[name="search"], [data-role="search"]'
+                    )
+                    search_box = page.locator(search_selectors).first
                     if await search_box.count() > 0:
                         await search_box.clear()
                         await search_box.fill("isabella.romano@premium.eu")
                         await page.keyboard.press("Enter")
                         await page.wait_for_load_state("networkidle")
                         await page.wait_for_timeout(3000)
-                        
+
                         # Check again after search
                         isabella_exists = (
                             await page.locator("text=isabella.romano@premium.eu").count() > 0
                         )
-                        
+
                         # Also check for "No records found" message
-                        no_records = await page.locator("text=We couldn't find any records., text=No records found").count() > 0
+                        no_records_locator = (
+                            "text=We couldn't find any records., "
+                            "text=No records found"
+                        )
+                        no_records = await page.locator(no_records_locator).count() > 0
                         if no_records:
                             print(
                                 "✗ Customer 'isabella.romano@premium.eu' not found - search returned no results",
                                 file=sys.stderr,
                             )
                             return False, "Customer 'isabella.romano@premium.eu' not found - search returned no results"
-                except Exception as e:
-                    print(f"✗ Search failed: {str(e)}", file=sys.stderr)
-            
+                except RuntimeError as error:
+                    print(f"✗ Search failed: {str(error)}", file=sys.stderr)
+
             if isabella_exists:
                 print(
                     "✓ Found customer with email 'isabella.romano@premium.eu'",
@@ -392,11 +404,16 @@ async def verify() -> tuple[bool, str]:
                                     file=sys.stderr,
                                 )
                             else:
+                                expected_customer = expected_answer['LastOrderCustomer']
                                 print(
-                                    f"✗ Last Order Customer mismatch: Expected '{expected_answer['LastOrderCustomer']}' but actual is '{last_customer}'",
+                                    f"✗ Last Order Customer mismatch: "
+                                    f"Expected '{expected_customer}' but actual is '{last_customer}'",
                                     file=sys.stderr,
                                 )
-                                return False, f"Last Order Customer mismatch: Expected '{expected_answer['LastOrderCustomer']}' but actual is '{last_customer}'"
+                                return False, (
+                                    f"Last Order Customer mismatch: "
+                                    f"Expected '{expected_customer}' but actual is '{last_customer}'"
+                                )
             else:
                 print(
                     "Warning: 'Last Orders' section not found on dashboard",
@@ -416,12 +433,12 @@ async def verify() -> tuple[bool, str]:
 
             return True, ""
 
-        except PlaywrightTimeoutError as e:
-            print(f"Error: Timeout occurred - {str(e)}", file=sys.stderr)
-            return False, f"Timeout occurred - {str(e)}"
-        except Exception as e:
-            print(f"Error: Unexpected error - {str(e)}", file=sys.stderr)
-            return False, f"Unexpected error - {str(e)}"
+        except PlaywrightTimeoutError as timeout_error:
+            print(f"Error: Timeout occurred - {str(timeout_error)}", file=sys.stderr)
+            return False, f"Timeout occurred - {str(timeout_error)}"
+        except RuntimeError as error:
+            print(f"Error: Unexpected error - {str(error)}", file=sys.stderr)
+            return False, f"Unexpected error - {str(error)}"
         finally:
             await browser.close()
 
@@ -430,7 +447,7 @@ def main():
     """
     Executes the verification process and exits with a status code.
     """
-    success, error_msg = asyncio.run(verify())
+    success, _ = asyncio.run(verify())
     sys.exit(0 if success else 1)
 
 

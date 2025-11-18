@@ -1,11 +1,13 @@
 """
 Verification script for PostgreSQL Task 4: Management Structure Analysis
 """
+# pylint: disable=too-many-return-statements,duplicate-code
 
 import os
 import sys
-import psycopg2
 from decimal import Decimal
+
+import psycopg2
 
 def rows_match(actual_row, expected_row):
     """
@@ -15,21 +17,21 @@ def rows_match(actual_row, expected_row):
     """
     if len(actual_row) != len(expected_row):
         return False
-    
+
     for actual, expected in zip(actual_row, expected_row):
         if isinstance(actual, Decimal) and isinstance(expected, Decimal):
             if abs(float(actual) - float(expected)) > 0.1:
                 return False
         elif actual != expected:
             return False
-    
+
     return True
 
 def get_connection_params() -> dict:
     """Get database connection parameters."""
     return {
         "host": os.getenv("POSTGRES_HOST", "localhost"),
-        "port": int(os.getenv("POSTGRES_PORT", 5432)),
+        "port": int(os.getenv("POSTGRES_PORT", "5432")),
         "database": os.getenv("POSTGRES_DATABASE"),
         "user": os.getenv("POSTGRES_USERNAME"),
         "password": os.getenv("POSTGRES_PASSWORD")
@@ -40,13 +42,13 @@ def verify_manager_profile_results(conn) -> tuple[bool, str]:
     with conn.cursor() as cur:
         # Get actual results from the created table
         cur.execute("""
-            SELECT manager_id, manager_name, current_department, 
+            SELECT manager_id, manager_name, current_department,
                    management_periods, current_manager
             FROM employees.manager_profile
             ORDER BY manager_id
         """)
         actual_results = cur.fetchall()
-        
+
         # Execute ground truth query
         cur.execute("""
             WITH dm AS (
@@ -95,8 +97,14 @@ def verify_manager_profile_results(conn) -> tuple[bool, str]:
         expected_results = cur.fetchall()
 
         if len(actual_results) != len(expected_results):
-            print(f"❌ Expected {len(expected_results)} manager profile results, got {len(actual_results)}")
-            return False, f"Expected {len(expected_results)} manager profile results, got {len(actual_results)}"
+            print(
+                f"❌ Expected {len(expected_results)} manager profile "
+                f"results, got {len(actual_results)}"
+            )
+            return False, (
+                f"Expected {len(expected_results)} manager profile "
+                f"results, got {len(actual_results)}"
+            )
 
         mismatches = 0
         for i, (actual, expected) in enumerate(zip(actual_results, expected_results)):
@@ -117,13 +125,13 @@ def verify_department_leadership_results(conn) -> tuple[bool, str]:
     with conn.cursor() as cur:
         # Get actual results from the created table
         cur.execute("""
-            SELECT department_name, current_manager_name, manager_start_date, 
+            SELECT department_name, current_manager_name, manager_start_date,
                    total_historical_managers
             FROM employees.department_leadership
             ORDER BY department_name
         """)
         actual_results = cur.fetchall()
-        
+
         # Execute ground truth query
         cur.execute("""
             WITH current_mgr AS (
@@ -160,8 +168,14 @@ def verify_department_leadership_results(conn) -> tuple[bool, str]:
         expected_results = cur.fetchall()
 
         if len(actual_results) != len(expected_results):
-            print(f"❌ Expected {len(expected_results)} department leadership results, got {len(actual_results)}")
-            return False, f"Expected {len(expected_results)} department leadership results, got {len(actual_results)}"
+            print(
+                f"❌ Expected {len(expected_results)} department "
+                f"leadership results, got {len(actual_results)}"
+            )
+            return False, (
+                f"Expected {len(expected_results)} department "
+                f"leadership results, got {len(actual_results)}"
+            )
 
         mismatches = 0
         for i, (actual, expected) in enumerate(zip(actual_results, expected_results)):
@@ -187,7 +201,7 @@ def verify_management_transitions_results(conn) -> tuple[bool, str]:
             ORDER BY department_name, transition_year
         """)
         actual_results = cur.fetchall()
-        
+
         # Execute ground truth query
         cur.execute("""
             WITH mgr AS (
@@ -237,8 +251,14 @@ def verify_management_transitions_results(conn) -> tuple[bool, str]:
         expected_results = cur.fetchall()
 
         if len(actual_results) != len(expected_results):
-            print(f"❌ Expected {len(expected_results)} management transitions results, got {len(actual_results)}")
-            return False, f"Expected {len(expected_results)} management transitions results, got {len(actual_results)}"
+            print(
+                f"❌ Expected {len(expected_results)} management "
+                f"transitions results, got {len(actual_results)}"
+            )
+            return False, (
+                f"Expected {len(expected_results)} management "
+                f"transitions results, got {len(actual_results)}"
+            )
 
         mismatches = 0
         for i, (actual, expected) in enumerate(zip(actual_results, expected_results)):
@@ -259,13 +279,13 @@ def verify_span_of_control_results(conn) -> tuple[bool, str]:
     with conn.cursor() as cur:
         # Get actual results from the created table
         cur.execute("""
-            SELECT manager_id, manager_name, department_name, total_employees, 
+            SELECT manager_id, manager_name, department_name, total_employees,
                    current_employees, management_load
             FROM employees.span_of_control
             ORDER BY manager_id
         """)
         actual_results = cur.fetchall()
-        
+
         # Execute ground truth query
         cur.execute("""
             WITH dept_total AS (
@@ -304,8 +324,14 @@ def verify_span_of_control_results(conn) -> tuple[bool, str]:
         expected_results = cur.fetchall()
 
         if len(actual_results) != len(expected_results):
-            print(f"❌ Expected {len(expected_results)} span of control results, got {len(actual_results)}")
-            return False, f"Expected {len(expected_results)} span of control results, got {len(actual_results)}"
+            print(
+                f"❌ Expected {len(expected_results)} span of control "
+                f"results, got {len(actual_results)}"
+            )
+            return False, (
+                f"Expected {len(expected_results)} span of control "
+                f"results, got {len(actual_results)}"
+            )
 
         mismatches = 0
         for i, (actual, expected) in enumerate(zip(actual_results, expected_results)):
@@ -341,17 +367,17 @@ def verify() -> tuple[bool, str]:
         if not success:
             conn.close()
             return False, error_msg
-        
+
         success, error_msg = verify_department_leadership_results(conn)
         if not success:
             conn.close()
             return False, error_msg
-        
+
         success, error_msg = verify_management_transitions_results(conn)
         if not success:
             conn.close()
             return False, error_msg
-        
+
         success, error_msg = verify_span_of_control_results(conn)
         if not success:
             conn.close()
@@ -365,13 +391,13 @@ def verify() -> tuple[bool, str]:
     except psycopg2.Error as e:
         print(f"❌ Database error: {e}")
         return False, f"Database error: {e}"
-    except Exception as e:
+    except (ValueError, KeyError, TypeError) as e:
         print(f"❌ Verification error: {e}")
         return False, f"Verification error: {e}"
 
 def main():
     """Main verification function."""
-    success, error_msg = verify()
+    success, _error_msg = verify()
     if success:
         sys.exit(0)
     else:

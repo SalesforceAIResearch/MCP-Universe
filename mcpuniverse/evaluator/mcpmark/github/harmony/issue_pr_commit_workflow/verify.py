@@ -1,8 +1,10 @@
+"""Verification module for issue PR commit workflow in harmony repository."""
+# pylint: disable=R0911,astroid-error,duplicate-code,import-error
 import sys
 import os
-import requests
-from typing import Dict, List, Optional, Tuple
 import base64
+from typing import Dict, List, Optional, Tuple
+import requests
 from dotenv import load_dotenv
 
 
@@ -15,12 +17,11 @@ def _get_github_api(
         response = requests.get(url, headers=headers)
         if response.status_code == 200:
             return True, response.json()
-        elif response.status_code == 404:
+        if response.status_code == 404:
             return False, None
-        else:
-            print(f"API error for {endpoint}: {response.status_code}", file=sys.stderr)
-            return False, None
-    except Exception as e:
+        print(f"API error for {endpoint}: {response.status_code}", file=sys.stderr)
+        return False, None
+    except (requests.RequestException, IOError, OSError, ValueError) as e:
         print(f"Exception for {endpoint}: {e}", file=sys.stderr)
         return False, None
 
@@ -52,7 +53,7 @@ def _check_file_content(
         try:
             content = base64.b64decode(result.get("content", "")).decode("utf-8")
             return all(keyword in content for keyword in keywords)
-        except Exception as e:
+        except (IOError, OSError, UnicodeDecodeError) as e:
             print(f"Content decode error for {file_path}: {e}", file=sys.stderr)
             return False
 
@@ -200,12 +201,12 @@ def verify() -> tuple[bool, str]:
         return False, "GITHUB_EVAL_ORG environment variable not set"
 
     # Configuration constants
-    BRANCH_NAME = "fix/race-condition-tokenizer-loading"
-    ISSUE_TITLE_SUBSTRING = "race condition in HarmonyEncoding"
-    PR_TITLE_SUBSTRING = "Fix race condition in tokenizer loading"
+    branch_name = "fix/race-condition-tokenizer-loading"
+    issue_title_substring = "race condition in HarmonyEncoding"
+    pr_title_substring = "Fix race condition in tokenizer loading"
 
     # File content checks
-    RUST_FILE_KEYWORDS = [
+    rust_file_keywords = [
         "DOWNLOAD_MUTEX",
         "OnceLock<Mutex<()>>",
         "load_harmony_encoding_safe",
@@ -214,26 +215,26 @@ def verify() -> tuple[bool, str]:
     ]
 
     # Issue content requirements
-    ISSUE_TITLE_KEYWORDS = ["race condition", "HarmonyEncoding", "concurrent access"]
-    ISSUE_REFERENCE_NUMBERS = ["6", "1"]
-    ISSUE_HEADINGS = ["## Problem", "## Root Cause", "## Expected Solution"]
-    ISSUE_KEYWORDS = [
+    issue_title_keywords = ["race condition", "HarmonyEncoding", "concurrent access"]
+    issue_reference_numbers = ["6", "1"]
+    issue_headings = ["## Problem", "## Root Cause", "## Expected Solution"]
+    issue_keywords = [
         "multiple threads",
         "tokenizer file downloads",
         "mutex-based file locking",
     ]
 
     # PR content requirements
-    PR_TITLE_KEYWORDS = ["Fix race condition", "tokenizer loading", "threading issues"]
-    PR_REFERENCE_NUMBERS = ["1", "6"]
-    PR_HEADINGS = ["## Summary", "## Changes", "## Testing"]
-    PR_KEYWORDS = ["thread-safe", "concurrent downloads", "offline loading API"]
+    pr_title_keywords = ["Fix race condition", "tokenizer loading", "threading issues"]
+    pr_reference_numbers = ["1", "6"]
+    pr_headings = ["## Summary", "## Changes", "## Testing"]
+    pr_keywords = ["thread-safe", "concurrent downloads", "offline loading API"]
 
     # Review comment requirements
-    REVIEW_KEYWORDS = ["OnceLock", "mutex", "thread safety", "concurrent access"]
+    review_keywords = ["OnceLock", "mutex", "thread safety", "concurrent access"]
 
     # Issue comment requirements
-    ISSUE_COMMENT_KEYWORDS = [
+    issue_comment_keywords = [
         "std::sync::Mutex",
         "OnceLock",
         "thread-safe initialization",
@@ -250,16 +251,16 @@ def verify() -> tuple[bool, str]:
 
     # 1. Check that feature branch exists
     print("1. Verifying feature branch exists...")
-    if not _check_branch_exists(BRANCH_NAME, headers, github_org):
-        print(f"Error: Branch '{BRANCH_NAME}' not found", file=sys.stderr)
-        return False, f"Branch '{BRANCH_NAME}' not found"
+    if not _check_branch_exists(branch_name, headers, github_org):
+        print(f"Error: Branch '{branch_name}' not found", file=sys.stderr)
+        return False, f"Branch '{branch_name}' not found"
 
     # 2. Check that the Rust implementation file exists with required content
     print("2. Verifying concurrent_loading.rs implementation...")
     if not _check_file_content(
-        BRANCH_NAME,
+        branch_name,
         "src/concurrent_loading.rs",
-        RUST_FILE_KEYWORDS,
+        rust_file_keywords,
         headers,
         github_org,
     ):
@@ -271,29 +272,29 @@ def verify() -> tuple[bool, str]:
 
     # 3. Find the created issue
     print("3. Verifying issue creation and content...")
-    issue = _find_issue_by_title(ISSUE_TITLE_SUBSTRING, headers, github_org)
+    issue = _find_issue_by_title(issue_title_substring, headers, github_org)
     if not issue:
         print(
-            f"Error: Issue with title containing '{ISSUE_TITLE_SUBSTRING}' not found",
+            f"Error: Issue with title containing '{issue_title_substring}' not found",
             file=sys.stderr,
         )
-        return False, f"Issue with title containing '{ISSUE_TITLE_SUBSTRING}' not found"
+        return False, f"Issue with title containing '{issue_title_substring}' not found"
 
     issue_number = issue.get("number")
     issue_title = issue.get("title", "")
     issue_body = issue.get("body", "")
 
     # Check issue title keywords
-    if not _check_title_keywords(issue_title, ISSUE_TITLE_KEYWORDS):
+    if not _check_title_keywords(issue_title, issue_title_keywords):
         print("Error: Issue title missing required keywords", file=sys.stderr)
         return False, "Issue title missing required keywords"
 
     # Check issue headings, content and references
-    if not _check_headings_and_content(issue_body, ISSUE_HEADINGS, ISSUE_KEYWORDS):
+    if not _check_headings_and_content(issue_body, issue_headings, issue_keywords):
         print("Error: Issue missing required headings or keywords", file=sys.stderr)
         return False, "Issue missing required headings or keywords"
 
-    if not _check_issue_references(issue_body, ISSUE_REFERENCE_NUMBERS):
+    if not _check_issue_references(issue_body, issue_reference_numbers):
         print(
             "Error: Issue does not reference required issues #6 and #1", file=sys.stderr
         )
@@ -301,30 +302,30 @@ def verify() -> tuple[bool, str]:
 
     # 4. Find the created PR
     print("4. Verifying pull request creation and content...")
-    pr = _find_pr_by_title(PR_TITLE_SUBSTRING, headers, github_org)
+    pr = _find_pr_by_title(pr_title_substring, headers, github_org)
     if not pr:
         print(
-            f"Error: PR with title containing '{PR_TITLE_SUBSTRING}' not found",
+            f"Error: PR with title containing '{pr_title_substring}' not found",
             file=sys.stderr,
         )
-        return False, f"PR with title containing '{PR_TITLE_SUBSTRING}' not found"
+        return False, f"PR with title containing '{pr_title_substring}' not found"
 
     pr_number = pr.get("number")
     pr_title = pr.get("title", "")
     pr_body = pr.get("body", "")
 
     # Check PR title keywords
-    if not _check_title_keywords(pr_title, PR_TITLE_KEYWORDS):
+    if not _check_title_keywords(pr_title, pr_title_keywords):
         print("Error: PR title missing required keywords", file=sys.stderr)
         return False, "PR title missing required keywords"
 
     # Check PR headings and content
-    if not _check_headings_and_content(pr_body, PR_HEADINGS, PR_KEYWORDS):
+    if not _check_headings_and_content(pr_body, pr_headings, pr_keywords):
         print("Error: PR missing required headings or keywords", file=sys.stderr)
         return False, "PR missing required headings or keywords"
 
     # Check PR references
-    if not _check_pr_references(pr_body, issue_number, PR_REFERENCE_NUMBERS):
+    if not _check_pr_references(pr_body, issue_number, pr_reference_numbers):
         print(
             f"Error: PR does not properly reference issue #{issue_number} or issues #1, #6",
             file=sys.stderr,
@@ -334,7 +335,7 @@ def verify() -> tuple[bool, str]:
     # 5. Check PR review comments
     print("5. Verifying PR review comments...")
     reviews = _get_pr_reviews(pr_number, headers, github_org)
-    if not _check_pr_review_content(reviews, REVIEW_KEYWORDS):
+    if not _check_pr_review_content(reviews, review_keywords):
         print(
             "Error: PR missing review comment with required technical keywords",
             file=sys.stderr,
@@ -345,13 +346,12 @@ def verify() -> tuple[bool, str]:
     print("6. Verifying issue comment referencing PR...")
     issue_comments = _get_issue_comments(issue_number, headers, github_org)
     if not _check_issue_comment_references(
-        issue_comments, pr_number, ISSUE_COMMENT_KEYWORDS
+        issue_comments, pr_number, issue_comment_keywords
     ):
-        print(
-            f"Error: Issue #{issue_number} missing comment referencing PR #{pr_number} with required technical keywords",
-            file=sys.stderr,
-        )
-        return False, f"Issue #{issue_number} missing comment referencing PR #{pr_number} with required technical keywords"
+        msg = (f"Error: Issue #{issue_number} missing comment referencing "
+               f"PR #{pr_number} with required technical keywords")
+        print(msg, file=sys.stderr)
+        return False, msg
 
     # 7. Check issue is closed
     print("7. Verifying issue closure...")
@@ -363,13 +363,13 @@ def verify() -> tuple[bool, str]:
     print("Issue-PR-commit workflow completed successfully:")
     print(f"  - Issue #{issue_number}: {issue.get('title')}")
     print(f"  - PR #{pr_number}: {pr.get('title')}")
-    print(f"  - Branch: {BRANCH_NAME}")
+    print(f"  - Branch: {branch_name}")
     return True, ""
 
 
 def main():
     """Main verification function."""
-    success, error_msg = verify()
+    success, _error_msg = verify()
     if success:
         sys.exit(0)
     else:

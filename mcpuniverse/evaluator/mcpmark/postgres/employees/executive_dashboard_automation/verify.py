@@ -1,11 +1,13 @@
 """
 Verification script for PostgreSQL Task 6: Reporting and Automation System
 """
+# pylint: disable=too-many-return-statements,too-many-locals,duplicate-code
 
 import os
 import sys
-import psycopg2
 from decimal import Decimal
+
+import psycopg2
 
 def rows_match(actual_row, expected_row):
     """
@@ -16,7 +18,7 @@ def rows_match(actual_row, expected_row):
     """
     if len(actual_row) != len(expected_row):
         return False
-    
+
     for actual, expected in zip(actual_row, expected_row):
         if isinstance(actual, Decimal) and isinstance(expected, (Decimal, float, int)):
             if abs(float(actual) - float(expected)) > 0.1:
@@ -26,14 +28,14 @@ def rows_match(actual_row, expected_row):
                 return False
         elif actual != expected:
             return False
-    
+
     return True
 
 def get_connection_params() -> dict:
     """Get database connection parameters."""
     return {
         "host": os.getenv("POSTGRES_HOST", "localhost"),
-        "port": int(os.getenv("POSTGRES_PORT", 5432)),
+        "port": int(os.getenv("POSTGRES_PORT", "5432")),
         "database": os.getenv("POSTGRES_DATABASE"),
         "user": os.getenv("POSTGRES_USERNAME"),
         "password": os.getenv("POSTGRES_PASSWORD")
@@ -44,18 +46,22 @@ def verify_materialized_views(conn) -> tuple[bool, str]:
     with conn.cursor() as cur:
         # Check if materialized views exist
         cur.execute("""
-            SELECT matviewname FROM pg_matviews 
-            WHERE schemaname = 'employees' 
+            SELECT matviewname FROM pg_matviews
+            WHERE schemaname = 'employees'
             AND matviewname IN ('exec_department_summary', 'exec_hiring_trends', 'exec_salary_distribution')
             ORDER BY matviewname
         """)
         views = [row[0] for row in cur.fetchall()]
-        
-        expected_views = ['exec_department_summary', 'exec_hiring_trends', 'exec_salary_distribution']
+
+        expected_views = [
+            'exec_department_summary',
+            'exec_hiring_trends',
+            'exec_salary_distribution'
+        ]
         if set(views) != set(expected_views):
             print(f"❌ Expected views {expected_views}, found {views}")
             return False, f"Expected views {expected_views}, found {views}"
-        
+
         # Check all departments' data accuracy
         cur.execute("""
             SELECT department_name, total_employees, avg_salary, total_payroll, manager_name
@@ -63,7 +69,7 @@ def verify_materialized_views(conn) -> tuple[bool, str]:
             ORDER BY department_name
         """)
         view_data = cur.fetchall()
-        
+
         # Get actual data for all departments
         cur.execute("""
             WITH current_salary AS (
@@ -113,16 +119,27 @@ def verify_materialized_views(conn) -> tuple[bool, str]:
             ORDER BY d.dept_name;
         """)
         actual_data = cur.fetchall()
-        
+
         if len(view_data) != len(actual_data):
-            print(f"❌ Department count mismatch: view={len(view_data)}, actual={len(actual_data)}")
-            return False, f"Department count mismatch: view={len(view_data)}, actual={len(actual_data)}"
-            
+            print(
+                f"❌ Department count mismatch: "
+                f"view={len(view_data)}, actual={len(actual_data)}"
+            )
+            return False, (
+                f"Department count mismatch: "
+                f"view={len(view_data)}, actual={len(actual_data)}"
+            )
+
         for view_row, actual_row in zip(view_data, actual_data):
             if not rows_match(view_row, actual_row):
-                print(f"❌ Department summary data incorrect for {view_row[0]}: view={view_row}, actual={actual_row}")
-                return False, f"Department summary data incorrect for {view_row[0]}"
-            
+                print(
+                    f"❌ Department summary data incorrect for {view_row[0]}: "
+                    f"view={view_row}, actual={actual_row}"
+                )
+                return False, (
+                    f"Department summary data incorrect for {view_row[0]}"
+                )
+
         # Check all hiring trends data accuracy
         cur.execute("""
             SELECT hire_year, employees_hired, avg_starting_salary, retention_rate, top_hiring_department
@@ -130,7 +147,7 @@ def verify_materialized_views(conn) -> tuple[bool, str]:
             ORDER BY hire_year
         """)
         hiring_view_data = cur.fetchall()
-        
+
         # Get actual data for all years
         cur.execute("""
             WITH first_salary AS (
@@ -204,18 +221,29 @@ def verify_materialized_views(conn) -> tuple[bool, str]:
             ORDER BY hb.hire_year;
         """)
         actual_hiring_data = cur.fetchall()
-        
+
         if len(hiring_view_data) != len(actual_hiring_data):
-            print(f"❌ Hiring trends count mismatch: view={len(hiring_view_data)}, actual={len(actual_hiring_data)}")
-            return False, f"Hiring trends count mismatch: view={len(hiring_view_data)}, actual={len(actual_hiring_data)}"
-        
+            print(
+                f"❌ Hiring trends count mismatch: "
+                f"view={len(hiring_view_data)}, actual={len(actual_hiring_data)}"
+            )
+            return False, (
+                f"Hiring trends count mismatch: "
+                f"view={len(hiring_view_data)}, actual={len(actual_hiring_data)}"
+            )
+
         for hiring_view, actual_hiring in zip(hiring_view_data, actual_hiring_data):
             # Now compare all 5 fields including top_hiring_department
             if not rows_match(hiring_view, actual_hiring):
-                print(f"❌ Hiring trends data incorrect for year {hiring_view[0]}: view={hiring_view}, actual={actual_hiring}")
-                return False, f"Hiring trends data incorrect for year {hiring_view[0]}"
-                
-            
+                print(
+                    f"❌ Hiring trends data incorrect for year {hiring_view[0]}: "
+                    f"view={hiring_view}, actual={actual_hiring}"
+                )
+                return False, (
+                    f"Hiring trends data incorrect for year {hiring_view[0]}"
+                )
+
+
         # Check all salary bands' data accuracy
         cur.execute("""
             WITH band_order AS (
@@ -231,7 +259,7 @@ def verify_materialized_views(conn) -> tuple[bool, str]:
             ORDER BY bo.ord;
         """)
         view_bands = cur.fetchall()
-        
+
         # Calculate actual data for all bands
         cur.execute("""
             WITH current_salary AS (
@@ -319,20 +347,31 @@ def verify_materialized_views(conn) -> tuple[bool, str]:
             FROM band_counts bc
             LEFT JOIN top_titles tt ON tt.salary_band = bc.salary_band
             LEFT JOIN band_order  bo ON bo.band = bc.salary_band
-            ORDER BY bo.ord;        
+            ORDER BY bo.ord;
         """)
         actual_bands = cur.fetchall()
-        
+
         # Compare view data with actual data
         if len(view_bands) != len(actual_bands):
-            print(f"❌ Salary band count mismatch: view={len(view_bands)}, actual={len(actual_bands)}")
-            return False, f"Salary band count mismatch: view={len(view_bands)}, actual={len(actual_bands)}"
-            
+            print(
+                f"❌ Salary band count mismatch: "
+                f"view={len(view_bands)}, actual={len(actual_bands)}"
+            )
+            return False, (
+                f"Salary band count mismatch: "
+                f"view={len(view_bands)}, actual={len(actual_bands)}"
+            )
+
         for view_band, actual_band in zip(view_bands, actual_bands):
             if not rows_match(view_band, actual_band):
-                print(f"❌ Salary band {actual_band[0]} data incorrect: view={view_band}, actual={actual_band}")
-                return False, f"Salary band {actual_band[0]} data incorrect"
-            
+                print(
+                    f"❌ Salary band {actual_band[0]} data incorrect: "
+                    f"view={view_band}, actual={actual_band}"
+                )
+                return False, (
+                    f"Salary band {actual_band[0]} data incorrect"
+                )
+
         print("✅ All materialized views are created and contain correct data")
         return True, ""
 
@@ -341,20 +380,20 @@ def verify_stored_procedures(conn) -> tuple[bool, str]:
     with conn.cursor() as cur:
         # Check if procedure exists
         cur.execute("""
-            SELECT routine_name FROM information_schema.routines 
-            WHERE routine_schema = 'employees' 
+            SELECT routine_name FROM information_schema.routines
+            WHERE routine_schema = 'employees'
             AND routine_type = 'FUNCTION'
             AND routine_name = 'generate_monthly_report'
         """)
         procedures = [row[0] for row in cur.fetchall()]
-        
+
         if 'generate_monthly_report' not in procedures:
             print("❌ generate_monthly_report procedure not found")
             return False, "generate_monthly_report procedure not found"
-            
+
         # Check if monthly_reports table exists with correct structure
         cur.execute("""
-            SELECT COUNT(*) FROM information_schema.columns 
+            SELECT COUNT(*) FROM information_schema.columns
             WHERE table_schema = 'employees' AND table_name = 'monthly_reports'
             AND column_name IN ('report_id', 'report_date', 'department_count', 'total_employees', 'avg_salary', 'generated_at')
         """)
@@ -362,7 +401,7 @@ def verify_stored_procedures(conn) -> tuple[bool, str]:
         if report_columns != 6:
             print("❌ monthly_reports table missing required columns")
             return False, "monthly_reports table missing required columns"
-            
+
         print("✅ Stored procedure and supporting table are created")
         return True, ""
 
@@ -371,59 +410,70 @@ def verify_triggers(conn) -> tuple[bool, str]:
     with conn.cursor() as cur:
         # Check if triggers exist
         cur.execute("""
-            SELECT trigger_name FROM information_schema.triggers 
+            SELECT trigger_name FROM information_schema.triggers
             WHERE trigger_schema = 'employees'
             AND trigger_name = 'high_salary_alert'
         """)
         triggers = [row[0] for row in cur.fetchall()]
-        
+
         if 'high_salary_alert' not in triggers:
             print("❌ high_salary_alert trigger not found")
             return False, "high_salary_alert trigger not found"
-            
+
         # Check if trigger support table exists
         cur.execute("""
-            SELECT table_name FROM information_schema.tables 
-            WHERE table_schema = 'employees' 
+            SELECT table_name FROM information_schema.tables
+            WHERE table_schema = 'employees'
             AND table_name = 'salary_alerts'
         """)
         trigger_tables = [row[0] for row in cur.fetchall()]
-        
+
         if 'salary_alerts' not in trigger_tables:
             print("❌ salary_alerts table not found")
             return False, "salary_alerts table not found"
-            
+
         # Check if the old salary record was properly closed
         cur.execute("""
-            SELECT COUNT(*) FROM employees.salary 
+            SELECT COUNT(*) FROM employees.salary
             WHERE employee_id = 10001 AND to_date = '2024-01-31'
         """)
         old_salary_count = cur.fetchone()[0]
         if old_salary_count == 0:
-            print("❌ Old salary record for employee 10001 was not properly closed with to_date='2024-01-31'")
-            return False, "Old salary record for employee 10001 was not properly closed"
-            
+            print(
+                "❌ Old salary record for employee 10001 was not properly "
+                "closed with to_date='2024-01-31'"
+            )
+            return False, (
+                "Old salary record for employee 10001 was not properly closed"
+            )
+
         # Check if the new salary record was inserted
         cur.execute("""
-            SELECT COUNT(*) FROM employees.salary 
-            WHERE employee_id = 10001 AND amount = 125000 
+            SELECT COUNT(*) FROM employees.salary
+            WHERE employee_id = 10001 AND amount = 125000
             AND from_date = '2024-02-01' AND to_date = '9999-01-01'
         """)
         new_salary_count = cur.fetchone()[0]
         if new_salary_count == 0:
             print("❌ New salary record for employee 10001 with amount 125000 was not inserted")
             return False, "New salary record for employee 10001 with amount 125000 was not inserted"
-            
+
         # Check if high salary alert was triggered with specific details
         cur.execute("""
-            SELECT COUNT(*) FROM employees.salary_alerts 
+            SELECT COUNT(*) FROM employees.salary_alerts
             WHERE employee_id = 10001 AND salary_amount = 125000 AND status = 'new'
         """)
         alert_count = cur.fetchone()[0]
         if alert_count == 0:
-            print("❌ High salary alert was not triggered correctly for employee 10001 with amount 125000")
-            return False, "High salary alert was not triggered correctly for employee 10001"
-            
+            print(
+                "❌ High salary alert was not triggered correctly for "
+                "employee 10001 with amount 125000"
+            )
+            return False, (
+                "High salary alert was not triggered correctly for "
+                "employee 10001"
+            )
+
         print("✅ Trigger is created and functioning correctly")
         return True, ""
 
@@ -433,14 +483,14 @@ def verify_procedure_execution(conn) -> tuple[bool, str]:
         # Check if monthly report data matches actual statistics
         cur.execute("""
             SELECT department_count, total_employees, avg_salary
-            FROM employees.monthly_reports 
+            FROM employees.monthly_reports
             WHERE report_date = '2024-01-01'
         """)
         report_data = cur.fetchone()
         if not report_data:
             print("❌ Monthly report for 2024-01-01 was not generated")
             return False, "Monthly report for 2024-01-01 was not generated"
-            
+
         # Get actual current statistics to compare
         cur.execute("""
 WITH current_salary AS (
@@ -473,12 +523,12 @@ SELECT
 FROM base;
         """)
         actual_stats = cur.fetchone()
-        
-        # Compare report data with actual data  
+
+        # Compare report data with actual data
         if not rows_match(report_data, actual_stats):
             print(f"❌ Monthly report data incorrect: expected {actual_stats}, got {report_data}")
             return False, "Monthly report data incorrect"
-                
+
         print("✅ Stored procedure executed with correct data")
         return True, ""
 
@@ -487,19 +537,19 @@ def verify_indexes(conn) -> tuple[bool, str]:
     with conn.cursor() as cur:
         # Check for required indexes
         cur.execute("""
-            SELECT indexname FROM pg_indexes 
-            WHERE schemaname = 'employees' 
+            SELECT indexname FROM pg_indexes
+            WHERE schemaname = 'employees'
             AND tablename IN ('salary_alerts', 'monthly_reports')
             AND indexname LIKE 'idx_%'
             ORDER BY indexname
         """)
         indexes = [row[0] for row in cur.fetchall()]
-        
+
         # Should have at least 2 indexes created
         if len(indexes) < 2:
             print(f"❌ Expected at least 2 performance indexes, found {len(indexes)}")
             return False, f"Expected at least 2 performance indexes, found {len(indexes)}"
-            
+
         print("✅ Performance indexes are created")
         return True, ""
 
@@ -523,22 +573,22 @@ def verify() -> tuple[bool, str]:
         if not success:
             conn.close()
             return False, error_msg
-        
+
         success, error_msg = verify_stored_procedures(conn)
         if not success:
             conn.close()
             return False, error_msg
-        
+
         success, error_msg = verify_triggers(conn)
         if not success:
             conn.close()
             return False, error_msg
-        
+
         success, error_msg = verify_procedure_execution(conn)
         if not success:
             conn.close()
             return False, error_msg
-        
+
         success, error_msg = verify_indexes(conn)
         if not success:
             conn.close()
@@ -552,13 +602,13 @@ def verify() -> tuple[bool, str]:
     except psycopg2.Error as e:
         print(f"❌ Database error: {e}")
         return False, f"Database error: {e}"
-    except Exception as e:
+    except (ValueError, KeyError, TypeError) as e:
         print(f"❌ Verification error: {e}")
         return False, f"Verification error: {e}"
 
 def main():
     """Main verification function."""
-    success, error_msg = verify()
+    success, _error_msg = verify()
     if success:
         sys.exit(0)
     else:

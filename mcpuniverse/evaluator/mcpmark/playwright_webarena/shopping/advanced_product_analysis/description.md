@@ -40,4 +40,3 @@ ReviewCount|XX
 LatestReviewer|name
 </answer>
 ```
-

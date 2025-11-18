@@ -1,8 +1,14 @@
+"""Verification module for Hyperfocus Analysis Report task in Notion workspace."""
+
+# pylint: disable=duplicate-code,import-error,astroid-error
+
 import sys
-import re
-from notion_client import Client
-from mcpuniverse.evaluator.mcpmark.notion.utils import notion_utils
 from collections import Counter
+import re
+
+from notion_client import Client
+
+from mcpuniverse.evaluator.mcpmark.notion.utils import notion_utils
 
 
 def validate_comma_separated(text: str, expected_items: list) -> bool:
@@ -23,7 +29,7 @@ def validate_comma_separated(text: str, expected_items: list) -> bool:
     return True
 
 
-def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
+def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:  # pylint: disable=too-many-branches,too-many-locals,too-many-return-statements,too-many-statements
     """
     Verifies that the Hyperfocus Analysis Report has been created correctly.
     """
@@ -93,12 +99,12 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
         print("Error: Could not find divider after the callout.", file=sys.stderr)
         return False, "Error: Could not find divider after the callout."
 
-    if not (callout_position < report_position < divider_position):
-        print(
-            f"Error: Report page is not positioned between callout and divider. Positions: callout={callout_position}, report={report_position}, divider={divider_position}",
-            file=sys.stderr,
-        )
-        return False, f"Error: Report page is not positioned between callout and divider. Positions: callout={callout_position}, report={report_position}, divider={divider_position}"
+    if not callout_position < report_position < divider_position:
+        msg = (f"Error: Report page is not positioned between callout and "
+               f"divider. Positions: callout={callout_position}, "
+               f"report={report_position}, divider={divider_position}")
+        print(msg, file=sys.stderr)
+        return False, msg
 
     # Get all blocks from the report page
     all_blocks = notion_utils.get_all_blocks_recursively(notion, report_page_id)
@@ -260,11 +266,11 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
                 content = bullet_text.split(":", 1)[1].strip()
                 expected_factors = current_session_data.get("focus_factors", [])
                 if not validate_comma_separated(content, expected_factors):
-                    print(
-                        f"Error: Focus factors mismatch for {current_session_date}. Expected: {expected_factors}, Found: {content}",
-                        file=sys.stderr,
-                    )
-                    return False, f"Error: Focus factors mismatch for {current_session_date}. Expected: {expected_factors}, Found: {content}"
+                    msg = (f"Error: Focus factors mismatch for "
+                           f"{current_session_date}. Expected: "
+                           f"{expected_factors}, Found: {content}")
+                    print(msg, file=sys.stderr)
+                    return False, msg
 
             elif "Energy" in bullet_text and "Mood" in bullet_text:
                 # Extract energy and mood values
@@ -278,11 +284,11 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
                     expected_mood = current_session_data.get("mood")
 
                     if found_energy != expected_energy or found_mood != expected_mood:
-                        print(
-                            f"Error: Energy/Mood mismatch for {current_session_date}. Expected: Energy: {expected_energy}/10, Mood: {expected_mood}/10",
-                            file=sys.stderr,
-                        )
-                        return False, f"Error: Energy/Mood mismatch for {current_session_date}. Expected: Energy: {expected_energy}/10, Mood: {expected_mood}/10"
+                        msg = (f"Error: Energy/Mood mismatch for "
+                               f"{current_session_date}. Expected: Energy: "
+                               f"{expected_energy}/10, Mood: {expected_mood}/10")
+                        print(msg, file=sys.stderr)
+                        return False, msg
                 else:
                     print(
                         f"Error: Invalid Energy/Mood format for {current_session_date}",
@@ -294,11 +300,11 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
                 content = bullet_text.split(":", 1)[1].strip()
                 expected_challenges = current_session_data.get("challenges", [])
                 if not validate_comma_separated(content, expected_challenges):
-                    print(
-                        f"Error: Challenges mismatch for {current_session_date}. Expected: {expected_challenges}, Found: {content}",
-                        file=sys.stderr,
-                    )
-                    return False, f"Error: Challenges mismatch for {current_session_date}. Expected: {expected_challenges}, Found: {content}"
+                    msg = (f"Error: Challenges mismatch for "
+                           f"{current_session_date}. Expected: "
+                           f"{expected_challenges}, Found: {content}")
+                    print(msg, file=sys.stderr)
+                    return False, msg
 
             elif bullet_text.startswith("Strategies"):
                 content = bullet_text.split(":", 1)[1].strip()
@@ -306,11 +312,11 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
                 if len(expected_strategies) > 0 and not validate_comma_separated(
                     content, expected_strategies
                 ):
-                    print(
-                        f"Error: Strategies mismatch for {current_session_date}. Expected: {expected_strategies}, Found: {content}",
-                        file=sys.stderr,
-                    )
-                    return False, f"Error: Strategies mismatch for {current_session_date}. Expected: {expected_strategies}, Found: {content}"
+                    msg = (f"Error: Strategies mismatch for "
+                           f"{current_session_date}. Expected: "
+                           f"{expected_strategies}, Found: {content}")
+                    print(msg, file=sys.stderr)
+                    return False, msg
 
             elif bullet_text.startswith("Completion"):
                 # Extract completion percentage
@@ -323,11 +329,12 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
                     )
 
                     if found_completion != expected_completion:
-                        print(
-                            f"Error: Completion rate mismatch for {current_session_date}. Expected: {expected_completion}%, Found: {found_completion}%",
-                            file=sys.stderr,
-                        )
-                        return False, f"Error: Completion rate mismatch for {current_session_date}. Expected: {expected_completion}%, Found: {found_completion}%"
+                        msg = (f"Error: Completion rate mismatch for "
+                               f"{current_session_date}. Expected: "
+                               f"{expected_completion}%, Found: "
+                               f"{found_completion}%")
+                        print(msg, file=sys.stderr)
+                        return False, msg
                 else:
                     print(
                         f"Error: Invalid completion format for {current_session_date}",
@@ -353,11 +360,11 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
                 missing_items.append(item)
 
         if missing_items:
-            print(
-                f"Error: Missing bullet points for session {date_str}: {', '.join(missing_items)}",
-                file=sys.stderr,
-            )
-            return False, f"Error: Missing bullet points for session {date_str}: {', '.join(missing_items)}"
+            missing_str = ', '.join(missing_items)
+            msg = (f"Error: Missing bullet points for session {date_str}: "
+                   f"{missing_str}")
+            print(msg, file=sys.stderr)
+            return False, msg
 
     # Verify all requirements
     if not has_callout:
@@ -377,7 +384,7 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
 
     # Check if all expected sessions are present
     missing_sessions = []
-    for date_str in expected_sessions.keys():
+    for date_str in expected_sessions:
         if date_str not in found_sessions:
             missing_sessions.append(date_str)
 
@@ -406,7 +413,7 @@ def main():
     """
     notion = notion_utils.get_notion_client()
     main_id = sys.argv[1] if len(sys.argv) > 1 else None
-    success, error_msg = verify(notion, main_id)
+    success, _error_msg = verify(notion, main_id)
     if success:
         sys.exit(0)
     else:

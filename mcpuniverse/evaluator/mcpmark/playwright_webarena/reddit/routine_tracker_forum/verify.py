@@ -1,8 +1,8 @@
+"""Verification module for routine tracker forum task."""
+# pylint: disable=R0911,R0915,R1702,W1309
 import asyncio
 import sys
 import os
-from pathlib import Path
-from datetime import datetime
 from playwright.async_api import (
     async_playwright,
     TimeoutError as PlaywrightTimeoutError,
@@ -15,8 +15,8 @@ async def verify() -> tuple[bool, str]:
     """
     Verifies that the daily routine tracking setup has been completed correctly on the forum.
     """
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+    async with async_playwright() as playwright:
+        browser = await playwright.chromium.launch(headless=True)
         context = await browser.new_context()
         page = await context.new_page()
 
@@ -62,7 +62,7 @@ async def verify() -> tuple[bool, str]:
             # Check for the created post
             expected_title = "My 5-Step Morning Routine That Increased My Productivity by 200%"
             post_link = page.locator(f'a:has-text("{expected_title}")')
-            
+
             if not await post_link.count():
                 print(f"Error: Post with title '{expected_title}' not found in LifeProTips forum", file=sys.stderr)
                 return False, f"Post with title '{expected_title}' not found in LifeProTips forum"
@@ -71,8 +71,13 @@ async def verify() -> tuple[bool, str]:
             await post_link.click()
             await page.wait_for_load_state("networkidle")
 
-            # Verify post content - this should be the content from the most upvoted comment of the calendar post
-            expected_content = "As a college student, having a visible reminder of the assignments I have and when they are due is super helpful for me. It also just feels good to erase them from the board once they are completed."
+            # Verify post content - this should be the content from the most upvoted comment
+            # of the calendar post
+            expected_content = (
+                "As a college student, having a visible reminder of the assignments I have "
+                "and when they are due is super helpful for me. It also just feels good to "
+                "erase them from the board once they are completed."
+            )
 
             # Check if the content exists in the page
             content_found = False
@@ -89,15 +94,19 @@ async def verify() -> tuple[bool, str]:
 
             # Step 3: Check upvotes via search
             print("Step 3: Verifying upvotes on posts...", file=sys.stderr)
-            
+
             # Check first post upvote
-            search_url1 = f"{BASE_URL}/search?q=LPT%3A+Use+your+calendar+as+your+to-do+list.+Assigning+dedicated+time+to+tasks+increases+the+likelyhood+of+you+acting+upon+it."
+            search_query1 = (
+                "LPT%3A+Use+your+calendar+as+your+to-do+list."
+                "+Assigning+dedicated+time+to+tasks+increases+the+likelyhood+of+you+acting+upon+it."
+            )
+            search_url1 = f"{BASE_URL}/search?q={search_query1}"
             await page.goto(search_url1, wait_until="networkidle")
-            
+
             # Find the post and check its upvote count
             posts = await page.locator("article").all()
             calendar_upvoted = False
-            
+
             for post in posts:
                 title_elem = post.locator("h1 a")
                 if await title_elem.count():
@@ -111,18 +120,22 @@ async def verify() -> tuple[bool, str]:
                                 calendar_upvoted = True
                                 print("✓ Calendar post upvoted (count: 1)", file=sys.stderr)
                                 break
-            
+
             if not calendar_upvoted:
                 print("Error: Calendar post not upvoted or upvote count is not 1", file=sys.stderr)
                 return False, "Calendar post not upvoted or upvote count is not 1"
 
             # Check second post upvote
-            search_url2 = f"{BASE_URL}/search?q=LPT%3A+clean+your+stovetop+after+using+the+oven.+The+heat+loosens+grime+for+easy+removal"
+            search_query2 = (
+                "LPT%3A+clean+your+stovetop+after+using+the+oven."
+                "+The+heat+loosens+grime+for+easy+removal"
+            )
+            search_url2 = f"{BASE_URL}/search?q={search_query2}"
             await page.goto(search_url2, wait_until="networkidle")
-            
+
             posts = await page.locator("article").all()
             stovetop_upvoted = False
-            
+
             for post in posts:
                 title_elem = post.locator("h1 a")
                 if await title_elem.count():
@@ -136,7 +149,7 @@ async def verify() -> tuple[bool, str]:
                                 stovetop_upvoted = True
                                 print("✓ Stovetop post upvoted (count: 1)", file=sys.stderr)
                                 break
-            
+
             if not stovetop_upvoted:
                 print("Error: Stovetop post not upvoted or upvote count is not 1", file=sys.stderr)
                 return False, "Stovetop post not upvoted or upvote count is not 1"
@@ -144,12 +157,12 @@ async def verify() -> tuple[bool, str]:
             print("Success: All verification steps passed!")
             return True, ""
 
-        except PlaywrightTimeoutError as e:
-            print(f"Error: Timeout occurred - {str(e)}", file=sys.stderr)
-            return False, f"Timeout occurred - {str(e)}"
-        except Exception as e:
-            print(f"Error: Unexpected error - {str(e)}", file=sys.stderr)
-            return False, f"Unexpected error - {str(e)}"
+        except PlaywrightTimeoutError as timeout_error:
+            print(f"Error: Timeout occurred - {str(timeout_error)}", file=sys.stderr)
+            return False, f"Timeout occurred - {str(timeout_error)}"
+        except RuntimeError as error:
+            print(f"Error: Unexpected error - {str(error)}", file=sys.stderr)
+            return False, f"Unexpected error - {str(error)}"
         finally:
             await browser.close()
 
@@ -158,7 +171,7 @@ def main():
     """
     Executes the verification process and exits with a status code.
     """
-    success, error_msg = asyncio.run(verify())
+    success, _ = asyncio.run(verify())
     sys.exit(0 if success else 1)
 
 

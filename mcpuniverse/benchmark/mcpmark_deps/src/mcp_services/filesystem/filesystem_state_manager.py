@@ -5,9 +5,11 @@ Filesystem State Manager for MCPMark
 This module handles filesystem state management for consistent task evaluation.
 It manages test directories, file creation/cleanup, and environment isolation.
 """
-
+# pylint: disable=import-error
 import os
 import shutil
+import subprocess
+import sys
 import tempfile
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -44,8 +46,10 @@ class FilesystemStateManager(BaseStateManager):
         Initialize filesystem state manager.
 
         Args:
-            test_root: Root directory for test operations (from FILESYSTEM_TEST_ROOT env var)
-            cleanup_on_exit: Whether to clean up test directories after tasks (default False for persistent environment)
+            test_root: Root directory for test operations
+                (from FILESYSTEM_TEST_ROOT env var)
+            cleanup_on_exit: Whether to clean up test directories after tasks
+                (default False for persistent environment)
         """
         super().__init__(service_name="filesystem")
 
@@ -66,12 +70,15 @@ class FilesystemStateManager(BaseStateManager):
         self.backup_enabled = (
             True  # Enable backup/restore by default for task isolation
         )
+        # Current task category for URL selection
+        self._current_task_category: Optional[str] = None
 
         logger.info(
-            f"Initialized FilesystemStateManager with persistent test environment: {self.test_root}"
+            "Initialized FilesystemStateManager with persistent test environment: %s",
+            self.test_root
         )
 
-    def initialize(self, **kwargs) -> bool:
+    def initialize(self, **_kwargs) -> bool:  # pylint: disable=unused-argument
         """
         Initialize the filesystem environment.
 
@@ -83,13 +90,16 @@ class FilesystemStateManager(BaseStateManager):
         try:
             # Ensure test environment directory exists
             if not self.test_root.exists():
-                logger.error(f"Persistent test environment not found: {self.test_root}")
+                logger.error(
+                    "Persistent test environment not found: %s",
+                    self.test_root
+                )
                 logger.error(
                     "Please ensure test_environments/desktop/ exists in the repository"
                 )
                 return False
 
-            logger.info(f"Using persistent test environment: {self.test_root}")
+            logger.info("Using persistent test environment: %s", self.test_root)
 
             # Verify we can write to the directory
             test_file = self.test_root / ".mcpbench_test"
@@ -98,8 +108,8 @@ class FilesystemStateManager(BaseStateManager):
 
             return True
 
-        except Exception as e:
-            logger.error(f"Failed to initialize filesystem environment: {e}")
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            logger.error("Failed to initialize filesystem environment: %s", exc)
             return False
 
     def set_up(self, task: BaseTask) -> bool:
@@ -122,7 +132,7 @@ class FilesystemStateManager(BaseStateManager):
             # Create backup of current test environment before task execution
             if self.backup_enabled:
                 if not self._create_backup(task):
-                    logger.error(f"Failed to create backup for task {task.name}")
+                    logger.error("Failed to create backup for task %s", task.name)
                     return False
 
             # Use the backup directory as the working directory instead of the original
@@ -130,9 +140,7 @@ class FilesystemStateManager(BaseStateManager):
                 self.backup_dir
             )  # Use backup directory for operations
 
-            logger.info(
-                f"| ✓ Using the backup environment for operations"
-            )
+            logger.info("| ✓ Using the backup environment for operations")
 
             # Store the test directory path in the task object for use by task manager
             if hasattr(task, "__dict__"):
@@ -143,8 +151,12 @@ class FilesystemStateManager(BaseStateManager):
 
             return True
 
-        except Exception as e:
-            logger.error(f"Failed to set up filesystem state for {task.name}: {e}")
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            logger.error(
+                "Failed to set up filesystem state for %s: %s",
+                task.name,
+                exc
+            )
             return False
 
     def _set_dynamic_test_root(self, task: BaseTask) -> None:
@@ -167,25 +179,39 @@ class FilesystemStateManager(BaseStateManager):
         if task.category_id:
             self.test_root = base_test_path / task.category_id
             # Store the current task category for URL selection
-            self._current_task_category = task.category_id
-            logger.info(f"| ✓ Setting test root to category-specific directory: {self.test_root}")
+            self._current_task_category = task.category_id  # pylint: disable=attribute-defined-outside-init
+            logger.info(
+                "| ✓ Setting test root to category-specific directory: %s",
+                self.test_root
+            )
         else:
             # Use the base test environments directory
             self.test_root = base_test_path
             # For base directory, use 'desktop' as default category
             self._current_task_category = 'desktop'
-            logger.info(f"| Setting test root to base directory: {self.test_root}")
+            logger.info(
+                "| Setting test root to base directory: %s",
+                self.test_root
+            )
 
         # Ensure the directory exists by downloading and extracting if needed
         if not self.test_root.exists():
-            logger.warning(f"| Test directory does not exist: {self.test_root}")
+            logger.warning("| Test directory does not exist: %s", self.test_root)
             if not self._download_and_extract_test_environment():
-                logger.error(f"Failed to download and extract test environment for: {self.test_root}")
-                raise RuntimeError(f"Test environment not available: {self.test_root}")
-            logger.info(f"| Downloaded and extracted test environment: {self.test_root}")
+                logger.error(
+                    "Failed to download and extract test environment for: %s",
+                    self.test_root
+                )
+                raise RuntimeError(
+                    f"Test environment not available: {self.test_root}"
+                )
+            logger.info(
+                "| Downloaded and extracted test environment: %s",
+                self.test_root
+            )
 
 
-    def clean_up(self, task: Optional[BaseTask] = None, **kwargs) -> bool:
+    def clean_up(self, task: Optional[BaseTask] = None, **_kwargs) -> bool:  # pylint: disable=unused-argument
         """
         Clean up filesystem resources created during task execution.
 
@@ -205,12 +231,14 @@ class FilesystemStateManager(BaseStateManager):
             if self.backup_enabled and self.backup_dir and self.backup_dir.exists():
                 try:
                     shutil.rmtree(self.backup_dir)
+                    task_name = task.name if task else 'unknown'
                     logger.info(
-                        f"| ✓ Cleaned up backup directory for task {task.name if task else 'unknown'}"
+                        "| ✓ Cleaned up backup directory for task %s",
+                        task_name
                     )
                     self.backup_dir = None
-                except Exception as e:
-                    logger.error(f"Failed to clean up backup directory: {e}")
+                except Exception as exc:  # pylint: disable=broad-exception-caught
+                    logger.error("Failed to clean up backup directory: %s", exc)
                     cleanup_success = False
             else:
                 logger.info("No backup directory to clean up")
@@ -220,8 +248,8 @@ class FilesystemStateManager(BaseStateManager):
 
             return cleanup_success
 
-        except Exception as e:
-            logger.error(f"Filesystem cleanup failed: {e}")
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            logger.error("Filesystem cleanup failed: %s", exc)
             return False
 
     def get_test_directory(self) -> Optional[Path]:
@@ -276,7 +304,7 @@ class FilesystemStateManager(BaseStateManager):
                 dir_path = self.test_root / dir_name
                 if dir_path.exists():
                     shutil.rmtree(dir_path)
-                    logger.info(f"Removed sorting directory: {dir_path}")
+                    logger.info("Removed sorting directory: %s", dir_path)
 
             # Remove any temporary files that might have been created
             temp_files = ["hello_world.txt", "new_file.txt", "temp.txt"]
@@ -284,12 +312,12 @@ class FilesystemStateManager(BaseStateManager):
                 file_path = self.test_root / file_name
                 if file_path.exists():
                     file_path.unlink()
-                    logger.info(f"Removed temporary file: {file_path}")
+                    logger.info("Removed temporary file: %s", file_path)
 
             logger.info("Test environment reset completed")
             return True
-        except Exception as e:
-            logger.error(f"Test environment reset failed: {e}")
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            logger.error("Test environment reset failed: %s", exc)
             return False
 
     # =========================================================================
@@ -310,20 +338,25 @@ class FilesystemStateManager(BaseStateManager):
             # Use FILESYSTEM_TEST_DIR directly as the backup directory
             # This allows MCP server to use a fixed path without dynamic updates
             backup_dir_env = os.getenv("FILESYSTEM_TEST_DIR")
-            
+
             if backup_dir_env:
                 # Use the environment variable path with category subdirectory
                 backup_base = Path(backup_dir_env).resolve()
                 self.backup_dir = backup_base / task.category_id
-                logger.info(f"| Using FILESYSTEM_TEST_DIR as backup directory: {self.backup_dir}")
+                logger.info(
+                    "| Using FILESYSTEM_TEST_DIR as backup directory: %s",
+                    self.backup_dir
+                )
             else:
                 # Fallback to original behavior
                 project_root = self._get_project_root()
                 backup_root = (project_root / ".mcpmark_backups").resolve()
                 backup_root.mkdir(exist_ok=True)
-                task_id = f"{task.service}_{task.category_id}_{task.task_id}"
                 self.backup_dir = backup_root / f"{task.category_id}"
-                logger.info(f"| Using default backup directory: {self.backup_dir}")
+                logger.info(
+                    "| Using default backup directory: %s",
+                    self.backup_dir
+                )
 
             # Ensure parent directory exists
             self.backup_dir.parent.mkdir(parents=True, exist_ok=True)
@@ -331,16 +364,20 @@ class FilesystemStateManager(BaseStateManager):
             # Remove existing backup if it exists
             if self.backup_dir.exists():
                 shutil.rmtree(self.backup_dir)
-                logger.info(f"| Removed existing backup directory")
+                logger.info("| Removed existing backup directory")
 
             # Create fresh backup by copying entire test environment
             shutil.copytree(self.test_root, self.backup_dir)
 
-            logger.info(f"| ✓ Created backup for task {task.name}: {self.backup_dir}")
+            logger.info(
+                "| ✓ Created backup for task %s: %s",
+                task.name,
+                self.backup_dir
+            )
             return True
 
-        except Exception as e:
-            logger.error(f"Failed to create backup for task {task.name}: {e}")
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            logger.error("Failed to create backup for task %s: %s", task.name, exc)
             return False
 
     def _restore_from_backup(self, task: Optional[BaseTask] = None) -> bool:
@@ -371,20 +408,27 @@ class FilesystemStateManager(BaseStateManager):
 
             task_name = task.name if task else "unknown"
             logger.info(
-                f"✅ Restored test environment from backup after task {task_name}"
+                "✅ Restored test environment from backup after task %s",
+                task_name
             )
             return True
 
-        except Exception as e:
+        except Exception as exc:  # pylint: disable=broad-exception-caught
             task_name = task.name if task else "unknown"
-            logger.error(f"Failed to restore from backup after task {task_name}: {e}")
+            logger.error(
+                "Failed to restore from backup after task %s: %s",
+                task_name,
+                exc
+            )
             return False
 
     # =========================================================================
     # Abstract Method Implementations Required by BaseStateManager
     # =========================================================================
 
-    def _create_initial_state(self, task: BaseTask) -> Optional[Dict[str, Any]]:
+    def _create_initial_state(  # pylint: disable=unused-argument
+        self, task: BaseTask
+    ) -> Optional[Dict[str, Any]]:
         """Create initial state for a task.
 
         For filesystem, this is handled in set_up() method by creating task directories.
@@ -405,7 +449,9 @@ class FilesystemStateManager(BaseStateManager):
             if hasattr(task, "__dict__"):
                 task.test_directory = state_info["task_directory"]
 
-    def _cleanup_task_initial_state(self, task: BaseTask) -> bool:
+    def _cleanup_task_initial_state(  # pylint: disable=unused-argument
+        self, task: BaseTask
+    ) -> bool:
         """Clean up initial state for a specific task.
 
         For filesystem, this means removing the task directory.
@@ -415,10 +461,10 @@ class FilesystemStateManager(BaseStateManager):
             if task_dir.exists():
                 try:
                     shutil.rmtree(task_dir)
-                    logger.info(f"Cleaned up task directory: {task_dir}")
+                    logger.info("Cleaned up task directory: %s", task_dir)
                     return True
-                except Exception as e:
-                    logger.error(f"Failed to clean up task directory: {e}")
+                except Exception as exc:  # pylint: disable=broad-exception-caught
+                    logger.error("Failed to clean up task directory: %s", exc)
                     return False
         return True
 
@@ -435,26 +481,26 @@ class FilesystemStateManager(BaseStateManager):
                         shutil.rmtree(resource_path)
                     else:
                         resource_path.unlink()
-                    logger.info(f"Cleaned up resource: {resource_path}")
+                    logger.info("Cleaned up resource: %s", resource_path)
                     return True
-                except Exception as e:
-                    logger.error(f"Failed to clean up {resource_path}: {e}")
+                except Exception as exc:  # pylint: disable=broad-exception-caught
+                    logger.error("Failed to clean up %s: %s", resource_path, exc)
                     return False
         return True
 
-    def _download_and_extract_test_environment(self) -> bool:
+    def _download_and_extract_test_environment(  # pylint: disable=too-many-return-statements, too-many-branches
+        self
+    ) -> bool:
         """
         Download and extract test environment using wget and unzip commands.
-        
+
         This approach preserves original file timestamps and is simpler than Python zipfile.
 
         Returns:
             bool: True if download and extraction successful
         """
         try:
-            import subprocess
-            import sys
-            
+
             # Define URL mapping for different test environment categories
             url_mapping = {
                 'desktop': 'https://storage.mcpmark.ai/filesystem/desktop.zip',
@@ -478,15 +524,19 @@ class FilesystemStateManager(BaseStateManager):
             # Select the appropriate URL based on category
             if category in url_mapping:
                 test_env_url = url_mapping[category]
-                logger.info(f"| ○ Selected URL for category '{category}': {test_env_url}")
+                logger.info(
+                    "| ○ Selected URL for category '%s': %s",
+                    category,
+                    test_env_url
+                )
             else:
-                logger.error(f"| No URL mapping found for category: {category}")
+                logger.error("| No URL mapping found for category: %s", category)
                 return False
 
             # Allow override via environment variable
             test_env_url = os.getenv('TEST_ENVIRONMENT_URL', test_env_url)
 
-            logger.info(f"| ○ Downloading test environment from: {test_env_url}")
+            logger.info("| ○ Downloading test environment from: %s", test_env_url)
 
             # Create a temporary directory for the download
             with tempfile.TemporaryDirectory() as temp_dir:
@@ -500,66 +550,69 @@ class FilesystemStateManager(BaseStateManager):
                     if sys.platform == "win32":
                         # Windows: try wget, fall back to curl
                         try:
-                            result = subprocess.run(
+                            subprocess.run(
                                 ["wget", "-O", str(zip_path), test_env_url],
                                 capture_output=True, text=True, check=True
                             )
                         except (subprocess.CalledProcessError, FileNotFoundError):
                             # Fall back to curl
-                            result = subprocess.run(
+                            subprocess.run(
                                 ["curl", "-L", "-o", str(zip_path), test_env_url],
                                 capture_output=True, text=True, check=True
                             )
                     else:
                         # Unix-like systems: try wget, fall back to curl
                         try:
-                            result = subprocess.run(
+                            subprocess.run(
                                 ["wget", "-O", str(zip_path), test_env_url],
                                 capture_output=True, text=True, check=True
                             )
                         except (subprocess.CalledProcessError, FileNotFoundError):
                             # Fall back to curl
-                            result = subprocess.run(
+                            subprocess.run(
                                 ["curl", "-L", "-o", str(zip_path), test_env_url],
                                 capture_output=True, text=True, check=True
                             )
-                    
+
                     logger.info("| ✓ Download completed successfully")
-                except Exception as e:
-                    logger.error(f"| Download failed: {e}")
+                except Exception as exc:  # pylint: disable=broad-exception-caught
+                    logger.error("| Download failed: %s", exc)
                     return False
 
                 # Step 2: Extract using unzip
                 logger.info("| ○ Extracting test environment...")
                 try:
                     # Extract to parent directory to maintain expected structure
-                    result = subprocess.run(
+                    subprocess.run(
                         ["unzip", "-o", str(zip_path), "-d", str(self.test_root.parent)],
                         capture_output=True, text=True, check=True
                     )
                     logger.info("| ✓ Extraction completed successfully")
-                except Exception as e:
-                    logger.error(f"| Extraction failed: {e}")
+                except Exception as exc:  # pylint: disable=broad-exception-caught
+                    logger.error("| Extraction failed: %s", exc)
                     return False
 
                 # Step 3: Remove __MACOSX folder if it exists
-                logger.info("| ○ Cleaning up macOS metadata...")
                 macosx_path = self.test_root.parent / "__MACOSX"
-                if macosx_path.exists():
-                    try:
-                        shutil.rmtree(macosx_path)
-                        logger.info("| ✓ Removed __MACOSX folder")
-                    except Exception as e:
-                        logger.warning(f"| Failed to remove __MACOSX folder: {e}")
+                self._remove_macosx_folder(macosx_path)
 
                 # Verify the extracted directory exists
                 if not self.test_root.exists():
-                    logger.error(f"| Extracted directory not found at expected path: {self.test_root}")
+                    logger.error(
+                        "| Extracted directory not found at expected path: %s",
+                        self.test_root
+                    )
                     return False
 
-                logger.info(f"| ✓ Successfully downloaded and extracted test environment to: {self.test_root}")
+                logger.info(
+                    "| ✓ Successfully downloaded and extracted test environment to: %s",
+                    self.test_root
+                )
                 return True
 
-        except Exception as e:
-            logger.error(f"| Failed to download and extract test environment: {e}")
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            logger.error(
+                "| Failed to download and extract test environment: %s",
+                exc
+            )
             return False

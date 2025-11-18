@@ -1,6 +1,7 @@
+"""Verification module for LLM research summary task."""
+# pylint: disable=R0911,R0912,R0915,R1702
 import asyncio
 import sys
-import re
 import os
 from pathlib import Path
 from playwright.async_api import (
@@ -18,20 +19,20 @@ def parse_key_value_format(text):
     Handles both pipe (|) and colon (:) separators for compatibility.
     """
     data = {}
-    
+
     # Try to parse with pipe separator first (expected format)
     lines = text.strip().split('\n')
     for line in lines:
         line = line.strip()
         if not line:
             continue
-        
+
         # Remove markdown list prefix if present
         if line.startswith('- '):
             line = line[2:]
         elif line.startswith('* '):
             line = line[2:]
-        
+
         # Try pipe separator first
         if '|' in line:
             parts = line.split('|', 1)
@@ -46,7 +47,7 @@ def parse_key_value_format(text):
                 key = parts[0].strip()
                 value = parts[1].strip()
                 data[key] = value
-    
+
     return data
 
 
@@ -71,8 +72,8 @@ async def verify() -> tuple[bool, str]:
     """
     Verifies that the LLM analysis task has been completed correctly.
     """
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+    async with async_playwright() as playwright:
+        browser = await playwright.chromium.launch(headless=True)
         context = await browser.new_context()
         page = await context.new_page()
 
@@ -169,10 +170,11 @@ async def verify() -> tuple[bool, str]:
             print(f"Extracted data: {extracted_data}", file=sys.stderr)
 
             # Load expected values from label.txt
+            expected_data = {}
             label_path = Path(__file__).parent / "label.txt"
             if label_path.exists():
-                with open(label_path, "r") as f:
-                    expected_text = f.read().strip()
+                with open(label_path, "r", encoding='utf-8') as file_handle:
+                    expected_text = file_handle.read().strip()
                 expected_data = parse_key_value_format(expected_text)
                 print("Loaded expected values from label.txt", file=sys.stderr)
 
@@ -271,7 +273,7 @@ async def verify() -> tuple[bool, str]:
                 top2_votes = int(extracted_data["Top2_Upvotes"])
                 top3_votes = int(extracted_data["Top3_Upvotes"])
 
-                if not (top1_votes >= top2_votes >= top3_votes):
+                if not top1_votes >= top2_votes >= top3_votes:
                     errors.append(
                         f"Top posts should be ordered by upvotes: {top1_votes} >= {top2_votes} >= {top3_votes}"
                     )
@@ -303,12 +305,12 @@ async def verify() -> tuple[bool, str]:
             print("- All data in correct Key: Value format with 12 lines")
             return True, ""
 
-        except PlaywrightTimeoutError as e:
-            print(f"Error: Timeout occurred - {str(e)}", file=sys.stderr)
-            return False, f"Timeout occurred - {str(e)}"
-        except Exception as e:
-            print(f"Error: Unexpected error - {str(e)}", file=sys.stderr)
-            return False, f"Unexpected error - {str(e)}"
+        except PlaywrightTimeoutError as timeout_error:
+            print(f"Error: Timeout occurred - {str(timeout_error)}", file=sys.stderr)
+            return False, f"Timeout occurred - {str(timeout_error)}"
+        except RuntimeError as error:
+            print(f"Error: Unexpected error - {str(error)}", file=sys.stderr)
+            return False, f"Unexpected error - {str(error)}"
         finally:
             await browser.close()
 
@@ -317,7 +319,7 @@ def main():
     """
     Executes the verification process and exits with a status code.
     """
-    success, error_msg = asyncio.run(verify())
+    success, _ = asyncio.run(verify())
     sys.exit(0 if success else 1)
 
 

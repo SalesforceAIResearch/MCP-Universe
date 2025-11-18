@@ -1,10 +1,14 @@
+"""Verification module for Daily Itinerary Overview task in Notion workspace."""
+
+# pylint: disable=duplicate-code,import-error,astroid-error
+
 import sys
 import re
 from notion_client import Client
 from mcpuniverse.evaluator.mcpmark.notion.utils import notion_utils
 
 
-def verify_todo_database_correspondence(all_blocks, activities_by_day, _):
+def verify_todo_database_correspondence(all_blocks, activities_by_day, _):  # pylint: disable=too-many-branches,too-many-locals,too-many-statements
     """
     Verify that to-do items in the overview page correspond exactly to database activities.
     """
@@ -47,11 +51,13 @@ def verify_todo_database_correspondence(all_blocks, activities_by_day, _):
 
         # Check if counts match
         if len(db_activities) != len(page_todos):
-            print(
-                f"Error: {day} activity count mismatch. Database has {len(db_activities)} activities, page has {len(page_todos)} to-dos.",
-                file=sys.stderr,
-            )
-            return False, f"Error: {day} activity count mismatch. Database has {len(db_activities)} activities, page has {len(page_todos)} to-dos."
+            db_count = len(db_activities)
+            page_count = len(page_todos)
+            msg = (f"Error: {day} activity count mismatch. "
+                   f"Database has {db_count} activities, "
+                   f"page has {page_count} to-dos.")
+            print(msg, file=sys.stderr)
+            return False, msg
 
         # Verify each database activity has corresponding to-do
         for db_activity in db_activities:
@@ -70,40 +76,41 @@ def verify_todo_database_correspondence(all_blocks, activities_by_day, _):
                     break
 
             if not matching_todo:
-                print(
-                    f"Error: {day} - Database activity '{expected_format}' not found in to-do list.",
-                    file=sys.stderr,
-                )
-                return False, f"Error: {day} - Database activity '{expected_format}' not found in to-do list."
+                msg = (f"Error: {day} - Database activity "
+                       f"'{expected_format}' not found in to-do list.")
+                print(msg, file=sys.stderr)
+                return False, msg
 
             # Verify checked status matches visited status
             if db_activity["visited"] != matching_todo["checked"]:
                 status_desc = "checked" if db_activity["visited"] else "unchecked"
-                actual_desc = "checked" if matching_todo["checked"] else "unchecked"
-                print(
-                    f"Error: {day} - Activity '{db_activity['name']}' should be {status_desc} but is {actual_desc}.",
-                    file=sys.stderr,
-                )
-                return False, f"Error: {day} - Activity '{db_activity['name']}' should be {status_desc} but is {actual_desc}."
+                actual_desc = ("checked" if matching_todo["checked"]
+                               else "unchecked")
+                activity_name = db_activity['name']
+                msg = (f"Error: {day} - Activity '{activity_name}' should be "
+                       f"{status_desc} but is {actual_desc}.")
+                print(msg, file=sys.stderr)
+                return False, msg
 
     # Verify summary count matches checked to-dos
     for block in all_blocks:
         if block.get("type") == "paragraph":
             block_text = notion_utils.get_block_plain_text(block)
             if "Total activities visited (from Day 1 to Day 3): 8" in block_text:
-                print(
-                    f"Success: Daily Itinerary Overview page created with correct structure. All {checked_todos_count} visited activities match database."
-                )
+                msg = (f"Success: Daily Itinerary Overview page created with "
+                       f"correct structure. All {checked_todos_count} visited "
+                       "activities match database.")
+                print(msg)
                 return True, ""
 
-    print(
-        f"Error: Summary shows incorrect visited activity count. Expected: {checked_todos_count} (based on checked to-do items)",
-        file=sys.stderr,
-    )
-    return False, f"Error: Summary shows incorrect visited activity count. Expected: {checked_todos_count} (based on checked to-do items)"
+    msg = (f"Error: Summary shows incorrect visited activity count. "
+           f"Expected: {checked_todos_count} "
+           "(based on checked to-do items)")
+    print(msg, file=sys.stderr)
+    return False, msg
 
 
-def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
+def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:  # pylint: disable=too-many-branches,too-many-locals,too-many-return-statements,too-many-statements
     """
     Verifies that the Daily Itinerary Overview page has been created correctly.
     """
@@ -151,7 +158,7 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
                 if overview_page_id:
                     break
 
-    except Exception as e:
+    except (ValueError, KeyError, TypeError, AttributeError) as e:
         print(
             f"Error searching for Daily Itinerary Overview page: {e}", file=sys.stderr
         )
@@ -224,11 +231,13 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
     for i, (found_heading, found_type) in enumerate(found_headings_in_order):
         expected_heading, expected_type = required_headings_sequence[i]
         if found_heading != expected_heading or found_type != expected_type:
-            print(
-                f"Error: Headings not in correct order. Expected '{expected_heading}' ({expected_type}) at position {i + 1}, but found '{found_heading}' ({found_type})",
-                file=sys.stderr,
-            )
-            return False, f"Error: Headings not in correct order. Expected '{expected_heading}' ({expected_type}) at position {i + 1}, but found '{found_heading}' ({found_type})"
+            pos = i + 1
+            msg = (f"Error: Headings not in correct order. "
+                   f"Expected '{expected_heading}' ({expected_type}) "
+                   f"at position {pos}, but found '{found_heading}' "
+                   f"({found_type})")
+            print(msg, file=sys.stderr)
+            return False, msg
 
     # Verify trip summary exists and has correct format
     if not found_summary:
@@ -239,22 +248,20 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
         return False, "Error: Trip summary paragraph with 'Total activities visite' not found."
 
     if not summary_has_correct_format:
-        print(
-            "Error: Trip summary does not have correct format 'Total activities visited: [NUMBER]'.",
-            file=sys.stderr,
-        )
-        return False, "Error: Trip summary does not have correct format 'Total activities visited: [NUMBER]'."
+        msg = ("Error: Trip summary does not have correct format "
+               "'Total activities visited: [NUMBER]'.")
+        print(msg, file=sys.stderr)
+        return False, msg
 
     # Verify to-do list items exist (activities should be in to-do format)
     if not found_todo_items:
-        print(
-            "Error: No to-do list items found. Activities should be listed as to-do items under day headings.",
-            file=sys.stderr,
-        )
-        return False, "Error: No to-do list items found. Activities should be listed as to-do items under day headings."
+        msg = ("Error: No to-do list items found. Activities should be "
+               "listed as to-do items under day headings.")
+        print(msg, file=sys.stderr)
+        return False, msg
 
     # Additional verification: Check if Travel Itinerary database exists and has data
-    try:
+    try:  # pylint: disable=too-many-nested-blocks
         itinerary_db_id = notion_utils.find_database_in_block(
             notion, page_id, "Travel Itinerary"
         )
@@ -323,35 +330,35 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
             return verify_todo_database_correspondence(
                 all_blocks, activities_by_day, visited_count
             )
-        else:
-            print(
-                "Warning: Travel Itinerary database not found, using to-do items for count verification."
-            )
-            # Count checked to-do items in the overview page even without database
-            checked_todos_count = 0
-            for block in all_blocks:
-                if block.get("type") == "to_do":
-                    to_do_data = block.get("to_do", {})
-                    if to_do_data.get("checked", False):
-                        checked_todos_count += 1
+        msg = ("Warning: Travel Itinerary database not found, using "
+               "to-do items for count verification.")
+        print(msg)
+        # Count checked to-do items in the overview page even without database
+        checked_todos_count = 0
+        for block in all_blocks:
+            if block.get("type") == "to_do":
+                to_do_data = block.get("to_do", {})
+                if to_do_data.get("checked", False):
+                    checked_todos_count += 1
 
-            # Verify the summary shows the correct visited count based on checked to-dos
-            for block in all_blocks:
-                if block.get("type") == "paragraph":
-                    block_text = notion_utils.get_block_plain_text(block)
-                    if f"Total activities visited: {checked_todos_count}" in block_text:
-                        print(
-                            f"Success: Daily Itinerary Overview page created with correct structure and {checked_todos_count} visited activities."
-                        )
-                        return True, ""
+        # Verify the summary shows the correct visited count based on checked to-dos
+        for block in all_blocks:
+            if block.get("type") == "paragraph":
+                block_text = notion_utils.get_block_plain_text(block)
+                if f"Total activities visited: {checked_todos_count}" in block_text:
+                    msg = (f"Success: Daily Itinerary Overview page "
+                           f"created with correct structure and "
+                           f"{checked_todos_count} visited activities.")
+                    print(msg)
+                    return True, ""
 
-            print(
-                f"Error: Summary shows incorrect visited activity count. Expected: {checked_todos_count} (based on checked to-do items)",
-                file=sys.stderr,
-            )
-            return False, f"Error: Summary shows incorrect visited activity count. Expected: {checked_todos_count} (based on checked to-do items)"
+        msg = (f"Error: Summary shows incorrect visited activity count. "
+               f"Expected: {checked_todos_count} "
+               "(based on checked to-do items)")
+        print(msg, file=sys.stderr)
+        return False, msg
 
-    except Exception as e:
+    except (ValueError, KeyError, TypeError, AttributeError) as e:
         print(f"Warning: Could not verify activity count: {e}")
         print("Success: Daily Itinerary Overview page created with correct structure.")
         return True, ""
@@ -363,7 +370,7 @@ def main():
     """
     notion = notion_utils.get_notion_client()
     main_id = sys.argv[1] if len(sys.argv) > 1 else None
-    success, error_msg = verify(notion, main_id)
+    success, _error_msg = verify(notion, main_id)
     if success:
         sys.exit(0)
     else:

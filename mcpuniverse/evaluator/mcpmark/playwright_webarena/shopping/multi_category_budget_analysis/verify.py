@@ -1,3 +1,5 @@
+"""Verification module for multi category budget analysis task."""
+# pylint: disable=R0912
 import asyncio
 import sys
 import re
@@ -18,8 +20,8 @@ def get_model_response():
         return None
 
     try:
-        with open(messages_path, "r") as f:
-            messages = json.load(f)
+        with open(messages_path, "r", encoding='utf-8') as file_handle:
+            messages = json.load(file_handle)
 
         # Find the last assistant message
         for message in reversed(messages):
@@ -35,8 +37,8 @@ def get_model_response():
 
         print("Warning: No assistant response found in messages", file=sys.stderr)
         return None
-    except Exception as e:
-        print(f"Error reading messages file: {str(e)}", file=sys.stderr)
+    except (OSError, json.JSONDecodeError) as error:
+        print(f"Error reading messages file: {str(error)}", file=sys.stderr)
         return None
 
 
@@ -77,8 +79,8 @@ def load_expected_answer(label_path):
     Returns a dictionary with the expected values.
     """
     try:
-        with open(label_path, "r") as f:
-            lines = f.read().strip().split("\n")
+        with open(label_path, "r", encoding='utf-8') as file_handle:
+            lines = file_handle.read().strip().split("\n")
 
         expected = {}
         for line in lines:
@@ -87,8 +89,8 @@ def load_expected_answer(label_path):
                 expected[key.strip()] = value.strip()
 
         return expected
-    except Exception as e:
-        print(f"Error reading label file: {str(e)}", file=sys.stderr)
+    except OSError as error:
+        print(f"Error reading label file: {str(error)}", file=sys.stderr)
         return None
 
 
@@ -110,7 +112,7 @@ def compare_answers(model_answer, expected_answer):
             # Parse and compare chocolate products with price:SKU format
             expected_products = expected_value.split(";")
             model_products = model_value.split(";")
-            
+
             if len(expected_products) != len(model_products):
                 mismatches.append(f"{key}: expected {len(expected_products)} products, got {len(model_products)}")
             else:
@@ -122,7 +124,10 @@ def compare_answers(model_answer, expected_answer):
                     else:
                         # Check price format (should start with $)
                         if not mod_parts[0].startswith("$"):
-                            mismatches.append(f"{key}: product {i+1} price format error - expected '$XX.XX' format, got '{mod_parts[0]}'")
+                            mismatches.append(
+                                f"{key}: product {i+1} price format error - "
+                                f"expected '$XX.XX' format, got '{mod_parts[0]}'"
+                            )
                         elif exp_parts[0] != mod_parts[0] or exp_parts[1] != mod_parts[1]:
                             mismatches.append(f"{key}: product {i+1} mismatch - expected '{exp}', got '{mod}'")
 
@@ -138,7 +143,7 @@ def compare_answers(model_answer, expected_answer):
                     mismatches.append(f"{key}: price format error - expected '$XX.XX' format, got '{mod_parts[0]}'")
                 elif exp_parts[0] != mod_parts[0] or exp_parts[1] != mod_parts[1]:
                     mismatches.append(f"{key}: mismatch - expected '{expected_value}', got '{model_value}'")
-        
+
         elif key == "tabletop_reviews":
             # Parse and compare tabletop reviews with NumberOfReviews:Rating format
             exp_parts = expected_value.strip().split(":")
@@ -204,7 +209,7 @@ async def verify() -> tuple[bool, str]:
     """
     # Get the label file path
     label_path = Path(__file__).parent / "label.txt"
-    
+
     # Load expected answer
     expected_answer = load_expected_answer(label_path)
     if not expected_answer:
@@ -216,12 +221,12 @@ async def verify() -> tuple[bool, str]:
     if model_response:
         print("Found model response, parsing answer format...", file=sys.stderr)
         model_answer = parse_answer_format(model_response)
-        
+
         if model_answer:
             print("\n=== Model Answer Parsed ===", file=sys.stderr)
             for key, value in model_answer.items():
                 print(f"{key}: {value}", file=sys.stderr)
-            
+
             # Compare answers
             answer_match, error_msg = compare_answers(model_answer, expected_answer)
             if not answer_match:
@@ -229,19 +234,17 @@ async def verify() -> tuple[bool, str]:
                 return False, error_msg
             print("\n✓ Model answer matches expected answer", file=sys.stderr)
             return True, ""
-        else:
-            print("Warning: Could not parse answer format from model response", file=sys.stderr)
-            return False, "Could not parse answer format from model response"
-    else:
-        print("No model response found", file=sys.stderr)
-        return False, "No model response found"
+        print("Warning: Could not parse answer format from model response", file=sys.stderr)
+        return False, "Could not parse answer format from model response"
+    print("No model response found", file=sys.stderr)
+    return False, "No model response found"
 
 
 def main():
     """
     Executes the verification process and exits with a status code.
     """
-    success, error_msg = asyncio.run(verify())
+    success, _ = asyncio.run(verify())
     sys.exit(0 if success else 1)
 
 

@@ -1,6 +1,9 @@
+"""Verification module for user permission audit task."""
+# pylint: disable=too-many-branches,too-many-locals,too-many-statements,duplicate-code
 import os
-import psycopg2
 import sys
+
+import psycopg2
 
 
 def verify() -> tuple[bool, str]:
@@ -101,7 +104,9 @@ def verify() -> tuple[bool, str]:
         found_missing_permissions = set()
         found_excessive_permissions = set()
 
-        # Analyze findings (detail_id, username, issue_type, table_name, permission_type, expected_access)
+        # Analyze findings
+        # (detail_id, username, issue_type, table_name, permission_type,
+        #  expected_access)
         for finding in findings:
             username = finding[1]
             issue_type = finding[2]
@@ -120,25 +125,34 @@ def verify() -> tuple[bool, str]:
 
         # Verify dangling users
         missing_dangling = expected_findings['dangling_users'] - found_dangling
-        extra_dangling = found_dangling - expected_findings['dangling_users']
+        _extra_dangling = found_dangling - expected_findings['dangling_users']
 
         # Verify missing permissions
         missing_missing_perms = expected_findings['missing_permissions'] - found_missing_permissions
-        extra_missing_perms = found_missing_permissions - expected_findings['missing_permissions']
+        _extra_missing_perms = found_missing_permissions - expected_findings['missing_permissions']
 
         # Verify excessive permissions
-        missing_excessive_perms = expected_findings['excessive_permissions'] - found_excessive_permissions
-        extra_excessive_perms = found_excessive_permissions - expected_findings['excessive_permissions']
+        missing_excessive_perms = (
+            expected_findings['excessive_permissions'] -
+            found_excessive_permissions
+        )
+        _extra_excessive_perms = (
+            found_excessive_permissions -
+            expected_findings['excessive_permissions']
+        )
 
         # Validate structure
         structure_valid = True
         for i, finding in enumerate(findings):
             if len(finding) != 6:  # Should have 6 columns
-                print(f"| FAIL: Finding {i + 1} has wrong number of columns (expected 6, got {len(finding)})")
+                print(
+                    f"| FAIL: Finding {i + 1} has wrong number of columns "
+                    f"(expected 6, got {len(finding)})"
+                )
                 structure_valid = False
                 continue
 
-            detail_id, username, issue_type, table_name, permission_type, expected_access = finding
+            _detail_id, username, issue_type, table_name, permission_type, expected_access = finding
 
             if not username:
                 print(f"| FAIL: Finding {i + 1} missing username")
@@ -153,35 +167,48 @@ def verify() -> tuple[bool, str]:
                 structure_valid = False
 
         if structure_valid:
-            print(f"| ✓ structure is valid")
+            print("| ✓ structure is valid")
 
         # Check for missing findings
         all_correct = True
 
-        print(f"| Expected dangling users: {expected_findings['dangling_users']} Found: {found_dangling}")
+        print(
+            f"| Expected dangling users: {expected_findings['dangling_users']} "
+            f"Found: {found_dangling}"
+        )
         if missing_dangling:
             print(f"| Missing dangling users: {missing_dangling}")
             all_correct = False
 
         print(
-            f"| Expected missing permissions: {len(expected_findings['missing_permissions'])} Found: {len(found_missing_permissions)} Missing: {len(missing_missing_perms)}")
+            f"| Expected missing permissions: "
+            f"{len(expected_findings['missing_permissions'])} "
+            f"Found: {len(found_missing_permissions)} "
+            f"Missing: {len(missing_missing_perms)}"
+        )
         if missing_missing_perms:
-            print(f"| Missing 'missing permission' findings:")
+            print("| Missing 'missing permission' findings:")
             for perm in sorted(missing_missing_perms):
                 print(f"|   - {perm[0]} should be granted {perm[2]} on {perm[1]}")
             all_correct = False
 
         print(
-            f"| Expected excessive permissions: {len(expected_findings['excessive_permissions'])} Found: {len(found_excessive_permissions)} Missing: {len(missing_excessive_perms)}")
+            f"| Expected excessive permissions: "
+            f"{len(expected_findings['excessive_permissions'])} "
+            f"Found: {len(found_excessive_permissions)} "
+            f"Missing: {len(missing_excessive_perms)}"
+        )
         if missing_excessive_perms:
-            print(f"| Missing 'excessive permission' findings:")
+            print("| Missing 'excessive permission' findings:")
             for perm in sorted(missing_excessive_perms):
                 print(f"|   - {perm[0]} should have {perm[2]} revoked on {perm[1]}")
             all_correct = False
 
         # Check audit summary table
         cur.execute(
-            "SELECT audit_type, total_issues, users_affected, tables_affected FROM security_audit_results ORDER BY audit_type;")
+            "SELECT audit_type, total_issues, users_affected, tables_affected "
+            "FROM security_audit_results ORDER BY audit_type;"
+        )
         summary_results = cur.fetchall()
 
         # Expected summary numbers based on ground truth
@@ -194,12 +221,21 @@ def verify() -> tuple[bool, str]:
         summary_correct = True
         for result in summary_results:
             audit_type, total_issues, users_affected, tables_affected = result
-            print(f"| Summary result: [{audit_type}] {total_issues} issues, {users_affected} users affected, {tables_affected} tables affected")
-            
+            print(
+                f"| Summary result: [{audit_type}] {total_issues} issues, "
+                f"{users_affected} users affected, "
+                f"{tables_affected} tables affected"
+            )
+
             if audit_type in expected_summary:
                 expected = expected_summary[audit_type]
                 if (total_issues, users_affected, tables_affected) != expected:
-                    print(f"| FAIL: {audit_type} summary mismatch - Expected: {expected}, Got: ({total_issues}, {users_affected}, {tables_affected})")
+                    print(
+                        f"| FAIL: {audit_type} summary mismatch - "
+                        f"Expected: {expected}, "
+                        f"Got: ({total_issues}, {users_affected}, "
+                        f"{tables_affected})"
+                    )
                     summary_correct = False
                 else:
                     print(f"| ✓ {audit_type} summary matches expected values")
@@ -209,18 +245,23 @@ def verify() -> tuple[bool, str]:
         if len(found_dangling) != 3:
             errors.append(f"Expected 3 dangling users, found {len(found_dangling)}")
         if len(found_missing_permissions) != 13:
-            errors.append(f"Expected 13 missing permissions, found {len(found_missing_permissions)}")
+            errors.append(
+                f"Expected 13 missing permissions, "
+                f"found {len(found_missing_permissions)}"
+            )
         if len(found_excessive_permissions) != 13:
-            errors.append(f"Expected 13 excessive permissions, found {len(found_excessive_permissions)}")
+            errors.append(
+                f"Expected 13 excessive permissions, "
+                f"found {len(found_excessive_permissions)}"
+            )
 
         if all_correct and structure_valid and summary_correct and not errors:
             print("| ✓ All assertions passed")
             return True, ""
-        else:
-            error_msg = "; ".join(errors) if errors else "Security audit verification failed"
-            return False, error_msg
+        error_msg = "; ".join(errors) if errors else "Security audit verification failed"
+        return False, error_msg
 
-    except Exception as e:
+    except (psycopg2.Error, ValueError, KeyError, TypeError) as e:
         print(f"FAIL: Error during verification: {e}")
         return False, f"Error during verification: {e}"
     finally:
@@ -231,7 +272,7 @@ def verify() -> tuple[bool, str]:
 
 def main():
     """Main verification function."""
-    success, error_msg = verify()
+    success, _error_msg = verify()
     sys.exit(0 if success else 1)
 
 if __name__ == "__main__":

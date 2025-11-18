@@ -1,8 +1,11 @@
+"""Verification module for finding commit date in build-your-own-x repository."""
+# pylint: disable=R0911,astroid-error,duplicate-code,import-error
 import sys
 import os
-import requests
-from typing import Dict, Optional, Tuple
 import base64
+from typing import Dict, Optional, Tuple
+import re
+import requests
 from dotenv import load_dotenv
 
 
@@ -15,12 +18,11 @@ def _get_github_api(
         response = requests.get(url, headers=headers)
         if response.status_code == 200:
             return True, response.json()
-        elif response.status_code == 404:
+        if response.status_code == 404:
             return False, None
-        else:
-            print(f"API error for {endpoint}: {response.status_code}", file=sys.stderr)
-            return False, None
-    except Exception as e:
+        print(f"API error for {endpoint}: {response.status_code}", file=sys.stderr)
+        return False, None
+    except (requests.RequestException, IOError, OSError, ValueError) as e:
         print(f"Exception for {endpoint}: {e}", file=sys.stderr)
         return False, None
 
@@ -42,7 +44,7 @@ def _get_file_content(
     try:
         content = base64.b64decode(result.get("content", "")).decode("utf-8")
         return content
-    except Exception as e:
+    except (IOError, OSError, UnicodeDecodeError) as e:
         print(f"Content decode error for {file_path}: {e}", file=sys.stderr)
         return None
 
@@ -82,13 +84,12 @@ def verify() -> tuple[bool, str]:
     # 2. Check the content format
     print("2. Checking content format...")
     content = content.strip()
-    
+
     # The expected date when Daniel Stefanovic added Voxel Engine entries
     # Based on historical records, this should be 2018-07-07
     expected_date = "2018-07-07"
-    
+
     # Check if the content matches the expected date format (YYYY-MM-DD)
-    import re
     date_pattern = r'^\d{4}-\d{2}-\d{2}$'
     if not re.match(date_pattern, content):
         print(f"Error: Invalid date format. Expected YYYY-MM-DD, got: {content}", file=sys.stderr)
@@ -108,21 +109,21 @@ def verify() -> tuple[bool, str]:
     if not readme_content:
         print("Error: README.md not found in repository", file=sys.stderr)
         return False, "README.md not found in repository"
-    
+
     if "Voxel Engine" not in readme_content:
         print("Error: Voxel Engine section not found in README.md", file=sys.stderr)
         return False, "Voxel Engine section not found in README.md"
-    
+
     # Check for specific Voxel Engine entries
     voxel_entries = [
         "Let's Make a Voxel Engine",
         "Java Voxel Engine Tutorial"
     ]
-    
+
     for entry in voxel_entries:
         if entry not in readme_content:
             print(f"Warning: Voxel Engine entry '{entry}' not found in README.md", file=sys.stderr)
-    
+
     print("✓ Voxel Engine section found in README.md")
 
     print("\n✅ All verification checks passed!")
@@ -142,7 +143,7 @@ def verify_task() -> bool:
 
 def main():
     """Main verification function."""
-    success, error_msg = verify()
+    success, _error_msg = verify()
     if success:
         sys.exit(0)
     else:

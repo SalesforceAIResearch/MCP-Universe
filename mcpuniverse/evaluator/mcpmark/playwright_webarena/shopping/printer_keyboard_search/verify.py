@@ -1,3 +1,4 @@
+"""Verification module for printer keyboard search task."""
 import asyncio
 import sys
 import re
@@ -18,8 +19,8 @@ def get_model_response():
         return None
 
     try:
-        with open(messages_path, "r") as f:
-            messages = json.load(f)
+        with open(messages_path, "r", encoding='utf-8') as file_handle:
+            messages = json.load(file_handle)
 
         # Find the last assistant message
         for message in reversed(messages):
@@ -35,8 +36,8 @@ def get_model_response():
 
         print("Warning: No assistant response found in messages", file=sys.stderr)
         return None
-    except Exception as e:
-        print(f"Error reading messages file: {str(e)}", file=sys.stderr)
+    except (OSError, json.JSONDecodeError) as error:
+        print(f"Error reading messages file: {str(error)}", file=sys.stderr)
         return None
 
 
@@ -77,8 +78,8 @@ def load_expected_answer(label_path):
     Returns a dictionary with the expected values.
     """
     try:
-        with open(label_path, "r") as f:
-            lines = f.read().strip().split("\n")
+        with open(label_path, "r", encoding='utf-8') as file_handle:
+            lines = file_handle.read().strip().split("\n")
 
         expected = {}
         for line in lines:
@@ -87,8 +88,8 @@ def load_expected_answer(label_path):
                 expected[key.strip()] = value.strip()
 
         return expected
-    except Exception as e:
-        print(f"Error reading label file: {str(e)}", file=sys.stderr)
+    except OSError as error:
+        print(f"Error reading label file: {str(error)}", file=sys.stderr)
         return None
 
 
@@ -195,22 +196,20 @@ async def verify() -> tuple[bool, str]:
                 return False, error_msg
             print("\n✓ Model answer matches expected answer", file=sys.stderr)
             return True, ""
-        else:
-            print(
-                "Warning: Could not parse answer format from model response",
-                file=sys.stderr,
-            )
-            return False, "Could not parse answer format from model response"
-    else:
-        print("No model response found", file=sys.stderr)
-        return False, "No model response found"
+        print(
+            "Warning: Could not parse answer format from model response",
+            file=sys.stderr,
+        )
+        return False, "Could not parse answer format from model response"
+    print("No model response found", file=sys.stderr)
+    return False, "No model response found"
 
 
 def main():
     """
     Executes the verification process and exits with a status code.
     """
-    success, error_msg = asyncio.run(verify())
+    success, _ = asyncio.run(verify())
     sys.exit(0 if success else 1)
 
 

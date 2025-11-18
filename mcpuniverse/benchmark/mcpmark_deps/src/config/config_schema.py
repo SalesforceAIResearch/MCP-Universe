@@ -11,19 +11,20 @@ import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Callable, Dict, Optional
 
-import yaml
-from dotenv import load_dotenv
+import yaml  # pylint: disable=import-error
+from dotenv import load_dotenv  # pylint: disable=import-error
 
-from src.logger import get_logger
+from src.logger import get_logger  # pylint: disable=import-error
 
 logger = get_logger(__name__)
 
 
 # Lazy import to avoid circular dependencies
 def get_service_definition(service_name: str) -> dict:
-    from src.services import get_service_definition as _get_service_def
+    """Get service definition with lazy import to avoid circular dependencies."""
+    from src.services import get_service_definition as _get_service_def  # pylint: disable=import-error, import-outside-toplevel
 
     return _get_service_def(service_name)
 
@@ -37,7 +38,7 @@ class ConfigValue:
     source: str  # 'env', 'file', 'default'
     required: bool = True
     description: str = ""
-    validator: Optional[callable] = None
+    validator: Optional[Callable[[Any], bool]] = None
 
     def validate(self) -> bool:
         """Validate the configuration value."""
@@ -65,21 +66,20 @@ class ConfigSchema(ABC):
     @abstractmethod
     def _define_schema(self) -> None:
         """Define the configuration schema for this service."""
-        pass
 
     def _load_dotenv(self) -> None:
         """Load environment variables from .mcp_env file."""
         load_dotenv(dotenv_path=".mcp_env", override=False)
 
-    def _add_config(
+    def _add_config(  # pylint: disable=too-many-arguments, too-many-positional-arguments
         self,
         key: str,
         env_var: Optional[str] = None,
         default: Any = None,
         required: bool = True,
         description: str = "",
-        validator: Optional[callable] = None,
-        transform: Optional[callable] = None,
+        validator: Optional[Callable[[Any], bool]] = None,
+        transform: Optional[Callable[[str], Any]] = None,
     ) -> None:
         """Add a configuration value to the schema."""
         # Try to get value from environment first
@@ -110,7 +110,7 @@ class ConfigSchema(ABC):
         """Load configuration values from file if available."""
         config_file = Path(f"config/{self.service_name}.yaml")
         if config_file.exists():
-            with open(config_file) as f:
+            with open(config_file, encoding='utf-8') as f:
                 file_config = yaml.safe_load(f)
 
             for key, value in file_config.items():
@@ -163,22 +163,32 @@ class GenericConfigSchema(ConfigSchema):
             transform = None
             transform_str = config.get("transform")
             if transform_str == "bool":
-                transform = lambda x: x.lower() in ["true", "1", "yes"]
+                def _bool_transform(x: str) -> bool:
+                    return x.lower() in ["true", "1", "yes"]
+                transform = _bool_transform
             elif transform_str == "int":
                 transform = int
             elif transform_str == "path":
-                transform = lambda x: Path(x) if x else None
+                def _path_transform(x: str) -> Optional[Path]:
+                    return Path(x) if x else None
+                transform = _path_transform
             elif transform_str == "list":
-                transform = lambda x: [t.strip() for t in x.split(",")] if x else []
+                def _list_transform(x: str) -> list:
+                    return [t.strip() for t in x.split(",")] if x else []
+                transform = _list_transform
 
             # Handle validator strings
             validator = None
             validator_str = config.get("validator")
             if validator_str == "port":
-                validator = lambda x: 1 <= x <= 65535
+                def _port_validator(x: int) -> bool:
+                    return 1 <= x <= 65535
+                validator = _port_validator
             elif validator_str and validator_str.startswith("in:"):
                 valid_values = validator_str[3:].split(",")
-                validator = lambda x, values=valid_values: x in values
+                def _in_validator(x: str, values=valid_values) -> bool:
+                    return x in values
+                validator = _in_validator
 
             self._add_config(
                 key=key,
@@ -209,15 +219,19 @@ class ConfigRegistry:
     @classmethod
     def validate_all(cls) -> Dict[str, bool]:
         """Validate all registered configurations."""
-        from src.services import get_supported_mcp_services
+        from src.services import get_supported_mcp_services  # pylint: disable=import-error, import-outside-toplevel
 
         results = {}
         for service_name in get_supported_mcp_services():
             try:
                 cls.get_config(service_name)
                 results[service_name] = True
-            except Exception as e:
-                logger.error(f"Configuration validation failed for {service_name}: {e}")
+            except Exception as exc:  # pylint: disable=broad-exception-caught
+                logger.error(
+                    "Configuration validation failed for %s: %s",
+                    service_name,
+                    exc
+                )
                 results[service_name] = False
         return results
 
@@ -228,7 +242,7 @@ class ConfigRegistry:
 
         template = {"service": service_name, "configuration": {}}
 
-        for key, config_value in config._values.items():
+        for key, config_value in config._values.items():  # pylint: disable=protected-access
             template["configuration"][key] = {
                 "value": config_value.value
                 if config_value.source == "default"
@@ -238,7 +252,7 @@ class ConfigRegistry:
                 "env_var": f"${{{key.upper()}}}",
             }
 
-        with open(output_path, "w") as f:
+        with open(output_path, "w", encoding='utf-8') as f:
             yaml.dump(template, f, default_flow_style=False, sort_keys=False)
 
 

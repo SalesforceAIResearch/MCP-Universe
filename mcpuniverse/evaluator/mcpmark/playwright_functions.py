@@ -11,42 +11,38 @@ Argument conventions (per Evaluator.evaluate):
   - op_args: config.op_args (args[1])
   - context: keyword-only in kwargs
 """
+# pylint: disable=line-too-long,import-outside-toplevel,duplicate-code
 
 from __future__ import annotations
 
 from typing import Any, Tuple
-import os
-import json
-import re
-import csv
-from io import StringIO
 
-from mcpuniverse.evaluator.functions import compare_func, FunctionResult
+from mcpuniverse.evaluator.functions import compare_func
 
 
 def ensure_messages_json_exists(x: Any) -> None:
     """
     Ensure messages.json file exists for verification scripts.
-    
+
     Many mcpmark verification scripts expect to read messages.json to get
-    the agent's conversation history. In mcpuniverse, this file is not 
+    the agent's conversation history. In mcpuniverse, this file is not
     automatically created, so we create it here with the agent output.
-    
+
     Args:
         x: Agent output (string or dict)
     """
     import json
     import os
     from pathlib import Path
-    
+
     messages_path = os.getenv("MCP_MESSAGES")
     if not messages_path:
         return
-    
+
     messages_file = Path(messages_path)
     if messages_file.exists():
         return  # File already exists, don't overwrite
-    
+
     # Create a minimal messages.json with the agent output
     try:
         messages_file.parent.mkdir(parents=True, exist_ok=True)
@@ -60,7 +56,7 @@ def ensure_messages_json_exists(x: Any) -> None:
         ]
         with open(messages_file, 'w', encoding='utf-8') as f:
             json.dump(messages, f, indent=2)
-    except Exception as e:
+    except (OSError, IOError, TypeError, ValueError) as e:
         # Log but don't fail - verification might still work
         import sys
         print(f"Warning: Failed to create messages.json: {e}", file=sys.stderr)
@@ -71,7 +67,7 @@ def ensure_messages_json_exists(x: Any) -> None:
 ##################################################################################
 
 @compare_func(name="mcpmark.playwright.verify_extraction_table")
-async def verify_extraction_table(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_extraction_table(x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the extraction table task.
 
@@ -88,7 +84,7 @@ async def verify_extraction_table(x: dict, *args, **kwargs) -> Tuple[bool, str]:
 
     # Ensure messages.json exists for verification script
     ensure_messages_json_exists(x)
-    
+
     # Call the verify function
     passed, error_msg = verify()
     return passed, error_msg
@@ -99,7 +95,7 @@ async def verify_extraction_table(x: dict, *args, **kwargs) -> Tuple[bool, str]:
 ##################################################################################
 
 @compare_func(name="mcpmark.playwright.verify_cloudflare_turnstile_challenge")
-async def verify_cloudflare_turnstile_challenge(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_cloudflare_turnstile_challenge(x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the cloudflare turnstile challenge task.
 
@@ -111,10 +107,10 @@ async def verify_cloudflare_turnstile_challenge(x: dict, *args, **kwargs) -> Tup
     - Model successfully completed the Cloudflare Turnstile challenge
     """
     from mcpuniverse.evaluator.mcpmark.playwright.eval_web.cloudflare_turnstile_challenge.verify import verify
-    
+
     # Ensure messages.json exists for verification script
     ensure_messages_json_exists(x)
-    
+
     # Call the verify function
     passed, error_msg = verify()
     return passed, error_msg
@@ -125,7 +121,7 @@ async def verify_cloudflare_turnstile_challenge(x: dict, *args, **kwargs) -> Tup
 ##################################################################################
 
 @compare_func(name="mcpmark.playwright.verify_birth_of_arvinxu")
-async def verify_birth_of_arvinxu(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_birth_of_arvinxu(x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the birth of arvinxu web search task.
 
@@ -140,7 +136,7 @@ async def verify_birth_of_arvinxu(x: dict, *args, **kwargs) -> Tuple[bool, str]:
 
     # Ensure messages.json exists for verification script
     ensure_messages_json_exists(x)
-    
+
     # Call the verify function
     passed, error_msg = verify_task()
     return passed, error_msg
@@ -151,7 +147,7 @@ async def verify_birth_of_arvinxu(x: dict, *args, **kwargs) -> Tuple[bool, str]:
 ##################################################################################
 
 @compare_func(name="mcpmark.playwright.verify_r1_arxiv")
-async def verify_r1_arxiv(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_r1_arxiv(x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the r1 arxiv web search task.
 
@@ -175,7 +171,7 @@ async def verify_r1_arxiv(x: dict, *args, **kwargs) -> Tuple[bool, str]:
 
     # Ensure messages.json exists for verification script
     ensure_messages_json_exists(x)
-    
+
     # Call the verify function
     passed, error_msg = verify_task(work_dir)
     return passed, error_msg
@@ -186,7 +182,7 @@ async def verify_r1_arxiv(x: dict, *args, **kwargs) -> Tuple[bool, str]:
 ##################################################################################
 
 @compare_func(name="mcpmark.playwright.verify_ai_data_analyst")
-async def verify_ai_data_analyst(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_ai_data_analyst(x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the AI data analyst reddit task.
 
@@ -202,7 +198,7 @@ async def verify_ai_data_analyst(x: dict, *args, **kwargs) -> Tuple[bool, str]:
 
     # Ensure messages.json exists for verification script
     ensure_messages_json_exists(x)
-    
+
     # Call the verify function
     passed, error_msg = await verify()
     return passed, error_msg
@@ -213,7 +209,7 @@ async def verify_ai_data_analyst(x: dict, *args, **kwargs) -> Tuple[bool, str]:
 ##################################################################################
 
 @compare_func(name="mcpmark.playwright.verify_budget_europe_travel")
-async def verify_budget_europe_travel(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_budget_europe_travel(x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the budget Europe travel reddit task.
 
@@ -231,7 +227,7 @@ async def verify_budget_europe_travel(x: dict, *args, **kwargs) -> Tuple[bool, s
 
     # Ensure messages.json exists for verification script
     ensure_messages_json_exists(x)
-    
+
     # Call the verify function
     passed, error_msg = await verify()
     return passed, error_msg
@@ -242,7 +238,7 @@ async def verify_budget_europe_travel(x: dict, *args, **kwargs) -> Tuple[bool, s
 ##################################################################################
 
 @compare_func(name="mcpmark.playwright.verify_buyitforlife_research")
-async def verify_buyitforlife_research(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_buyitforlife_research(x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the buyitforlife research reddit task.
 
@@ -259,7 +255,7 @@ async def verify_buyitforlife_research(x: dict, *args, **kwargs) -> Tuple[bool, 
 
     # Ensure messages.json exists for verification script
     ensure_messages_json_exists(x)
-    
+
     # Call the verify function
     passed, error_msg = await verify()
     return passed, error_msg
@@ -270,7 +266,7 @@ async def verify_buyitforlife_research(x: dict, *args, **kwargs) -> Tuple[bool, 
 ##################################################################################
 
 @compare_func(name="mcpmark.playwright.verify_llm_research_summary")
-async def verify_llm_research_summary(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_llm_research_summary(x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the LLM research summary reddit task.
 
@@ -287,7 +283,7 @@ async def verify_llm_research_summary(x: dict, *args, **kwargs) -> Tuple[bool, s
 
     # Ensure messages.json exists for verification script
     ensure_messages_json_exists(x)
-    
+
     # Call the verify function
     passed, error_msg = await verify()
     return passed, error_msg
@@ -298,7 +294,7 @@ async def verify_llm_research_summary(x: dict, *args, **kwargs) -> Tuple[bool, s
 ##################################################################################
 
 @compare_func(name="mcpmark.playwright.verify_movie_reviewer_analysis")
-async def verify_movie_reviewer_analysis(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_movie_reviewer_analysis(x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the movie reviewer analysis reddit task.
 
@@ -315,7 +311,7 @@ async def verify_movie_reviewer_analysis(x: dict, *args, **kwargs) -> Tuple[bool
 
     # Ensure messages.json exists for verification script
     ensure_messages_json_exists(x)
-    
+
     # Call the verify function
     passed, error_msg = await verify()
     return passed, error_msg
@@ -326,7 +322,7 @@ async def verify_movie_reviewer_analysis(x: dict, *args, **kwargs) -> Tuple[bool
 ##################################################################################
 
 @compare_func(name="mcpmark.playwright.verify_nba_statistics_analysis")
-async def verify_nba_statistics_analysis(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_nba_statistics_analysis(x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the NBA statistics analysis reddit task.
 
@@ -343,7 +339,7 @@ async def verify_nba_statistics_analysis(x: dict, *args, **kwargs) -> Tuple[bool
 
     # Ensure messages.json exists for verification script
     ensure_messages_json_exists(x)
-    
+
     # Call the verify function
     passed, error_msg = await verify()
     return passed, error_msg
@@ -354,7 +350,7 @@ async def verify_nba_statistics_analysis(x: dict, *args, **kwargs) -> Tuple[bool
 ##################################################################################
 
 @compare_func(name="mcpmark.playwright.verify_routine_tracker_forum")
-async def verify_routine_tracker_forum(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_routine_tracker_forum(x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the routine tracker forum reddit task.
 
@@ -371,7 +367,7 @@ async def verify_routine_tracker_forum(x: dict, *args, **kwargs) -> Tuple[bool, 
 
     # Ensure messages.json exists for verification script
     ensure_messages_json_exists(x)
-    
+
     # Call the verify function
     passed, error_msg = await verify()
     return passed, error_msg
@@ -382,7 +378,7 @@ async def verify_routine_tracker_forum(x: dict, *args, **kwargs) -> Tuple[bool, 
 ##################################################################################
 
 @compare_func(name="mcpmark.playwright.verify_advanced_product_analysis")
-async def verify_advanced_product_analysis(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_advanced_product_analysis(x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the advanced product analysis shopping task.
 
@@ -398,7 +394,7 @@ async def verify_advanced_product_analysis(x: dict, *args, **kwargs) -> Tuple[bo
 
     # Ensure messages.json exists for verification script
     ensure_messages_json_exists(x)
-    
+
     # Call the verify function
     passed, error_msg = await verify()
     return passed, error_msg
@@ -409,7 +405,7 @@ async def verify_advanced_product_analysis(x: dict, *args, **kwargs) -> Tuple[bo
 ##################################################################################
 
 @compare_func(name="mcpmark.playwright.verify_gaming_accessories_analysis")
-async def verify_gaming_accessories_analysis(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_gaming_accessories_analysis(x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the gaming accessories analysis shopping task.
 
@@ -425,7 +421,7 @@ async def verify_gaming_accessories_analysis(x: dict, *args, **kwargs) -> Tuple[
 
     # Ensure messages.json exists for verification script
     ensure_messages_json_exists(x)
-    
+
     # Call the verify function
     passed, error_msg = await verify()
     return passed, error_msg
@@ -436,7 +432,7 @@ async def verify_gaming_accessories_analysis(x: dict, *args, **kwargs) -> Tuple[
 ##################################################################################
 
 @compare_func(name="mcpmark.playwright.verify_health_routine_optimization")
-async def verify_health_routine_optimization(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_health_routine_optimization(x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the health routine optimization shopping task.
 
@@ -452,7 +448,7 @@ async def verify_health_routine_optimization(x: dict, *args, **kwargs) -> Tuple[
 
     # Ensure messages.json exists for verification script
     ensure_messages_json_exists(x)
-    
+
     # Call the verify function
     passed, error_msg = await verify()
     return passed, error_msg
@@ -463,7 +459,7 @@ async def verify_health_routine_optimization(x: dict, *args, **kwargs) -> Tuple[
 ##################################################################################
 
 @compare_func(name="mcpmark.playwright.verify_holiday_baking_competition")
-async def verify_holiday_baking_competition(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_holiday_baking_competition(x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the holiday baking competition shopping task.
 
@@ -479,7 +475,7 @@ async def verify_holiday_baking_competition(x: dict, *args, **kwargs) -> Tuple[b
 
     # Ensure messages.json exists for verification script
     ensure_messages_json_exists(x)
-    
+
     # Call the verify function
     passed, error_msg = await verify()
     return passed, error_msg
@@ -490,7 +486,7 @@ async def verify_holiday_baking_competition(x: dict, *args, **kwargs) -> Tuple[b
 ##################################################################################
 
 @compare_func(name="mcpmark.playwright.verify_multi_category_budget_analysis")
-async def verify_multi_category_budget_analysis(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_multi_category_budget_analysis(x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the multi category budget analysis shopping task.
 
@@ -506,7 +502,7 @@ async def verify_multi_category_budget_analysis(x: dict, *args, **kwargs) -> Tup
 
     # Ensure messages.json exists for verification script
     ensure_messages_json_exists(x)
-    
+
     # Call the verify function
     passed, error_msg = await verify()
     return passed, error_msg
@@ -517,7 +513,7 @@ async def verify_multi_category_budget_analysis(x: dict, *args, **kwargs) -> Tup
 ##################################################################################
 
 @compare_func(name="mcpmark.playwright.verify_printer_keyboard_search")
-async def verify_printer_keyboard_search(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_printer_keyboard_search(x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the printer keyboard search shopping task.
 
@@ -533,7 +529,7 @@ async def verify_printer_keyboard_search(x: dict, *args, **kwargs) -> Tuple[bool
 
     # Ensure messages.json exists for verification script
     ensure_messages_json_exists(x)
-    
+
     # Call the verify function
     passed, error_msg = await verify()
     return passed, error_msg
@@ -544,7 +540,7 @@ async def verify_printer_keyboard_search(x: dict, *args, **kwargs) -> Tuple[bool
 ##################################################################################
 
 @compare_func(name="mcpmark.playwright.verify_running_shoes_purchase")
-async def verify_running_shoes_purchase(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_running_shoes_purchase(x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the running shoes purchase shopping task.
 
@@ -560,7 +556,7 @@ async def verify_running_shoes_purchase(x: dict, *args, **kwargs) -> Tuple[bool,
 
     # Ensure messages.json exists for verification script
     ensure_messages_json_exists(x)
-    
+
     # Call the verify function
     passed, error_msg = await verify()
     return passed, error_msg
@@ -571,7 +567,7 @@ async def verify_running_shoes_purchase(x: dict, *args, **kwargs) -> Tuple[bool,
 ##################################################################################
 
 @compare_func(name="mcpmark.playwright.verify_customer_segmentation_setup")
-async def verify_customer_segmentation_setup(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_customer_segmentation_setup(x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the customer segmentation setup shopping admin task.
 
@@ -589,7 +585,7 @@ async def verify_customer_segmentation_setup(x: dict, *args, **kwargs) -> Tuple[
 
     # Ensure messages.json exists for verification script
     ensure_messages_json_exists(x)
-    
+
     # Call the verify function
     passed, error_msg = await verify()
     return passed, error_msg
@@ -600,7 +596,7 @@ async def verify_customer_segmentation_setup(x: dict, *args, **kwargs) -> Tuple[
 ##################################################################################
 
 @compare_func(name="mcpmark.playwright.verify_fitness_promotion_strategy")
-async def verify_fitness_promotion_strategy(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_fitness_promotion_strategy(x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the fitness promotion strategy shopping admin task.
 
@@ -617,7 +613,7 @@ async def verify_fitness_promotion_strategy(x: dict, *args, **kwargs) -> Tuple[b
 
     # Ensure messages.json exists for verification script
     ensure_messages_json_exists(x)
-    
+
     # Call the verify function
     passed, error_msg = await verify()
     return passed, error_msg
@@ -628,7 +624,7 @@ async def verify_fitness_promotion_strategy(x: dict, *args, **kwargs) -> Tuple[b
 ##################################################################################
 
 @compare_func(name="mcpmark.playwright.verify_marketing_customer_analysis")
-async def verify_marketing_customer_analysis(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_marketing_customer_analysis(x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the marketing customer analysis shopping admin task.
 
@@ -645,7 +641,7 @@ async def verify_marketing_customer_analysis(x: dict, *args, **kwargs) -> Tuple[
 
     # Ensure messages.json exists for verification script
     ensure_messages_json_exists(x)
-    
+
     # Call the verify function
     passed, error_msg = await verify()
     return passed, error_msg
@@ -656,7 +652,7 @@ async def verify_marketing_customer_analysis(x: dict, *args, **kwargs) -> Tuple[
 ##################################################################################
 
 @compare_func(name="mcpmark.playwright.verify_ny_expansion_analysis")
-async def verify_ny_expansion_analysis(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_ny_expansion_analysis(x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the NY expansion analysis shopping admin task.
 
@@ -673,7 +669,7 @@ async def verify_ny_expansion_analysis(x: dict, *args, **kwargs) -> Tuple[bool, 
 
     # Ensure messages.json exists for verification script
     ensure_messages_json_exists(x)
-    
+
     # Call the verify function
     passed, error_msg = await verify()
     return passed, error_msg
@@ -684,7 +680,7 @@ async def verify_ny_expansion_analysis(x: dict, *args, **kwargs) -> Tuple[bool, 
 ##################################################################################
 
 @compare_func(name="mcpmark.playwright.verify_products_sales_analysis")
-async def verify_products_sales_analysis(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_products_sales_analysis(x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the products sales analysis shopping admin task.
 
@@ -701,7 +697,7 @@ async def verify_products_sales_analysis(x: dict, *args, **kwargs) -> Tuple[bool
 
     # Ensure messages.json exists for verification script
     ensure_messages_json_exists(x)
-    
+
     # Call the verify function
     passed, error_msg = await verify()
     return passed, error_msg
@@ -712,7 +708,7 @@ async def verify_products_sales_analysis(x: dict, *args, **kwargs) -> Tuple[bool
 ##################################################################################
 
 @compare_func(name="mcpmark.playwright.verify_sales_inventory_analysis")
-async def verify_sales_inventory_analysis(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_sales_inventory_analysis(x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the sales inventory analysis shopping admin task.
 
@@ -729,7 +725,7 @@ async def verify_sales_inventory_analysis(x: dict, *args, **kwargs) -> Tuple[boo
 
     # Ensure messages.json exists for verification script
     ensure_messages_json_exists(x)
-    
+
     # Call the verify function
     passed, error_msg = await verify()
     return passed, error_msg
@@ -740,7 +736,7 @@ async def verify_sales_inventory_analysis(x: dict, *args, **kwargs) -> Tuple[boo
 ##################################################################################
 
 @compare_func(name="mcpmark.playwright.verify_search_filtering_operations")
-async def verify_search_filtering_operations(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_search_filtering_operations(x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the search filtering operations shopping admin task.
 
@@ -757,7 +753,7 @@ async def verify_search_filtering_operations(x: dict, *args, **kwargs) -> Tuple[
 
     # Ensure messages.json exists for verification script
     ensure_messages_json_exists(x)
-    
+
     # Call the verify function
     passed, error_msg = await verify()
     return passed, error_msg

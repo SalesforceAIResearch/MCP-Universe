@@ -5,10 +5,11 @@ Playwright State Manager for MCPMark
 This module manages browser contexts and test environments for Playwright-based
 web automation tasks. Handles browser isolation, test page setup, and cleanup.
 """
-
+# pylint: disable=import-error
+import os
 import time
 from pathlib import Path
-from typing import Optional, Dict, Any, List
+from typing import Any, Dict, List, Optional
 
 from playwright.sync_api import (
     BrowserContext,
@@ -23,7 +24,7 @@ from src.logger import get_logger
 logger = get_logger(__name__)
 
 
-class PlaywrightStateManager(BaseStateManager):
+class PlaywrightStateManager(BaseStateManager):  # pylint: disable=too-many-instance-attributes
     """
     Manages browser state and test environments for Playwright tasks.
 
@@ -31,10 +32,10 @@ class PlaywrightStateManager(BaseStateManager):
     for web automation evaluation.
     """
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments, too-many-positional-arguments
         self,
         browser: str = "chromium",
-        headless: bool = True,
+        headless: bool = True,  # pylint: disable=unused-argument
         state_path: Optional[Path] = None,
         network_origins: str = "*",
         user_profile: str = "isolated",
@@ -129,8 +130,8 @@ class PlaywrightStateManager(BaseStateManager):
                 },
             )
 
-        except Exception as e:
-            logger.error(f"Failed to create stub initial state for {task.name}: {e}")
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            logger.error("Failed to create stub initial state for %s: %s", task.name, exc)
             return None
 
     def _store_initial_state_info(
@@ -152,8 +153,8 @@ class PlaywrightStateManager(BaseStateManager):
                 for page in self._current_task_pages:
                     try:
                         page.close()
-                    except Exception as e:
-                        logger.warning(f"Failed to close page: {e}")
+                    except Exception as exc:  # pylint: disable=broad-exception-caught
+                        logger.warning("Failed to close page: %s", exc)
                         success = False
                 self._current_task_pages.clear()
 
@@ -162,16 +163,16 @@ class PlaywrightStateManager(BaseStateManager):
                 try:
                     self._current_context.close()
                     logger.info("Closed browser context")
-                except Exception as e:
-                    logger.error(f"Failed to close browser context: {e}")
+                except Exception as exc:  # pylint: disable=broad-exception-caught
+                    logger.error("Failed to close browser context: %s", exc)
                     success = False
                 finally:
                     self._current_context = None
 
             return success
 
-        except Exception as e:
-            logger.error(f"Error during browser cleanup for {task.name}: {e}")
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            logger.error("Error during browser cleanup for %s: %s", task.name, exc)
             return False
 
     def _cleanup_single_resource(self, resource: Dict[str, Any]) -> bool:
@@ -182,11 +183,11 @@ class PlaywrightStateManager(BaseStateManager):
                 logger.debug(f"Browser context {resource['id']} marked for cleanup")
                 return True
 
-            logger.warning(f"Unknown resource type for cleanup: {resource['type']}")
+            logger.warning("Unknown resource type for cleanup: %s", resource['type'])
             return False
 
-        except Exception as e:
-            logger.error(f"Failed to cleanup resource {resource}: {e}")
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            logger.error("Failed to cleanup resource %s: %s", resource, exc)
             return False
 
     def _get_context_options(self, task: BaseTask) -> Dict[str, Any]:
@@ -199,8 +200,8 @@ class PlaywrightStateManager(BaseStateManager):
         if self.state_path.exists():
             try:
                 options["storage_state"] = str(self.state_path)
-            except Exception as e:
-                logger.warning(f"Failed to load browser state: {e}")
+            except Exception as exc:  # pylint: disable=broad-exception-caught
+                logger.warning("Failed to load browser state: %s", exc)
 
         # Task-specific context options
         if task.category_id == "form_interaction":
@@ -241,9 +242,9 @@ class PlaywrightStateManager(BaseStateManager):
                 return test_url
 
         except PlaywrightTimeoutError:
-            logger.error(f"Timeout loading test environment: {test_url}")
-        except Exception as e:
-            logger.error(f"Failed to setup test environment: {e}")
+            logger.error("Timeout loading test environment: %s", test_url)
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            logger.error("Failed to setup test environment: %s", exc)
 
         return None
 
@@ -258,8 +259,8 @@ class PlaywrightStateManager(BaseStateManager):
                 page = self._current_context.new_page()
                 self._current_task_pages.append(page)
                 return page
-            except Exception as e:
-                logger.error(f"Failed to create test page: {e}")
+            except Exception as exc:  # pylint: disable=broad-exception-caught
+                logger.error("Failed to create test page: %s", exc)
         return None
 
     def navigate_to_test_url(self, task: BaseTask) -> Optional[Page]:
@@ -275,8 +276,8 @@ class PlaywrightStateManager(BaseStateManager):
                 page.goto(test_url, wait_until="networkidle", timeout=30000)
                 logger.info(f"Navigated to test URL: {test_url}")
                 return page
-            except Exception as e:
-                logger.error(f"Failed to navigate to {test_url}: {e}")
+            except Exception as exc:  # pylint: disable=broad-exception-caught
+                logger.error("Failed to navigate to %s: %s", test_url, exc)
 
         return None
 
@@ -308,7 +309,7 @@ class PlaywrightStateManager(BaseStateManager):
             for page in self._current_task_pages:
                 try:
                     page.close()
-                except Exception:
+                except Exception:  # pylint: disable=broad-exception-caught
                     pass
             self._current_task_pages.clear()
 
@@ -329,8 +330,8 @@ class PlaywrightStateManager(BaseStateManager):
 
             logger.info("All browser resources closed")
 
-        except Exception as e:
-            logger.error(f"Error closing browser resources: {e}")
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            logger.error("Error closing browser resources: %s", exc)
 
     def set_verification_environment(self, messages_path: str = None) -> None:
         """
@@ -339,7 +340,6 @@ class PlaywrightStateManager(BaseStateManager):
         Args:
             messages_path: Optional path to messages.json file for verification
         """
-        import os
 
         # Set common MCP_MESSAGES if provided
         if messages_path:

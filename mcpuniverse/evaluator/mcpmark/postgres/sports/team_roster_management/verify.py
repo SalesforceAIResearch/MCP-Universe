@@ -1,11 +1,13 @@
 """
 Verification script for PostgreSQL Sports Task 2: Team Roster Management Operations
 """
+# pylint: disable=too-many-return-statements,duplicate-code
 
 import os
 import sys
-import psycopg2
 from decimal import Decimal
+
+import psycopg2
 
 def rows_match(actual_row, expected_row):
     """
@@ -15,7 +17,7 @@ def rows_match(actual_row, expected_row):
     """
     if len(actual_row) != len(expected_row):
         return False
-    
+
     for actual, expected in zip(actual_row, expected_row):
         if isinstance(actual, Decimal) and isinstance(expected, Decimal):
             if abs(float(actual) - float(expected)) > 0.001:
@@ -25,14 +27,14 @@ def rows_match(actual_row, expected_row):
                 return False
         elif actual != expected:
             return False
-    
+
     return True
 
 def get_connection_params() -> dict:
     """Get database connection parameters."""
     return {
         "host": os.getenv("POSTGRES_HOST", "localhost"),
-        "port": int(os.getenv("POSTGRES_PORT", 5432)),
+        "port": int(os.getenv("POSTGRES_PORT", "5432")),
         "database": os.getenv("POSTGRES_DATABASE", "sports"),
         "user": os.getenv("POSTGRES_USERNAME", "postgres"),
         "password": os.getenv("POSTGRES_PASSWORD", "postgres")
@@ -40,7 +42,7 @@ def get_connection_params() -> dict:
 
 def verify_player_evaluation_table(conn) -> tuple[bool, str]:
     """Verify the final state of player_evaluation table after all operations."""
-    with conn.cursor() as cur:        
+    with conn.cursor() as cur:
         # Get actual results from the created table
         cur.execute("""
             SELECT person_id, batting_avg, home_runs, rbis, games_played, performance_score
@@ -48,20 +50,20 @@ def verify_player_evaluation_table(conn) -> tuple[bool, str]:
             ORDER BY person_id
         """)
         actual_results = cur.fetchall()
-        
+
         # Execute ground truth query that simulates all steps:
         # 1. Initial insert (step 2)
         # 2. Update based on injuries (step 4)
         cur.execute("""
             WITH initial_players AS (
-                SELECT 
+                SELECT
                     s.stat_holder_id AS person_id,
                     SUM(bos.hits)      AS total_hits,
                     SUM(bos.at_bats)   AS total_at_bats,
-                    CASE 
-                        WHEN SUM(bos.at_bats) > 0 
+                    CASE
+                        WHEN SUM(bos.at_bats) > 0
                         THEN 1.0 * SUM(bos.hits) / SUM(bos.at_bats)
-                        ELSE 0 
+                        ELSE 0
                     END                AS batting_avg,
                     SUM(bos.home_runs) AS home_runs,
                     SUM(bos.rbi)       AS rbis
@@ -73,14 +75,14 @@ def verify_player_evaluation_table(conn) -> tuple[bool, str]:
                 GROUP BY s.stat_holder_id
             ),
             game_counts AS (
-                SELECT 
+                SELECT
                     person_id,
                     COUNT(DISTINCT event_id) AS games_played
                 FROM person_event_metadata
                 GROUP BY person_id
             ),
             players_with_games AS (
-                SELECT 
+                SELECT
                     ip.person_id,
                     ip.batting_avg,
                     ip.home_runs,
@@ -94,7 +96,7 @@ def verify_player_evaluation_table(conn) -> tuple[bool, str]:
                 WHERE COALESCE(gc.games_played, 0) >= 10
             ),
             injury_info AS (
-                SELECT 
+                SELECT
                     person_id,
                     COUNT(*) AS injury_count,
                     MAX(CASE WHEN end_date_time IS NULL THEN 1 ELSE 0 END) AS has_active_injury
@@ -102,19 +104,19 @@ def verify_player_evaluation_table(conn) -> tuple[bool, str]:
                 GROUP BY person_id
             ),
             adjusted_scores AS (
-                SELECT 
+                SELECT
                     pwg.person_id,
                     pwg.batting_avg,
                     pwg.home_runs,
                     pwg.rbis,
                     pwg.games_played,
                     GREATEST(
-                        CASE 
-                            WHEN COALESCE(ii.has_active_injury, 0) = 1 AND COALESCE(ii.injury_count, 0) > 2 
+                        CASE
+                            WHEN COALESCE(ii.has_active_injury, 0) = 1 AND COALESCE(ii.injury_count, 0) > 2
                                 THEN pwg.initial_score * 0.8 * 0.9
-                            WHEN COALESCE(ii.has_active_injury, 0) = 1 
+                            WHEN COALESCE(ii.has_active_injury, 0) = 1
                                 THEN pwg.initial_score * 0.8
-                            WHEN COALESCE(ii.injury_count, 0) > 2 
+                            WHEN COALESCE(ii.injury_count, 0) > 2
                                 THEN pwg.initial_score * 0.9
                             ELSE pwg.initial_score
                         END,
@@ -123,7 +125,7 @@ def verify_player_evaluation_table(conn) -> tuple[bool, str]:
                 FROM players_with_games pwg
                 LEFT JOIN injury_info ii ON ii.person_id = pwg.person_id
             )
-            SELECT 
+            SELECT
                 person_id,
                 batting_avg,
                 home_runs,
@@ -136,8 +138,14 @@ def verify_player_evaluation_table(conn) -> tuple[bool, str]:
         expected_results = cur.fetchall()
 
         if len(actual_results) != len(expected_results):
-            print(f"❌ Expected {len(expected_results)} player evaluation records, got {len(actual_results)}")
-            return False, f"Expected {len(expected_results)} player evaluation records, got {len(actual_results)}"
+            print(
+                f"❌ Expected {len(expected_results)} player evaluation "
+                f"records, got {len(actual_results)}"
+            )
+            return False, (
+                f"Expected {len(expected_results)} player evaluation "
+                f"records, got {len(actual_results)}"
+            )
 
         mismatches = 0
         for i, (actual, expected) in enumerate(zip(actual_results, expected_results)):
@@ -163,15 +171,15 @@ def verify_injury_status_table(conn) -> tuple[bool, str]:
             ORDER BY person_id
         """)
         actual_results = cur.fetchall()
-        
+
         # Execute ground truth query - get players from player_evaluation
         cur.execute("""
             WITH player_list AS (
-                SELECT DISTINCT person_id 
+                SELECT DISTINCT person_id
                 FROM player_evaluation
             ),
             injury_counts AS (
-                SELECT 
+                SELECT
                     person_id,
                     COUNT(*) as injury_count,
                     MAX(start_date_time::date) as last_injury_date,
@@ -179,11 +187,11 @@ def verify_injury_status_table(conn) -> tuple[bool, str]:
                 FROM injury_phases
                 GROUP BY person_id
             )
-            SELECT 
+            SELECT
                 pl.person_id,
                 COALESCE(ic.injury_count, 0) as injury_count,
                 ic.last_injury_date,
-                CASE 
+                CASE
                     WHEN COALESCE(ic.has_active_injury, 0) = 1 THEN 'injured'
                     ELSE 'healthy'
                 END as current_status
@@ -194,8 +202,14 @@ def verify_injury_status_table(conn) -> tuple[bool, str]:
         expected_results = cur.fetchall()
 
         if len(actual_results) != len(expected_results):
-            print(f"❌ Expected {len(expected_results)} injury status records, got {len(actual_results)}")
-            return False, f"Expected {len(expected_results)} injury status records, got {len(actual_results)}"
+            print(
+                f"❌ Expected {len(expected_results)} injury status "
+                f"records, got {len(actual_results)}"
+            )
+            return False, (
+                f"Expected {len(expected_results)} injury status "
+                f"records, got {len(actual_results)}"
+            )
 
         mismatches = 0
         for i, (actual, expected) in enumerate(zip(actual_results, expected_results)):
@@ -222,11 +236,11 @@ def verify_summary_table(conn) -> tuple[bool, str]:
             ORDER BY metric_name
         """)
         actual_results = cur.fetchall()
-        
+
         # Execute ground truth query
         cur.execute("""
             WITH player_data AS (
-                SELECT 
+                SELECT
                     COUNT(*) as total_players,
                     AVG(batting_avg) as avg_batting_average,
                     SUM(home_runs) as total_home_runs,
@@ -234,7 +248,7 @@ def verify_summary_table(conn) -> tuple[bool, str]:
                 FROM player_evaluation
             ),
             health_data AS (
-                SELECT 
+                SELECT
                     SUM(CASE WHEN current_status = 'injured' THEN 1 ELSE 0 END) as injured_count,
                     SUM(CASE WHEN current_status = 'healthy' THEN 1 ELSE 0 END) as healthy_count
                 FROM player_injury_status
@@ -272,7 +286,7 @@ def verify_summary_table(conn) -> tuple[bool, str]:
         if mismatches > 0:
             print(f"❌ Total mismatches in summary table: {mismatches}")
             return False, f"Total mismatches in summary table: {mismatches}"
-        
+
         print(f"✅ Team performance summary table is correct ({len(actual_results)} metrics)")
         return True, ""
 
@@ -298,12 +312,12 @@ def verify() -> tuple[bool, str]:
         if not success:
             conn.close()
             return False, error_msg
-        
+
         success, error_msg = verify_injury_status_table(conn)
         if not success:
             conn.close()
             return False, error_msg
-        
+
         success, error_msg = verify_summary_table(conn)
         if not success:
             conn.close()
@@ -317,13 +331,13 @@ def verify() -> tuple[bool, str]:
     except psycopg2.Error as e:
         print(f"❌ Database error: {e}")
         return False, f"Database error: {e}"
-    except Exception as e:
+    except (ValueError, KeyError, TypeError) as e:
         print(f"❌ Verification error: {e}")
         return False, f"Verification error: {e}"
 
 def main():
     """Main verification function."""
-    success, error_msg = verify()
+    success, _error_msg = verify()
     if success:
         sys.exit(0)
     else:

@@ -1,11 +1,13 @@
 """
 Verification script for PostgreSQL Task 1: Employee Performance Analysis
 """
+# pylint: disable=duplicate-code
 
 import os
 import sys
-import psycopg2
 from decimal import Decimal
+
+import psycopg2
 
 def rows_match(actual_row, expected_row):
     """
@@ -15,21 +17,21 @@ def rows_match(actual_row, expected_row):
     """
     if len(actual_row) != len(expected_row):
         return False
-    
+
     for actual, expected in zip(actual_row, expected_row):
         if isinstance(actual, Decimal) and isinstance(expected, Decimal):
             if abs(float(actual) - float(expected)) > 0.1:
                 return False
         elif actual != expected:
             return False
-    
+
     return True
 
 def get_connection_params() -> dict:
     """Get database connection parameters."""
     return {
         "host": os.getenv("POSTGRES_HOST", "localhost"),
-        "port": int(os.getenv("POSTGRES_PORT", 5432)),
+        "port": int(os.getenv("POSTGRES_PORT", "5432")),
         "database": os.getenv("POSTGRES_DATABASE"),
         "user": os.getenv("POSTGRES_USERNAME"),
         "password": os.getenv("POSTGRES_PASSWORD")
@@ -40,13 +42,13 @@ def verify_performance_results(conn) -> tuple[bool, str]:
     with conn.cursor() as cur:
         # Get actual results from the created table
         cur.execute("""
-            SELECT employee_id, performance_category, salary_growth_rate, 
+            SELECT employee_id, performance_category, salary_growth_rate,
                    days_of_service, promotion_count
-            FROM employees.employee_performance_analysis 
+            FROM employees.employee_performance_analysis
             ORDER BY employee_id
         """)
         actual_results = cur.fetchall()
-        
+
         # Execute ground truth query - use first salary record as starting salary
         cur.execute("""
             WITH current_salary AS (
@@ -110,8 +112,14 @@ def verify_performance_results(conn) -> tuple[bool, str]:
         expected_results = cur.fetchall()
 
         if len(actual_results) != len(expected_results):
-            print(f"❌ Expected {len(expected_results)} performance results, got {len(actual_results)}")
-            return False, f"Expected {len(expected_results)} performance results, got {len(actual_results)}"
+            print(
+                f"❌ Expected {len(expected_results)} performance results, "
+                f"got {len(actual_results)}"
+            )
+            return False, (
+                f"Expected {len(expected_results)} performance results, "
+                f"got {len(actual_results)}"
+            )
 
         mismatches = 0
         for i, (actual, expected) in enumerate(zip(actual_results, expected_results)):
@@ -156,7 +164,7 @@ def verify_department_results(conn) -> tuple[bool, str]:
             FROM employees.department_employee de
             WHERE de.to_date = DATE '9999-01-01'
             )
-            SELECT 
+            SELECT
             d.dept_name AS department_name,
             AVG(cs.amount)::DECIMAL AS avg_current_salary,
             COUNT(DISTINCT cd.employee_id) AS employee_count,
@@ -170,8 +178,14 @@ def verify_department_results(conn) -> tuple[bool, str]:
         expected_results = cur.fetchall()
 
         if len(actual_results) != len(expected_results):
-            print(f"❌ Expected {len(expected_results)} department results, got {len(actual_results)}")
-            return False, f"Expected {len(expected_results)} department results, got {len(actual_results)}"
+            print(
+                f"❌ Expected {len(expected_results)} department results, "
+                f"got {len(actual_results)}"
+            )
+            return False, (
+                f"Expected {len(expected_results)} department results, "
+                f"got {len(actual_results)}"
+            )
 
         mismatches = 0
         for i, (actual, expected) in enumerate(zip(actual_results, expected_results)):
@@ -206,7 +220,7 @@ def verify() -> tuple[bool, str]:
         if not success:
             conn.close()
             return False, error_msg
-        
+
         # Verify department results
         success, error_msg = verify_department_results(conn)
         if not success:
@@ -221,13 +235,13 @@ def verify() -> tuple[bool, str]:
     except psycopg2.Error as e:
         print(f"❌ Database error: {e}")
         return False, f"Database error: {e}"
-    except Exception as e:
+    except (ValueError, KeyError, TypeError) as e:
         print(f"❌ Verification error: {e}")
         return False, f"Verification error: {e}"
 
 def main():
     """Main verification function."""
-    success, error_msg = verify()
+    success, _error_msg = verify()
     if success:
         sys.exit(0)
     else:

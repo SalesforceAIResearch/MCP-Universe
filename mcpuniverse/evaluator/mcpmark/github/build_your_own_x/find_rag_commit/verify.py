@@ -1,8 +1,10 @@
+"""Verification module for finding RAG commit in build-your-own-x repository."""
+# pylint: disable=duplicate-code,import-error,astroid-error
 import sys
 import os
-import requests
-from typing import Dict, Optional, Tuple
 import base64
+from typing import Dict, Optional, Tuple
+import requests
 from dotenv import load_dotenv
 
 
@@ -15,12 +17,11 @@ def _get_github_api(
         response = requests.get(url, headers=headers)
         if response.status_code == 200:
             return True, response.json()
-        elif response.status_code == 404:
+        if response.status_code == 404:
             return False, None
-        else:
-            print(f"API error for {endpoint}: {response.status_code}", file=sys.stderr)
-            return False, None
-    except Exception as e:
+        print(f"API error for {endpoint}: {response.status_code}", file=sys.stderr)
+        return False, None
+    except (requests.RequestException, IOError, OSError, ValueError) as e:
         print(f"Exception for {endpoint}: {e}", file=sys.stderr)
         return False, None
 
@@ -42,7 +43,7 @@ def _get_file_content(
     try:
         content = base64.b64decode(result.get("content", "")).decode("utf-8")
         return content
-    except Exception as e:
+    except (IOError, OSError, UnicodeDecodeError) as e:
         print(f"Content decode error for {file_path}: {e}", file=sys.stderr)
         return None
 
@@ -85,9 +86,11 @@ def verify() -> tuple[bool, str]:
     # 2. Check the content matches expected SHA
     print("2. Checking commit SHA...")
     content = content.strip()
-    
+
     if content != expected_sha:
-        print(f"Error: Incorrect commit SHA. Expected {expected_sha}, got: {content}", file=sys.stderr)
+        msg = (f"Error: Incorrect commit SHA. Expected {expected_sha}, "
+               f"got: {content}")
+        print(msg, file=sys.stderr)
         return False, f"Incorrect commit SHA. Expected {expected_sha}, got: {content}"
     print("✓ Commit SHA is correct")
 
@@ -102,8 +105,9 @@ def verify() -> tuple[bool, str]:
     print("\n✅ All verification checks passed!")
     print("Task completed successfully:")
     print(f"  - ANSWER.md created with correct commit SHA: {content}")
-    print(f"  - Commit exists in the repository")
-    print(f"  - Commit message: {commit_data.get('commit', {}).get('message', '')}")
+    print("  - Commit exists in the repository")
+    commit_msg = commit_data.get('commit', {}).get('message', '')
+    print(f"  - Commit message: {commit_msg}")
 
     return True, ""
 
@@ -115,7 +119,7 @@ def verify_task() -> bool:
 
 def main():
     """Main verification function."""
-    success, error_msg = verify()
+    success, _error_msg = verify()
     if success:
         sys.exit(0)
     else:

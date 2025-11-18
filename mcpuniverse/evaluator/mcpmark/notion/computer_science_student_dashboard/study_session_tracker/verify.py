@@ -1,7 +1,13 @@
+"""Verification module for Study Session Tracker task in Notion workspace."""
+
+# pylint: disable=duplicate-code,import-error,astroid-error
+
 import sys
+from typing import Dict, Optional
+
 from notion_client import Client
+
 from mcpuniverse.evaluator.mcpmark.notion.utils import notion_utils
-from typing import Dict
 
 
 def _normalize_string(s: str) -> str:
@@ -9,7 +15,7 @@ def _normalize_string(s: str) -> str:
     return s.replace("\xa0", " ")
 
 
-def verify(notion: Client, main_id: str | None = None) -> tuple[bool, str]:
+def verify(notion: Client, main_id: Optional[str] = None) -> tuple[bool, str]:  # pylint: disable=too-many-branches,too-many-locals,too-many-return-statements,too-many-statements
     """Verify that the new study-session entry for 2025-01-29 was added correctly.
 
     The script checks that:
@@ -22,7 +28,7 @@ def verify(notion: Client, main_id: str | None = None) -> tuple[bool, str]:
     # ---------------------------------------------------------------------
     # Locate the main page -------------------------------------------------
     # ---------------------------------------------------------------------
-    page_id: str | None = None
+    page_id: Optional[str] = None
 
     if main_id:
         found_id, object_type = notion_utils.find_page_or_database_by_id(
@@ -49,12 +55,12 @@ def verify(notion: Client, main_id: str | None = None) -> tuple[bool, str]:
     # ---------------------------------------------------------------------
     # Locate reference blocks ---------------------------------------------
     # ---------------------------------------------------------------------
-    TARGET_DATE = "2025-01-29"
-    PREVIOUS_DATE = "2022-09-02"
+    TARGET_DATE = "2025-01-29"  # pylint: disable=invalid-name
+    PREVIOUS_DATE = "2022-09-02"  # pylint: disable=invalid-name
 
-    index_previous_date: int | None = None
-    index_new_date: int | None = None
-    index_divider_after_previous: int | None = None
+    index_previous_date: Optional[int] = None
+    index_new_date: Optional[int] = None
+    index_divider_after_previous: Optional[int] = None
 
     for idx, block in enumerate(all_blocks):
         # Divider detection (we care only about the first divider that appears after
@@ -107,7 +113,7 @@ def verify(notion: Client, main_id: str | None = None) -> tuple[bool, str]:
         return False, "Could not locate the new 2025-01-29 date mention"
 
     # (2) Verify ordering
-    if not (index_previous_date < index_new_date < index_divider_after_previous):
+    if not index_previous_date < index_new_date < index_divider_after_previous:
         print(
             "Error: The 2025-01-29 section is positioned incorrectly.", file=sys.stderr
         )
@@ -164,7 +170,7 @@ def main() -> None:
     notion = notion_utils.get_notion_client()
     main_id = sys.argv[1] if len(sys.argv) > 1 else None
 
-    success, error_msg = verify(notion, main_id)
+    success, _error_msg = verify(notion, main_id)
     if success:
         sys.exit(0)
     else:

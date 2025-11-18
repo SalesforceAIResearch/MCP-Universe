@@ -1,17 +1,19 @@
 """
 Verification script for PostgreSQL Task 3: Fix Customer Analysis Query
 """
+# pylint: disable=too-many-return-statements,duplicate-code
 
 import os
 import sys
-import psycopg2
 from decimal import Decimal
+
+import psycopg2
 
 def get_connection_params() -> dict:
     """Get database connection parameters."""
     return {
         "host": os.getenv("POSTGRES_HOST", "localhost"),
-        "port": int(os.getenv("POSTGRES_PORT", 5432)),
+        "port": int(os.getenv("POSTGRES_PORT", "5432")),
         "database": os.getenv("POSTGRES_DATABASE"),
         "user": os.getenv("POSTGRES_USERNAME"),
         "password": os.getenv("POSTGRES_PASSWORD")
@@ -21,7 +23,7 @@ def rows_match(actual_row, expected_row):
     """Compare two rows with appropriate tolerance for decimals and floats."""
     if len(actual_row) != len(expected_row):
         return False
-    
+
     for actual, expected in zip(actual_row, expected_row):
         if isinstance(actual, (Decimal, float)) and isinstance(expected, (Decimal, float)):
             # Use higher tolerance for floating point comparisons
@@ -29,7 +31,7 @@ def rows_match(actual_row, expected_row):
                 return False
         elif actual != expected:
             return False
-    
+
     return True
 
 def verify_customer_analysis_fixed_table(conn) -> tuple[bool, str]:
@@ -45,7 +47,7 @@ def verify_customer_analysis_fixed_table(conn) -> tuple[bool, str]:
             ORDER BY total_spent DESC, total_rentals DESC, customer_name ASC
         """)
         actual_results = cur.fetchall()
-        
+
         # Execute ground truth query (the corrected version)
         cur.execute("""
             WITH paid_rentals AS (
@@ -216,22 +218,21 @@ def verify() -> tuple[bool, str]:
             print("   - Query was successfully debugged and fixed")
             print("   - All 587 rows match the expected results")
             return True, ""
-        else:
-            print("\n❌ Task verification: FAIL")
-            print("   - The query still has issues")
-            print("   - Please review the duplicate counting problem")
-            return False, error_msg
+        print("\n❌ Task verification: FAIL")
+        print("   - The query still has issues")
+        print("   - Please review the duplicate counting problem")
+        return False, error_msg
 
     except psycopg2.Error as e:
         print(f"❌ Database error: {e}")
         return False, f"Database error: {e}"
-    except Exception as e:
+    except (ValueError, KeyError, TypeError) as e:
         print(f"❌ Verification error: {e}")
         return False, f"Verification error: {e}"
 
 def main():
     """Main verification function."""
-    success, error_msg = verify()
+    success, _error_msg = verify()
     if success:
         sys.exit(0)
     else:

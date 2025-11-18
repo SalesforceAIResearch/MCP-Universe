@@ -1,3 +1,5 @@
+"""Verification module for marketing customer analysis task."""
+# pylint: disable=astroid-error,R0911,R0915
 import asyncio
 import sys
 import re
@@ -25,8 +27,8 @@ def get_model_response():
         return None
 
     try:
-        with open(messages_path, "r") as f:
-            messages = json.load(f)
+        with open(messages_path, "r", encoding='utf-8') as file_handle:
+            messages = json.load(file_handle)
 
         # Find the last assistant message
         for message in reversed(messages):
@@ -41,8 +43,8 @@ def get_model_response():
 
         print("Warning: No assistant response found in messages", file=sys.stderr)
         return None
-    except Exception as e:
-        print(f"Error reading messages file: {str(e)}", file=sys.stderr)
+    except (OSError, json.JSONDecodeError) as error:
+        print(f"Error reading messages file: {str(error)}", file=sys.stderr)
         return None
 
 
@@ -83,8 +85,8 @@ def load_expected_answer(label_path):
     Returns a dictionary with the expected values.
     """
     try:
-        with open(label_path, "r") as f:
-            lines = f.read().strip().split("\n")
+        with open(label_path, "r", encoding='utf-8') as file_handle:
+            lines = file_handle.read().strip().split("\n")
 
         expected = {}
         for line in lines:
@@ -93,8 +95,8 @@ def load_expected_answer(label_path):
                 expected[key.strip()] = value.strip()
 
         return expected
-    except Exception as e:
-        print(f"Error reading label file: {str(e)}", file=sys.stderr)
+    except OSError as error:
+        print(f"Error reading label file: {str(error)}", file=sys.stderr)
         return None
 
 
@@ -195,10 +197,10 @@ async def verify() -> tuple[bool, str]:
                 print(f"{key}: {value}", file=sys.stderr)
 
             # Compare answers
-            answer_match, error_msg = compare_answers(model_answer, expected_answer)
+            answer_match, _ = compare_answers(model_answer, expected_answer)
             if not answer_match:
                 print("\nModel answer does not match expected answer", file=sys.stderr)
-                return False, error_msg
+                return False, "Model answer does not match expected answer"
             print("\n✓ Model answer matches expected answer", file=sys.stderr)
         else:
             print(
@@ -214,8 +216,8 @@ async def verify() -> tuple[bool, str]:
 
     # Browser verification - only check customer creation (the critical task requirement)
     print("\n=== Starting Browser Verification ===", file=sys.stderr)
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+    async with async_playwright() as playwright:
+        browser = await playwright.chromium.launch(headless=True)
         context = await browser.new_context()
         page = await context.new_page()
 
@@ -261,9 +263,9 @@ async def verify() -> tuple[bool, str]:
                 "group": "General",
                 "website": "Main Website"
             }
-            
+
             customer2_requirements = {
-                "email": "analytics1.report@magento.com", 
+                "email": "analytics1.report@magento.com",
                 "first_name": "Analytics1",
                 "last_name": "Report",
                 "group": "Wholesale",
@@ -276,10 +278,10 @@ async def verify() -> tuple[bool, str]:
                 first_name = customer_requirements["first_name"]
                 last_name = customer_requirements["last_name"]
                 group = customer_requirements["group"]
-                
+
                 # First check if email exists in current page without searching
                 email_found = await page.locator(f"*:has-text('{email}')").count() > 0
-                
+
                 if not email_found:
                     # Try searching for the customer
                     try:
@@ -289,15 +291,15 @@ async def verify() -> tuple[bool, str]:
                         await page.keyboard.press("Enter")
                         await page.wait_for_load_state("networkidle")
                         await page.wait_for_timeout(2000)
-                        
+
                         # Check again after search
                         email_found = await page.locator(f"*:has-text('{email}')").count() > 0
-                    except:
+                    except (PlaywrightTimeoutError, RuntimeError):
                         pass
-                
+
                 if not email_found:
                     return False, f"Email {email} not found"
-                
+
                 # More precise validation: find the row containing this customer's email
                 # Then check if the required fields are in the same row or nearby context
                 try:
@@ -306,20 +308,23 @@ async def verify() -> tuple[bool, str]:
                     if await email_cell.count() == 0:
                         # Fall back to broader search
                         email_cell = page.locator(f"*:has-text('{email}')").first
-                    
+
                     # Get the parent row or container
                     row = email_cell.locator("xpath=ancestor::tr[1]")
                     if await row.count() == 0:
                         # Fall back to getting nearby content
                         row = email_cell.locator("xpath=..")
-                    
+
                     # Get the text content of the row/container
                     row_text = await row.text_content() if await row.count() > 0 else ""
-                    
+
                     # If we can't get a specific row, fall back to broader validation
                     if not row_text or len(row_text.strip()) < 10:
                         # Search in nearby cells or elements
-                        nearby_elements = page.locator(f"*:has-text('{email}')").locator("xpath=../following-sibling::* | xpath=../preceding-sibling::*")
+                        email_locator = page.locator(f"*:has-text('{email}')")
+                        nearby_elements = email_locator.locator(
+                            "xpath=../following-sibling::* | xpath=../preceding-sibling::*"
+                        )
                         nearby_count = await nearby_elements.count()
                         nearby_text = ""
                         for i in range(min(nearby_count, 5)):  # Check up to 5 nearby elements
@@ -327,51 +332,59 @@ async def verify() -> tuple[bool, str]:
                             if element_text:
                                 nearby_text += element_text + " "
                         row_text = row_text + " " + nearby_text
-                    
+
                     # Check if required fields are present in the row/context
                     required_fields = [first_name, last_name, group]
                     found_fields = [email]  # Email is already confirmed
                     missing_fields = []
-                    
+
                     for field in required_fields:
                         if field in row_text:
                             found_fields.append(field)
                         else:
                             missing_fields.append(field)
-                    
+
                     if missing_fields:
-                        return False, f"Customer found but missing fields in row context: {', '.join(missing_fields)}. Row text: {row_text[:100]}..."
-                    
+                        missing_str = ', '.join(missing_fields)
+                        return False, (
+                            f"Customer found but missing fields in row context: "
+                            f"{missing_str}. Row text: {row_text[:100]}..."
+                        )
+
                     return True, f"Customer verified with all required fields: {', '.join(found_fields)}"
-                    
-                except Exception as e:
+
+                except RuntimeError:
                     # Fall back to original simple validation
                     page_content = await page.content()
                     required_fields = [first_name, last_name, group, email]
                     found_fields = []
                     missing_fields = []
-                    
+
                     for field in required_fields:
                         if field in page_content:
                             found_fields.append(field)
                         else:
                             missing_fields.append(field)
-                    
+
                     if missing_fields:
                         return False, f"Customer found but missing fields (fallback): {', '.join(missing_fields)}"
-                    
+
                     return True, f"Customer verified with all required fields (fallback): {', '.join(found_fields)}"
 
             # Check both customers
             customer1_exists, customer1_msg = await check_customer_exists(customer1_requirements)
             customer2_exists, customer2_msg = await check_customer_exists(customer2_requirements)
 
+            customer1_status = 'Found' if customer1_exists else 'Not Found'
             print(
-                f"Customer 1 (marketdata1.analysis@magento.com): {'Found' if customer1_exists else 'Not Found'} - {customer1_msg}",
+                f"Customer 1 (marketdata1.analysis@magento.com): "
+                f"{customer1_status} - {customer1_msg}",
                 file=sys.stderr,
             )
+            customer2_status = 'Found' if customer2_exists else 'Not Found'
             print(
-                f"Customer 2 (analytics1.report@magento.com): {'Found' if customer2_exists else 'Not Found'} - {customer2_msg}",
+                f"Customer 2 (analytics1.report@magento.com): "
+                f"{customer2_status} - {customer2_msg}",
                 file=sys.stderr,
             )
 
@@ -382,12 +395,12 @@ async def verify() -> tuple[bool, str]:
             print("✓ Both required customers found in the system", file=sys.stderr)
             return True, ""
 
-        except PlaywrightTimeoutError as e:
-            print(f"Error: Timeout occurred - {str(e)}", file=sys.stderr)
-            return False, f"Timeout occurred - {str(e)}"
-        except Exception as e:
-            print(f"Error: Unexpected error - {str(e)}", file=sys.stderr)
-            return False, f"Unexpected error - {str(e)}"
+        except PlaywrightTimeoutError as timeout_error:
+            print(f"Error: Timeout occurred - {str(timeout_error)}", file=sys.stderr)
+            return False, f"Timeout occurred - {str(timeout_error)}"
+        except RuntimeError as error:
+            print(f"Error: Unexpected error - {str(error)}", file=sys.stderr)
+            return False, f"Unexpected error - {str(error)}"
         finally:
             await browser.close()
 
@@ -396,7 +409,7 @@ def main():
     """
     Executes the verification process and exits with a status code.
     """
-    success, error_msg = asyncio.run(verify())
+    success, _ = asyncio.run(verify())
     sys.exit(0 if success else 1)
 
 

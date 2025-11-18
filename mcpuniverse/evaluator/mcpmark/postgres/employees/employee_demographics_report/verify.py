@@ -1,11 +1,13 @@
 """
 Verification script for PostgreSQL Task 3: Employee Demographics Report
 """
+# pylint: disable=too-many-return-statements,duplicate-code
 
 import os
 import sys
-import psycopg2
 from decimal import Decimal
+
+import psycopg2
 
 def rows_match(actual_row, expected_row):
     """
@@ -15,21 +17,21 @@ def rows_match(actual_row, expected_row):
     """
     if len(actual_row) != len(expected_row):
         return False
-    
+
     for actual, expected in zip(actual_row, expected_row):
         if isinstance(actual, Decimal) and isinstance(expected, Decimal):
             if abs(float(actual) - float(expected)) > 0.1:
                 return False
         elif actual != expected:
             return False
-    
+
     return True
 
 def get_connection_params() -> dict:
     """Get database connection parameters."""
     return {
         "host": os.getenv("POSTGRES_HOST", "localhost"),
-        "port": int(os.getenv("POSTGRES_PORT", 5432)),
+        "port": int(os.getenv("POSTGRES_PORT", "5432")),
         "database": os.getenv("POSTGRES_DATABASE"),
         "user": os.getenv("POSTGRES_USERNAME"),
         "password": os.getenv("POSTGRES_PASSWORD")
@@ -45,7 +47,7 @@ def verify_gender_statistics_results(conn) -> tuple[bool, str]:
             ORDER BY gender
         """)
         actual_results = cur.fetchall()
-        
+
         # Execute ground truth query
         cur.execute("""
             WITH current_emp AS (
@@ -72,8 +74,14 @@ def verify_gender_statistics_results(conn) -> tuple[bool, str]:
         expected_results = cur.fetchall()
 
         if len(actual_results) != len(expected_results):
-            print(f"❌ Expected {len(expected_results)} gender statistics results, got {len(actual_results)}")
-            return False, f"Expected {len(expected_results)} gender statistics results, got {len(actual_results)}"
+            print(
+                f"❌ Expected {len(expected_results)} gender statistics "
+                f"results, got {len(actual_results)}"
+            )
+            return False, (
+                f"Expected {len(expected_results)} gender statistics "
+                f"results, got {len(actual_results)}"
+            )
 
         mismatches = 0
         for i, (actual, expected) in enumerate(zip(actual_results, expected_results)):
@@ -99,7 +107,7 @@ def verify_age_group_results(conn) -> tuple[bool, str]:
             ORDER BY age_group
         """)
         actual_results = cur.fetchall()
-        
+
         # Execute ground truth query
         cur.execute("""
 WITH current_salary AS (
@@ -143,8 +151,14 @@ ORDER BY 1;
         expected_results = cur.fetchall()
 
         if len(actual_results) != len(expected_results):
-            print(f"❌ Expected {len(expected_results)} age group results, got {len(actual_results)}")
-            return False, f"Expected {len(expected_results)} age group results, got {len(actual_results)}"
+            print(
+                f"❌ Expected {len(expected_results)} age group results, "
+                f"got {len(actual_results)}"
+            )
+            return False, (
+                f"Expected {len(expected_results)} age group results, "
+                f"got {len(actual_results)}"
+            )
 
         mismatches = 0
         for i, (actual, expected) in enumerate(zip(actual_results, expected_results)):
@@ -170,7 +184,7 @@ def verify_birth_month_results(conn) -> tuple[bool, str]:
             ORDER BY birth_month
         """)
         actual_results = cur.fetchall()
-        
+
         # Execute ground truth query
         cur.execute("""
             WITH current_emp AS (
@@ -203,8 +217,14 @@ def verify_birth_month_results(conn) -> tuple[bool, str]:
         expected_results = cur.fetchall()
 
         if len(actual_results) != len(expected_results):
-            print(f"❌ Expected {len(expected_results)} birth month results, got {len(actual_results)}")
-            return False, f"Expected {len(expected_results)} birth month results, got {len(actual_results)}"
+            print(
+                f"❌ Expected {len(expected_results)} birth month results, "
+                f"got {len(actual_results)}"
+            )
+            return False, (
+                f"Expected {len(expected_results)} birth month results, "
+                f"got {len(actual_results)}"
+            )
 
         mismatches = 0
         for i, (actual, expected) in enumerate(zip(actual_results, expected_results)):
@@ -230,7 +250,7 @@ def verify_hiring_year_results(conn) -> tuple[bool, str]:
             ORDER BY hire_year
         """)
         actual_results = cur.fetchall()
-        
+
         # Execute ground truth query
         cur.execute("""
             WITH current_emp AS (
@@ -257,8 +277,14 @@ def verify_hiring_year_results(conn) -> tuple[bool, str]:
         expected_results = cur.fetchall()
 
         if len(actual_results) != len(expected_results):
-            print(f"❌ Expected {len(expected_results)} hiring year results, got {len(actual_results)}")
-            return False, f"Expected {len(expected_results)} hiring year results, got {len(actual_results)}"
+            print(
+                f"❌ Expected {len(expected_results)} hiring year results, "
+                f"got {len(actual_results)}"
+            )
+            return False, (
+                f"Expected {len(expected_results)} hiring year results, "
+                f"got {len(actual_results)}"
+            )
 
         mismatches = 0
         for i, (actual, expected) in enumerate(zip(actual_results, expected_results)):
@@ -294,17 +320,17 @@ def verify() -> tuple[bool, str]:
         if not success:
             conn.close()
             return False, error_msg
-        
+
         success, error_msg = verify_age_group_results(conn)
         if not success:
             conn.close()
             return False, error_msg
-        
+
         success, error_msg = verify_birth_month_results(conn)
         if not success:
             conn.close()
             return False, error_msg
-        
+
         success, error_msg = verify_hiring_year_results(conn)
         if not success:
             conn.close()
@@ -318,13 +344,13 @@ def verify() -> tuple[bool, str]:
     except psycopg2.Error as e:
         print(f"❌ Database error: {e}")
         return False, f"Database error: {e}"
-    except Exception as e:
+    except (ValueError, KeyError, TypeError) as e:
         print(f"❌ Verification error: {e}")
         return False, f"Verification error: {e}"
 
 def main():
     """Main verification function."""
-    success, error_msg = verify()
+    success, _error_msg = verify()
     if success:
         sys.exit(0)
     else:

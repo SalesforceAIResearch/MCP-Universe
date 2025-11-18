@@ -1,9 +1,11 @@
+"""Verification module for multi-branch commit aggregation in harmony repository."""
+# pylint: disable=R0911,astroid-error,duplicate-code,import-error
 import sys
 import os
-import requests
-from typing import Dict, Optional, Tuple
 import base64
 import json
+from typing import Dict, Optional, Tuple
+import requests
 from dotenv import load_dotenv
 
 
@@ -16,12 +18,10 @@ def _get_github_api(
         response = requests.get(url, headers=headers)
         if response.status_code == 200:
             return True, response.json()
-        elif response.status_code == 404:
-            return False, None
-        else:
+        if response.status_code == 404:
             print(f"API error for {endpoint}: {response.status_code}", file=sys.stderr)
             return False, None
-    except Exception as e:
+    except (requests.RequestException, IOError, OSError, ValueError) as e:
         print(f"Exception for {endpoint}: {e}", file=sys.stderr)
         return False, None
 
@@ -43,7 +43,7 @@ def _get_file_content(
     try:
         content = base64.b64decode(result.get("content", "")).decode("utf-8")
         return content
-    except Exception as e:
+    except (IOError, OSError, UnicodeDecodeError) as e:
         print(f"Content decode error for {file_path}: {e}", file=sys.stderr)
         return None
 
@@ -107,7 +107,10 @@ def _check_branch_commits_json(content: str) -> bool:
             {
                 "sha": "82b3afb9eb043343f322c937262cc50405e892c3",
                 "author": "scott-oai",
-                "message": "Merge pull request #26 from jordan-wu-97/jordan/fix-function-call-atomic-bool",
+                "message": (
+                    "Merge pull request #26 from "
+                    "jordan-wu-97/jordan/fix-function-call-atomic-bool"
+                ),
                 "files_changed": 6,
             },
         ],
@@ -117,7 +120,7 @@ def _check_branch_commits_json(content: str) -> bool:
         data = json.loads(content)
 
         # Check if all required branches are present
-        for branch in expected_data.keys():
+        for branch in expected_data:
             if branch not in data:
                 print(
                     f"Missing branch {branch} in BRANCH_COMMITS.json", file=sys.stderr
@@ -148,12 +151,12 @@ def _check_branch_commits_json(content: str) -> bool:
                             f"Mismatch in {field} for commit {i + 1} in branch {branch}",
                             file=sys.stderr,
                         )
-                        print(
-                            f"Expected: {expected_commit.get(field)}, Got: {actual_commit.get(field)}",
-                            file=sys.stderr,
-                        )
+                        expected_val = expected_commit.get(field)
+                        actual_val = actual_commit.get(field)
+                        msg = f"Expected: {expected_val}, Got: {actual_val}"
+                        print(msg, file=sys.stderr)
                         return False
-                
+
                 # For message field, use substring matching to be more flexible
                 expected_message = expected_commit.get("message", "")
                 actual_message = actual_commit.get("message", "")
@@ -172,7 +175,16 @@ def _check_branch_commits_json(content: str) -> bool:
     except json.JSONDecodeError as e:
         print(f"Invalid JSON in BRANCH_COMMITS.json: {e}", file=sys.stderr)
         return False
-    except Exception as e:
+    except (
+        requests.RequestException,
+        IOError,
+        OSError,
+        ValueError,
+        AttributeError,
+        KeyError,
+        TypeError,
+        UnicodeDecodeError,
+    ) as e:
         print(f"Error checking BRANCH_COMMITS.json: {e}", file=sys.stderr)
         return False
 
@@ -216,22 +228,39 @@ def _check_cross_branch_analysis(content: str) -> bool:
 def _check_merge_timeline(content: str) -> bool:
     """Verify MERGE_TIMELINE.txt has correct format and expected merge commits."""
     expected_timeline = [
-        "2025-08-06 | Merge pull request #29 from axion66/improve-readme-and-checks | 3efbf742533a375fc148d75513597e139329578b",
-        "2025-08-06 | Merge pull request #30 from Yuan-ManX/harmony-format | 9d653a4c7382abc42d115014d195d9354e7ad357",
-        "2025-08-06 | Merge pull request #28 from dkqjrm/fix-typo-format-md | 161e5fe2a57c63e9f8353c4c5b8faa3c3854bb5f",
-        "2025-08-05 | Merge pull request #26 from jordan-wu-97/jordan/fix-function-call-atomic-bool | 82b3afb9eb043343f322c937262cc50405e892c3",
-        "2025-08-05 | Merge pull request #18 from openai/dev/scl/better-ci | b255cbeb6274adbea774f26fd9590922ce8874ed",
-        "2025-08-05 | Merge pull request #21 from Tialo/main | 058ef3257c24fb099aac7960c10ce51c8e55d9fe",
-        "2025-08-05 | Merge branch 'main' into dev/scl/better-ci | 6375a15ea1b0a486cbb1468964cf8f5800ff5a5c",
-        "2025-08-05 | Merge pull request #8 from RustedBytes/main | f6179119ca894eda4124c86d408c01fdbf5281f0",
-        "2025-08-05 | Merge branch 'main' into main | eb86106b6980790b94f5702dc510483c66027277",
-        "2025-08-05 | Merge pull request #17 from openai/dev/scl/add-docs-to-cargo | 64bca4cf327ebeafa0bbd0345650d86e2d02142f",
+        ("2025-08-06 | Merge pull request #29 from "
+         "axion66/improve-readme-and-checks | "
+         "3efbf742533a375fc148d75513597e139329578b"),
+        ("2025-08-06 | Merge pull request #30 from "
+         "Yuan-ManX/harmony-format | "
+         "9d653a4c7382abc42d115014d195d9354e7ad357"),
+        ("2025-08-06 | Merge pull request #28 from "
+         "dkqjrm/fix-typo-format-md | "
+         "161e5fe2a57c63e9f8353c4c5b8faa3c3854bb5f"),
+        ("2025-08-05 | Merge pull request #26 from "
+         "jordan-wu-97/jordan/fix-function-call-atomic-bool | "
+         "82b3afb9eb043343f322c937262cc50405e892c3"),
+        ("2025-08-05 | Merge pull request #18 from "
+         "openai/dev/scl/better-ci | "
+         "b255cbeb6274adbea774f26fd9590922ce8874ed"),
+        ("2025-08-05 | Merge pull request #21 from Tialo/main | "
+         "058ef3257c24fb099aac7960c10ce51c8e55d9fe"),
+        ("2025-08-05 | Merge branch 'main' into dev/scl/better-ci | "
+         "6375a15ea1b0a486cbb1468964cf8f5800ff5a5c"),
+        ("2025-08-05 | Merge pull request #8 from RustedBytes/main | "
+         "f6179119ca894eda4124c86d408c01fdbf5281f0"),
+        ("2025-08-05 | Merge branch 'main' into main | "
+         "eb86106b6980790b94f5702dc510483c66027277"),
+        ("2025-08-05 | Merge pull request #17 from "
+         "openai/dev/scl/add-docs-to-cargo | "
+         "64bca4cf327ebeafa0bbd0345650d86e2d02142f"),
     ]
 
     # Verify each expected timeline entry exists in the content
     for i, expected_line in enumerate(expected_timeline):
         if expected_line not in content:
-            print(f"Missing expected timeline entry {i + 1} in MERGE_TIMELINE.txt", file=sys.stderr)
+            msg = f"Missing expected timeline entry {i + 1} in MERGE_TIMELINE.txt"
+            print(msg, file=sys.stderr)
             print(f"Expected: {expected_line}", file=sys.stderr)
             return False
 
@@ -312,7 +341,7 @@ def verify() -> tuple[bool, str]:
 
 def main():
     """Main verification function."""
-    success, error_msg = verify()
+    success, _error_msg = verify()
     if success:
         sys.exit(0)
     else:

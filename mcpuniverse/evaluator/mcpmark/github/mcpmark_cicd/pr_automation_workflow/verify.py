@@ -1,10 +1,13 @@
+"""Verification module for PR automation workflow in mcpmark-cicd repository."""
+# pylint: disable=R0911,astroid-error,duplicate-code,import-error
+import datetime
 import sys
 import os
-import requests
 import time
-from typing import Dict, List, Optional, Tuple
-from dotenv import load_dotenv
 import base64
+from typing import Dict, List, Optional, Tuple
+import requests
+from dotenv import load_dotenv
 
 
 def _get_github_api(
@@ -16,12 +19,12 @@ def _get_github_api(
         response = requests.get(url, headers=headers)
         if response.status_code == 200:
             return True, response.json()
-        elif response.status_code == 404:
+        if response.status_code == 404:
+
             return False, None
-        else:
-            print(f"API error for {endpoint}: {response.status_code}", file=sys.stderr)
-            return False, None
-    except Exception as e:
+        print(f"API error for {endpoint}: {response.status_code}", file=sys.stderr)
+        return False, None
+    except (requests.RequestException, IOError, OSError, ValueError) as e:
         print(f"Exception for {endpoint}: {e}", file=sys.stderr)
         return False, None
 
@@ -35,13 +38,12 @@ def _post_github_api(
         response = requests.post(url, headers=headers, json=data)
         if response.status_code in [200, 201]:
             return True, response.json()
-        else:
-            print(
-                f"API error for {endpoint}: {response.status_code} - {response.text}",
-                file=sys.stderr,
-            )
-            return False, None
-    except Exception as e:
+        print(
+            f"API error for {endpoint}: {response.status_code} - {response.text}",
+            file=sys.stderr,
+        )
+        return False, None
+    except (requests.RequestException, IOError, OSError, ValueError) as e:
         print(f"Exception for {endpoint}: {e}", file=sys.stderr)
         return False, None
 
@@ -55,13 +57,12 @@ def _patch_github_api(
         response = requests.patch(url, headers=headers, json=data)
         if response.status_code == 200:
             return True, response.json()
-        else:
-            print(
-                f"API error for {endpoint}: {response.status_code} - {response.text}",
-                file=sys.stderr,
-            )
-            return False, None
-    except Exception as e:
+        print(
+            f"API error for {endpoint}: {response.status_code} - {response.text}",
+            file=sys.stderr,
+        )
+        return False, None
+    except (requests.RequestException, IOError, OSError, ValueError) as e:
         print(f"Exception for {endpoint}: {e}", file=sys.stderr)
         return False, None
 
@@ -83,7 +84,7 @@ def _get_file_content(
     try:
         content = base64.b64decode(result.get("content", "")).decode("utf-8")
         return content
-    except Exception as e:
+    except (IOError, OSError, UnicodeDecodeError) as e:
         print(f"Content decode error for {file_path}: {e}", file=sys.stderr)
         return None
 
@@ -149,22 +150,21 @@ def _wait_for_workflow_completion(
                     # No workflow runs found
                     no_workflow_check_count += 1
                     if no_workflow_check_count == 1:
-                        print(
-                            "   No workflow runs found yet, waiting 5 seconds and checking once more..."
-                        )
+                        print("   No workflow runs found yet, waiting 5 "
+                              "seconds and checking once more...")
                         time.sleep(5)
                         continue
-                    elif no_workflow_check_count >= 2:
-                        print(
-                            f"⚠️ No workflow runs detected after 2 checks. {workflow_file} may not have been triggered."
-                        )
+                    if no_workflow_check_count >= 2:
+                        msg = (f"⚠️ No workflow runs detected after 2 checks. "
+                               f"{workflow_file} may not have been triggered.")
+                        print(msg)
                         print("   Continuing with verification...")
                         return False
 
             print(f"⏳ Still waiting... ({int(time.time() - start_time)}s elapsed)")
             time.sleep(10)
 
-        except Exception as e:
+        except (requests.RequestException, IOError, OSError, ValueError, KeyError, TypeError) as e:
             print(f"⚠️ Error checking workflow status: {e}")
             time.sleep(10)
 
@@ -356,7 +356,6 @@ def _verify_workflow_runs(
         start_times = [job["started_at"] for job in jobs if job["started_at"]]
         if len(start_times) >= 4:
             # Check if all jobs started within 2 minutes of each other
-            import datetime
 
             start_dt = [
                 datetime.datetime.fromisoformat(t.replace("Z", "+00:00"))
@@ -495,8 +494,6 @@ def _create_test_pr(
     if not success:
         # Branch might already exist, try to delete and recreate
         print(f"   Branch {branch} already exists, trying to delete and recreate...")
-        import requests
-
         # Force delete existing branch
         delete_url = (
             f"https://api.github.com/repos/{owner}/{repo}/git/refs/heads/{branch}"
@@ -506,8 +503,6 @@ def _create_test_pr(
         if delete_response.status_code == 204:
             print(f"   Successfully deleted existing branch {branch}")
             # Wait a moment for deletion to complete
-            import time
-
             time.sleep(2)
 
             # Try creating again
@@ -515,8 +510,7 @@ def _create_test_pr(
             if not success:
                 print(f"   ❌ Failed to create branch {branch} after cleanup")
                 return None
-            else:
-                print(f"   ✅ Successfully created branch {branch} after cleanup")
+            print(f"   ✅ Successfully created branch {branch} after cleanup")
         else:
             print(
                 f"   ❌ Failed to delete existing branch {branch}: {delete_response.status_code}"
@@ -546,17 +540,24 @@ def _create_test_pr(
     # Use PUT method for file creation/update
     url = f"https://api.github.com/repos/{owner}/{repo}/contents/{file_path}"
     try:
-        import requests
-
         response = requests.put(url, headers=headers, json=file_data)
         if response.status_code in [200, 201]:
             print(f"   ✅ Successfully created/updated file {file_path}")
         else:
-            print(
-                f"   ❌ Failed to create/update file {file_path}: {response.status_code} - {response.text}"
-            )
+            msg = (f"   ❌ Failed to create/update file {file_path}: "
+                   f"{response.status_code} - {response.text}")
+            print(msg)
             return None
-    except Exception as e:
+    except (
+        requests.RequestException,
+        IOError,
+        OSError,
+        ValueError,
+        AttributeError,
+        KeyError,
+        TypeError,
+        UnicodeDecodeError,
+    ) as e:
         print(f"   ❌ Exception creating file {file_path}: {e}")
         return None
 
@@ -599,28 +600,92 @@ def _run_unit_tests(
             "title": "Test: Code Quality Failure",
             "branch": "test-code-quality-fail",
             "file_path": "src/lint-fail-test.js",
-            "content": "// This file contains intentional ESLint violations\nvar unused_variable = 'this will trigger unused-vars rule'\nconsole.log('missing semicolon - will trigger semi rule')\nconst   badly_spaced   =   'too many spaces'\nif(true){console.log('missing spaces around braces')}\nfunction unusedFunction() { return 'unused'; }\neeval('alert(\"dangerous eval\")');\nwith (Math) { var x = cos(3 * PI) + sin(LN10) }\nvar a = 1; var a = 2; // redeclared variable",
+            "content": (
+                "// This file contains intentional ESLint violations\n"
+                "var unused_variable = 'this will trigger unused-vars rule'\n"
+                "console.log('missing semicolon - will trigger semi rule')\n"
+                "const   badly_spaced   =   'too many spaces'\n"
+                "if(true){console.log('missing spaces around braces')}\n"
+                "function unusedFunction() { return 'unused'; }\n"
+                "eval('alert(\"dangerous eval\")');\n"
+                "with (Math) { var x = cos(3 * PI) + sin(LN10) }\n"
+                "var a = 1; var a = 2; // redeclared variable"
+            ),
             "expected_failure": "code-quality",
         },
         {
             "title": "Test: Testing Suite Failure",
             "branch": "test-testing-fail",
             "file_path": "tests/fail-test.test.js",
-            "content": "const request = require('supertest');\n\ndescribe('Intentional Test Failures', () => {\n  test('This test should always fail', () => {\n    expect(2 + 2).toBe(5); // Intentionally wrong\n  });\n  \n  test('Another failing test', () => {\n    expect(true).toBe(false); // Intentionally wrong\n  });\n  \n  test('Math failure', () => {\n    expect(Math.max(1, 2, 3)).toBe(1); // Intentionally wrong\n  });\n});",
+            "content": (
+                "const request = require('supertest');\n\n"
+                "describe('Intentional Test Failures', () => {\n"
+                "  test('This test should always fail', () => {\n"
+                "    expect(2 + 2).toBe(5); // Intentionally wrong\n"
+                "  });\n  \n"
+                "  test('Another failing test', () => {\n"
+                "    expect(true).toBe(false); // Intentionally wrong\n"
+                "  });\n  \n"
+                "  test('Math failure', () => {\n"
+                "    expect(Math.max(1, 2, 3)).toBe(1); // Intentionally wrong\n"
+                "  });\n"
+                "});"
+            ),
             "expected_failure": "testing-suite",
         },
         {
             "title": "Test: Security Scan Failure",
             "branch": "test-security-fail",
             "file_path": "src/security-fail-test.js",
-            "content": "// This file contains patterns that should trigger secret detection\nconst hardcodedPassword = 'admin123password';\nconst fakeApiKey = 'sk_test_' + 'fake123key456here789';\nconst awsLikeKey = 'AKIA' + 'FAKEKEY7EXAMPLE';\nconst dbPassword = 'password' + '=' + 'supersecret123';\nconst tokenPattern = 'token' + '=' + 'ghp_1234567890abcdef';\n\n// These patterns should trigger secret detection\nconsole.log('Password:', hardcodedPassword);\nconsole.log('API Key:', fakeApiKey);\nconsole.log('AWS Key:', awsLikeKey);\nconsole.log('DB Password:', dbPassword);\nconsole.log('Token:', tokenPattern);\n\nmodule.exports = {\n  password: hardcodedPassword,\n  apiKey: fakeApiKey\n};",
+            "content": (
+                "// This file contains patterns that should trigger "
+                "secret detection\n"
+                "const hardcodedPassword = 'admin123password';\n"
+                "const fakeApiKey = 'sk_test_' + 'fake123key456here789';\n"
+                "const awsLikeKey = 'AKIA' + 'FAKEKEY7EXAMPLE';\n"
+                "const dbPassword = 'password' + '=' + 'supersecret123';\n"
+                "const tokenPattern = 'token' + '=' + 'ghp_1234567890abcdef';\n\n"
+                "// These patterns should trigger secret detection\n"
+                "console.log('Password:', hardcodedPassword);\n"
+                "console.log('API Key:', fakeApiKey);\n"
+                "console.log('AWS Key:', awsLikeKey);\n"
+                "console.log('DB Password:', dbPassword);\n"
+                "console.log('Token:', tokenPattern);\n\n"
+                "module.exports = {\n"
+                "  password: hardcodedPassword,\n"
+                "  apiKey: fakeApiKey\n"
+                "};"
+            ),
             "expected_failure": "security-scan",
         },
         {
             "title": "Test: Build Validation Failure",
             "branch": "test-build-fail",
             "file_path": "src/build-fail-test.js",
-            "content": "// This file will cause build/startup failures\nconst express = require('express');\nconst nonExistentModule = require('this-module-does-not-exist-anywhere');\nconst anotherMissing = require('@fake/missing-package');\n\n// This will cause runtime errors during startup\nconst app = express();\n\n// Define a route that will cause issues\napp.get('/test', (req, res) => {\n  // Try to use non-existent modules\n  nonExistentModule.doSomething();\n  anotherMissing.initialize();\n  res.send('This should never work');\n});\n\n// Override the listen method to always fail\nconst originalListen = app.listen;\napp.listen = function(port, callback) {\n  console.log('Attempting to start server...');\n  // This will crash during build validation\n  throw new Error('Intentional build failure for testing');\n};\n\nmodule.exports = app;",
+            "content": (
+                "// This file will cause build/startup failures\n"
+                "const express = require('express');\n"
+                "const nonExistentModule = "
+                "require('this-module-does-not-exist-anywhere');\n"
+                "const anotherMissing = require('@fake/missing-package');\n\n"
+                "// This will cause runtime errors during startup\n"
+                "const app = express();\n\n"
+                "// Define a route that will cause issues\n"
+                "app.get('/test', (req, res) => {\n"
+                "  // Try to use non-existent modules\n"
+                "  nonExistentModule.doSomething();\n"
+                "  anotherMissing.initialize();\n"
+                "  res.send('This should never work');\n"
+                "});\n\n"
+                "// Override the listen method to always fail\n"
+                "const originalListen = app.listen;\n"
+                "app.listen = function(port, callback) {\n"
+                "  console.log('Attempting to start server...');\n"
+                "  // This will crash during build validation\n"
+                "  throw new Error('Intentional build failure for testing');\n"
+                "};\n\n"
+                "module.exports = app;"
+            ),
             "expected_failure": "build-validation",
         },
     ]
@@ -683,9 +748,10 @@ def _run_unit_tests(
                 if pr_runs:
                     latest_run = pr_runs[0]
                     if latest_run["conclusion"] != "failure":
-                        errors.append(
-                            f"Test PR #{pr_number} should have failed but got: {latest_run['conclusion']}"
-                        )
+                        conclusion = latest_run['conclusion']
+                        msg = (f"Test PR #{pr_number} should have failed "
+                               f"but got: {conclusion}")
+                        errors.append(msg)
                     else:
                         print(f"   ✅ Test PR #{pr_number} correctly failed")
                 else:
@@ -701,8 +767,6 @@ def _run_unit_tests(
 
             # Delete test branch
             branch_name = test_cases[i]["branch"]
-            import requests
-
             url = f"https://api.github.com/repos/{owner}/{repo}/git/refs/heads/{branch_name}"
             response = requests.delete(url, headers=headers)
             if response.status_code == 204:
@@ -747,8 +811,7 @@ def verify() -> tuple[bool, str]:
         for error in workflow_errors:
             print(f"   - {error}")
         return False, f"Workflow file verification failed: {workflow_errors[0]}"
-    else:
-        print("✅ Workflow File Verification Passed")
+    print("✅ Workflow File Verification Passed")
 
     # 2. Verify main PR was merged
     pr_ok, pr_errors, pr_data = _verify_main_pr_merged(headers, owner, repo)
@@ -757,8 +820,7 @@ def verify() -> tuple[bool, str]:
         for error in pr_errors:
             print(f"   - {error}")
         return False, f"Main PR verification failed: {pr_errors[0]}"
-    else:
-        print("✅ Main PR Verification Passed")
+    print("✅ Main PR Verification Passed")
 
     # 3. Verify workflow runs (only if PR verification passed)
     runs_ok, runs_errors = _verify_workflow_runs(pr_data, headers, owner, repo)
@@ -767,8 +829,7 @@ def verify() -> tuple[bool, str]:
         for error in runs_errors:
             print(f"   - {error}")
         return False, f"Workflow runs verification failed: {runs_errors[0]}"
-    else:
-        print("✅ Workflow Runs Verification Passed")
+    print("✅ Workflow Runs Verification Passed")
 
     # 4. Verify PR comments
     comments_ok, comments_errors = _verify_pr_comments(
@@ -779,8 +840,7 @@ def verify() -> tuple[bool, str]:
         for error in comments_errors:
             print(f"   - {error}")
         return False, f"PR comments verification failed: {comments_errors[0]}"
-    else:
-        print("✅ PR Comments Verification Passed")
+    print("✅ PR Comments Verification Passed")
 
     # 5. Run unit tests with failing PRs
     tests_ok, tests_errors = _run_unit_tests(headers, owner, repo)
@@ -789,8 +849,7 @@ def verify() -> tuple[bool, str]:
         for error in tests_errors:
             print(f"   - {error}")
         return False, f"Unit tests failed: {tests_errors[0]}"
-    else:
-        print("✅ Unit Tests Passed")
+    print("✅ Unit Tests Passed")
 
     print("\n" + "=" * 60)
     print("🎉 All PR Automation Workflow verifications PASSED!")
@@ -806,7 +865,7 @@ def verify() -> tuple[bool, str]:
 
 def main():
     """Main verification function."""
-    success, error_msg = verify()
+    success, _error_msg = verify()
     if success:
         sys.exit(0)
     else:

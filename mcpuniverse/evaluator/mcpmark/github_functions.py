@@ -1,3 +1,10 @@
+"""
+Custom evaluator functions for MCPMark GitHub tasks.
+
+These functions adapt verification logic from mcpmark/tasks/github/*/verify.py
+into the MCP-Universe evaluator framework.
+"""
+# pylint: disable=line-too-long,import-outside-toplevel,duplicate-code
 from __future__ import annotations
 
 from typing import Tuple
@@ -9,12 +16,12 @@ from mcpuniverse.evaluator.functions import compare_func
 ##################################################################################
 
 @compare_func(name="mcpmark_github.verify_commit_date")
-async def verify_commit_date(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_commit_date(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the find commit date task for Voxel Engine entries.
-    
+
     Adapted from: mcpuniverse/evaluator/mcpmark/github/build_your_own_x/find_commit_date/verify.py
-    
+
     Checks:
     - ANSWER.md exists in the repository
     - Content format is correct (YYYY-MM-DD)
@@ -23,7 +30,7 @@ async def verify_commit_date(x: dict, *args, **kwargs) -> Tuple[bool, str]:
     - Voxel Engine entries are present
     """
     from mcpuniverse.evaluator.mcpmark.github.build_your_own_x.find_commit_date.verify import verify
-    
+
     # Call the verify function
     passed, error_msg = verify()
     return passed, error_msg
@@ -34,12 +41,12 @@ async def verify_commit_date(x: dict, *args, **kwargs) -> Tuple[bool, str]:
 ##################################################################################
 
 @compare_func(name="mcpmark_github.verify_rag_commit")
-async def verify_rag_commit(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_rag_commit(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the find RAG commit SHA task.
-    
+
     Adapted from: mcpuniverse/evaluator/mcpmark/github/build_your_own_x/find_rag_commit/verify.py
-    
+
     Checks:
     - ANSWER.md exists in the repository
     - Content matches expected commit SHA (048cd3b3de70e4b429057891576ea394a50cdf48)
@@ -47,7 +54,7 @@ async def verify_rag_commit(x: dict, *args, **kwargs) -> Tuple[bool, str]:
     - Commit message is accessible
     """
     from mcpuniverse.evaluator.mcpmark.github.build_your_own_x.find_rag_commit.verify import verify
-    
+
     # Call the verify function
     passed, error_msg = verify()
     return passed, error_msg
@@ -58,12 +65,12 @@ async def verify_rag_commit(x: dict, *args, **kwargs) -> Tuple[bool, str]:
 ##################################################################################
 
 @compare_func(name="mcpmark_github.verify_automated_changelog")
-async def verify_automated_changelog(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_automated_changelog(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the automated changelog generation task.
-    
+
     Adapted from: mcpuniverse/evaluator.mcpmark.github.claude_code.automated_changelog_generation.verify import verify
-    
+
     Checks:
     - Documentation branch exists
     - CHANGELOG-GENERATED.md with proper sections and bug references
@@ -73,7 +80,7 @@ async def verify_automated_changelog(x: dict, *args, **kwargs) -> Tuple[bool, st
     - Documentation PR created and merged with squash method
     """
     from mcpuniverse.evaluator.mcpmark.github.claude_code.automated_changelog_generation.verify import verify
-    
+
     # Call the verify function
     passed, error_msg = verify()
     return passed, error_msg
@@ -84,12 +91,12 @@ async def verify_automated_changelog(x: dict, *args, **kwargs) -> Tuple[bool, st
 ##################################################################################
 
 @compare_func(name="mcpmark_github.verify_claude_collaboration")
-async def verify_claude_collaboration(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_claude_collaboration(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the Claude collaboration analysis task.
-    
+
     Adapted from: mcpuniverse.evaluator.mcpmark.github.claude_code.claude_collaboration_analysis.verify import verify
-    
+
     Checks:
     - CLAUDE_COLLABORATION_ANALYSIS.md exists in main branch
     - Required sections present (Summary Statistics, Top Collaborators)
@@ -98,7 +105,7 @@ async def verify_claude_collaboration(x: dict, *args, **kwargs) -> Tuple[bool, s
     - Commit message verification
     """
     from mcpuniverse.evaluator.mcpmark.github.claude_code.claude_collaboration_analysis.verify import verify
-    
+
     # Call the verify function
     passed, error_msg = verify()
     return passed, error_msg
@@ -109,12 +116,12 @@ async def verify_claude_collaboration(x: dict, *args, **kwargs) -> Tuple[bool, s
 ##################################################################################
 
 @compare_func(name="mcpmark_github.verify_critical_hotfix_workflow")
-async def verify_critical_hotfix_workflow(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_critical_hotfix_workflow(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the critical issue hotfix workflow task.
-    
+
     Adapted from: mcpuniverse.evaluator.mcpmark.github.claude_code.critical_issue_hotfix_workflow.verify import verify
-    
+
     Checks:
     - Hotfix branch exists (hotfix/memory-optimization-v1.0.72)
     - MEMORY_OPTIMIZATION.md documentation with exact content sections
@@ -125,7 +132,7 @@ async def verify_critical_hotfix_workflow(x: dict, *args, **kwargs) -> Tuple[boo
     - Tracking issue closed
     """
     from mcpuniverse.evaluator.mcpmark.github.claude_code.critical_issue_hotfix_workflow.verify import verify
-    
+
     # Call the verify function
     passed, error_msg = verify()
     return passed, error_msg
@@ -136,12 +143,12 @@ async def verify_critical_hotfix_workflow(x: dict, *args, **kwargs) -> Tuple[boo
 ##################################################################################
 
 @compare_func(name="mcpmark_github.verify_feature_commit_tracking")
-async def verify_feature_commit_tracking(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_feature_commit_tracking(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the feature commit tracking task.
-    
+
     Adapted from: mcpuniverse.evaluator.mcpmark.github.claude_code.feature_commit_tracking.verify import verify
-    
+
     Checks:
     - FEATURE_COMMITS.md exists in main branch
     - Required sections present (Overview, Feature Commit History)
@@ -151,7 +158,7 @@ async def verify_feature_commit_tracking(x: dict, *args, **kwargs) -> Tuple[bool
     - All commit SHAs exist in repository
     """
     from mcpuniverse.evaluator.mcpmark.github.claude_code.feature_commit_tracking.verify import verify
-    
+
     # Call the verify function
     passed, error_msg = verify()
     return passed, error_msg
@@ -162,12 +169,12 @@ async def verify_feature_commit_tracking(x: dict, *args, **kwargs) -> Tuple[bool
 ##################################################################################
 
 @compare_func(name="mcpmark_github.verify_label_color_standardization")
-async def verify_label_color_standardization(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_label_color_standardization(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the label color standardization task.
-    
+
     Adapted from: mcpuniverse.evaluator.mcpmark.github.claude_code.label_color_standardization.verify import verify
-    
+
     Checks:
     - Feature branch exists (feat/label-color-guide)
     - LABEL_COLORS.md documentation with proper table format
@@ -178,7 +185,7 @@ async def verify_label_color_standardization(x: dict, *args, **kwargs) -> Tuple[
     - All expected labels documented in the guide
     """
     from mcpuniverse.evaluator.mcpmark.github.claude_code.label_color_standardization.verify import verify
-    
+
     # Call the verify function
     passed, error_msg = verify()
     return passed, error_msg
@@ -189,12 +196,12 @@ async def verify_label_color_standardization(x: dict, *args, **kwargs) -> Tuple[
 ##################################################################################
 
 @compare_func(name="mcpmark_github.verify_advanced_branch_strategy")
-async def verify_advanced_branch_strategy(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_advanced_branch_strategy(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the advanced branch strategy task.
-    
+
     Adapted from: mcpuniverse/evaluator.mcpmark.github.easyr1.advanced_branch_strategy.verify import verify
-    
+
     Checks:
     - GitFlow branch structure (develop, release/v1.0.0, feature/protocol-serialization-fix)
     - PROTOCOL_FIXES.md file with correct content
@@ -203,7 +210,7 @@ async def verify_advanced_branch_strategy(x: dict, *args, **kwargs) -> Tuple[boo
     - Process documentation issue with required checkboxes and labels
     """
     from mcpuniverse.evaluator.mcpmark.github.easyr1.advanced_branch_strategy.verify import verify
-    
+
     # Call the verify function
     passed, error_msg = verify()
     return passed, error_msg
@@ -214,12 +221,12 @@ async def verify_advanced_branch_strategy(x: dict, *args, **kwargs) -> Tuple[boo
 ##################################################################################
 
 @compare_func(name="mcpmark_github.verify_config_parameter_audit")
-async def verify_config_parameter_audit(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_config_parameter_audit(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the config parameter audit task.
-    
+
     Adapted from: mcpuniverse/evaluator.mcpmark.github.easyr1.config_parameter_audit.verify import verify
-    
+
     Checks:
     - ANALYSIS_RESULTS.json file exists and is valid
     - Commit data accuracy (SHA, author, date)
@@ -227,7 +234,7 @@ async def verify_config_parameter_audit(x: dict, *args, **kwargs) -> Tuple[bool,
     - Issue references contain required keywords (oom, memory, batch, 显存)
     """
     from mcpuniverse.evaluator.mcpmark.github.easyr1.config_parameter_audit.verify import verify
-    
+
     # Call the verify function
     passed, error_msg = verify()
     return passed, error_msg
@@ -238,12 +245,12 @@ async def verify_config_parameter_audit(x: dict, *args, **kwargs) -> Tuple[bool,
 ##################################################################################
 
 @compare_func(name="mcpmark_github.verify_performance_regression_investigation")
-async def verify_performance_regression_investigation(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_performance_regression_investigation(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the performance regression investigation task.
-    
+
     Adapted from: mcpuniverse.evaluator.mcpmark.github.easyr1.performance_regression_investigation.verify import verify
-    
+
     Checks:
     - Main tracking issue with exact title and labels (bug, performance, investigation)
     - 3 investigation branches (investigate-protocol-changes, investigate-batch-processing, investigate-memory-usage)
@@ -252,7 +259,7 @@ async def verify_performance_regression_investigation(x: dict, *args, **kwargs) 
     - Analysis PR with exact title from correct branch
     """
     from mcpuniverse.evaluator.mcpmark.github.easyr1.performance_regression_investigation.verify import verify
-    
+
     # Call the verify function
     passed, error_msg = verify()
     return passed, error_msg
@@ -263,12 +270,12 @@ async def verify_performance_regression_investigation(x: dict, *args, **kwargs) 
 ##################################################################################
 
 @compare_func(name="mcpmark_github.verify_qwen3_issue_management")
-async def verify_qwen3_issue_management(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_qwen3_issue_management(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the Qwen3 issue management task.
-    
+
     Adapted from: mcpuniverse.evaluator.mcpmark.github.easyr1.qwen3_issue_management.verify import verify
-    
+
     Checks:
     - All Qwen3 issues reopened and tagged with 'qwen3-related' label
     - Summary issue created with proper content and structure
@@ -276,7 +283,7 @@ async def verify_qwen3_issue_management(x: dict, *args, **kwargs) -> Tuple[bool,
     - Summary issue tagged with 'qwen3-related' label
     """
     from mcpuniverse.evaluator.mcpmark.github.easyr1.qwen3_issue_management.verify import verify
-    
+
     # Call the verify function
     passed, error_msg = verify()
     return passed, error_msg
@@ -287,12 +294,12 @@ async def verify_qwen3_issue_management(x: dict, *args, **kwargs) -> Tuple[bool,
 ##################################################################################
 
 @compare_func(name="mcpmark_github.verify_fix_conflict")
-async def verify_fix_conflict(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_fix_conflict(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the fix conflict task.
-    
+
     Adapted from: mcpuniverse.evaluator.mcpmark.github.harmony.fix_conflict.verify import verify
-    
+
     Checks:
     - CI infrastructure file exists in main branch
     - Infrastructure PR with required title and body content
@@ -301,7 +308,7 @@ async def verify_fix_conflict(x: dict, *args, **kwargs) -> Tuple[bool, str]:
     - PR #24 has comment linking to infrastructure PR
     """
     from mcpuniverse.evaluator.mcpmark.github.harmony.fix_conflict.verify import verify
-    
+
     # Call the verify function
     passed, error_msg = verify()
     return passed, error_msg
@@ -312,12 +319,12 @@ async def verify_fix_conflict(x: dict, *args, **kwargs) -> Tuple[bool, str]:
 ##################################################################################
 
 @compare_func(name="mcpmark_github.verify_issue_pr_commit_workflow")
-async def verify_issue_pr_commit_workflow(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_issue_pr_commit_workflow(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the issue PR commit workflow task.
-    
+
     Adapted from: mcpuniverse.evaluator.mcpmark.github.harmony.issue_pr_commit_workflow.verify import verify
-    
+
     Checks:
     - Feature branch exists (fix/race-condition-tokenizer-loading)
     - Rust implementation file with required content
@@ -328,7 +335,7 @@ async def verify_issue_pr_commit_workflow(x: dict, *args, **kwargs) -> Tuple[boo
     - Issue is closed
     """
     from mcpuniverse.evaluator.mcpmark.github.harmony.issue_pr_commit_workflow.verify import verify
-    
+
     # Call the verify function
     passed, error_msg = verify()
     return passed, error_msg
@@ -339,12 +346,12 @@ async def verify_issue_pr_commit_workflow(x: dict, *args, **kwargs) -> Tuple[boo
 ##################################################################################
 
 @compare_func(name="mcpmark_github.verify_issue_tagging_pr_closure")
-async def verify_issue_tagging_pr_closure(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_issue_tagging_pr_closure(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the issue tagging PR closure task.
-    
+
     Adapted from: mcpuniverse.evaluator.mcpmark.github.harmony.issue_tagging_pr_closure.verify import verify
-    
+
     Checks:
     - Feature branch exists (feat/esm-migration-attempt)
     - ESM implementation files with required content
@@ -357,7 +364,7 @@ async def verify_issue_tagging_pr_closure(x: dict, *args, **kwargs) -> Tuple[boo
     - Issue is closed with closure comment
     """
     from mcpuniverse.evaluator.mcpmark.github.harmony.issue_tagging_pr_closure.verify import verify
-    
+
     # Call the verify function
     passed, error_msg = verify()
     return passed, error_msg
@@ -368,12 +375,12 @@ async def verify_issue_tagging_pr_closure(x: dict, *args, **kwargs) -> Tuple[boo
 ##################################################################################
 
 @compare_func(name="mcpmark_github.verify_multi_branch_commit_aggregation")
-async def verify_multi_branch_commit_aggregation(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_multi_branch_commit_aggregation(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the multi branch commit aggregation task.
-    
+
     Adapted from: mcpuniverse.evaluator.mcpmark.github.harmony.multi_branch_commit_aggregation.verify import verify
-    
+
     Checks:
     - Analysis branch exists (history-report-2025)
     - BRANCH_COMMITS.json with correct structure and expected data
@@ -381,7 +388,7 @@ async def verify_multi_branch_commit_aggregation(x: dict, *args, **kwargs) -> Tu
     - MERGE_TIMELINE.txt with correct format and expected merge commits
     """
     from mcpuniverse.evaluator.mcpmark.github.harmony.multi_branch_commit_aggregation.verify import verify
-    
+
     # Call the verify function
     passed, error_msg = verify()
     return passed, error_msg
@@ -392,12 +399,12 @@ async def verify_multi_branch_commit_aggregation(x: dict, *args, **kwargs) -> Tu
 ##################################################################################
 
 @compare_func(name="mcpmark_github.verify_release_management_workflow")
-async def verify_release_management_workflow(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_release_management_workflow(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the release management workflow task.
-    
-    Adapted from: mcpuniverse.evaluator.mcpmark.github.harmony.release_management_workflow.verify import verify
-    
+
+    Adapted from: mcpuniverse.evaluator.mcpmark.github.harmony.release_management_workflow.verify
+
     Checks:
     - Release branch exists (release-v1.1.0)
     - MetaSep token fix in encoding.rs
@@ -409,7 +416,7 @@ async def verify_release_management_workflow(x: dict, *args, **kwargs) -> Tuple[
     - Release PR merged using squash and merge method
     """
     from mcpuniverse.evaluator.mcpmark.github.harmony.release_management_workflow.verify import verify
-    
+
     # Call the verify function
     passed, error_msg = verify()
     return passed, error_msg
@@ -420,12 +427,12 @@ async def verify_release_management_workflow(x: dict, *args, **kwargs) -> Tuple[
 ##################################################################################
 
 @compare_func(name="mcpmark_github.verify_deployment_status_workflow")
-async def verify_deployment_status_workflow(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_deployment_status_workflow(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the deployment status workflow task.
-    
+
     Adapted from: mcpuniverse.evaluator.mcpmark.github.mcpmark_cicd.deployment_status_workflow.verify import verify
-    
+
     Checks:
     - Workflow runs with correct 3 sequential jobs: pre-deployment, rollback-preparation, post-deployment
     - Deployment tracking issue created and closed with proper labels
@@ -434,7 +441,7 @@ async def verify_deployment_status_workflow(x: dict, *args, **kwargs) -> Tuple[b
     - All workflow automation comments are present
     """
     from mcpuniverse.evaluator.mcpmark.github.mcpmark_cicd.deployment_status_workflow.verify import verify
-    
+
     # Call the verify function
     passed, error_msg = verify()
     return passed, error_msg
@@ -445,12 +452,12 @@ async def verify_deployment_status_workflow(x: dict, *args, **kwargs) -> Tuple[b
 ##################################################################################
 
 @compare_func(name="mcpmark_github.verify_issue_management_workflow")
-async def verify_issue_management_workflow(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_issue_management_workflow(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the issue management workflow task.
-    
+
     Adapted from: mcpuniverse.evaluator.mcpmark.github.mcpmark_cicd.issue_management_workflow.verify import verify
-    
+
     Checks:
     - Bug issue: labels (including first-time-contributor), milestone, and auto-response verified
     - Epic issue: labels, milestone, 4 sub-issues with checklist, and correct issue references verified
@@ -458,7 +465,7 @@ async def verify_issue_management_workflow(x: dict, *args, **kwargs) -> Tuple[bo
     - Issue templates created for bug reports, feature requests, and maintenance reports
     """
     from mcpuniverse.evaluator.mcpmark.github.mcpmark_cicd.issue_management_workflow.verify import verify
-    
+
     # Call the verify function
     passed, error_msg = verify()
     return passed, error_msg
@@ -469,12 +476,12 @@ async def verify_issue_management_workflow(x: dict, *args, **kwargs) -> Tuple[bo
 ##################################################################################
 
 @compare_func(name="mcpmark_github.verify_linting_ci_workflow")
-async def verify_linting_ci_workflow(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_linting_ci_workflow(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the linting CI workflow task.
-    
+
     Adapted from: mcpuniverse.evaluator.mcpmark.github.mcpmark_cicd.linting_ci_workflow.verify import verify
-    
+
     Checks:
     - ESLint configuration file (.eslintrc.json) with proper rules
     - GitHub Actions workflow file (.github/workflows/lint.yml) with correct triggers
@@ -483,7 +490,7 @@ async def verify_linting_ci_workflow(x: dict, *args, **kwargs) -> Tuple[bool, st
     - Workflow execution: first commit fails, second commit passes after fixing errors
     """
     from mcpuniverse.evaluator.mcpmark.github.mcpmark_cicd.linting_ci_workflow.verify import verify
-    
+
     # Call the verify function
     passed, error_msg = verify()
     return passed, error_msg
@@ -494,12 +501,12 @@ async def verify_linting_ci_workflow(x: dict, *args, **kwargs) -> Tuple[bool, st
 ##################################################################################
 
 @compare_func(name="mcpmark_github.verify_pr_automation_workflow")
-async def verify_pr_automation_workflow(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_pr_automation_workflow(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the PR automation workflow task.
-    
+
     Adapted from: mcpuniverse.evaluator.mcpmark.github.mcpmark_cicd.pr_automation_workflow.verify import verify
-    
+
     Checks:
     - Workflow file exists with correct triggers and 4 parallel jobs
     - Main PR was merged from pr-automation-workflow to main
@@ -508,7 +515,7 @@ async def verify_pr_automation_workflow(x: dict, *args, **kwargs) -> Tuple[bool,
     - Unit tests confirmed workflow correctly fails on problematic code
     """
     from mcpuniverse.evaluator.mcpmark.github.mcpmark_cicd.pr_automation_workflow.verify import verify
-    
+
     # Call the verify function
     passed, error_msg = verify()
     return passed, error_msg
@@ -519,19 +526,19 @@ async def verify_pr_automation_workflow(x: dict, *args, **kwargs) -> Tuple[bool,
 ##################################################################################
 
 @compare_func(name="mcpmark_github.verify_assign_contributor_labels")
-async def verify_assign_contributor_labels(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_assign_contributor_labels(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the assign contributor labels task.
-    
+
     Adapted from: mcpuniverse.evaluator.mcpmark.github.missing_semester.assign_contributor_labels.verify import verify
-    
+
     Checks:
     - Issues #9 and #14 have both 'assigned-jonhoo' and 'assigned-anishathalye' labels
     - Issue #15 and all 4 open PRs have 'assigned-anishathalye' label
     - Labels are assigned based on comments and top contributors from past 100 commits
     """
     from mcpuniverse.evaluator.mcpmark.github.missing_semester.assign_contributor_labels.verify import verify
-    
+
     # Call the verify function
     passed, error_msg = verify()
     return passed, error_msg
@@ -542,19 +549,19 @@ async def verify_assign_contributor_labels(x: dict, *args, **kwargs) -> Tuple[bo
 ##################################################################################
 
 @compare_func(name="mcpmark_github.verify_find_legacy_name")
-async def verify_find_legacy_name(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_find_legacy_name(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the find legacy name task.
-    
+
     Adapted from: mcpuniverse.evaluator.mcpmark.github.missing_semester.find_legacy_name.verify import verify
-    
+
     Checks:
     - ANSWER.md exists in master branch
     - Content contains the legacy name 'Hacker Tools' and domain 'hacker-tools.github.io'
     - Format is correct: [Hacker Tools](https://hacker-tools.github.io)
     """
     from mcpuniverse.evaluator.mcpmark.github.missing_semester.find_legacy_name.verify import verify
-    
+
     # Call the verify function
     passed, error_msg = verify()
     return passed, error_msg
@@ -565,20 +572,19 @@ async def verify_find_legacy_name(x: dict, *args, **kwargs) -> Tuple[bool, str]:
 ##################################################################################
 
 @compare_func(name="mcpmark_github.verify_find_salient_file")
-async def verify_find_salient_file(x: dict, *args, **kwargs) -> Tuple[bool, str]:
+async def verify_find_salient_file(_x: dict, *_args, **_kwargs) -> Tuple[bool, str]:
     """
     Verify the find salient file task.
-    
+
     Adapted from: mcpuniverse.evaluator.mcpmark.github.missing_semester.find_salient_file.verify import verify
-    
+
     Checks:
     - ANSWER.md exists in master branch
     - Content contains the most frequently modified file 'index.md'
     - Excludes GitHub Actions files from the analysis
     """
     from mcpuniverse.evaluator.mcpmark.github.missing_semester.find_salient_file.verify import verify
-    
+
     # Call the verify function
     passed, error_msg = verify()
     return passed, error_msg
-

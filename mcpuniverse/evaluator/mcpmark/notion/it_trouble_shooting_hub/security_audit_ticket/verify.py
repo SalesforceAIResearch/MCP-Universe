@@ -1,7 +1,14 @@
+"""Verification module for Security Audit Ticket task in Notion workspace."""
+
+# pylint: disable=duplicate-code,import-error,astroid-error
+
 import sys
-from notion_client import Client
-from mcpuniverse.evaluator.mcpmark.notion.utils import notion_utils
 import re
+from typing import Optional
+
+from notion_client import Client
+
+from mcpuniverse.evaluator.mcpmark.notion.utils import notion_utils
 
 
 def _get_title_text(page_properties: dict) -> str:
@@ -14,7 +21,7 @@ def _get_title_text(page_properties: dict) -> str:
     return ""
 
 
-def verify(notion: Client, main_id: str | None = None) -> tuple[bool, str]:
+def verify(notion: Client, main_id: Optional[str] = None) -> tuple[bool, str]:  # pylint: disable=too-many-branches,too-many-locals,too-many-return-statements,too-many-statements
     """Verify that the automation created the expected security audit ticket."""
 
     # ----------------------------------------------------------------------------------
@@ -63,11 +70,10 @@ def verify(notion: Client, main_id: str | None = None) -> tuple[bool, str]:
             break
 
     if not target_page:
-        print(
-            f"Failure: Ticket with title '{expected_title}' was not found in 'IT Requests' database.",
-            file=sys.stderr,
-        )
-        return False, f"Ticket with title '{expected_title}' was not found in 'IT Requests' database"
+        msg = (f"Failure: Ticket with title '{expected_title}' was not found "
+               "in 'IT Requests' database.")
+        print(msg, file=sys.stderr)
+        return False, msg
 
     props = target_page.get("properties", {})
 
@@ -114,22 +120,22 @@ def verify(notion: Client, main_id: str | None = None) -> tuple[bool, str]:
     }
 
     if len(bullet_texts) != len(expected_items):
-        print(
-            f"Failure: Expected {len(expected_items)} bullet items, found {len(bullet_texts)}.",
-            file=sys.stderr,
-        )
-        return False, f"Expected {len(expected_items)} bullet items, found {len(bullet_texts)}"
+        expected_count = len(expected_items)
+        found_count = len(bullet_texts)
+        msg = (f"Failure: Expected {expected_count} bullet items, "
+               f"found {found_count}.")
+        print(msg, file=sys.stderr)
+        return False, msg
 
     bullet_pattern = re.compile(r"^\s*(.*?)\s+-\s+(.*?)\s+-\s+(.+?)\s*$")
     matched = set()
     for text in bullet_texts:
         m = bullet_pattern.match(text)
         if not m:
-            print(
-                f"Failure: Bullet item '{text}' does not follow '<Serial> - <Tag> - <Recommendation>' format.",
-                file=sys.stderr,
-            )
-            return False, f"Bullet item '{text}' does not follow '<Serial> - <Tag> - <Recommendation>' format"
+            msg = (f"Failure: Bullet item '{text}' does not follow "
+                   "'<Serial> - <Tag> - <Recommendation>' format.")
+            print(msg, file=sys.stderr)
+            return False, msg
         serial, tag, advice = m.group(1).strip(), m.group(2).strip(), m.group(3).strip()
         if serial not in expected_items:
             print(
@@ -138,11 +144,11 @@ def verify(notion: Client, main_id: str | None = None) -> tuple[bool, str]:
             )
             return False, f"Unexpected Serial '{serial}' found in bullet list"
         if expected_items[serial] != tag:
-            print(
-                f"Failure: Serial '{serial}' expected tag '{expected_items[serial]}', found '{tag}'.",
-                file=sys.stderr,
-            )
-            return False, f"Serial '{serial}' expected tag '{expected_items[serial]}', found '{tag}'"
+            expected_tag = expected_items[serial]
+            msg = (f"Failure: Serial '{serial}' expected tag "
+                   f"'{expected_tag}', found '{tag}'.")
+            print(msg, file=sys.stderr)
+            return False, msg
         if not advice:
             print(
                 f"Failure: Bullet item for Serial '{serial}' is missing a recommendation/advice.",
@@ -167,7 +173,7 @@ def main():
     """Main verification function."""
     notion = notion_utils.get_notion_client()
     main_id = sys.argv[1] if len(sys.argv) > 1 else None
-    success, error_msg = verify(notion, main_id)
+    success, _error_msg = verify(notion, main_id)
     if success:
         sys.exit(0)
     else:

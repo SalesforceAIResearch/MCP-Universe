@@ -1,2 +1,5 @@
-# MCPMark config package
+"""
+MCPMark config package.
 
+This package contains configuration schema and management utilities.
+"""

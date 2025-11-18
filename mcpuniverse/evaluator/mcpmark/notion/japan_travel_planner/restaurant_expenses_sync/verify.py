@@ -1,9 +1,13 @@
+"""Verification module for Restaurant Expenses Sync task in Notion workspace."""
+
+# pylint: disable=duplicate-code,import-error,astroid-error
+
 import sys
 from notion_client import Client
 from mcpuniverse.evaluator.mcpmark.notion.utils import notion_utils
 
 
-def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
+def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:  # pylint: disable=too-many-branches,too-many-locals,too-many-return-statements,too-many-statements
     """
     Verifies that restaurants from Day 1 of Travel Itinerary have corresponding expense entries.
     """
@@ -54,7 +58,7 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
                 ]
             },
         ).get("results", [])
-    except Exception as e:
+    except (ValueError, KeyError, TypeError, AttributeError) as e:
         print(f"Error querying Travel Itinerary database: {e}", file=sys.stderr)
         return False, f"Error querying Travel Itinerary database: {e}"
 
@@ -83,7 +87,7 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
         places_results = notion.databases.query(database_id=places_db_id).get(
             "results", []
         )
-    except Exception as e:
+    except (ValueError, KeyError, TypeError, AttributeError) as e:
         print(f"Error querying Japan Places to Visit database: {e}", file=sys.stderr)
         return False, f"Error querying Japan Places to Visit database: {e}"
 
@@ -107,7 +111,7 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
         expenses_results = notion.databases.query(database_id=expenses_db_id).get(
             "results", []
         )
-    except Exception as e:
+    except (ValueError, KeyError, TypeError, AttributeError) as e:
         print(f"Error querying Expenses database: {e}", file=sys.stderr)
         return False, f"Error querying Expenses database: {e}"
 
@@ -166,19 +170,22 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
                 f"Error: No matching expense entry found for restaurant '{restaurant_name}'.",
                 file=sys.stderr,
             )
-            return False, f"Error: No matching expense entry found for restaurant '{restaurant_name}'."
+            msg = (f"Error: No matching expense entry found for restaurant "
+                   f"'{restaurant_name}'.")
+            return False, msg
 
     if len(verified_restaurants) == len(restaurant_names):
-        print(
-            f"Success: Found matching expense entries for all {len(restaurant_names)} Day 1 restaurants."
-        )
+        total_count = len(restaurant_names)
+        msg = (f"Success: Found matching expense entries for all "
+               f"{total_count} Day 1 restaurants.")
+        print(msg)
         return True, ""
-    else:
-        print(
-            f"Error: Only {len(verified_restaurants)} out of {len(restaurant_names)} restaurants have matching expense entries.",
-            file=sys.stderr,
-        )
-        return False, f"Error: Only {len(verified_restaurants)} out of {len(restaurant_names)} restaurants have matching expense entries."
+    verified_count = len(verified_restaurants)
+    total_count = len(restaurant_names)
+    msg = (f"Error: Only {verified_count} out of {total_count} restaurants "
+           "have matching expense entries.")
+    print(msg, file=sys.stderr)
+    return False, msg
 
 
 def main():
@@ -187,7 +194,7 @@ def main():
     """
     notion = notion_utils.get_notion_client()
     main_id = sys.argv[1] if len(sys.argv) > 1 else None
-    success, error_msg = verify(notion, main_id)
+    success, _error_msg = verify(notion, main_id)
     if success:
         sys.exit(0)
     else:

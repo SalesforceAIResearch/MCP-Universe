@@ -4,17 +4,19 @@ Verification script for Vector Database DBA Analysis task.
 This script verifies that the candidate has properly analyzed the vector database
 and stored their findings in appropriate result tables.
 """
+# pylint: disable=too-many-return-statements,duplicate-code
 
-import psycopg2
 import os
 import sys
+
+import psycopg2
 
 
 def get_connection_params():
     """Get database connection parameters from environment variables."""
     return {
         "host": os.getenv("POSTGRES_HOST", "localhost"),
-        "port": int(os.getenv("POSTGRES_PORT", 5432)),
+        "port": int(os.getenv("POSTGRES_PORT", "5432")),
         "database": os.getenv("POSTGRES_DATABASE"),
         "user": os.getenv("POSTGRES_USERNAME"),
         "password": os.getenv("POSTGRES_PASSWORD"),
@@ -22,7 +24,10 @@ def get_connection_params():
 
 
 def verify_vector_analysis_columns(conn) -> tuple[bool, str]:
-    """Verify the vector_analysis_columns table exists, has correct columns, and contains actual vector columns from the database."""
+    """
+    Verify the vector_analysis_columns table exists, has correct columns,
+    and contains actual vector columns from the database.
+    """
     expected_columns = [
         'schema', 'table_name', 'column_name', 'dimensions', 'data_type', 'has_constraints', 'rows'
     ]
@@ -96,15 +101,19 @@ def verify_vector_analysis_columns(conn) -> tuple[bool, str]:
     except psycopg2.Error as e:
         print(f"Database error: {e}")
         return False, f"Database error: {e}"
-    except Exception as e:
+    except (ValueError, KeyError, TypeError) as e:
         print(f"Verification error: {e}")
         return False, f"Verification error: {e}"
 
 
 def verify_vector_analysis_storage_consumption(conn) -> tuple[bool, str]:
-    """Verify the vector_analysis_storage_consumption table exists, has correct columns, and analyzes actual vector tables."""
+    """
+    Verify the vector_analysis_storage_consumption table exists,
+    has correct columns, and analyzes actual vector tables.
+    """
     expected_columns = [
-        'schema', 'table_name', 'total_size_bytes', 'vector_data_bytes', 'regular_data_bytes', 'vector_storage_pct', 'row_count'
+        'schema', 'table_name', 'total_size_bytes', 'vector_data_bytes',
+        'regular_data_bytes', 'vector_storage_pct', 'row_count'
     ]
     try:
         with conn.cursor() as cur:
@@ -174,13 +183,16 @@ def verify_vector_analysis_storage_consumption(conn) -> tuple[bool, str]:
     except psycopg2.Error as e:
         print(f"Database error: {e}")
         return False, f"Database error: {e}"
-    except Exception as e:
+    except (ValueError, KeyError, TypeError) as e:
         print(f"Verification error: {e}")
         return False, f"Verification error: {e}"
 
 
 def verify_vector_analysis_indices(conn) -> tuple[bool, str]:
-    """Verify the vector_analysis_indices table exists, has correct columns, and identifies actual vector indexes."""
+    """
+    Verify the vector_analysis_indices table exists, has correct columns,
+    and identifies actual vector indexes.
+    """
     expected_columns = [
         'schema', 'table_name', 'column_name', 'index_name', 'index_type', 'index_size_bytes'
     ]
@@ -241,7 +253,8 @@ def verify_vector_analysis_indices(conn) -> tuple[bool, str]:
                 print(f"Agent missed vector indexes: {missing_indexes}")
                 return False, f"Agent missed vector indexes: {missing_indexes}"
 
-            # Allow agent to find more indexes than just vector ones (they might include related indexes)
+            # Allow agent to find more indexes than just vector ones
+            # (they might include related indexes)
             # but at least they should find the vector-specific ones
 
             return True, ""
@@ -249,7 +262,7 @@ def verify_vector_analysis_indices(conn) -> tuple[bool, str]:
     except psycopg2.Error as e:
         print(f"Database error: {e}")
         return False, f"Database error: {e}"
-    except Exception as e:
+    except (ValueError, KeyError, TypeError) as e:
         print(f"Verification error: {e}")
         return False, f"Verification error: {e}"
 
@@ -270,9 +283,14 @@ def verify_no_extra_analysis_tables(conn) -> tuple[bool, str]:
             """)
             analysis_tables = {row[0] for row in cur.fetchall()}
 
-            # Only flag as issue if there are analysis tables that don't match our required set
-            # Exclude ground truth tables from this check
-            analysis_tables_filtered = {t for t in analysis_tables if not t.startswith('expected_') and not t.startswith('vector_analysis_results')}
+            # Only flag as issue if there are analysis tables that don't
+            # match our required set. Exclude ground truth tables from this
+            # check
+            analysis_tables_filtered = {
+                t for t in analysis_tables
+                if not t.startswith('expected_')
+                and not t.startswith('vector_analysis_results')
+            }
             extra = analysis_tables_filtered - required
             if extra:
                 print(f"Found unexpected analysis tables: {extra}")
@@ -280,7 +298,7 @@ def verify_no_extra_analysis_tables(conn) -> tuple[bool, str]:
 
             return True, ""
 
-    except Exception as e:
+    except (psycopg2.Error, ValueError, KeyError, TypeError) as e:
         print(f"Verification error: {e}")
         return False, f"Verification error: {e}"
 
@@ -292,49 +310,49 @@ def verify() -> tuple[bool, str]:
     if not conn_params["database"]:
         print("No database specified")
         return False, "No database specified"
-    
+
     try:
         conn = psycopg2.connect(**conn_params)
-        
+
         # Run all verification checks
         success, error_msg = verify_vector_analysis_columns(conn)
         if not success:
             conn.close()
             return False, error_msg
         print("  PASSED: vector_analysis_columns")
-        
+
         success, error_msg = verify_vector_analysis_storage_consumption(conn)
         if not success:
             conn.close()
             return False, error_msg
         print("  PASSED: vector_analysis_storage_consumption")
-        
+
         success, error_msg = verify_vector_analysis_indices(conn)
         if not success:
             conn.close()
             return False, error_msg
         print("  PASSED: vector_analysis_indices")
-        
+
         success, error_msg = verify_no_extra_analysis_tables(conn)
         if not success:
             conn.close()
             return False, error_msg
         print("  PASSED: no_extra_analysis_tables")
-        
+
         conn.close()
-        print(f"\nResults: 4/4 checks passed")
+        print("\nResults: 4/4 checks passed")
         return True, ""
-        
+
     except psycopg2.Error as e:
         print(f"Database connection error: {e}")
         return False, f"Database connection error: {e}"
-    except Exception as e:
+    except (ValueError, KeyError, TypeError) as e:
         print(f"Verification error: {e}")
         return False, f"Verification error: {e}"
 
 def main():
     """Main verification function for vector analysis deliverables."""
-    success, error_msg = verify()
+    success, _error_msg = verify()
     if success:
         sys.exit(0)
     else:

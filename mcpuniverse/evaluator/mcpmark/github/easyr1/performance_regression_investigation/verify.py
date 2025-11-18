@@ -1,7 +1,9 @@
+"""Verification module for performance regression investigation in EasyR1 repository."""
+# pylint: disable=R0911,astroid-error,duplicate-code,import-error
 import sys
 import os
-import requests
 from typing import Dict, List, Optional, Tuple
+import requests
 from dotenv import load_dotenv
 
 load_dotenv(".mcp_env")
@@ -17,12 +19,11 @@ def _get_github_api(
         response = requests.get(url, headers=headers)
         if response.status_code == 200:
             return True, response.json()
-        elif response.status_code == 404:
+        if response.status_code == 404:
             return False, None
-        else:
-            print(f"API error for {endpoint}: {response.status_code}", file=sys.stderr)
-            return False, None
-    except Exception as e:
+        print(f"API error for {endpoint}: {response.status_code}", file=sys.stderr)
+        return False, None
+    except (requests.RequestException, IOError, OSError, ValueError) as e:
         print(f"Exception for {endpoint}: {e}", file=sys.stderr)
         return False, None
 
@@ -169,10 +170,10 @@ def verify() -> tuple[bool, str]:
     print("1. Checking main tracking issue with required title and labels...")
     main_issue = _find_main_tracking_issue(headers)
     if not main_issue:
-        print(
-            "Error: Main tracking issue not found with exact title 'Performance Regression Analysis: Data Protocol Changes' and labels 'bug', 'performance', 'investigation'",
-            file=sys.stderr,
-        )
+        msg = ("Error: Main tracking issue not found with exact title "
+               "'Performance Regression Analysis: Data Protocol Changes' "
+               "and labels 'bug', 'performance', 'investigation'")
+        print(msg, file=sys.stderr)
         return False, "Main tracking issue not found with exact title and required labels"
 
     main_issue_number = main_issue.get("number")
@@ -207,10 +208,10 @@ def verify() -> tuple[bool, str]:
     print("5. Checking analysis PR exists with exact title and branch...")
     analysis_pr = _find_analysis_pr(headers)
     if not analysis_pr:
-        print(
-            "Error: Analysis PR not found with title 'Performance Analysis: Protocol Changes Investigation' from branch 'investigate-protocol-changes'",
-            file=sys.stderr,
-        )
+        msg = ("Error: Analysis PR not found with title "
+               "'Performance Analysis: Protocol Changes Investigation' "
+               "from branch 'investigate-protocol-changes'")
+        print(msg, file=sys.stderr)
         return False, "Analysis PR not found with required title and branch"
 
     print(f"Found analysis PR #{analysis_pr.get('number')}")
@@ -228,7 +229,7 @@ def verify() -> tuple[bool, str]:
 
 def main():
     """Main verification function."""
-    success, error_msg = verify()
+    success, _error_msg = verify()
     if success:
         sys.exit(0)
     else:

@@ -1,9 +1,12 @@
+"""Verification module for config parameter audit in EasyR1 repository."""
+# pylint: disable=duplicate-code,import-error,astroid-error
+import base64
 import sys
 import os
 import json
-import requests
 import re
 from typing import Dict, Optional, Tuple
+import requests
 from dotenv import load_dotenv
 
 load_dotenv(".mcp_env")
@@ -19,12 +22,11 @@ def _get_github_api(
         response = requests.get(url, headers=headers)
         if response.status_code == 200:
             return True, response.json()
-        elif response.status_code == 404:
+        if response.status_code == 404:
             return False, None
-        else:
-            print(f"API error for {endpoint}: {response.status_code}", file=sys.stderr)
-            return False, None
-    except Exception as e:
+        print(f"API error for {endpoint}: {response.status_code}", file=sys.stderr)
+        return False, None
+    except (requests.RequestException, IOError, OSError, ValueError) as e:
         print(f"Exception for {endpoint}: {e}", file=sys.stderr)
         return False, None
 
@@ -36,14 +38,22 @@ def _get_analysis_results(headers: Dict[str, str]) -> Optional[Dict]:
         return None
 
     # Decode base64 content
-    import base64
 
     content = file_data.get("content", "")
     if content:
         try:
             decoded_content = base64.b64decode(content).decode("utf-8")
             return json.loads(decoded_content)
-        except Exception as e:
+        except (
+            requests.RequestException,
+            IOError,
+            OSError,
+            ValueError,
+            AttributeError,
+            KeyError,
+            TypeError,
+            UnicodeDecodeError,
+        ) as e:
             print(f"Error parsing JSON: {e}", file=sys.stderr)
             return None
     return None
@@ -86,7 +96,7 @@ def _verify_commit_data(results: Dict, headers: Dict[str, str]) -> bool:
     return True
 
 
-def _verify_parameter_changes(results: Dict, headers: Dict[str, str]) -> bool:
+def _verify_parameter_changes(results: Dict, _headers: Dict[str, str]) -> bool:
     """Verify the parameter changes are accurate."""
     param_changes = results.get("parameter_changes", {})
 
@@ -210,10 +220,9 @@ def _verify_issue_references(results: Dict, headers: Dict[str, str]) -> bool:
                 break
 
         if not issue_has_keyword:
-            print(
-                f"Error: Issue #{issue_number} does not contain any required keywords: {required_keywords}",
-                file=sys.stderr,
-            )
+            msg = (f"Error: Issue #{issue_number} does not contain any "
+                   f"required keywords: {required_keywords}")
+            print(msg, file=sys.stderr)
             return False
 
     # Verify agent found exactly the same issues as our dynamic search
@@ -232,9 +241,9 @@ def _verify_issue_references(results: Dict, headers: Dict[str, str]) -> bool:
             )
         return False
 
-    print(
-        f"✓ Found all {len(issue_number_list)} issues containing required keywords: {issue_number_list}"
-    )
+    issue_count = len(issue_number_list)
+    print(f"✓ Found all {issue_count} issues containing required keywords: "
+          f"{issue_number_list}")
     return True
 
 
@@ -286,12 +295,12 @@ def verify() -> tuple[bool, str]:
     print("\n✓ Task completed successfully!")
     print("Deep commit analysis results verified:")
     print(f"- Found target commit: {results.get('target_commit_sha')}")
-    print(
-        "- Verified parameter changes: micro_batch_size_per_device_for_update (4→1), micro_batch_size_per_device_for_experience (16→2)"
-    )
-    print(
-        f"- Verified memory/performance issue correlations: {results.get('related_issue_number_list')}"
-    )
+    print("- Verified parameter changes: "
+          "micro_batch_size_per_device_for_update (4→1), "
+          "micro_batch_size_per_device_for_experience (16→2)")
+    related_issues = results.get('related_issue_number_list')
+    print(f"- Verified memory/performance issue correlations: "
+          f"{related_issues}")
     print("- All data obtained through accurate GitHub API analysis")
 
     return True, ""
@@ -299,7 +308,7 @@ def verify() -> tuple[bool, str]:
 
 def main():
     """Main verification function."""
-    success, error_msg = verify()
+    success, _error_msg = verify()
     if success:
         sys.exit(0)
     else:

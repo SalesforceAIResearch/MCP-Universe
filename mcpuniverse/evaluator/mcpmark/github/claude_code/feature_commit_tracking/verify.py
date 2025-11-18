@@ -1,9 +1,11 @@
+"""Verification module for feature commit tracking in claude-code repository."""
+# pylint: disable=R0911,R0915,astroid-error,duplicate-code,import-error
 import sys
 import os
-import requests
-from typing import Dict, List, Optional, Tuple
 import base64
 import re
+from typing import Dict, List, Optional, Tuple
+import requests
 from dotenv import load_dotenv
 
 
@@ -16,12 +18,11 @@ def _get_github_api(
         response = requests.get(url, headers=headers)
         if response.status_code == 200:
             return True, response.json()
-        elif response.status_code == 404:
+        if response.status_code == 404:
             return False, "API error", None
-        else:
-            print(f"API error for {endpoint}: {response.status_code}", file=sys.stderr)
-            return False, "API error", None
-    except Exception as e:
+        print(f"API error for {endpoint}: {response.status_code}", file=sys.stderr)
+        return False, "API error", None
+    except (requests.RequestException, IOError, OSError, ValueError) as e:
         print(f"Exception for {endpoint}: {e}", file=sys.stderr)
         return False, "API error", None
 
@@ -43,7 +44,7 @@ def _get_file_content(
     try:
         content = base64.b64decode(result.get("content", "")).decode("utf-8")
         return content
-    except Exception as e:
+    except (IOError, OSError, UnicodeDecodeError) as e:
         print(f"Content decode error for {file_path}: {e}", file=sys.stderr)
         return None
 
@@ -65,10 +66,9 @@ def _parse_feature_table(content: str) -> List[Dict]:
 
     for line in lines:
         # Look for table header
-        if (
-            "| Feature Name | Commit SHA | Author | Branch | Date | Files Changed | Commit Message |"
-            in line
-        ):
+        header = ("| Feature Name | Commit SHA | Author | Branch | Date | "
+                  "Files Changed | Commit Message |")
+        if header in line:
             in_table = True
             continue
         if in_table and line.startswith("|---"):
@@ -146,7 +146,9 @@ def verify() -> tuple[bool, str]:
     expected_messages = {
         "8a0febdd09bda32f38c351c0881784460d69997d": "feat: add shell completions (bash, zsh, fish)",
         "94dcaca5d71ad82644ae97f3a2b0c5eb8b63eae0": "Merge branch 'anthropics:main' into main",
-        "50e58affdf1bfc7d875202bc040ebe0dcfb7d332": "Enhance Rust extraction and output handling in workflows",
+        "50e58affdf1bfc7d875202bc040ebe0dcfb7d332": (
+            "Enhance Rust extraction and output handling in workflows"
+        ),
     }
 
     # Expected dates for each commit (YYYY-MM-DD format)
@@ -206,11 +208,11 @@ def verify() -> tuple[bool, str]:
 
         actual_sha = found_features[feature_name]
         if actual_sha != expected_sha:
-            print(
-                f"Error: Wrong SHA for '{feature_name}'. Expected: {expected_sha}, Got: {actual_sha}",
-                file=sys.stderr,
-            )
-            return False, f"Wrong SHA for '{feature_name}'. Expected: {expected_sha}, Got: {actual_sha}"
+            msg = (f"Error: Wrong SHA for '{feature_name}'. "
+                   f"Expected: {expected_sha}, Got: {actual_sha}")
+            print(msg, file=sys.stderr)
+            return False, (f"Wrong SHA for '{feature_name}'. "
+                          f"Expected: {expected_sha}, Got: {actual_sha}")
 
     print("✓ All feature commit SHAs are correct")
 
@@ -230,21 +232,26 @@ def verify() -> tuple[bool, str]:
             if expected_author:
                 actual_author = commit_data.get("author", {}).get("login", "")
                 if actual_author != expected_author:
-                    print(
-                        f"Error: Wrong author for {feature['sha']}. Expected: {expected_author}, Got: {actual_author}",
-                        file=sys.stderr,
-                    )
-                    return False, f"Wrong author for {feature['sha']}. Expected: {expected_author}, Got: {actual_author}"
+                    sha = feature['sha']
+                    msg = (f"Error: Wrong author for {sha}. "
+                           f"Expected: {expected_author}, Got: {actual_author}")
+                    print(msg, file=sys.stderr)
+                    return False, (f"Wrong author for {sha}. "
+                                  f"Expected: {expected_author}, "
+                                  f"Got: {actual_author}")
 
             # Check commit message (compare with table entry)
             expected_message = expected_messages.get(feature["sha"])
             if expected_message and "commit_message" in feature:
                 if feature["commit_message"] != expected_message:
-                    print(
-                        f"Error: Wrong commit message in table for {feature['sha']}. Expected: '{expected_message}', Got: '{feature['commit_message']}'",
-                        file=sys.stderr,
-                    )
-                    return False, f"Wrong commit message in table for {feature['sha']}. Expected: '{expected_message}', Got: '{feature['commit_message']}'"
+                    sha = feature['sha']
+                    got_msg = feature['commit_message']
+                    msg = (f"Error: Wrong commit message in table for {sha}. "
+                           f"Expected: '{expected_message}', Got: '{got_msg}'")
+                    print(msg, file=sys.stderr)
+                    return False, (f"Wrong commit message in table for {sha}. "
+                                  f"Expected: '{expected_message}', "
+                                  f"Got: '{got_msg}'")
 
             # Also verify against actual commit data
             if expected_message:
@@ -252,11 +259,14 @@ def verify() -> tuple[bool, str]:
                     commit_data.get("commit", {}).get("message", "").split("\n")[0]
                 )  # First line only
                 if actual_message != expected_message:
-                    print(
-                        f"Error: Wrong commit message for {feature['sha']}. Expected: '{expected_message}', Got: '{actual_message}'",
-                        file=sys.stderr,
-                    )
-                    return False, f"Wrong commit message for {feature['sha']}. Expected: '{expected_message}', Got: '{actual_message}'"
+                    sha = feature['sha']
+                    msg = (f"Error: Wrong commit message for {sha}. "
+                           f"Expected: '{expected_message}', "
+                           f"Got: '{actual_message}'")
+                    print(msg, file=sys.stderr)
+                    return False, (f"Wrong commit message for {sha}. "
+                                  f"Expected: '{expected_message}', "
+                                  f"Got: '{actual_message}'")
 
             # Check date format (YYYY-MM-DD)
             if not re.match(r"^\d{4}-\d{2}-\d{2}$", feature["date"]):
@@ -264,23 +274,30 @@ def verify() -> tuple[bool, str]:
                     f"Error: Invalid date format for {feature['name']}: {feature['date']}",
                     file=sys.stderr,
                 )
-                return False, f"Invalid date format for {feature['name']}: {feature['date']}"
+                name = feature['name']
+                date = feature['date']
+                return False, f"Invalid date format for {name}: {date}"
 
             # Check actual date matches expected
             expected_date = expected_dates.get(feature["sha"])
             if expected_date:
                 if feature["date"] != expected_date:
-                    print(
-                        f"Error: Wrong date for {feature['sha']}. Expected: {expected_date}, Got: {feature['date']}",
-                        file=sys.stderr,
-                    )
-                    return False, f"Wrong date for {feature['sha']}. Expected: {expected_date}, Got: {feature['date']}"
+                    sha = feature['sha']
+                    got_date = feature['date']
+                    msg = (f"Error: Wrong date for {sha}. "
+                           f"Expected: {expected_date}, Got: {got_date}")
+                    print(msg, file=sys.stderr)
+                    return False, (f"Wrong date for {sha}. "
+                                  f"Expected: {expected_date}, Got: {got_date}")
 
     print("✓ All commit details verified")
 
     # 6. Verify the table format is correct
     print("6. Verifying table format...")
-    table_header = "| Feature Name | Commit SHA | Author | Branch | Date | Files Changed | Commit Message |"
+    table_header = (
+        "| Feature Name | Commit SHA | Author | Branch | Date | "
+        "Files Changed | Commit Message |"
+    )
     if table_header not in content:
         print("Error: Table header format is incorrect", file=sys.stderr)
         return False, "Table header format is incorrect"
@@ -323,7 +340,7 @@ def verify_task() -> bool:
 
 def main():
     """Main verification function."""
-    success, error_msg = verify()
+    success, _error_msg = verify()
     if success:
         sys.exit(0)
     else:

@@ -1,5 +1,9 @@
+"""Verification module for Employee Onboarding task in Notion workspace."""
+
+# pylint: disable=duplicate-code,import-error,astroid-error
+
 import sys
-from typing import Dict, Set
+from typing import Dict, Optional, Set
 from notion_client import Client
 from mcpuniverse.evaluator.mcpmark.notion.utils import notion_utils
 
@@ -14,27 +18,27 @@ def _check_db_schema(db_props: Dict[str, Dict], required: Dict[str, str]) -> boo
             return False
         actual_type = db_props[prop_name]["type"]
         if actual_type != expected_type:
-            print(
-                f"Error: Property '{prop_name}' has type '{actual_type}', expected '{expected_type}'.",
-                file=sys.stderr,
-            )
+            msg = (f"Error: Property '{prop_name}' has type "
+                   f"'{actual_type}', expected '{expected_type}'.")
+            print(msg, file=sys.stderr)
             return False
     return True
 
 
-def verify(notion: Client, main_id: str | None = None) -> tuple[bool, str]:  # noqa: C901
+def verify(notion: Client, _main_id: Optional[str] = None) -> tuple[bool, str]:  # pylint: disable=too-many-return-statements,too-many-branches,too-many-locals,too-many-statements,too-many-return-statements,too-many-branches,too-many-locals,too-many-statements
     """Programmatically verify the onboarding system described in description.md."""
 
-    DB_TITLE = "Employee Onboarding Checklist"
-    HUB_PAGE_TITLE = "Onboarding Hub"
-    DEPARTMENT_OPTIONS: Set[str] = {
+    # Constants for verification
+    DB_TITLE = "Employee Onboarding Checklist"  # pylint: disable=invalid-name
+    HUB_PAGE_TITLE = "Onboarding Hub"  # pylint: disable=invalid-name
+    DEPARTMENT_OPTIONS: Set[str] = {  # pylint: disable=invalid-name
         "Product",
         "Marketing",
         "Sales",
         "HR",
         "Engineering",
     }
-    REQUIRED_DB_PROPERTIES = {
+    REQUIRED_DB_PROPERTIES = {  # pylint: disable=invalid-name
         "Employee Name": "title",
         "Start Date": "date",
         "Department": "select",
@@ -48,7 +52,7 @@ def verify(notion: Client, main_id: str | None = None) -> tuple[bool, str]:  # n
 
     try:
         db_obj = notion.databases.retrieve(database_id=db_id)
-    except Exception as exc:
+    except (ValueError, KeyError, TypeError, AttributeError) as exc:
         print(f"Error retrieving database: {exc}", file=sys.stderr)
         return False, f"Error retrieving database: {exc}"
 
@@ -59,16 +63,17 @@ def verify(notion: Client, main_id: str | None = None) -> tuple[bool, str]:  # n
     # Extra: validate select options
     dept_options = {opt["name"] for opt in db_props["Department"]["select"]["options"]}
     if not DEPARTMENT_OPTIONS.issubset(dept_options):
-        print(
-            f"Error: Department select options must include {sorted(DEPARTMENT_OPTIONS)}. Current: {sorted(dept_options)}",
-            file=sys.stderr,
-        )
-        return False, f"Department select options must include {sorted(DEPARTMENT_OPTIONS)}. Current: {sorted(dept_options)}"
+        dept_sorted = sorted(DEPARTMENT_OPTIONS)
+        current_sorted = sorted(dept_options)
+        msg = (f"Error: Department select options must include "
+               f"{dept_sorted}. Current: {current_sorted}")
+        print(msg, file=sys.stderr)
+        return False, msg
 
     # Check there are at least 3 entries in the database
     try:
         db_pages = notion.databases.query(database_id=db_id).get("results", [])
-    except Exception as exc:
+    except (ValueError, KeyError, TypeError, AttributeError) as exc:
         print(f"Error querying database: {exc}", file=sys.stderr)
         return False, f"Error querying database: {exc}"
     if len(db_pages) < 3:
@@ -85,13 +90,14 @@ def verify(notion: Client, main_id: str | None = None) -> tuple[bool, str]:  # n
         return False, f"Page '{HUB_PAGE_TITLE}' not found"
 
     # 3. Ensure the onboarding database is embedded in the hub page
-    embedded_db_id = notion_utils.find_database_in_block(notion, hub_page_id, DB_TITLE)
+    embedded_db_id = notion_utils.find_database_in_block(
+        notion, hub_page_id, DB_TITLE
+    )
     if embedded_db_id != db_id:
-        print(
-            "Error: The Employee Onboarding Checklist database is not embedded in the Onboarding Hub page.",
-            file=sys.stderr,
-        )
-        return False, "The Employee Onboarding Checklist database is not embedded in the Onboarding Hub page"
+        msg = ("Error: The Employee Onboarding Checklist database is not "
+               "embedded in the Onboarding Hub page.")
+        print(msg, file=sys.stderr)
+        return False, msg
 
     # 4. Analyse blocks within the hub page for linked mentions, timeline, and feedback form
     all_blocks = notion_utils.get_all_blocks_recursively(notion, hub_page_id)
@@ -100,7 +106,7 @@ def verify(notion: Client, main_id: str | None = None) -> tuple[bool, str]:  # n
     numbered_list_count = 0
     todo_count = 0
 
-    for blk in all_blocks:
+    for blk in all_blocks:  # pylint: disable=too-many-nested-blocks,too-many-nested-blocks
         blk_type = blk.get("type")
 
         # Direct link-to-page blocks
@@ -138,29 +144,25 @@ def verify(notion: Client, main_id: str | None = None) -> tuple[bool, str]:  # n
             todo_count += 1
 
     if len(seen_link_targets) < 3:
-        print(
-            "Error: Fewer than 3 linked mentions to benefit policy pages found in the Benefits Overview section.",
-            file=sys.stderr,
-        )
-        return False, "Fewer than 3 linked mentions to benefit policy pages found in the Benefits Overview section"
+        msg = ("Error: Fewer than 3 linked mentions to benefit policy "
+               "pages found in the Benefits Overview section.")
+        print(msg, file=sys.stderr)
+        return False, msg
 
     if numbered_list_count < 7:
-        print(
-            "Error: Numbered list contains fewer than 7 steps in the 30-Day Timeline section.",
-            file=sys.stderr,
-        )
-        return False, "Numbered list contains fewer than 7 steps in the 30-Day Timeline section"
+        msg = ("Error: Numbered list contains fewer than 7 steps in "
+               "the 30-Day Timeline section.")
+        print(msg, file=sys.stderr)
+        return False, msg
 
     if todo_count < 3:
-        print(
-            "Error: Feedback Form section contains fewer than 3 to-do items.",
-            file=sys.stderr,
-        )
-        return False, "Feedback Form section contains fewer than 3 to-do items"
+        msg = "Error: Feedback Form section contains fewer than 3 to-do items."
+        print(msg, file=sys.stderr)
+        return False, msg
 
-    print(
-        "Success: Verified Employee Onboarding Checklist database, Onboarding Hub page, and all required sections."
-    )
+    msg = ("Success: Verified Employee Onboarding Checklist database, "
+           "Onboarding Hub page, and all required sections.")
+    print(msg)
     return True, ""
 
 
@@ -168,7 +170,7 @@ def main():
     """Main verification function."""
     notion = notion_utils.get_notion_client()
     main_id = sys.argv[1] if len(sys.argv) > 1 else None
-    success, error_msg = verify(notion, main_id)
+    success, _error_msg = verify(notion, main_id)
     if success:
         sys.exit(0)
     else:

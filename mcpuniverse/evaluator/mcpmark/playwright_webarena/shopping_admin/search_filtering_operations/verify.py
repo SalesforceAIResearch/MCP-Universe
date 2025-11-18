@@ -1,3 +1,6 @@
+"""Verification module for search filtering operations task."""
+# pylint: disable=E0102,E1121,R0911,R0912
+import asyncio
 import re
 import json
 import os
@@ -120,7 +123,10 @@ def verify(messages):
 
     # 4. Results20to30Term should be in format "term:results"
     if ":" not in extracted_data["Results20to30Term"]:
-        return False, f"Results20to30Term should be in format 'term:results', got: {extracted_data['Results20to30Term']}"
+        return False, (
+            f"Results20to30Term should be in format 'term:results', "
+            f"got: {extracted_data['Results20to30Term']}"
+        )
 
     # Both "tanks" and "Antonia Racer Tank" have 23 results (between 20-30)
     valid_results20to30 = ["tanks:23", "Antonia Racer Tank:23"]
@@ -128,7 +134,10 @@ def verify(messages):
     if not any(
         val in extracted_data["Results20to30Term"] for val in valid_results20to30
     ):
-        return False, f"Results20to30Term should contain 'tanks:23' or 'Antonia Racer Tank:23', got: {extracted_data['Results20to30Term']}"
+        return False, (
+            f"Results20to30Term should contain 'tanks:23' or 'Antonia Racer Tank:23', "
+            f"got: {extracted_data['Results20to30Term']}"
+        )
 
     # 5. Hits15PlusCount should be a number (only hollister has 19 hits > 15)
     if not extracted_data["Hits15PlusCount"].isdigit():
@@ -139,11 +148,17 @@ def verify(messages):
 
     # 6. ID10to15MaxResults should be in format "term:results"
     if ":" not in extracted_data["ID10to15MaxResults"]:
-        return False, f"ID10to15MaxResults should be in format 'term:results', got: {extracted_data['ID10to15MaxResults']}"
+        return False, (
+            f"ID10to15MaxResults should be in format 'term:results', "
+            f"got: {extracted_data['ID10to15MaxResults']}"
+        )
 
     # ID 11 is hollister (1 result), ID 13 is Antonia Racer Tank (23 results)
     if extracted_data["ID10to15MaxResults"] != "Antonia Racer Tank:23":
-        return False, f"ID10to15MaxResults should be 'Antonia Racer Tank:23', got: {extracted_data['ID10to15MaxResults']}"
+        return False, (
+            f"ID10to15MaxResults should be 'Antonia Racer Tank:23', "
+            f"got: {extracted_data['ID10to15MaxResults']}"
+        )
 
     # 7. DefaultStoreViewCount should be a number (all 7 terms are from Default Store View)
     if not extracted_data["DefaultStoreViewCount"].isdigit():
@@ -154,31 +169,49 @@ def verify(messages):
 
     # 8. OneResultTerm should be in format "term:uses"
     if ":" not in extracted_data["OneResultTerm"]:
-        return False, f"OneResultTerm should be in format 'term:uses', got: {extracted_data['OneResultTerm']}"
+        return False, (
+            f"OneResultTerm should be in format 'term:uses', "
+            f"got: {extracted_data['OneResultTerm']}"
+        )
 
     # Both hollister and WP10 have exactly 1 result
     valid_one_result = ["hollister:19", "WP10:1"]
     if not any(val in extracted_data["OneResultTerm"] for val in valid_one_result):
-        return False, f"OneResultTerm should contain 'hollister:19' or 'WP10:1', got: {extracted_data['OneResultTerm']}"
+        return False, (
+            f"OneResultTerm should contain 'hollister:19' or 'WP10:1', "
+            f"got: {extracted_data['OneResultTerm']}"
+        )
 
     # 9. HighestResultLastSearch should be in format "term:results"
     if ":" not in extracted_data["HighestResultLastSearch"]:
-        return False, f"HighestResultLastSearch should be in format 'term:results', got: {extracted_data['HighestResultLastSearch']}"
+        return False, (
+            f"HighestResultLastSearch should be in format 'term:results', "
+            f"got: {extracted_data['HighestResultLastSearch']}"
+        )
 
     # In Last Search Terms: tanks and Antonia Racer Tank both have 23 results (highest)
     valid_highest_last = ["tanks:23", "Antonia Racer Tank:23"]
     if not any(
         val in extracted_data["HighestResultLastSearch"] for val in valid_highest_last
     ):
-        return False, f"HighestResultLastSearch should contain 'tanks:23' or 'Antonia Racer Tank:23', got: {extracted_data['HighestResultLastSearch']}"
+        return False, (
+            f"HighestResultLastSearch should contain 'tanks:23' or 'Antonia Racer Tank:23', "
+            f"got: {extracted_data['HighestResultLastSearch']}"
+        )
 
     # 10. Position3Bestseller should be in format "product:quantity"
     if ":" not in extracted_data["Position3Bestseller"]:
-        return False, f"Position3Bestseller should be in format 'product:quantity', got: {extracted_data['Position3Bestseller']}"
+        return False, (
+            f"Position3Bestseller should be in format 'product:quantity', "
+            f"got: {extracted_data['Position3Bestseller']}"
+        )
 
     # Position 3 in Bestsellers is "Sprite Stasis Ball 65 cm" with quantity 6
     if extracted_data["Position3Bestseller"] != "Sprite Stasis Ball 65 cm:6":
-        return False, f"Position3Bestseller should be 'Sprite Stasis Ball 65 cm:6', got: {extracted_data['Position3Bestseller']}"
+        return False, (
+            f"Position3Bestseller should be 'Sprite Stasis Ball 65 cm:6', "
+            f"got: {extracted_data['Position3Bestseller']}"
+        )
 
     # 11. TopUseTerm should be in format "term:uses"
     if ":" not in extracted_data["TopUseTerm"]:
@@ -190,7 +223,10 @@ def verify(messages):
 
     # 12. FirstNonZeroResult should be in format "term:results"
     if ":" not in extracted_data["FirstNonZeroResult"]:
-        return False, f"FirstNonZeroResult should be in format 'term:results', got: {extracted_data['FirstNonZeroResult']}"
+        return False, (
+            f"FirstNonZeroResult should be in format 'term:results', "
+            f"got: {extracted_data['FirstNonZeroResult']}"
+        )
 
     # When sorted by results ascending, first non-zero is WP10 (has 1 result)
     if extracted_data["FirstNonZeroResult"] != "WP10:1":
@@ -218,10 +254,10 @@ async def verify() -> tuple[bool, str]:
         return False, "MCP_MESSAGES environment variable not set"
 
     try:
-        with open(messages_path, "r") as f:
-            messages = json.load(f)
-    except Exception as e:
-        return False, f"Failed to load messages: {str(e)}"
+        with open(messages_path, "r", encoding='utf-8') as file_handle:
+            messages = json.load(file_handle)
+    except (OSError, json.JSONDecodeError) as error:
+        return False, f"Failed to load messages: {str(error)}"
 
     # Run verification
     return verify(messages)
@@ -230,8 +266,7 @@ def main():
     """
     Executes the verification process and exits with a status code.
     """
-    import asyncio
-    success, error_msg = asyncio.run(verify())
+    success, _ = asyncio.run(verify())
     sys.exit(0 if success else 1)
 
 if __name__ == "__main__":

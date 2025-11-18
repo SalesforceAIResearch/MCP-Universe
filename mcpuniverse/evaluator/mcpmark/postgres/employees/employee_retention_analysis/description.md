@@ -10,13 +10,13 @@ Analyze employee retention patterns and identify factors contributing to turnove
    * `retention_rate` (decimal) — percentage of employees still with the company (current/total * 100)
 
 2. **Create the high-risk employee identification table** — build a table called `high_risk_employees` in the `employees` schema with:
-   * `employee_id` (bigint) — the employee's ID  
+   * `employee_id` (bigint) — the employee's ID
    * `full_name` (varchar) — concatenated first and last name
    * `current_department` (varchar) — current department name
    * `tenure_days` (integer) — days with the company
    * `current_salary` (integer) — current salary amount
    * `risk_category` (varchar) — risk level ('high_risk', 'medium_risk', 'low_risk')
-   
+
    **Note**: Analyze only current employees (those with active salary records where to_date = '9999-01-01').
 
 3. **Create the turnover trend analysis table** — build a table called `turnover_trend_analysis` in the `employees` schema with:
@@ -27,7 +27,7 @@ Analyze employee retention patterns and identify factors contributing to turnove
 
 4. **Apply risk assessment criteria** for current employees:
    * **High risk**: Employees in departments with retention rate < 80% AND tenure < 1095 days (3 years)
-   * **Medium risk**: Employees in departments with retention rate < 85% AND tenure < 1825 days (5 years)  
+   * **Medium risk**: Employees in departments with retention rate < 85% AND tenure < 1825 days (5 years)
    * **Low risk**: All other current employees
 
 5. **Analyze departure trends** — examine employees who left between 1985-2002, grouping by departure year.
@@ -37,3 +37,4 @@ Analyze employee retention patterns and identify factors contributing to turnove
 7. **Focus appropriately** — use current employees for risk analysis, all historical data for retention rates, and former employees for trend analysis.
 
 The comprehensive analysis will help identify retention patterns, at-risk employees, and historical turnover trends to guide strategic workforce planning.
+

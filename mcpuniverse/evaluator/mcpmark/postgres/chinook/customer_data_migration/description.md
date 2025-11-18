@@ -6,7 +6,7 @@ Chinook Music Store has recently acquired "MelodyMart," a competing music retail
 
 ## Migration Requirements:
 
-1. **Process all customer records from the data table below** and migrate them into the `Customer` table 
+1. **Process all customer records from the data table below** and migrate them into the `Customer` table
 2. **Apply business logic during migration**:
    - Assign `CustomerID` values starting from the next available ID
    - Assign all customers to support representative with EmployeeId 3

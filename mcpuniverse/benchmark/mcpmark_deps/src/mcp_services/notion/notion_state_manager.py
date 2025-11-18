@@ -6,10 +6,12 @@ This module handles the duplication and management of Notion initial states
 Pages for consistent task evaluation using Playwright automation.
 """
 
+import re
 import time
 from pathlib import Path
-from typing import Optional, Tuple, Dict, Any
+from typing import Any, Dict, Optional, Tuple
 
+# pylint: disable=import-error
 from notion_client import Client
 from playwright.sync_api import (
     Browser,
@@ -22,13 +24,15 @@ from src.base.state_manager import BaseStateManager, InitialStateInfo
 from src.base.task_manager import BaseTask
 from src.logger import get_logger
 from src.mcp_services.notion.notion_task_manager import NotionTask
-import re
 
 # Initialize logger
 logger = get_logger(__name__)
 
 # Selectors for Notion UI elements
-PAGE_MENU_BUTTON_SELECTOR = '[data-testid="more-button"], div.notion-topbar-more-button, [aria-label="More"], button[aria-label="More"]'
+PAGE_MENU_BUTTON_SELECTOR = (
+    '[data-testid="more-button"], div.notion-topbar-more-button, '
+    '[aria-label="More"], button[aria-label="More"]'
+)
 DUPLICATE_MENU_ITEM_SELECTOR = 'text="Duplicate"'
 DUPLICATE_WITH_CONTENT_SELECTOR = 'text="Duplicate with content"'
 MOVE_TO_MENU_ITEM_SELECTOR = 'text="Move to"'
@@ -37,12 +41,12 @@ MOVE_TO_SEARCH_INPUT_SELECTOR = (
 )
 
 
-class NotionStateManager(BaseStateManager):
+class NotionStateManager(BaseStateManager):  # pylint: disable=too-many-instance-attributes, too-few-public-methods
     """
     Manages the state of Notion initial states using Playwright and the Notion API.
     """
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments, too-many-positional-arguments
         self,
         source_notion_key: str,
         eval_notion_key: str,
@@ -64,8 +68,10 @@ class NotionStateManager(BaseStateManager):
         super().__init__(service_name="notion")
         supported_browsers = {"chromium", "firefox"}
         if browser not in supported_browsers:
+            browsers_str = ', '.join(supported_browsers)
             raise ValueError(
-                f"Unsupported browser '{browser}'. Supported browsers are: {', '.join(supported_browsers)}"
+                f"Unsupported browser '{browser}'. "
+                f"Supported browsers are: {browsers_str}"
             )
 
         self.browser_name = browser
@@ -98,7 +104,8 @@ class NotionStateManager(BaseStateManager):
 
         if not self.state_file.exists():
             raise FileNotFoundError(
-                "Authentication state 'notion_state.json' not found. Run the Notion login helper first."
+                "Authentication state 'notion_state.json' not found. "
+                "Run the Notion login helper first."
             )
 
         logger.info("Notion state manager initialized successfully")
@@ -132,9 +139,9 @@ class NotionStateManager(BaseStateManager):
                         )
                         orphan_count += 1
                         logger.debug("| ✓ Archived orphan page: %s", child["id"])
-                    except Exception as e:
+                    except Exception as exc:  # pylint: disable=broad-exception-caught
                         logger.warning(
-                            "| ✗ Failed to archive orphan page %s: %s", child["id"], e
+                            "| ✗ Failed to archive orphan page %s: %s", child["id"], exc
                         )
 
             if orphan_count > 0:
@@ -142,8 +149,8 @@ class NotionStateManager(BaseStateManager):
                     "| ✓ Cleaned up %d orphan page(s) from MCPMark Eval Hub", orphan_count
                 )
 
-        except Exception as e:
-            logger.warning("Orphan cleanup failed (non-critical, continuing): %s", e)
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            logger.warning("Orphan cleanup failed (non-critical, continuing): %s", exc)
             # Don't raise exception - allow execution to continue
 
     def _ensure_eval_parent_page_id(self) -> Optional[str]:
@@ -175,11 +182,11 @@ class NotionStateManager(BaseStateManager):
                     "| ✗ Eval parent page '%s' not found via search",
                     self.eval_parent_page_title,
                 )
-        except Exception as e:
+        except Exception as exc:  # pylint: disable=broad-exception-caught
             logger.error(
                 "| ✗ Failed to resolve eval parent page '%s': %s",
                 self.eval_parent_page_title,
-                e,
+                exc,
             )
 
         return self._eval_parent_page_id
@@ -212,11 +219,11 @@ class NotionStateManager(BaseStateManager):
                     "| ✗ Source hub page '%s' not found.",
                     self.source_parent_page_title,
                 )
-        except Exception as e:
+        except Exception as exc:  # pylint: disable=broad-exception-caught
             logger.error(
                 "| ✗ Failed to resolve source hub page '%s': %s",
                 self.source_parent_page_title,
-                e,
+                exc,
             )
 
         return self._source_hub_page_id
@@ -256,12 +263,12 @@ class NotionStateManager(BaseStateManager):
                         )
                         return True
 
-            except Exception as e:
+            except Exception as exc:  # pylint: disable=broad-exception-caught
                 logger.debug(
                     "| ✗ Database not ready yet (attempt %d/%d): %s",
                     attempt + 1,
                     max_retries,
-                    str(e)
+                    str(exc)
                 )
 
             # Wait before next retry
@@ -314,11 +321,12 @@ class NotionStateManager(BaseStateManager):
                         page_id=duplicated_id, archived=True
                     )
                     logger.info("| ✓ Cleaned up inaccessible duplicated page: %s", duplicated_id)
-                except Exception as cleanup_error:
+                except Exception as cleanup_error:  # pylint: disable=broad-exception-caught
                     logger.error("| ✗ Failed to clean up duplicated page: %s", cleanup_error)
 
                 raise RuntimeError(
-                    f"| ✗ Database backend failed to become ready for duplicated page {duplicated_id}"
+                    f"| ✗ Database backend failed to become ready for "
+                    f"duplicated page {duplicated_id}"
                 )
 
             time.sleep(5) # allow the page to fully load
@@ -333,8 +341,8 @@ class NotionStateManager(BaseStateManager):
                 },
             )
 
-        except Exception as e:
-            logger.error(f"| ✗ Failed to create initial state for {task.name}: {e}")
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            logger.error("| ✗ Failed to create initial state for %s: %s", task.name, exc)
             return None
 
     def _store_initial_state_info(
@@ -370,6 +378,7 @@ class NotionStateManager(BaseStateManager):
             logger.info("| ✓ Archived page initial state: %s", initial_state_id)
 
             # Remove from tracked resources to avoid duplicate cleanup
+            # pylint: disable=attribute-defined-outside-init
             self.tracked_resources = [
                 r
                 for r in self.tracked_resources
@@ -377,8 +386,12 @@ class NotionStateManager(BaseStateManager):
             ]
 
             return True
-        except Exception as e:
-            logger.error("| ✗ Failed to archive initial state %s: %s", initial_state_id, e)
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            logger.error(
+                "| ✗ Failed to archive initial state %s: %s",
+                initial_state_id,
+                exc
+            )
             return False
 
     def _cleanup_single_resource(self, resource: Dict[str, Any]) -> bool:
@@ -388,13 +401,17 @@ class NotionStateManager(BaseStateManager):
                 self.eval_notion_client.pages.update(
                     page_id=resource["id"], archived=True
                 )
-                logger.info(f"| ✓ Archived Notion page: {resource['id']}")
+                logger.info("| ✓ Archived Notion page: %s", resource['id'])
                 return True
-            except Exception as e:
-                logger.error(f"| ✗ Failed to archive Notion page {resource['id']}: {e}")
+            except Exception as exc:  # pylint: disable=broad-exception-caught
+                logger.error(
+                    "| ✗ Failed to archive Notion page %s: %s",
+                    resource['id'],
+                    exc
+                )
                 return False
 
-        logger.warning(f"| ? Unknown resource type for cleanup: {resource['type']}")
+        logger.warning("| ? Unknown resource type for cleanup: %s", resource['type'])
         return False
 
     # =========================================================================
@@ -410,8 +427,8 @@ class NotionStateManager(BaseStateManager):
                 page_id=initial_state_id,
                 properties={"title": {"title": [{"text": {"content": new_title}}]}},
             )
-        except Exception as e:
-            logger.error("| ✗ Failed to rename page via API: %s", e)
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            logger.error("| ✗ Failed to rename page via API: %s", exc)
 
     # ------------------------------------------------------------------
     # Playwright helpers
@@ -466,7 +483,8 @@ class NotionStateManager(BaseStateManager):
             search_input.type(self.eval_parent_page_title, delay=50)
 
             # Step 4: Wait for the search result matching the page title, then click it
-            # Selector for the menu item row – ensure we click the outer container, not a nested <div>
+            # Selector for the menu item row – ensure we click the outer container,
+            # not a nested <div>
             result_selector = (
                 f'div[role="menuitem"]:has-text("{self.eval_parent_page_title}")'
             )
@@ -482,12 +500,13 @@ class NotionStateManager(BaseStateManager):
 
             # Give Notion a brief moment to process the move
             time.sleep(3)
-        except PlaywrightTimeoutError as e:
+        except PlaywrightTimeoutError as exc:
             logger.error(
-                "| ✗ Playwright timed out while moving page to evaluation parent – move may have failed."
+                "| ✗ Playwright timed out while moving page to evaluation parent "
+                "– move may have failed."
             )
-            raise RuntimeError("Playwright timeout during move-to operation") from e
-        except Exception as exc:
+            raise RuntimeError("Playwright timeout during move-to operation") from exc
+        except Exception as exc:  # pylint: disable=broad-exception-caught
             logger.error("| ✗ Unexpected error during move-to operation: %s", exc)
             # Propagate the error to allow retry logic at higher level if necessary
             raise
@@ -566,15 +585,24 @@ class NotionStateManager(BaseStateManager):
                 next_cursor = children.get("next_cursor")
 
             if not matched_child_id:
-                logger.debug("| ✗ No child page titled '%s' under '%s'", title, self.source_parent_page_title)
+                logger.debug(
+                    "| ✗ No child page titled '%s' under '%s'",
+                    title,
+                    self.source_parent_page_title
+                )
                 return None
 
             # 3) Retrieve the page to get its canonical URL
             try:
                 page_obj = self.source_notion_client.pages.retrieve(page_id=matched_child_id)
                 page_url = page_obj.get("url")
-            except Exception as e:
-                logger.warning("| ✗ Failed to retrieve page URL for '%s' (%s): %s", title, matched_child_id, e)
+            except Exception as exc:  # pylint: disable=broad-exception-caught
+                logger.warning(
+                    "| ✗ Failed to retrieve page URL for '%s' (%s): %s",
+                    title,
+                    matched_child_id,
+                    exc
+                )
                 page_url = None
 
             if not page_url:
@@ -583,16 +611,21 @@ class NotionStateManager(BaseStateManager):
                 return matched_child_id, ""
 
             return matched_child_id, page_url
-        except Exception as e:
-            logger.error("| ✗ Error locating initial state '%s' via children listing: %s", title, e)
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            logger.error(
+                "| ✗ Error locating initial state '%s' via children listing: %s",
+                title,
+                exc
+            )
             return None
 
     # =========================================================================
     # Duplication and State Management
     # =========================================================================
-    # NOTE: Initial state type detection logic has been removed because all initial states are pages.
+    # NOTE: Initial state type detection logic has been removed because
+    # all initial states are pages.
 
-    def _duplicate_current_initial_state(
+    def _duplicate_current_initial_state(  # pylint: disable=too-many-arguments, too-many-locals, too-many-nested-blocks, too-many-branches, too-many-statements
         self,
         page: Page,
         new_title: Optional[str] = None,
@@ -625,10 +658,12 @@ class NotionStateManager(BaseStateManager):
             duplicated_url = page.url
             # Validate that the resulting URL is a genuine duplicate of the original template.
             if not self._is_valid_duplicate_url(original_url, duplicated_url):
-                # Sometimes duplication succeeds but UI navigates to parent instead of the new page.
-                # In that case, try to find the most recently created page named exactly "<title> (1)".
+                # Sometimes duplication succeeds but UI navigates to parent
+                # instead of the new page. In that case, try to find the most
+                # recently created page named exactly "<title> (1)".
                 logger.warning(
-                    "| ✗ Duplicate URL pattern mismatch. Attempting recovery by searching for latest '%s (1)' page...",
+                    "| ✗ Duplicate URL pattern mismatch. Attempting recovery by "
+                    "searching for latest '%s (1)' page...",
                     original_initial_state_title,
                 )
 
@@ -688,7 +723,7 @@ class NotionStateManager(BaseStateManager):
                                         page_id=latest_child_id
                                     )
                                     fallback_url = page_obj.get("url")
-                                except Exception as retrieve_error:
+                                except Exception as retrieve_error:  # pylint: disable=broad-exception-caught
                                     logger.warning(
                                         "| ✗ Failed to resolve URL for duplicate '%s': %s",
                                         latest_child_id,
@@ -697,7 +732,8 @@ class NotionStateManager(BaseStateManager):
 
                                 if fallback_url:
                                     logger.info(
-                                        "| ○ Navigating directly to latest '%s' duplicate via children list...",
+                                        "| ○ Navigating directly to latest '%s' "
+                                        "duplicate via children list...",
                                         target_title,
                                     )
                                     page.goto(fallback_url, wait_until="load", timeout=60_000)
@@ -707,7 +743,8 @@ class NotionStateManager(BaseStateManager):
 
                             if retry_idx < attempts - 1:
                                 logger.debug(
-                                    "| ○ '%s' not visible yet via children listing. Waiting 5s before retry %d/%d...",
+                                    "| ○ '%s' not visible yet via children listing. "
+                                    "Waiting 5s before retry %d/%d...",
                                     target_title,
                                     retry_idx + 1,
                                     attempts - 1,
@@ -717,7 +754,8 @@ class NotionStateManager(BaseStateManager):
                     # Re-validate after attempted recovery
                     if not self._is_valid_duplicate_url(original_url, duplicated_url):
                         logger.error(
-                            "| ✗ Could not locate a valid '%s' duplicate after recovery attempt.\n|  Original: %s\n|  Observed: %s",
+                            "| ✗ Could not locate a valid '%s' duplicate after "
+                            "recovery attempt.\n|  Original: %s\n|  Observed: %s",
                             target_title,
                             original_url,
                             duplicated_url,
@@ -729,7 +767,7 @@ class NotionStateManager(BaseStateManager):
                         raise RuntimeError(
                             "Duplicate URL pattern mismatch – duplication likely failed"
                         )
-                except Exception as search_exc:
+                except Exception as search_exc:  # pylint: disable=broad-exception-caught
                     logger.error(
                         "| ✗ Failed during recovery search for '%s': %s",
                         target_title,
@@ -763,24 +801,26 @@ class NotionStateManager(BaseStateManager):
                 )
                 if not result or not isinstance(result, dict):
                     logger.error(
-                        "| ✗ Playwright move to error: Notion API did not return a valid page dict after move."
+                        "| ✗ Playwright move to error: Notion API did not return "
+                        "a valid page dict after move."
                     )
                     raise RuntimeError(
-                        "Playwright move to error: Notion API did not return a valid page dict after move."
+                        "Playwright move to error: Notion API did not return "
+                        "a valid page dict after move."
                     )
                 logger.info(
                     "| ✓ Page moved to '%s' successfully.", self.eval_parent_page_title
                 )
-            except Exception as move_exc:
-                logger.error(f"Playwright move to error: {move_exc}")
+            except Exception as move_exc:  # pylint: disable=broad-exception-caught
+                logger.error("Playwright move to error: %s", move_exc)
                 raise RuntimeError(
                     "Playwright move to error: Notion client failed to retrieve page after move."
                 ) from move_exc
 
             return duplicated_initial_state_id
-        except PlaywrightTimeoutError as e:
+        except PlaywrightTimeoutError as exc:
             logger.error("Playwright timed out while duplicating initial state.")
-            raise RuntimeError("Playwright timeout during duplication") from e
+            raise RuntimeError("Playwright timeout during duplication") from exc
 
     # =========================================================================
     # Cleanup and Maintenance
@@ -835,7 +875,7 @@ class NotionStateManager(BaseStateManager):
                         )
                         logger.info("| ✓ Archived orphan duplicate (%s): %s", "page", dup_id)
                         archived_any = True
-                    except Exception as exc:
+                    except Exception as exc:  # pylint: disable=broad-exception-caught
                         logger.warning("| ✗ Failed to archive orphan page %s: %s", dup_id, exc)
 
                 if not children.get("has_more"):
@@ -844,13 +884,13 @@ class NotionStateManager(BaseStateManager):
                 next_cursor = children.get("next_cursor")
 
             return archived_any
-        except Exception as exc:
+        except Exception as exc:  # pylint: disable=broad-exception-caught
             logger.warning(
                 "Error while attempting to cleanup orphan duplicate: %s", exc
             )
             return False
 
-    def _duplicate_initial_state_for_task(
+    def _duplicate_initial_state_for_task(  # pylint: disable=too-many-arguments, too-many-locals
         self,
         initial_state_url: str,
         category: str,
@@ -891,13 +931,15 @@ class NotionStateManager(BaseStateManager):
 
                     duplicated_id = self._duplicate_current_initial_state(
                         page,
-                        new_title=initial_state_title,  # Use original initial state name without (1) suffix
+                        new_title=initial_state_title,  # Use original initial state
+                        # name without (1) suffix
                         original_initial_state_id=initial_state_id,
                         original_initial_state_title=initial_state_title,
                         wait_timeout=wait_timeout,
                     )
                     duplicated_url = page.url
-                    # Validate URL pattern again at this higher level (should already be validated inside).
+                    # Validate URL pattern again at this higher level
+                    # (should already be validated inside).
                     context.storage_state(path=str(self.state_file))
                     # Log how long the whole duplication (navigate → duplicate) took.
                     elapsed = time.time() - start_time
@@ -907,19 +949,20 @@ class NotionStateManager(BaseStateManager):
                         task_name,
                     )
                     return duplicated_url, duplicated_id
-            except Exception as e:
+            except Exception as exc:  # pylint: disable=broad-exception-caught
                 # No additional cleanup here—handled inside _duplicate_current_template.
-                last_exc = e
+                last_exc = exc
                 if attempt < max_retries:
                     logger.warning(
                         "| ✗ Duplication attempt %d failed: %s. Retrying...",
                         attempt + 1,
-                        e,
+                        exc,
                     )
                 time.sleep(120 * attempt + 120)
 
         raise RuntimeError(
-            f"Initial state duplication failed for task '{task_name}' after {max_retries + 1} attempts: {last_exc}"
+            f"Initial state duplication failed for task '{task_name}' "
+            f"after {max_retries + 1} attempts: {last_exc}"
         )
 
     def get_service_config_for_agent(self) -> dict:
@@ -929,6 +972,7 @@ class NotionStateManager(BaseStateManager):
         Returns:
             Dictionary containing configuration needed by the agent/MCP server
         """
+        # pylint: disable=import-outside-toplevel
         from src.config.config_schema import ConfigRegistry
 
         # Get the eval_api_key from config registry

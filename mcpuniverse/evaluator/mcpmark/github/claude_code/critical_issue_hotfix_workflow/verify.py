@@ -1,8 +1,10 @@
+"""Verification module for critical issue hotfix workflow in claude-code repository."""
+# pylint: disable=R0911,R0914,R0915,astroid-error,duplicate-code,import-error
 import sys
 import os
-import requests
-from typing import Dict, List, Optional, Tuple
 import base64
+from typing import Dict, List, Optional, Tuple
+import requests
 from dotenv import load_dotenv
 
 
@@ -15,12 +17,11 @@ def _get_github_api(
         response = requests.get(url, headers=headers)
         if response.status_code == 200:
             return True, response.json()
-        elif response.status_code == 404:
+        if response.status_code == 404:
             return False, "API error", None
-        else:
-            print(f"API error for {endpoint}: {response.status_code}", file=sys.stderr)
-            return False, "API error", None
-    except Exception as e:
+        print(f"API error for {endpoint}: {response.status_code}", file=sys.stderr)
+        return False, "API error", None
+    except (requests.RequestException, IOError, OSError, ValueError) as e:
         print(f"Exception for {endpoint}: {e}", file=sys.stderr)
         return False, "API error", None
 
@@ -50,7 +51,7 @@ def _get_file_content(
     try:
         content = base64.b64decode(result.get("content", "")).decode("utf-8")
         return content
-    except Exception as e:
+    except (IOError, OSError, UnicodeDecodeError) as e:
         print(f"Content decode error for {file_path}: {e}", file=sys.stderr)
         return None
 
@@ -163,12 +164,12 @@ def verify() -> tuple[bool, str]:
     requirements described in description.md.
     """
     # Configuration constants
-    HOTFIX_BRANCH_NAME = "hotfix/memory-optimization-v1.0.72"
-    TRACKING_ISSUE_KEYWORD = "Memory and Context Management Issues"
-    HOTFIX_PR_KEYWORD = "HOTFIX: Critical memory optimization"
+    hotfix_branch_name = "hotfix/memory-optimization-v1.0.72"
+    tracking_issue_keyword = "Memory and Context Management Issues"
+    hotfix_pr_keyword = "HOTFIX: Critical memory optimization"
 
     # Expected file content sections
-    MEMORY_DOC_SECTIONS = [
+    memory_doc_sections = [
         "# Memory Optimization Guide for Claude Code v1.0.72",
         "## Overview",
         "### Context Auto-Compact Problem (Issue #49)",
@@ -180,19 +181,19 @@ def verify() -> tuple[bool, str]:
     ]
 
     # Issue content requirements
-    TRACKING_ISSUE_TITLE_KEYWORDS = [
+    tracking_issue_title_keywords = [
         "CRITICAL",
         "Memory",
         "Context Management",
         "Hotfix Tracking",
     ]
-    TRACKING_ISSUE_REFERENCE_NUMBERS = ["49", "46", "47"]
-    TRACKING_ISSUE_HEADINGS = [
+    tracking_issue_reference_numbers = ["49", "46", "47"]
+    tracking_issue_headings = [
         "## Critical Issues",
         "## Impact Assessment",
         "## Resolution Strategy",
     ]
-    TRACKING_ISSUE_KEYWORDS = [
+    tracking_issue_keywords = [
         "memory exhaustion",
         "context auto-compact",
         "JavaScript heap",
@@ -200,19 +201,19 @@ def verify() -> tuple[bool, str]:
     ]
 
     # PR content requirements
-    HOTFIX_PR_TITLE_KEYWORDS = [
+    hotfix_pr_title_keywords = [
         "HOTFIX",
         "Critical memory optimization",
         "issues #49",
         "#46",
     ]
-    HOTFIX_PR_ADDRESSES_NUMBERS = ["49", "46"]
-    HOTFIX_PR_HEADINGS = [
+    hotfix_pr_addresses_numbers = ["49", "46"]
+    hotfix_pr_headings = [
         "## Summary",
         "## Critical Issues Addressed",
         "## Documentation Changes",
     ]
-    HOTFIX_PR_KEYWORDS = [
+    hotfix_pr_keywords = [
         "memory optimization",
         "context management",
         "heap exhaustion",
@@ -220,14 +221,14 @@ def verify() -> tuple[bool, str]:
     ]
 
     # PR #51 update requirements
-    PR51_UPDATE_KEYWORDS = [
+    pr51_update_keywords = [
         "Technical Implementation",
         "event logging integration",
         "workflow enhancement",
     ]
 
     # Issue comment requirements
-    ISSUE_COMMENT_KEYWORDS = [
+    issue_comment_keywords = [
         "context buffer management",
         "streaming optimization",
         "progressive cleanup",
@@ -258,9 +259,9 @@ def verify() -> tuple[bool, str]:
 
     # 1. Check that hotfix branch exists
     print("1. Verifying hotfix branch exists...")
-    if not _check_branch_exists(HOTFIX_BRANCH_NAME, headers, github_org):
-        print(f"Error: Branch '{HOTFIX_BRANCH_NAME}' not found", file=sys.stderr)
-        return False, f"Branch '{HOTFIX_BRANCH_NAME}' not found"
+    if not _check_branch_exists(hotfix_branch_name, headers, github_org):
+        print(f"Error: Branch '{hotfix_branch_name}' not found", file=sys.stderr)
+        return False, f"Branch '{hotfix_branch_name}' not found"
     print("✓ Hotfix branch created")
 
     # 2. Check that the memory optimization documentation exists with exact content
@@ -270,7 +271,7 @@ def verify() -> tuple[bool, str]:
         headers,
         github_org,
         "claude-code",
-        HOTFIX_BRANCH_NAME,
+        hotfix_branch_name,
     )
     if not memory_doc_content:
         print(
@@ -279,7 +280,7 @@ def verify() -> tuple[bool, str]:
         )
         return False, "docs/MEMORY_OPTIMIZATION.md not found in hotfix branch"
 
-    if not _check_exact_file_content(memory_doc_content, MEMORY_DOC_SECTIONS):
+    if not _check_exact_file_content(memory_doc_content, memory_doc_sections):
         print(
             "Error: MEMORY_OPTIMIZATION.md missing required sections or content",
             file=sys.stderr,
@@ -290,27 +291,27 @@ def verify() -> tuple[bool, str]:
     # 3. Find and verify the tracking issue
     print("3. Verifying tracking issue creation and content...")
     tracking_issue = _find_issue_by_title_keyword(
-        TRACKING_ISSUE_KEYWORD, headers, github_org
+        tracking_issue_keyword, headers, github_org
     )
     if not tracking_issue:
         print(
-            f"Error: Tracking issue with keyword '{TRACKING_ISSUE_KEYWORD}' not found",
+            f"Error: Tracking issue with keyword '{tracking_issue_keyword}' not found",
             file=sys.stderr,
         )
-        return False, f"Tracking issue with keyword '{TRACKING_ISSUE_KEYWORD}' not found"
+        return False, f"Tracking issue with keyword '{tracking_issue_keyword}' not found"
 
     tracking_issue_number = tracking_issue.get("number")
     tracking_issue_title = tracking_issue.get("title", "")
     tracking_issue_body = tracking_issue.get("body", "")
 
     # Check tracking issue title keywords
-    if not _check_title_keywords(tracking_issue_title, TRACKING_ISSUE_TITLE_KEYWORDS):
+    if not _check_title_keywords(tracking_issue_title, tracking_issue_title_keywords):
         print("Error: Tracking issue title missing required keywords", file=sys.stderr)
         return False, "Tracking issue title missing required keywords"
 
     # Check tracking issue headings, content and references
     if not _check_headings_and_keywords(
-        tracking_issue_body, TRACKING_ISSUE_HEADINGS, TRACKING_ISSUE_KEYWORDS
+        tracking_issue_body, tracking_issue_headings, tracking_issue_keywords
     ):
         print(
             "Error: Tracking issue missing required headings or keywords",
@@ -319,7 +320,7 @@ def verify() -> tuple[bool, str]:
         return False, "Tracking issue missing required headings or keywords"
 
     if not _check_issue_references(
-        tracking_issue_body, TRACKING_ISSUE_REFERENCE_NUMBERS
+        tracking_issue_body, tracking_issue_reference_numbers
     ):
         print(
             "Error: Tracking issue does not reference required issues #49, #46, #47",
@@ -330,32 +331,32 @@ def verify() -> tuple[bool, str]:
 
     # 4. Find and verify the hotfix PR
     print("4. Verifying hotfix pull request creation and content...")
-    hotfix_pr = _find_pr_by_title_keyword(HOTFIX_PR_KEYWORD, headers, github_org)
+    hotfix_pr = _find_pr_by_title_keyword(hotfix_pr_keyword, headers, github_org)
     if not hotfix_pr:
         print(
-            f"Error: Hotfix PR with keyword '{HOTFIX_PR_KEYWORD}' not found",
+            f"Error: Hotfix PR with keyword '{hotfix_pr_keyword}' not found",
             file=sys.stderr,
         )
-        return False, f"Hotfix PR with keyword '{HOTFIX_PR_KEYWORD}' not found"
+        return False, f"Hotfix PR with keyword '{hotfix_pr_keyword}' not found"
 
     hotfix_pr_number = hotfix_pr.get("number")
     hotfix_pr_title = hotfix_pr.get("title", "")
     hotfix_pr_body = hotfix_pr.get("body", "")
 
     # Check hotfix PR title keywords
-    if not _check_title_keywords(hotfix_pr_title, HOTFIX_PR_TITLE_KEYWORDS):
+    if not _check_title_keywords(hotfix_pr_title, hotfix_pr_title_keywords):
         print("Error: Hotfix PR title missing required keywords", file=sys.stderr)
         return False, "Hotfix PR title missing required keywords"
 
     # Check hotfix PR headings and content
     if not _check_headings_and_keywords(
-        hotfix_pr_body, HOTFIX_PR_HEADINGS, HOTFIX_PR_KEYWORDS
+        hotfix_pr_body, hotfix_pr_headings, hotfix_pr_keywords
     ):
         print("Error: Hotfix PR missing required headings or keywords", file=sys.stderr)
         return False, "Hotfix PR missing required headings or keywords"
 
     # Check hotfix PR addresses pattern
-    if not _check_addresses_pattern(hotfix_pr_body, HOTFIX_PR_ADDRESSES_NUMBERS):
+    if not _check_addresses_pattern(hotfix_pr_body, hotfix_pr_addresses_numbers):
         print(
             "Error: Hotfix PR does not properly address issues #49 and #46",
             file=sys.stderr,
@@ -383,7 +384,7 @@ def verify() -> tuple[bool, str]:
 
     # Check PR #51 has been updated with required content
     if not _check_headings_and_keywords(
-        pr51_body, ["## Technical Implementation"], PR51_UPDATE_KEYWORDS
+        pr51_body, ["## Technical Implementation"], pr51_update_keywords
     ):
         print(
             "Error: PR #51 missing updated technical implementation section",
@@ -409,18 +410,17 @@ def verify() -> tuple[bool, str]:
         has_pr_ref = f"PR #{hotfix_pr_number}" in body
         has_pr51_ref = "PR #51" in body
         has_keywords = all(
-            keyword.lower() in body.lower() for keyword in ISSUE_COMMENT_KEYWORDS
+            keyword.lower() in body.lower() for keyword in issue_comment_keywords
         )
         if has_pr_ref and has_pr51_ref and has_keywords:
             has_implementation_comment = True
             break
 
     if not has_implementation_comment:
-        print(
-            f"Error: Tracking issue #{tracking_issue_number} missing implementation comment with required references and keywords",
-            file=sys.stderr,
-        )
-        return False, f"Tracking issue #{tracking_issue_number} missing implementation comment with required references and keywords"
+        msg = (f"Error: Tracking issue #{tracking_issue_number} missing "
+               f"implementation comment with required references and keywords")
+        print(msg, file=sys.stderr)
+        return False, msg
     print("✓ Tracking issue has implementation comment with PR references")
 
     # 7. Check tracking issue is closed
@@ -437,7 +437,7 @@ def verify() -> tuple[bool, str]:
     print("Critical issue hotfix workflow completed successfully:")
     print(f"  - Tracking Issue #{tracking_issue_number}: {tracking_issue.get('title')}")
     print(f"  - Hotfix PR #{hotfix_pr_number}: {hotfix_pr.get('title')}")
-    print(f"  - Branch: {HOTFIX_BRANCH_NAME}")
+    print(f"  - Branch: {hotfix_branch_name}")
     print("  - PR #51 merged: ✓")
     print("  - Memory optimization documentation: ✓")
 
@@ -446,7 +446,7 @@ def verify() -> tuple[bool, str]:
 
 def main():
     """Main verification function."""
-    success, error_msg = verify()
+    success, _error_msg = verify()
     if success:
         sys.exit(0)
     else:

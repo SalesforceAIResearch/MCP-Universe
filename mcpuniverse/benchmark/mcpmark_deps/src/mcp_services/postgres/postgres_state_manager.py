@@ -5,14 +5,17 @@ PostgreSQL State Manager for MCPMark
 Manages database state for PostgreSQL tasks including schema setup,
 test data creation, and cleanup.
 """
-
+# pylint: disable=import-error
 import os
 import subprocess
 import sys
+import urllib.request
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
 import psycopg2
 from psycopg2 import sql
-from pathlib import Path
-from typing import Optional, Dict, Any, List
 
 from src.base.state_manager import BaseStateManager, InitialStateInfo
 from src.base.task_manager import BaseTask
@@ -21,10 +24,10 @@ from src.logger import get_logger
 logger = get_logger(__name__)
 
 
-class PostgresStateManager(BaseStateManager):
+class PostgresStateManager(BaseStateManager):  # pylint: disable=too-many-instance-attributes, too-few-public-methods
     """Manages PostgreSQL database state for task evaluation."""
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments, too-many-positional-arguments
         self,
         host: str = "localhost",
         port: int = 5432,
@@ -69,56 +72,60 @@ class PostgresStateManager(BaseStateManager):
             self._test_connection()
             logger.info("PostgreSQL state manager initialized successfully")
             self._setup_database()
-        except Exception as e:
-            raise RuntimeError(f"PostgreSQL initialization failed: {e}")
+        except Exception as exc:
+            raise RuntimeError(
+                f"PostgreSQL initialization failed: {exc}"
+            ) from exc
 
     def _test_connection(self):
         """Test database connection."""
         conn = psycopg2.connect(**self.conn_params, database="postgres")
         conn.close()
-    
+
     def _setup_database(self):
         """Setup all required databases by downloading and restoring from backup."""
         databases = ['employees', 'chinook', 'dvdrental', 'sports', 'lego']
-        
+
         for db_name in databases:
             if not self._database_exists(db_name):
-                logger.info(f"Setting up {db_name} database...")
-                
+                logger.info("Setting up %s database...", db_name)
+
                 # Path to backup file in MCP-Universe/tests/data/postgres
                 # Navigate from mcpmark_deps/src/mcp_services/postgres to MCP-Universe root
-                # Path: mcpmark_deps/src/mcp_services/postgres -> benchmark -> mcpuniverse -> MCP-Universe
-                mcpuniverse_root = Path(__file__).parent.parent.parent.parent.parent.parent.parent
+                # Path: mcpmark_deps/src/mcp_services/postgres -> benchmark -> mcpuniverse
+                # -> MCP-Universe
+                mcpuniverse_root = (
+                    Path(__file__).parent.parent.parent.parent.parent.parent.parent
+                )
                 backup_dir = mcpuniverse_root / "tests" / "data" / "postgres"
                 backup_file = backup_dir / f"{db_name}.backup"
-                
+
                 # Download backup if not exists
                 if not backup_file.exists():
                     backup_dir.mkdir(parents=True, exist_ok=True)
-                    logger.info(f"Downloading {db_name} backup...")
+                    logger.info("Downloading %s backup...", db_name)
                     try:
-                        import urllib.request
                         urllib.request.urlretrieve(
                             f'https://storage.mcpmark.ai/postgres/{db_name}.backup',
                             str(backup_file)
                         )
-                        logger.info(f"{db_name} backup downloaded")
-                    except Exception as e:
-                        logger.warning(f"Failed to download {db_name} backup: {e}")
+                        logger.info("%s backup downloaded", db_name)
+                    except Exception as exc:  # pylint: disable=broad-exception-caught
+                        logger.warning("Failed to download %s backup: %s", db_name, exc)
                         continue
-                
+
                 # Create database
                 try:
                     self._create_empty_database(db_name)
-                    logger.info(f"Created {db_name} database")
-                except Exception as e:
-                    logger.warning(f"Failed to create {db_name} database: {e}")
+                    logger.info("Created %s database", db_name)
+                except Exception as exc:  # pylint: disable=broad-exception-caught
+                    logger.warning("Failed to create %s database: %s", db_name, exc)
                     continue
-                
+
                 # Restore from backup
                 env = os.environ.copy()
                 env['PGPASSWORD'] = self.password
-                
+
                 try:
                     result = subprocess.run([
                         'pg_restore',
@@ -128,16 +135,20 @@ class PostgresStateManager(BaseStateManager):
                         '-d', db_name,
                         '-v',
                         str(backup_file)
-                    ], env=env, capture_output=True, text=True)
-                    
+                    ], env=env, capture_output=True, text=True, check=False)
+
                     if result.returncode != 0 and "ERROR" in result.stderr:
-                        logger.warning(f"pg_restore had errors for {db_name}: {result.stderr}")
+                        logger.warning(
+                            "pg_restore had errors for %s: %s",
+                            db_name,
+                            result.stderr
+                        )
                     else:
-                        logger.info(f"{db_name} database restored successfully")
-                except Exception as e:
-                    logger.warning(f"Failed to restore {db_name} database: {e}")
+                        logger.info("%s database restored successfully", db_name)
+                except Exception as exc:  # pylint: disable=broad-exception-caught
+                    logger.warning("Failed to restore %s database: %s", db_name, exc)
             else:
-                logger.debug(f"{db_name} database already exists")
+                logger.debug("%s database already exists", db_name)
 
     def _create_initial_state(self, task: BaseTask) -> Optional[InitialStateInfo]:
         """Create initial database state for a task."""
@@ -149,14 +160,16 @@ class PostgresStateManager(BaseStateManager):
             if self._database_exists(task.category_id):
                 self._create_database_from_template(db_name, task.category_id)
                 logger.info(
-                    f"| Created database '{db_name}' from template '{task.category_id}'"
+                    "| Created database '%s' from template '%s'",
+                    db_name,
+                    task.category_id
                 )
             else:
                 self._create_empty_database(db_name)
-                logger.info(f"| Created empty database '{db_name}'")
+                logger.info("| Created empty database '%s'", db_name)
                 # Run prepare_environment.py if it exists
                 self._run_prepare_environment(db_name, task)
-                logger.info(f"| Prepared environment for database '{db_name}'")
+                logger.info("| Prepared environment for database '%s'", db_name)
 
             # Track for cleanup
             self.created_databases.append(db_name)
@@ -173,8 +186,8 @@ class PostgresStateManager(BaseStateManager):
                 },
             )
 
-        except Exception as e:
-            logger.error(f"Failed to create initial state for {task.name}: {e}")
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            logger.error("Failed to create initial state for %s: %s", task.name, exc)
             return None
 
     def _store_initial_state_info(
@@ -192,7 +205,7 @@ class PostgresStateManager(BaseStateManager):
         if hasattr(task, "database_name") and task.database_name:
             try:
                 self._drop_database(task.database_name)
-                logger.info(f"| Dropped database: {task.database_name}")
+                logger.info("| Dropped database: %s", task.database_name)
 
                 # Remove from tracking
                 self.created_databases = [
@@ -202,8 +215,12 @@ class PostgresStateManager(BaseStateManager):
                 if self._current_task_database == task.database_name:
                     self._current_task_database = None
                 return True
-            except Exception as e:
-                logger.error(f"Failed to drop database {task.database_name}: {e}")
+            except Exception as exc:  # pylint: disable=broad-exception-caught
+                logger.error(
+                    "Failed to drop database %s: %s",
+                    task.database_name,
+                    exc
+                )
                 return False
         return True
 
@@ -212,10 +229,10 @@ class PostgresStateManager(BaseStateManager):
         if resource["type"] == "database":
             try:
                 self._drop_database(resource["id"])
-                logger.info(f"| Dropped database: {resource['id']}")
+                logger.info("| Dropped database: %s", resource['id'])
                 return True
-            except Exception as e:
-                logger.error(f"| Failed to drop database {resource['id']}: {e}")
+            except Exception as exc:  # pylint: disable=broad-exception-caught
+                logger.error("| Failed to drop database %s: %s", resource['id'], exc)
                 return False
         return False
 
@@ -295,10 +312,10 @@ class PostgresStateManager(BaseStateManager):
         prepare_script = task_dir / "prepare_environment.py"
 
         if not prepare_script.exists():
-            logger.debug(f"No prepare_environment.py found for task {task.name}")
+            logger.debug("No prepare_environment.py found for task %s", task.name)
             return
 
-        logger.info(f"| Running prepare_environment.py for task {task.name}")
+        logger.info("| Running prepare_environment.py for task %s", task.name)
 
         # Set up environment variables for the script
         env = os.environ.copy()
@@ -315,6 +332,7 @@ class PostgresStateManager(BaseStateManager):
             result = subprocess.run(
                 [sys.executable, str(prepare_script)],
                 cwd=str(task_dir),  # Run from task directory to access data/ folder
+                check=False,
                 env=env,
                 capture_output=True,
                 text=True,
@@ -322,19 +340,32 @@ class PostgresStateManager(BaseStateManager):
             )
 
             if result.returncode == 0:
-                logger.info(f"| ✓ Environment preparation completed for {task.name}")
+                logger.info(
+                    "| ✓ Environment preparation completed for %s",
+                    task.name
+                )
                 if result.stdout.strip():
-                    logger.debug(f"| prepare_environment.py output: {result.stdout}")
+                    logger.debug("| prepare_environment.py output: %s", result.stdout)
             else:
-                logger.error(f"| ❌ Environment preparation failed for {task.name}")
-                logger.error(f"| Error output: {result.stderr}")
-                raise RuntimeError(f"prepare_environment.py failed with exit code {result.returncode}")
+                logger.error(
+                    "| ❌ Environment preparation failed for %s",
+                    task.name
+                )
+                logger.error("| Error output: %s", result.stderr)
+                raise RuntimeError(
+                    f"prepare_environment.py failed with exit code "
+                    f"{result.returncode}"
+                )
 
-        except subprocess.TimeoutExpired:
-            logger.error(f"❌ Environment preparation timed out for {task.name}")
-            raise RuntimeError("prepare_environment.py execution timed out")
-        except Exception as e:
-            logger.error(f"❌ Failed to run prepare_environment.py for {task.name}: {e}")
+        except subprocess.TimeoutExpired as exc:
+            logger.error("❌ Environment preparation timed out for %s", task.name)
+            raise RuntimeError("prepare_environment.py execution timed out") from exc
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            logger.error(
+                "❌ Failed to run prepare_environment.py for %s: %s",
+                task.name,
+                exc
+            )
             raise
 
     def _setup_task_specific_data(self, db_name: str, task: BaseTask):
@@ -351,9 +382,9 @@ class PostgresStateManager(BaseStateManager):
                 # Add more categories as needed
 
             conn.commit()
-        except Exception as e:
+        except Exception as exc:  # pylint: disable=broad-exception-caught
             conn.rollback()
-            logger.error(f"Failed to setup task data: {e}")
+            logger.error("Failed to setup task data: %s", exc)
             raise
         finally:
             conn.close()
@@ -407,8 +438,6 @@ class PostgresStateManager(BaseStateManager):
 
     def _get_timestamp(self) -> str:
         """Get timestamp for unique naming."""
-        from datetime import datetime
-
         return datetime.now().strftime("%Y%m%d%H%M%S")
 
     def get_service_config_for_agent(self) -> dict:
@@ -424,13 +453,15 @@ class PostgresStateManager(BaseStateManager):
         if hasattr(self, "_current_task_database") and self._current_task_database:
             config["current_database"] = self._current_task_database
             config["database_url"] = (
-                f"postgresql://{self.username}:{self.password}@{self.host}:{self.port}/{self._current_task_database}"
+                f"postgresql://{self.username}:{self.password}@{self.host}:"
+                f"{self.port}/{self._current_task_database}"
             )
         else:
             # Fallback to default database
             config["database"] = self.database
             config["database_url"] = (
-                f"postgresql://{self.username}:{self.password}@{self.host}:{self.port}/{self.database}"
+                f"postgresql://{self.username}:{self.password}@{self.host}:"
+                f"{self.port}/{self.database}"
             )
 
         return config

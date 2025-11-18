@@ -16,6 +16,7 @@ import argparse
 import sys
 from pathlib import Path
 from typing import Optional
+import traceback
 
 try:
     from playwright.sync_api import (
@@ -66,7 +67,7 @@ class NotionLoginHelper:
         self.headless = headless
         self.browser_name = browser
         self.state_path = Path(state_path or self.DEFAULT_STATE_PATH).expanduser().resolve()
-        
+
         self._browser_context: Optional[BrowserContext] = None
         self._playwright = None
         self._browser = None
@@ -115,7 +116,7 @@ class NotionLoginHelper:
         # Save session state
         print(f"💾 Saving session state to: {self.state_path}")
         context.storage_state(path=str(self.state_path))
-        print(f"✅ Login successful! Session state saved.")
+        print("✅ Login successful! Session state saved.")
         print(f"📁 File: {self.state_path}")
 
         self._browser_context = context
@@ -150,48 +151,19 @@ class NotionLoginHelper:
         print("\n" + "="*60)
         print("🔑 NOTION LOGIN - HEADLESS MODE")
         print("="*60)
-        
+
         login_url = "https://www.notion.so/login"
         page.goto(login_url, wait_until="domcontentloaded")
 
         # Step 1: Enter email
         print("\n📧 Step 1: Enter your email")
         email = input("Enter your Notion email address: ").strip()
-        
-        try:
-            email_input = page.locator('input[placeholder="Enter your email address..."]')
-            email_input.wait_for(state="visible", timeout=10000)
-            email_input.fill(email)
-            email_input.press("Enter")
-            print("✅ Email submitted")
-        except PlaywrightTimeoutError:
-            print("❌ Error: Email input field not found")
-            raise RuntimeError("Timed out waiting for email input field")
-        except Exception as e:
-            print(f"⚠️  Trying alternative method: {e}")
-            try:
-                page.get_by_role("button", name="Continue", exact=True).click()
-            except Exception:
-                raise RuntimeError("Could not submit email")
+        self._submit_email(page, email)
 
         # Step 2: Enter verification code
         print("\n🔐 Step 2: Check your email for a verification code")
-        try:
-            code_input = page.locator('input[placeholder="Enter code"]')
-            code_input.wait_for(state="visible", timeout=120000)
-            code = input("Enter the verification code from your email: ").strip()
-            code_input.fill(code)
-            code_input.press("Enter")
-            print("✅ Code submitted")
-        except PlaywrightTimeoutError:
-            print("❌ Error: Verification code input not found")
-            raise RuntimeError("Timed out waiting for verification code input")
-        except Exception as e:
-            print(f"⚠️  Trying alternative method: {e}")
-            try:
-                page.get_by_role("button", name="Continue", exact=True).click()
-            except Exception:
-                raise RuntimeError("Could not submit verification code")
+        code = input("Enter the verification code from your email: ").strip()
+        self._submit_code(page, code)
 
         # Wait for redirect after login
         print("\n⏳ Waiting for login to complete...")
@@ -206,6 +178,41 @@ class NotionLoginHelper:
             print(f"🌐 Navigating to: {self.url}")
             page.goto(self.url, wait_until="domcontentloaded")
 
+    def _submit_email(self, page: Page, email: str) -> None:
+        """Fill and submit email in headless flow."""
+        try:
+            email_input = page.locator('input[placeholder="Enter your email address..."]')
+            email_input.wait_for(state="visible", timeout=10000)
+            email_input.fill(email)
+            email_input.press("Enter")
+            print("✅ Email submitted")
+        except PlaywrightTimeoutError as exc:
+            print("❌ Error: Email input field not found")
+            raise RuntimeError("Timed out waiting for email input field") from exc
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            print(f"⚠️  Trying alternative method: {exc}")
+            try:
+                page.get_by_role("button", name="Continue", exact=True).click()
+            except Exception as click_exc:  # pylint: disable=broad-exception-caught
+                raise RuntimeError("Could not submit email") from click_exc
+
+    def _submit_code(self, page: Page, code: str) -> None:
+        """Fill and submit verification code in headless flow."""
+        try:
+            code_input = page.locator('input[placeholder="Enter code"]')
+            code_input.wait_for(state="visible", timeout=120000)
+            code_input.fill(code)
+            code_input.press("Enter")
+            print("✅ Code submitted")
+        except PlaywrightTimeoutError as exc:
+            print("❌ Error: Verification code input not found")
+            raise RuntimeError("Timed out waiting for verification code input") from exc
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            print(f"⚠️  Trying alternative method: {exc}")
+            try:
+                page.get_by_role("button", name="Continue", exact=True).click()
+            except Exception as click_exc:  # pylint: disable=broad-exception-caught
+                raise RuntimeError("Could not submit verification code") from click_exc
     def close(self) -> None:
         """Close browser and cleanup."""
         if self._browser_context:
@@ -213,13 +220,13 @@ class NotionLoginHelper:
                 self._browser_context.close()
             finally:
                 self._browser_context = None
-        
+
         if self._browser:
             try:
                 self._browser.close()
             finally:
                 self._browser = None
-        
+
         if self._playwright:
             self._playwright.stop()
             self._playwright = None
@@ -257,37 +264,30 @@ Examples:
   python notion_login.py --headless --browser chromium --output /tmp/notion.json
         """
     )
-    
     parser.add_argument(
         "--headless",
         action="store_true",
         help="Run in headless mode (no GUI, requires email + verification code input)",
     )
-    
     parser.add_argument(
         "--browser",
         default="firefox",
         choices=["chromium", "firefox"],
         help="Browser engine to use (default: firefox)",
     )
-    
     parser.add_argument(
         "--output", "-o",
         type=str,
         help="Path to save session state (default: MCP-Universe/notion_state.json)",
     )
-    
     parser.add_argument(
         "--url",
         type=str,
         help="Notion URL to navigate to after login (default: login page)",
     )
-
     args = parser.parse_args()
-
     print("\n" + "🔐 Notion Login Helper".center(60, "="))
     print()
-
     try:
         helper = NotionLoginHelper(
             headless=args.headless,
@@ -295,7 +295,6 @@ Examples:
             state_path=args.output,
             url=args.url,
         )
-        
         with helper:
             print("\n" + "="*60)
             print("🎉 Login process completed successfully!")
@@ -303,17 +302,12 @@ Examples:
             print(f"\n📄 Session state saved to: {helper.state_path}")
             print("\n💡 You can now use this session state for automated Notion tasks.")
             print()
-            
     except KeyboardInterrupt:
         print("\n\n⚠️  Login cancelled by user")
         sys.exit(1)
-    except Exception as e:
-        print(f"\n\n❌ Error during login: {e}")
-        import traceback
+    except Exception as exc:  # pylint: disable=broad-exception-caught
+        print(f"\n\n❌ Error during login: {exc}")
         traceback.print_exc()
         sys.exit(1)
-
-
 if __name__ == "__main__":
     main()
-

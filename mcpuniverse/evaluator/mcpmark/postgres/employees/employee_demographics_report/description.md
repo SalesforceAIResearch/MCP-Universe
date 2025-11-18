@@ -28,7 +28,7 @@ Generate a comprehensive employee demographics and basic statistics report for t
 
 5. **Apply age group classification** based on current age:
    * **20-29**: Ages 20-29
-   * **30-39**: Ages 30-39  
+   * **30-39**: Ages 30-39
    * **40-49**: Ages 40-49
    * **50-59**: Ages 50-59
    * **60+**: Ages 60 and above
@@ -38,3 +38,4 @@ Generate a comprehensive employee demographics and basic statistics report for t
 7. **Focus on basic statistics** — create simple counts, averages, and percentages that are easy to understand and verify.
 
 The analysis will provide clear demographic insights for HR reporting and workforce planning.
+

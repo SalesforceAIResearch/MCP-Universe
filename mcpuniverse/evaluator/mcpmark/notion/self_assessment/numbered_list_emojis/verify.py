@@ -1,3 +1,7 @@
+"""Verification module for Numbered List Emojis task in Notion workspace."""
+
+# pylint: disable=duplicate-code,import-error,astroid-error
+
 import sys
 from notion_client import Client
 from mcpuniverse.evaluator.mcpmark.notion.utils import notion_utils
@@ -36,20 +40,23 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
             numbered_list_items.append(block)
 
     if len(numbered_list_items) > 0:
-        print(
-            f"Error: found {len(numbered_list_items)} numbered list items that should be converted to emoji numbers",
-            file=sys.stderr,
-        )
-        # return False, f"Error: found {len(numbered_list_items)} numbered list items that should be converted to emoji numbers"
+        items_count = len(numbered_list_items)
+        msg = (f"Error: found {items_count} numbered list items that should "
+               "be converted to emoji numbers")
+        print(msg, file=sys.stderr)
+        # return False, msg
 
     required_items = [
         "1️⃣ Record Each Hyperfocus Session:",
         "2️⃣ Review and Reflect:",
         "3️⃣ Adjust and Optimize:",
         '1️⃣ Harvard Business Review: "The Making of a Corporate Athlete"',
-        '2️⃣ "Hyperfocus: How to Be More Productive in a World of Distraction" by Chris Bailey',
-        '3️⃣ "Attention Management: How to Create Success and Gain Productivity Every Day" by Maura Thomas',
-        '4️⃣ "Deep Work: Rules for Focused Success in a Distracted World" by Cal Newport',
+        ('2️⃣ "Hyperfocus: How to Be More Productive in a World of '
+         'Distraction" by Chris Bailey'),
+        ('3️⃣ "Attention Management: How to Create Success and Gain '
+         'Productivity Every Day" by Maura Thomas'),
+        ('4️⃣ "Deep Work: Rules for Focused Success in a Distracted World" '
+         'by Cal Newport'),
         "1️⃣ Record Each Hyperfocus Session:",
         "2️⃣ Review and Reflect:",
         "3️⃣ Adjust and Optimize:",
@@ -74,11 +81,10 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
     if len(remaining_items) == 0:
         print("Success: All numbered lists have been converted to emoji numbers")
         return True, ""
-    else:
-        print(f"Error: Missing {len(remaining_items)} required items:", file=sys.stderr)
-        for item in remaining_items:
-            print(f"  - {item}", file=sys.stderr)
-        return False, f"Error: Missing {len(remaining_items)} required items"
+    print(f"Error: Missing {len(remaining_items)} required items:", file=sys.stderr)
+    for item in remaining_items:
+        print(f"  - {item}", file=sys.stderr)
+    return False, f"Error: Missing {len(remaining_items)} required items"
 
 
 def main():
@@ -87,7 +93,7 @@ def main():
     """
     notion = notion_utils.get_notion_client()
     main_id = sys.argv[1] if len(sys.argv) > 1 else None
-    success, error_msg = verify(notion, main_id)
+    success, _error_msg = verify(notion, main_id)
     if success:
         sys.exit(0)
     else:

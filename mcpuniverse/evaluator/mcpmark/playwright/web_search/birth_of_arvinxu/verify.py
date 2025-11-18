@@ -6,6 +6,8 @@ Simple verification that checks if the AI agent found the correct answer.
 The expected ground truth answer is configured at the top of the file.
 """
 
+# pylint: disable=duplicate-code
+
 import sys
 import json
 import os
@@ -109,17 +111,16 @@ def verify_task() -> tuple[bool, str]:
     if ai_results["found_answer"]:
         print(f"| AI agent correctly identified: {EXPECTED_GROUND_TRUTH}")
         return True, ""
-    else:
-        print(f"| AI agent did not find the correct answer: {EXPECTED_GROUND_TRUTH}")
-        return False, f"AI agent did not find the correct answer: {EXPECTED_GROUND_TRUTH}"
+    print(f"| AI agent did not find the correct answer: {EXPECTED_GROUND_TRUTH}")
+    return False, f"AI agent did not find the correct answer: {EXPECTED_GROUND_TRUTH}"
 
 
 def main():
     """Main verification function."""
     try:
-        success, error_msg = verify_task()
+        success, _error_msg = verify_task()
         sys.exit(0 if success else 1)
-    except Exception as e:
+    except (ValueError, KeyError, TypeError, AttributeError, IOError, OSError) as e:
         print(f"\n💥 Verification error: {e}")
         sys.exit(1)
 

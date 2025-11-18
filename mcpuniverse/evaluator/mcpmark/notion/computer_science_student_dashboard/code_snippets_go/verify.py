@@ -1,4 +1,9 @@
+"""Verification module for Code Snippets Go task in Notion workspace."""
+
+# pylint: disable=duplicate-code,import-error,astroid-error
+
 import sys
+from typing import Optional
 from notion_client import Client
 from mcpuniverse.evaluator.mcpmark.notion.utils import notion_utils
 
@@ -28,7 +33,7 @@ def _normalize(text: str) -> str:
     return "\n".join(line.rstrip() for line in text.strip().splitlines())
 
 
-def _find_page(notion: Client, main_id: str | None) -> str | None:
+def _find_page(notion: Client, main_id: Optional[str]) -> Optional[str]:
     """Return a page_id to verify against or None if not found."""
     page_id = None
     if main_id:
@@ -113,7 +118,8 @@ def _collect_code_blocks(blocks):
     return collected
 
 
-def verify(notion: Client, main_id: str | None = None) -> tuple[bool, str]:
+def verify(notion: Client, main_id: Optional[str] = None) -> tuple[bool, str]:
+    """Verify that code snippets with Go language are correctly added."""
     page_id = _find_page(notion, main_id)
     if not page_id:
         print("Error: Target page not found.", file=sys.stderr)
@@ -133,7 +139,7 @@ def verify(notion: Client, main_id: str | None = None) -> tuple[bool, str]:
     remaining = EXPECTED_CODE_BLOCKS.copy()
     for code, caption in code_blocks_found:
         norm_code = _normalize(code)
-        for expected in remaining:
+        for expected in list(remaining):  # Iterate through a copy
             if (
                 _normalize(expected["code"]) == norm_code
                 and expected["caption"] == caption
@@ -165,7 +171,7 @@ def main():
     """Main verification function."""
     notion = notion_utils.get_notion_client()
     main_id = sys.argv[1] if len(sys.argv) > 1 else None
-    success, error_msg = verify(notion, main_id)
+    success, _error_msg = verify(notion, main_id)
     if success:
         sys.exit(0)
     else:

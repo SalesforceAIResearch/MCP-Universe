@@ -8,8 +8,7 @@ Provides basic error standardization and retry logic.
 
 from typing import Optional
 
-
-"""Retryable error detection via minimal substring matching (lower-case)."""
+# Retryable error detection via minimal substring matching (lower-case).
 
 # Keep this list short and generic; aim to catch API/infrastructure issues only.
 RETRYABLE_PATTERNS = {

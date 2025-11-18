@@ -1,3 +1,5 @@
+"""Verification module for sales inventory analysis task."""
+# pylint: disable=R0911,R0912
 import asyncio
 import sys
 import re
@@ -18,8 +20,8 @@ def get_model_response():
         return None
 
     try:
-        with open(messages_path, "r") as f:
-            messages = json.load(f)
+        with open(messages_path, "r", encoding='utf-8') as file_handle:
+            messages = json.load(file_handle)
 
         # Find the last assistant message with type='message', status='completed'
         for message in reversed(messages):
@@ -36,8 +38,8 @@ def get_model_response():
 
         print("Warning: No assistant response found in messages", file=sys.stderr)
         return None
-    except Exception as e:
-        print(f"Error reading messages file: {str(e)}", file=sys.stderr)
+    except (OSError, json.JSONDecodeError) as error:
+        print(f"Error reading messages file: {str(error)}", file=sys.stderr)
         return None
 
 
@@ -63,12 +65,12 @@ def parse_answer_format(text):
     # Parse each line
     result = {}
     lines = answer_content.split("\n")
-    
+
     # Expected keys for this task
     expected_keys = [
         "SpriteProducts", "Quantity100Products", "WS12Info", "PendingOrders",
         "GraceOrderID", "HighestOrderInfo", "CheapProduct", "OvernightDufflePrice",
-        "HollisterPosition", "CostelloCustomers", "SarahMillerInfo", 
+        "HollisterPosition", "CostelloCustomers", "SarahMillerInfo",
         "PaidInvoices", "Invoice002BillTo"
     ]
 
@@ -81,22 +83,22 @@ def parse_answer_format(text):
         if "|" not in line:
             print(f"ERROR: Line {i} does not contain pipe separator '|': '{line}'", file=sys.stderr)
             return None
-        
+
         parts = line.split("|", 1)
         if len(parts) != 2:
             print(f"ERROR: Line {i} could not be split into key|value: '{line}'", file=sys.stderr)
             return None
-            
+
         key, value = parts
         result[key.strip()] = value.strip()
-    
+
     # Check if all expected keys are present
     missing_keys = set(expected_keys) - set(result.keys())
     if missing_keys:
         print(f"ERROR: Missing expected keys: {missing_keys}", file=sys.stderr)
         print(f"Keys found: {list(result.keys())}", file=sys.stderr)
         return None
-    
+
     # Check for unexpected keys
     extra_keys = set(result.keys()) - set(expected_keys)
     if extra_keys:
@@ -111,8 +113,8 @@ def load_expected_answer(label_path):
     Returns a dictionary with the expected values.
     """
     try:
-        with open(label_path, "r") as f:
-            lines = f.read().strip().split("\n")
+        with open(label_path, "r", encoding='utf-8') as file_handle:
+            lines = file_handle.read().strip().split("\n")
 
         expected = {}
         for line in lines:
@@ -121,8 +123,8 @@ def load_expected_answer(label_path):
                 expected[key.strip()] = value.strip()
 
         return expected
-    except Exception as e:
-        print(f"Error reading label file: {str(e)}", file=sys.stderr)
+    except OSError as error:
+        print(f"Error reading label file: {str(error)}", file=sys.stderr)
         return None
 
 
@@ -283,7 +285,7 @@ async def verify() -> tuple[bool, str]:
     print("\n" + "="*60, file=sys.stderr)
     print("Starting verification of Task 5", file=sys.stderr)
     print("="*60, file=sys.stderr)
-    
+
     # Get the label file path
     label_path = Path(__file__).parent / "label.txt"
 
@@ -301,17 +303,17 @@ async def verify() -> tuple[bool, str]:
     if not model_response:
         print("FATAL ERROR: No model response found in MCP_MESSAGES", file=sys.stderr)
         return False, "No model response found in MCP_MESSAGES"
-    
+
     print(f"Found model response ({len(model_response)} characters)", file=sys.stderr)
-    
+
     print("\n--- Parsing Answer Format ---", file=sys.stderr)
     model_answer = parse_answer_format(model_response)
-    
+
     if not model_answer:
         print("\nFATAL ERROR: Could not parse answer format from model response", file=sys.stderr)
         print("Verification FAILED", file=sys.stderr)
         return False, "Could not parse answer format from model response"
-    
+
     print("\n=== Model Answer Successfully Parsed ===", file=sys.stderr)
     for key, value in model_answer.items():
         print(f"  {key}: {value}", file=sys.stderr)
@@ -319,13 +321,13 @@ async def verify() -> tuple[bool, str]:
     # Compare answers
     print("\n--- Comparing Answers ---", file=sys.stderr)
     answer_match, error_msg = compare_answers(model_answer, expected_answer)
-    
+
     if not answer_match:
         print("\n" + "="*60, file=sys.stderr)
         print("VERIFICATION FAILED: Model answer does not match expected answer", file=sys.stderr)
         print("="*60, file=sys.stderr)
         return False, error_msg
-    
+
     print("\n" + "="*60, file=sys.stderr)
     print("✓ VERIFICATION PASSED: Model answer matches expected answer", file=sys.stderr)
     print("="*60, file=sys.stderr)
@@ -336,7 +338,7 @@ def main():
     """
     Executes the verification process and exits with a status code.
     """
-    success, error_msg = asyncio.run(verify())
+    success, _ = asyncio.run(verify())
     sys.exit(0 if success else 1)
 
 

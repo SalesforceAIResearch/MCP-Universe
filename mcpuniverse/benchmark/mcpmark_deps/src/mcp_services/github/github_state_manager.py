@@ -5,10 +5,19 @@ GitHub State Manager for MCPMark
 This module handles GitHub repository state management for consistent task evaluation.
 Manages test repositories, branches, and cleanup after evaluation.
 """
+# pylint: disable=import-error
+import json
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+import time
+from pathlib import Path
+from typing import List, Optional, Union
+from urllib.parse import urlparse
 
 import requests
-from typing import Optional, List, Union
-from pathlib import Path
 
 from src.base.state_manager import BaseStateManager, InitialStateInfo
 from src.base.task_manager import BaseTask
@@ -18,7 +27,7 @@ from src.mcp_services.github.token_pool import GitHubTokenPool
 logger = get_logger(__name__)
 
 
-class GitHubStateManager(BaseStateManager):
+class GitHubStateManager(BaseStateManager):  # pylint: disable=too-many-instance-attributes
     """
     Manages GitHub repository state for task evaluation.
     """
@@ -35,13 +44,17 @@ class GitHubStateManager(BaseStateManager):
         Initialize GitHub state manager.
 
         Args:
-            github_token: GitHub Personal Access Token(s). Can be a single token string or a list of tokens for round-robin usage.
-            eval_org: Organisation / user used to host **ephemeral evaluation repositories**.
+            github_token: GitHub Personal Access Token(s). Can be a single token
+                string or a list of tokens for round-robin usage.
+            eval_org: Organisation / user used to host **ephemeral evaluation
+                repositories**.
         """
         super().__init__(service_name="github")
 
         # Track repos created via template import so we can delete them afterwards
         self._repos_to_cleanup: list[tuple[str, str]] = []  # (owner, repo_name)
+        # Cache for authenticated user (lazy initialization)
+        self._auth_user: Optional[str] = None
 
         # Initialize token pool
         if isinstance(github_token, str):
@@ -84,8 +97,11 @@ class GitHubStateManager(BaseStateManager):
                 )
 
             user_info = response.json()
-            logger.info(f"GitHub authenticated as: {user_info['login']}")
-            logger.info(f"Using token pool with {self.token_pool.pool_size} token(s)")
+            logger.info("GitHub authenticated as: %s", user_info['login'])
+            logger.info(
+                "Using token pool with %d token(s)",
+                self.token_pool.pool_size
+            )
 
             # Check if evaluation organisation exists (optional)
             if self.eval_org:
@@ -93,18 +109,23 @@ class GitHubStateManager(BaseStateManager):
                     f"https://api.github.com/orgs/{self.eval_org}"
                 )
                 if org_response.status_code == 200:
-                    logger.info(f"Using evaluation organisation: {self.eval_org}")
+                    logger.info(
+                        "Using evaluation organisation: %s",
+                        self.eval_org
+                    )
                 else:
                     logger.warning(
-                        f"Evaluation organisation {self.eval_org} not accessible, using user account"
+                        "Evaluation organisation %s not accessible, "
+                        "using user account",
+                        self.eval_org
                     )
                     # Fall back to user account
                     self.eval_org = user_info["login"]
 
             logger.info("GitHub state manager initialized successfully")
 
-        except Exception as e:
-            raise RuntimeError(f"GitHub initialization failed: {e}")
+        except Exception as exc:
+            raise RuntimeError(f"GitHub initialization failed: {exc}") from exc
 
         # Initial state mapping - categories to initial state repositories
         self.initial_state_mapping = {
@@ -118,12 +139,28 @@ class GitHubStateManager(BaseStateManager):
 
         # CDN URL mapping for downloading GitHub templates
         self.github_template_url_mapping = {
-            "codecrafters-io-build-your-own-x": "https://storage.mcpmark.ai/github/codecrafters-io-build-your-own-x.zip",
-            "missing-semester-missing-semester": "https://storage.mcpmark.ai/github/missing-semester-missing-semester.zip",
-            "zjwu0522-mcpmark-cicd": "https://storage.mcpmark.ai/github/zjwu0522-mcpmark-cicd.zip",
-            "openai-harmony": "https://storage.mcpmark.ai/github/openai-harmony.zip",
-            "anthropics-claude-code": "https://storage.mcpmark.ai/github/anthropics-claude-code.zip",
-            "hiyouga-EasyR1": "https://storage.mcpmark.ai/github/hiyouga-EasyR1.zip",
+            "codecrafters-io-build-your-own-x": (
+                "https://storage.mcpmark.ai/github/"
+                "codecrafters-io-build-your-own-x.zip"
+            ),
+            "missing-semester-missing-semester": (
+                "https://storage.mcpmark.ai/github/"
+                "missing-semester-missing-semester.zip"
+            ),
+            "zjwu0522-mcpmark-cicd": (
+                "https://storage.mcpmark.ai/github/"
+                "zjwu0522-mcpmark-cicd.zip"
+            ),
+            "openai-harmony": (
+                "https://storage.mcpmark.ai/github/openai-harmony.zip"
+            ),
+            "anthropics-claude-code": (
+                "https://storage.mcpmark.ai/github/"
+                "anthropics-claude-code.zip"
+            ),
+            "hiyouga-EasyR1": (
+                "https://storage.mcpmark.ai/github/hiyouga-EasyR1.zip"
+            ),
         }
 
     # =========================================================================
@@ -134,14 +171,10 @@ class GitHubStateManager(BaseStateManager):
     # Internal helper – template importer (replicates repo_importer logic)
     # ---------------------------------------------------------------------
 
-    def _import_template_repo(
+    def _import_template_repo(  # pylint: disable=too-many-locals, too-many-statements
         self, template_dir: Path, owner: str, private: bool = True
     ) -> str:
         """Import repository from local template directory to GitHub (simplified)."""
-
-        import json
-        import subprocess
-        import time
 
         # ------------------------------------------------------------------
         # Helper functions (stripped-down versions of repo_importer utilities)
@@ -269,7 +302,6 @@ class GitHubStateManager(BaseStateManager):
         _push_repo(repo_path, owner, repo_name, needed_refs)
 
         # Remove .github directory after pushing with a new commit
-        import shutil
 
         github_dir = repo_path / ".github"
         if github_dir.exists():
@@ -290,6 +322,7 @@ class GitHubStateManager(BaseStateManager):
                     "-m",
                     "Remove .github directory",
                 ],
+                check=False,  # Git commit may fail if nothing to commit
                 capture_output=True,
             )
             # Push the new commit
@@ -310,7 +343,10 @@ class GitHubStateManager(BaseStateManager):
         def _create_comment(issue_number: int, body: str):
             self._request_with_retry(
                 "POST",
-                f"https://api.github.com/repos/{owner}/{repo_name}/issues/{issue_number}/comments",
+                (
+                    f"https://api.github.com/repos/{owner}/{repo_name}/"
+                    f"issues/{issue_number}/comments"
+                ),
                 json={"body": body},
             )
 
@@ -339,7 +375,13 @@ class GitHubStateManager(BaseStateManager):
         def _create_pull(pr_itm: dict) -> Optional[int]:
             body = pr_itm.get("body", "")
             if pr_itm.get("is_from_fork", False):
-                fork_note = f"\n\n---\n_This PR was originally from a fork: **{pr_itm.get('fork_owner')}/{pr_itm.get('fork_repo')}** (branch: `{pr_itm['head']}`)_"
+                fork_owner = pr_itm.get('fork_owner')
+                fork_repo = pr_itm.get('fork_repo')
+                fork_branch = pr_itm['head']
+                fork_note = (
+                    f"\n\n---\n_This PR was originally from a fork: "
+                    f"**{fork_owner}/{fork_repo}** (branch: `{fork_branch}`)_"
+                )
                 body = body + fork_note if body else fork_note[2:]
             payload = {
                 "title": pr_itm["title"],
@@ -422,7 +464,7 @@ class GitHubStateManager(BaseStateManager):
         3. Creating issues or PRs if needed
         """
         try:
-            logger.info(f"| Setting up GitHub state for task: {task.name}")
+            logger.info("| Setting up GitHub state for task: %s", task.name)
 
             template_name = self.select_initial_state_for_task(task.category_id)
             if template_name is None:
@@ -443,8 +485,12 @@ class GitHubStateManager(BaseStateManager):
                     return None
                 logger.info("| Template %s downloaded successfully", template_name)
 
-            logger.info(f"| Importing repository template from {template_dir} …")
-            owner = self.eval_org if self.eval_org else self._get_authenticated_user()
+            logger.info("| Importing repository template from %s …", template_dir)
+            owner = (
+                self.eval_org
+                if self.eval_org
+                else self._get_authenticated_user()
+            )
 
             if "mcpmark-cicd" in template_name:
                 repo_url = self._import_template_repo(template_dir, owner, False)
@@ -467,37 +513,46 @@ class GitHubStateManager(BaseStateManager):
                 },
             )
 
-        except Exception as e:
-            logger.error(f"| GitHub setup failed for {task.name}: {e}")
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            logger.error("| GitHub setup failed for %s: %s", task.name, exc)
             return None
 
     # ---------------------------------------------------------------------
     # BaseStateManager required hooks
     # ---------------------------------------------------------------------
 
-    def _store_initial_state_info(self, task, state_info: InitialStateInfo) -> None:  # type: ignore[override]
+    def _store_initial_state_info(  # type: ignore[override]
+        self, task, state_info: InitialStateInfo
+    ) -> None:
         if hasattr(task, "repository_url"):
             task.repository_url = state_info.state_url
 
-    def _cleanup_task_initial_state(self, task) -> bool:  # type: ignore[override]
+    def _cleanup_task_initial_state(  # type: ignore[override]
+        self, task  # pylint: disable=unused-argument
+    ) -> bool:
         """No-op – cleanup is handled by self.clean_up which deletes imported repos."""
         return True
 
-    def _cleanup_single_resource(self, resource) -> bool:  # type: ignore[override]
+    def _cleanup_single_resource(  # type: ignore[override]
+        self, resource  # pylint: disable=unused-argument
+    ) -> bool:
         """No-op – we don't use BaseStateManager's tracked_resources anymore."""
         return True
 
     # ---------------------------------------------------------------------
-    def clean_up(self, task=None, **kwargs) -> bool:
+    def clean_up(self, task=None, **_kwargs) -> bool:  # pylint: disable=unused-argument
         """Delete repositories that were imported for tasks."""
         success = True
         for owner, repo_name in self._repos_to_cleanup:
             try:
                 self._delete_repository(owner, repo_name)
                 logger.info("| Deleted repository: %s/%s", owner, repo_name)
-            except Exception as err:
+            except Exception as err:  # pylint: disable=broad-exception-caught
                 logger.error(
-                    "| Failed to delete repository %s/%s: %s", owner, repo_name, err
+                    "| Failed to delete repository %s/%s: %s",
+                    owner,
+                    repo_name,
+                    err
                 )
                 success = False
 
@@ -515,13 +570,20 @@ class GitHubStateManager(BaseStateManager):
 
         if response.status_code not in [200, 204]:
             logger.warning(
-                f"| Failed to delete repository {owner}/{repo_name}: {response.text}"
+                "| Failed to delete repository %s/%s: %s",
+                owner,
+                repo_name,
+                response.text
             )
-            raise Exception(
-                f"| Failed to delete repository {owner}/{repo_name}: {response.status_code} {response.text}"
+            raise RuntimeError(  # pylint: disable=broad-exception-raised
+                f"| Failed to delete repository {owner}/{repo_name}: "
+                f"{response.status_code} {response.text}"
             )
-        else:
-            logger.info(f"| Successfully deleted repository {owner}/{repo_name}")
+        logger.info(
+            "| Successfully deleted repository %s/%s",
+            owner,
+            repo_name
+        )
 
     # ---------------------------------------------------------------------
     # Helper utilities (organisation vs user)
@@ -534,7 +596,7 @@ class GitHubStateManager(BaseStateManager):
 
         response = self.session.get("https://api.github.com/user")
         if response.status_code == 200:
-            self._auth_user = response.json()["login"]
+            self._auth_user = response.json()["login"]  # pylint: disable=attribute-defined-outside-init
             return self._auth_user
         return None
 
@@ -554,7 +616,7 @@ class GitHubStateManager(BaseStateManager):
         self.session.headers.update({"Authorization": f"Bearer {next_token}"})
         # Update backward compatibility attribute
         self.github_token = next_token
-        logger.debug(f"| Rotated to next token in pool")
+        logger.debug("| Rotated to next token in pool")
 
     # ---------------------------------------------------------------------
     # Generic request helper with rate-limit (403) retry handling
@@ -575,8 +637,6 @@ class GitHubStateManager(BaseStateManager):
         2. If still rate limited, sleep and retry
         3. After max_retries are exhausted, raise RuntimeError
         """
-        import time  # local import to avoid adding global dependency
-
         attempt = 0
         tokens_tried = 0
 
@@ -596,7 +656,8 @@ class GitHubStateManager(BaseStateManager):
                 and tokens_tried < self.token_pool.pool_size
             ):
                 logger.warning(
-                    "| GitHub API rate limit encountered. Rotating to next token (tried %d/%d tokens)",
+                    "| GitHub API rate limit encountered. "
+                    "Rotating to next token (tried %d/%d tokens)",
                     tokens_tried + 1,
                     self.token_pool.pool_size,
                 )
@@ -607,7 +668,9 @@ class GitHubStateManager(BaseStateManager):
             # All tokens exhausted or single token, resort to sleep/retry
             if attempt >= max_retries:
                 raise RuntimeError(
-                    f"GitHub API rate limited after {attempt + 1} attempts with {self.token_pool.pool_size} token(s): {resp.status_code} {resp.text}"
+                    f"GitHub API rate limited after {attempt + 1} attempts "
+                    f"with {self.token_pool.pool_size} token(s): "
+                    f"{resp.status_code} {resp.text}"
                 )
 
             logger.warning(
@@ -626,13 +689,12 @@ class GitHubStateManager(BaseStateManager):
 
     # Initial state for each task category is resolved via self.initial_state_mapping
     def select_initial_state_for_task(self, task_category: str) -> Optional[str]:
+        """Select initial state template for a task category."""
         return self.initial_state_mapping.get(task_category)
 
     def extract_repo_info_from_url(self, repo_url: str) -> tuple[str, str]:
         """Extract owner and repo name from GitHub URL."""
         try:
-            from urllib.parse import urlparse
-
             # Support https://github.com/owner/repo format
             if "github.com" in repo_url:
                 path = urlparse(repo_url).path.strip("/")
@@ -642,8 +704,12 @@ class GitHubStateManager(BaseStateManager):
 
             raise ValueError(f"Invalid GitHub URL format: {repo_url}")
 
-        except Exception as e:
-            logger.error(f"| Failed to extract repo info from URL {repo_url}: {e}")
+        except Exception as exc:
+            logger.error(
+                "| Failed to extract repo info from URL %s: %s",
+                repo_url,
+                exc
+            )
             raise
 
     def get_service_config_for_agent(self) -> dict:
@@ -674,8 +740,6 @@ class GitHubStateManager(BaseStateManager):
         Args:
             messages_path: Optional path to messages.json file for verification
         """
-        import os
-
         # Set common MCP_MESSAGES if provided
         if messages_path:
             os.environ["MCP_MESSAGES"] = str(messages_path)
@@ -707,8 +771,8 @@ class GitHubStateManager(BaseStateManager):
                     response.text,
                 )
 
-        except Exception as e:
-            logger.error("| Failed to enable GitHub Actions: %s", e)
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            logger.error("| Failed to enable GitHub Actions: %s", exc)
 
     def _disable_github_actions(self, owner: str, repo_name: str):
         """Disable GitHub Actions for the repository using REST API."""
@@ -730,8 +794,8 @@ class GitHubStateManager(BaseStateManager):
                     response.text,
                 )
 
-        except Exception as e:
-            logger.error("| Failed to disable GitHub Actions: %s", e)
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            logger.error("| Failed to disable GitHub Actions: %s", exc)
 
     def _disable_repository_notifications(self, owner: str, repo_name: str):
         """Disable repository notifications to prevent email spam."""
@@ -749,7 +813,8 @@ class GitHubStateManager(BaseStateManager):
             elif response.status_code == 403:
                 # This is expected if the token doesn't have notifications scope
                 logger.debug(
-                    "| Cannot disable notifications for %s/%s (token lacks notifications scope - this is OK)",
+                    "| Cannot disable notifications for %s/%s "
+                    "(token lacks notifications scope - this is OK)",
                     owner,
                     repo_name,
                 )
@@ -760,8 +825,8 @@ class GitHubStateManager(BaseStateManager):
                     response.text,
                 )
 
-        except Exception as e:
-            logger.error("| Failed to disable repository notifications: %s", e)
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            logger.error("| Failed to disable repository notifications: %s", exc)
 
     def _download_and_extract_github_template(self, template_name: str) -> bool:
         """
@@ -776,22 +841,19 @@ class GitHubStateManager(BaseStateManager):
             bool: True if download and extraction successful
         """
         try:
-            import subprocess
-            import sys
-            import tempfile
-            import shutil
-            import os
-
             # Get the URL from mapping
             if template_name not in self.github_template_url_mapping:
-                logger.error(f"| No URL mapping found for template: {template_name}")
+                logger.error(
+                    "| No URL mapping found for template: %s",
+                    template_name
+                )
                 return False
 
             template_url = self.github_template_url_mapping[template_name]
             # Allow override via environment variable
             template_url = os.getenv("GITHUB_TEMPLATE_URL", template_url)
 
-            logger.info(f"| ○ Downloading GitHub template from: {template_url}")
+            logger.info("| ○ Downloading GitHub template from: %s", template_url)
 
             # Create a temporary directory for the download
             with tempfile.TemporaryDirectory() as temp_dir:
@@ -805,7 +867,7 @@ class GitHubStateManager(BaseStateManager):
                     if sys.platform == "win32":
                         # Windows: try wget, fall back to curl
                         try:
-                            result = subprocess.run(
+                            subprocess.run(
                                 ["wget", "-O", str(zip_path), template_url],
                                 capture_output=True,
                                 text=True,
@@ -813,7 +875,7 @@ class GitHubStateManager(BaseStateManager):
                             )
                         except (subprocess.CalledProcessError, FileNotFoundError):
                             # Fall back to curl
-                            result = subprocess.run(
+                            subprocess.run(
                                 ["curl", "-L", "-o", str(zip_path), template_url],
                                 capture_output=True,
                                 text=True,
@@ -822,7 +884,7 @@ class GitHubStateManager(BaseStateManager):
                     else:
                         # Unix-like systems: try wget, fall back to curl
                         try:
-                            result = subprocess.run(
+                            subprocess.run(
                                 ["wget", "-O", str(zip_path), template_url],
                                 capture_output=True,
                                 text=True,
@@ -830,7 +892,7 @@ class GitHubStateManager(BaseStateManager):
                             )
                         except (subprocess.CalledProcessError, FileNotFoundError):
                             # Fall back to curl
-                            result = subprocess.run(
+                            subprocess.run(
                                 ["curl", "-L", "-o", str(zip_path), template_url],
                                 capture_output=True,
                                 text=True,
@@ -838,40 +900,36 @@ class GitHubStateManager(BaseStateManager):
                             )
 
                     logger.info("| ✓ Download completed successfully")
-                except Exception as e:
-                    logger.error(f"| Download failed: {e}")
+                except Exception as exc:  # pylint: disable=broad-exception-caught
+                    logger.error("| Download failed: %s", exc)
                     return False
 
                 # Step 2: Extract using unzip
                 logger.info("| ○ Extracting GitHub template...")
                 try:
                     # Extract to templates root directory
-                    result = subprocess.run(
+                    subprocess.run(
                         ["unzip", "-o", str(zip_path), "-d", str(self.templates_root)],
                         capture_output=True,
                         text=True,
                         check=True,
                     )
                     logger.info("| ✓ Extraction completed successfully")
-                except Exception as e:
-                    logger.error(f"| Extraction failed: {e}")
+                except Exception as exc:  # pylint: disable=broad-exception-caught
+                    logger.error("| Extraction failed: %s", exc)
                     return False
 
                 # Step 3: Remove __MACOSX folder if it exists
                 macosx_path = self.templates_root / "__MACOSX"
-                if macosx_path.exists():
-                    logger.info("| ○ Cleaning up macOS metadata...")
-                    try:
-                        shutil.rmtree(macosx_path)
-                        logger.info("| ✓ Removed __MACOSX folder")
-                    except Exception as e:
-                        logger.warning(f"| Failed to remove __MACOSX folder: {e}")
+                self._remove_macosx_folder(macosx_path)
 
                 # Verify the extracted template directory exists
                 template_path = self.templates_root / template_name
                 if not template_path.exists():
                     logger.error(
-                        f"| Extracted template directory not found at expected path: {template_path}"
+                        "| Extracted template directory not found at "
+                        "expected path: %s",
+                        template_path
                     )
                     return False
 
@@ -880,6 +938,9 @@ class GitHubStateManager(BaseStateManager):
                 )
                 return True
 
-        except Exception as e:
-            logger.error(f"| Failed to download and extract GitHub template: {e}")
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            logger.error(
+                "| Failed to download and extract GitHub template: %s",
+                exc
+            )
             return False

@@ -1,3 +1,5 @@
+"""Verification module for fitness promotion strategy task."""
+# pylint: disable=R0912,R0915,R1702,R1724
 import asyncio
 import sys
 import re
@@ -15,11 +17,11 @@ def get_model_response():
     if not messages_path:
         print("Warning: MCP_MESSAGES environment variable not set", file=sys.stderr)
         return None
-    
+
     try:
-        with open(messages_path, 'r') as f:
-            messages = json.load(f)
-        
+        with open(messages_path, 'r', encoding='utf-8') as file_handle:
+            messages = json.load(file_handle)
+
         # Find the last assistant message
         for message in reversed(messages):
             if message.get('role') == 'assistant' and message.get('status') == 'completed':
@@ -27,11 +29,11 @@ def get_model_response():
                 for item in content:
                     if item.get('type') == 'output_text':
                         return item.get('text', '')
-        
+
         print("Warning: No assistant response found in messages", file=sys.stderr)
         return None
-    except Exception as e:
-        print(f"Error reading messages file: {str(e)}", file=sys.stderr)
+    except (OSError, json.JSONDecodeError) as error:
+        print(f"Error reading messages file: {str(error)}", file=sys.stderr)
         return None
 
 def parse_answer_format(text):
@@ -41,28 +43,28 @@ def parse_answer_format(text):
     """
     if not text:
         return None
-    
+
     # Look for <answer>...</answer> pattern
     match = re.search(r'<answer>(.*?)</answer>', text, re.IGNORECASE | re.DOTALL)
     if not match:
         return None
-    
+
     answer_content = match.group(1).strip()
-    
+
     # Parse each line
     result = {}
     lines = answer_content.split('\n')
-    
+
     # Skip the check for exact number of lines - just parse what we have
     # if len(lines) != 13:
     #     print(f"Error: Expected 13 lines in answer, got {len(lines)}", file=sys.stderr)
     #     return None
-    
+
     for line in lines:
         if '|' in line:
             key, value = line.split('|', 1)
             result[key.strip()] = value.strip()
-    
+
     return result
 
 def load_expected_answer(label_path):
@@ -71,18 +73,18 @@ def load_expected_answer(label_path):
     Returns a dictionary with the expected values.
     """
     try:
-        with open(label_path, 'r') as f:
-            lines = f.read().strip().split('\n')
-        
+        with open(label_path, 'r', encoding='utf-8') as file_handle:
+            lines = file_handle.read().strip().split('\n')
+
         expected = {}
         for line in lines:
             if '|' in line:
                 key, value = line.split('|', 1)
                 expected[key.strip()] = value.strip()
-        
+
         return expected
-    except Exception as e:
-        print(f"Error reading label file: {str(e)}", file=sys.stderr)
+    except OSError as error:
+        print(f"Error reading label file: {str(error)}", file=sys.stderr)
         return None
 
 def compare_answers(model_answer, expected_answer):
@@ -92,12 +94,12 @@ def compare_answers(model_answer, expected_answer):
     """
     if not model_answer or not expected_answer:
         return False, "Missing model answer or expected answer"
-    
+
     # Check each expected key
     mismatches = []
     for key, expected_value in expected_answer.items():
         model_value = model_answer.get(key, '')
-        
+
         # Special handling for different types of values
         if key in ['Bestseller1', 'Bestseller2', 'Bestseller3']:
             # Check if all parts match (name:price:quantity:sku:inventory:status)
@@ -125,7 +127,7 @@ def compare_answers(model_answer, expected_answer):
             else:
                 if expected_value != model_value:
                     mismatches.append(f"{key}: expected '{expected_value}', got '{model_value}'")
-        
+
         elif key == 'LowestInventoryProduct':
             # Check product name and inventory
             if ':' in expected_value and ':' in model_value:
@@ -140,19 +142,19 @@ def compare_answers(model_answer, expected_answer):
             else:
                 if expected_value != model_value:
                     mismatches.append(f"{key}: expected '{expected_value}', got '{model_value}'")
-        
+
         elif key in ['TotalRevenue', 'MinimumPurchaseRule']:
             # For price/amount fields, normalize format
             expected_clean = expected_value.replace('$', '').replace(',', '')
             model_clean = model_value.replace('$', '').replace(',', '')
             if expected_clean != model_clean:
                 mismatches.append(f"{key}: expected '{expected_value}', got '{model_value}'")
-        
+
         elif key == 'BestsellerInSearch':
             # Check search term and count
             if expected_value.lower() != model_value.lower():
                 mismatches.append(f"{key}: expected '{expected_value}', got '{model_value}'")
-        
+
         elif key == 'PercentageDiscountRule':
             # Check rule name and percentage
             if ':' in expected_value and ':' in model_value:
@@ -168,7 +170,7 @@ def compare_answers(model_answer, expected_answer):
             else:
                 if expected_value != model_value:
                     mismatches.append(f"{key}: expected '{expected_value}', got '{model_value}'")
-        
+
         elif key == 'TopCustomer':
             # Check name:email:group
             if ':' in expected_value and ':' in model_value:
@@ -188,7 +190,7 @@ def compare_answers(model_answer, expected_answer):
             else:
                 if expected_value != model_value:
                     mismatches.append(f"{key}: expected '{expected_value}', got '{model_value}'")
-        
+
         elif key == 'MostRecentOrderDate':
             # Date format may vary, do flexible comparison
             if expected_value.lower() == 'none' and model_value.lower() == 'none':
@@ -196,12 +198,12 @@ def compare_answers(model_answer, expected_answer):
             elif expected_value != model_value:
                 # Could add more flexible date parsing here if needed
                 mismatches.append(f"{key}: expected '{expected_value}', got '{model_value}'")
-        
+
         else:
             # Exact match for other fields (counts, etc.)
             if str(model_value) != str(expected_value):
                 mismatches.append(f"{key}: expected '{expected_value}', got '{model_value}'")
-    
+
     if mismatches:
         print("\n=== Answer Comparison Mismatches ===", file=sys.stderr)
         error_msg = "Answer comparison mismatches:\n"
@@ -209,7 +211,7 @@ def compare_answers(model_answer, expected_answer):
             print(f"✗ {mismatch}", file=sys.stderr)
             error_msg += f"✗ {mismatch}\n"
         return False, error_msg.strip()
-    
+
     print("\n=== Answer Comparison ===", file=sys.stderr)
     print("✓ All key information matches the expected answer", file=sys.stderr)
     return True, ""
@@ -222,24 +224,24 @@ async def verify() -> tuple[bool, str]:
     """
     # Get the label file path
     label_path = Path(__file__).parent / "label.txt"
-    
+
     # Load expected answer
     expected_answer = load_expected_answer(label_path)
     if not expected_answer:
         print("Error: Could not load expected answer from label.txt", file=sys.stderr)
         return False, "Could not load expected answer from label.txt"
-    
+
     # Get model's response from MCP_MESSAGES
     model_response = get_model_response()
     if model_response:
         print("Found model response, parsing answer format...", file=sys.stderr)
         model_answer = parse_answer_format(model_response)
-        
+
         if model_answer:
             print("\n=== Model Answer Parsed ===", file=sys.stderr)
             for key, value in model_answer.items():
                 print(f"{key}: {value}", file=sys.stderr)
-            
+
             # Compare answers
             answer_match, error_msg = compare_answers(model_answer, expected_answer)
             if not answer_match:
@@ -247,18 +249,16 @@ async def verify() -> tuple[bool, str]:
                 return False, error_msg
             print("\n✓ Model answer matches expected answer", file=sys.stderr)
             return True, ""
-        else:
-            print("Warning: Could not parse answer format from model response", file=sys.stderr)
-            return False, "Could not parse answer format from model response"
-    else:
-        print("No model response found", file=sys.stderr)
-        return False, "No model response found"
+        print("Warning: Could not parse answer format from model response", file=sys.stderr)
+        return False, "Could not parse answer format from model response"
+    print("No model response found", file=sys.stderr)
+    return False, "No model response found"
 
 def main():
     """
     Executes the verification process and exits with a status code.
     """
-    success, error_msg = asyncio.run(verify())
+    success, _ = asyncio.run(verify())
     sys.exit(0 if success else 1)
 
 if __name__ == "__main__":

@@ -6,6 +6,8 @@ Simple verification that checks if the AI agent found the correct Introduction c
 The expected ground truth answer is configured at the top of the file.
 """
 
+# pylint: disable=duplicate-code
+
 import sys
 import json
 import os
@@ -80,7 +82,6 @@ def parse_ai_results(work_dir: Path) -> Dict[str, Any]:
         return {"success": False, "error": f"Failed to read messages.json: {e}"}
 
     # Look for extracted content in the AI's responses
-    found_content = False
     ai_responses = []
     extracted_content = ""
 
@@ -129,8 +130,12 @@ def compare_content(extracted: str, expected: str) -> Dict[str, Any]:
         "is_exact_match": is_exact_match,
         "extracted_length": len(extracted_normalized),
         "expected_length": len(expected_normalized),
-        "extracted_preview": extracted_normalized[:100] + "..." if len(extracted_normalized) > 100 else extracted_normalized,
-        "expected_preview": expected_normalized[:100] + "..." if len(expected_normalized) > 100 else expected_normalized
+        "extracted_preview": (extracted_normalized[:100] + "..."
+                              if len(extracted_normalized) > 100
+                              else extracted_normalized),
+        "expected_preview": (expected_normalized[:100] + "..."
+                             if len(expected_normalized) > 100
+                             else expected_normalized)
     }
 
 
@@ -178,7 +183,7 @@ def verify_task(work_dir: Path) -> tuple[bool, str]:
         print(f"| Comparison failed: {comparison.get('error')}")
         return False, f"Comparison failed: {comparison.get('error')}"
 
-    print(f"| Content comparison results:")
+    print("| Content comparison results:")
     print(f"|   - Extracted length: {comparison['extracted_length']} characters")
     print(f"|   - Expected length: {comparison['expected_length']} characters")
     print(f"|   - Extracted preview: {comparison['extracted_preview']}")
@@ -187,9 +192,8 @@ def verify_task(work_dir: Path) -> tuple[bool, str]:
     if comparison['is_exact_match']:
         print("| Task completed successfully! Content matches exactly.")
         return True, ""
-    else:
-        print("| Task verification failed. Content does not match exactly.")
-        return False, "Task verification failed. Content does not match exactly."
+    print("| Task verification failed. Content does not match exactly.")
+    return False, "Task verification failed. Content does not match exactly."
 
 
 def main():
@@ -201,7 +205,7 @@ def main():
     print(f"| Working directory: {work_dir}")
 
     # Run verification
-    success, error_msg = verify_task(work_dir)
+    success, _error_msg = verify_task(work_dir)
 
     if success:
         sys.exit(0)

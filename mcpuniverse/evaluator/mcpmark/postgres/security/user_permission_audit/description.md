@@ -123,7 +123,7 @@ Your audit should populate both tables with:
 Analyze usernames and infer their intended business roles based on naming patterns:
 
 - **analytics_user** → Analytics Team (needs user behavior and statistics data)
-- **marketing_user** → Marketing Department (needs customer and product data for campaigns)  
+- **marketing_user** → Marketing Department (needs customer and product data for campaigns)
 - **customer_service** → Customer Service (needs user profiles and order management)
 - **finance_user** → Finance Team (needs financial and order data)
 - **product_manager** → Product Management (needs full product catalog access)
@@ -133,3 +133,4 @@ Analyze usernames and infer their intended business roles based on naming patter
 - **temp_contractor, old_employee, test_account** → Inactive/Temporary (should have NO permissions)
 
 The verification process will check that your findings correctly identify the actual permission gaps in the system by comparing against expected results.
+

@@ -1,9 +1,11 @@
+"""Verification module for Claude collaboration analysis in claude-code repository."""
+# pylint: disable=R0911,R0915,astroid-error,duplicate-code,import-error
 import sys
 import os
-import requests
-from typing import Dict, List, Optional, Tuple
 import base64
 import re
+from typing import Dict, List, Optional, Tuple
+import requests
 from dotenv import load_dotenv
 
 
@@ -16,12 +18,11 @@ def _get_github_api(
         response = requests.get(url, headers=headers)
         if response.status_code == 200:
             return True, response.json()
-        elif response.status_code == 404:
+        if response.status_code == 404:
             return False, None
-        else:
-            print(f"API error for {endpoint}: {response.status_code}", file=sys.stderr)
-            return False, None
-    except Exception as e:
+        print(f"API error for {endpoint}: {response.status_code}", file=sys.stderr)
+        return False, None
+    except (requests.RequestException, IOError, OSError, ValueError) as e:
         print(f"Exception for {endpoint}: {e}", file=sys.stderr)
         return False, None
 
@@ -43,7 +44,7 @@ def _get_file_content(
     try:
         content = base64.b64decode(result.get("content", "")).decode("utf-8")
         return content
-    except Exception as e:
+    except (IOError, OSError, UnicodeDecodeError) as e:
         print(f"Content decode error for {file_path}: {e}", file=sys.stderr)
         return None
 
@@ -148,7 +149,7 @@ def verify() -> tuple[bool, str]:
 
     # Pre-computed expected values based on repository analysis
     # These are the correct answers the agent should find
-    EXPECTED_TOP_COLLABORATORS = [
+    expected_top_collaborators = [
         {
             "username": "bcherny",
             "min_collaborations": 14,
@@ -158,7 +159,7 @@ def verify() -> tuple[bool, str]:
     ]
 
     # Expected exact values for summary statistics
-    EXPECTED_STATS = {
+    expected_stats = {
         "total_analyzed": 158,
         "claude_commits": 25,
         "percentage": 15.82,
@@ -175,7 +176,7 @@ def verify() -> tuple[bool, str]:
             "Error: CLAUDE_COLLABORATION_ANALYSIS.md not found in main branch",
             file=sys.stderr,
         )
-        return False
+        return False, "CLAUDE_COLLABORATION_ANALYSIS.md not found in main branch"
     print("✓ CLAUDE_COLLABORATION_ANALYSIS.md found")
 
     # 2. Check required sections exist
@@ -201,36 +202,38 @@ def verify() -> tuple[bool, str]:
         return False, "Total commits analyzed not found"
 
     # Check exact values against expected statistics
-    if stats.get("total_analyzed") != EXPECTED_STATS["total_analyzed"]:
-        print(
-            f"Error: Total analyzed should be {EXPECTED_STATS['total_analyzed']}, found {stats.get('total_analyzed')}",
-            file=sys.stderr,
-        )
-        return False, f"Total analyzed should be {EXPECTED_STATS['total_analyzed']}, found {stats.get('total_analyzed')}"
+    if stats.get("total_analyzed") != expected_stats["total_analyzed"]:
+        expected_val = expected_stats['total_analyzed']
+        found_val = stats.get('total_analyzed')
+        msg = f"Error: Total analyzed should be {expected_val}, found {found_val}"
+        print(msg, file=sys.stderr)
+        return False, f"Total analyzed should be {expected_val}, found {found_val}"
 
-    if stats.get("claude_commits") != EXPECTED_STATS["claude_commits"]:
-        print(
-            f"Error: Claude commits should be {EXPECTED_STATS['claude_commits']}, found {stats.get('claude_commits')}",
-            file=sys.stderr,
-        )
-        return False, f"Claude commits should be {EXPECTED_STATS['claude_commits']}, found {stats.get('claude_commits')}"
+    if stats.get("claude_commits") != expected_stats["claude_commits"]:
+        expected_val = expected_stats['claude_commits']
+        found_val = stats.get('claude_commits')
+        msg = f"Error: Claude commits should be {expected_val}, found {found_val}"
+        print(msg, file=sys.stderr)
+        return False, f"Claude commits should be {expected_val}, found {found_val}"
 
     # Allow 0.1% tolerance for percentage
-    expected_percentage = EXPECTED_STATS["percentage"]
+    expected_percentage = expected_stats["percentage"]
     actual_percentage = stats.get("percentage", 0)
     if abs(actual_percentage - expected_percentage) > 0.1:
-        print(
-            f"Error: Percentage should be around {expected_percentage}% (±0.1%), found {actual_percentage}%",
-            file=sys.stderr,
-        )
-        return False, f"Percentage should be around {expected_percentage}% (±0.1%), found {actual_percentage}%"
+        msg = (f"Error: Percentage should be around {expected_percentage}% "
+               f"(±0.1%), found {actual_percentage}%")
+        print(msg, file=sys.stderr)
+        return False, (f"Percentage should be around {expected_percentage}% "
+                      f"(±0.1%), found {actual_percentage}%")
 
-    if stats.get("unique_collaborators") != EXPECTED_STATS["unique_collaborators"]:
-        print(
-            f"Error: Unique collaborators should be {EXPECTED_STATS['unique_collaborators']}, found {stats.get('unique_collaborators')}",
-            file=sys.stderr,
-        )
-        return False, f"Unique collaborators should be {EXPECTED_STATS['unique_collaborators']}, found {stats.get('unique_collaborators')}"
+    if stats.get("unique_collaborators") != expected_stats["unique_collaborators"]:
+        expected_val = expected_stats['unique_collaborators']
+        found_val = stats.get('unique_collaborators')
+        msg = (f"Error: Unique collaborators should be {expected_val}, "
+               f"found {found_val}")
+        print(msg, file=sys.stderr)
+        return False, (f"Unique collaborators should be {expected_val}, "
+                      f"found {found_val}")
 
     print("✓ Summary statistics validated")
 
@@ -250,30 +253,33 @@ def verify() -> tuple[bool, str]:
 
     # The top 3 should include at least 2 of our expected collaborators
     expected_found = 0
-    for expected in EXPECTED_TOP_COLLABORATORS:
+    for expected in expected_top_collaborators:
         if expected["username"] in found_usernames[:3]:
             expected_found += 1
             # Also check they have reasonable collaboration counts
             for collab in collaborators:
                 if collab["username"] == expected["username"]:
                     if collab["collaborations"] < expected["min_collaborations"]:
-                        print(
-                            f"Error: {expected['username']} should have at least {expected['min_collaborations']} collaborations, found {collab['collaborations']}",
-                            file=sys.stderr,
-                        )
-                        return False, f"{expected['username']} should have at least {expected['min_collaborations']} collaborations, found {collab['collaborations']}"
+                        username = expected['username']
+                        min_collab = expected['min_collaborations']
+                        found_collab = collab['collaborations']
+                        msg = (f"Error: {username} should have at least "
+                               f"{min_collab} collaborations, found {found_collab}")
+                        print(msg, file=sys.stderr)
+                        return False, (f"{username} should have at least "
+                                      f"{min_collab} collaborations, "
+                                      f"found {found_collab}")
 
     if expected_found < 2:
-        print(
-            f"Error: Expected to find at least 2 of the known top collaborators in top 3, found {expected_found}",
-            file=sys.stderr,
-        )
-        print(
-            f"Expected to see at least 2 of: {[e['username'] for e in EXPECTED_TOP_COLLABORATORS]}",
-            file=sys.stderr,
-        )
+        msg = (f"Error: Expected to find at least 2 of the known top "
+               f"collaborators in top 3, found {expected_found}")
+        print(msg, file=sys.stderr)
+        expected_list = [e['username'] for e in expected_top_collaborators]
+        print(f"Expected to see at least 2 of: {expected_list}",
+              file=sys.stderr)
         print(f"Found: {found_usernames[:3]}", file=sys.stderr)
-        return False, f"Expected to find at least 2 of the known top collaborators in top 3, found {expected_found}"
+        return False, (f"Expected to find at least 2 of the known top "
+                      f"collaborators in top 3, found {expected_found}")
 
     print("✓ Top collaborators validated")
 
@@ -295,11 +301,11 @@ def verify() -> tuple[bool, str]:
             break
 
     if not commit_found:
-        print(
-            f"Error: Expected commit message '{expected_commit_message}' not found in recent commits",
-            file=sys.stderr,
-        )
-        return False, f"Expected commit message '{expected_commit_message}' not found in recent commits"
+        msg = (f"Error: Expected commit message '{expected_commit_message}' "
+               f"not found in recent commits")
+        print(msg, file=sys.stderr)
+        return False, (f"Expected commit message '{expected_commit_message}' "
+                      f"not found in recent commits")
 
     print("✓ Commit message verified")
 
@@ -326,7 +332,7 @@ def verify_task() -> bool:
 
 def main():
     """Main verification function."""
-    success, error_msg = verify()
+    success, _error_msg = verify()
     if success:
         sys.exit(0)
     else:

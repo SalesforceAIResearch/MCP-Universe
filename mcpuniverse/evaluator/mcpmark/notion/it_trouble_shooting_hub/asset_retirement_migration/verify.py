@@ -1,10 +1,15 @@
+"""Verification module for Asset Retirement Migration task in Notion workspace."""
+
+# pylint: disable=duplicate-code,import-error,astroid-error
+
 import sys
-from typing import Dict, Set
+import re
+from typing import Dict, Set, Optional
 from notion_client import Client
 from mcpuniverse.evaluator.mcpmark.notion.utils import notion_utils
 
 
-def _get_database(root_page_id: str, notion: Client, name: str) -> str | None:
+def _get_database(root_page_id: str, notion: Client, name: str) -> Optional[str]:
     """Helper that finds a child database by title inside a page."""
     return notion_utils.find_database_in_block(notion, root_page_id, name)
 
@@ -14,15 +19,15 @@ def _check_property(props: Dict, name: str, expected_type: str) -> bool:
         print(f"Error: Property '{name}' missing in database.", file=sys.stderr)
         return False
     if props[name]["type"] != expected_type:
-        print(
-            f"Error: Property '{name}' expected type '{expected_type}', found '{props[name]['type']}'.",
-            file=sys.stderr,
-        )
+        found_type = props[name]['type']
+        msg = (f"Error: Property '{name}' expected type '{expected_type}', "
+               f"found '{found_type}'.")
+        print(msg, file=sys.stderr)
         return False
     return True
 
 
-def verify(notion: Client, main_id: str | None = None) -> tuple[bool, str]:
+def verify(notion: Client, main_id: Optional[str] = None) -> tuple[bool, str]:  # pylint: disable=too-many-branches,too-many-locals,too-many-return-statements,too-many-statements
     """Verifies that the IT Asset Retirement Queue was created and populated correctly."""
 
     # -------------------------------------------------------------------------
@@ -92,7 +97,11 @@ def verify(notion: Client, main_id: str | None = None) -> tuple[bool, str]:
             f"Found: {sorted(actual_options)}",
             file=sys.stderr,
         )
-        return False, f"'Retirement Reason' select options mismatch. Expected: {sorted(expected_reason_options)}, Found: {sorted(actual_options)}"
+        expected_sorted = sorted(expected_reason_options)
+        actual_sorted = sorted(actual_options)
+        msg = (f"'Retirement Reason' select options mismatch. "
+               f"Expected: {expected_sorted}, Found: {actual_sorted}")
+        return False, msg
 
     # ---------------------------------------------------------------
     # Validate database description starts with required phrase
@@ -128,11 +137,11 @@ def verify(notion: Client, main_id: str | None = None) -> tuple[bool, str]:
     ).get("results", [])
 
     if remaining_items:
-        print(
-            f"Error: {len(remaining_items)} 'Expired' / 'To be returned' items still present in IT Inventory.",
-            file=sys.stderr,
-        )
-        return False, f"{len(remaining_items)} 'Expired' / 'To be returned' items still present in IT Inventory"
+        items_count = len(remaining_items)
+        msg = (f"Error: {items_count} 'Expired' / 'To be returned' items "
+               "still present in IT Inventory.")
+        print(msg, file=sys.stderr)
+        return False, msg
 
     # There should be at least one entry in the retirement queue
     retirement_pages = notion.databases.query(database_id=retirement_db_id).get(
@@ -140,11 +149,12 @@ def verify(notion: Client, main_id: str | None = None) -> tuple[bool, str]:
     )
     expected_serials = {"65XYQ/GB", "36x10PIQ"}
     if len(retirement_pages) != len(expected_serials):
-        print(
-            f"Error: Expected {len(expected_serials)} retirement pages, found {len(retirement_pages)}.",
-            file=sys.stderr,
-        )
-        return False, f"Expected {len(expected_serials)} retirement pages, found {len(retirement_pages)}"
+        expected_count = len(expected_serials)
+        found_count = len(retirement_pages)
+        msg = (f"Error: Expected {expected_count} retirement pages, "
+               f"found {found_count}.")
+        print(msg, file=sys.stderr)
+        return False, msg
 
     # Each retirement page must have a Retirement Reason
     serials_seen = set()
@@ -164,11 +174,12 @@ def verify(notion: Client, main_id: str | None = None) -> tuple[bool, str]:
         serials_seen.add(serial_val)
 
     if serials_seen != expected_serials:
-        print(
-            f"Error: Serial values mismatch. Expected {sorted(expected_serials)}, found {sorted(serials_seen)}.",
-            file=sys.stderr,
-        )
-        return False, f"Serial values mismatch. Expected {sorted(expected_serials)}, found {sorted(serials_seen)}"
+        expected_sorted = sorted(expected_serials)
+        seen_sorted = sorted(serials_seen)
+        msg = (f"Error: Serial values mismatch. Expected {expected_sorted}, "
+               f"found {seen_sorted}.")
+        print(msg, file=sys.stderr)
+        return False, msg
 
     # -----------------------------------------------------------------
     # Verify the migration log page and callout block contents
@@ -180,10 +191,9 @@ def verify(notion: Client, main_id: str | None = None) -> tuple[bool, str]:
         return False, f"Page '{log_page_title}' not found"
 
     # Search for a callout block with required pattern
-    import re
-
     callout_pattern = re.compile(
-        r"Successfully migrated (\d+) assets to the retirement queue on 2025-03-24\."
+        r"Successfully migrated (\d+) assets to the retirement queue "
+        r"on 2025-03-24\."
     )
     blocks = notion_utils.get_all_blocks_recursively(notion, log_page_id)
     match_found = False
@@ -196,11 +206,11 @@ def verify(notion: Client, main_id: str | None = None) -> tuple[bool, str]:
                 if migrated_num == len(expected_serials):
                     match_found = True
                 else:
-                    print(
-                        f"Error: Callout reports {migrated_num} assets, but {len(retirement_pages)} retirement pages found.",
-                        file=sys.stderr,
-                    )
-                    return False, f"Callout reports {migrated_num} assets, but {len(retirement_pages)} retirement pages found"
+                    pages_count = len(retirement_pages)
+                    msg = (f"Error: Callout reports {migrated_num} assets, "
+                           f"but {pages_count} retirement pages found.")
+                    print(msg, file=sys.stderr)
+                    return False, msg
                 break
     if not match_found:
         print(
@@ -217,7 +227,7 @@ def main():
     """Main verification function."""
     notion = notion_utils.get_notion_client()
     main_id = sys.argv[1] if len(sys.argv) > 1 else None
-    success, error_msg = verify(notion, main_id)
+    success, _error_msg = verify(notion, main_id)
     if success:
         sys.exit(0)
     else:

@@ -1,9 +1,13 @@
+"""Verification module for Deployment Process Sop task in Notion workspace."""
+
+# pylint: disable=duplicate-code,import-error,astroid-error
+
 import sys
 from notion_client import Client
 from mcpuniverse.evaluator.mcpmark.notion.utils import notion_utils
 
 
-def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
+def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:  # pylint: disable=too-many-branches,too-many-locals,too-many-statements
     """
     Verifies comprehensive SOP template completion with exact content matching.
     """
@@ -60,7 +64,7 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
                     title_list = child_page_info["properties"]["title"].get("title", [])
                     if title_list:
                         child_page_title = title_list[0].get("plain_text", "")
-            except:
+            except (KeyError, TypeError, IndexError):
                 child_page_title = ""
 
             child_blocks = notion_utils.get_all_blocks_recursively(notion, block["id"])
@@ -80,9 +84,11 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
 
     # Check 2: Verify Purpose section content
     purpose_found = False
-    expected_purpose = "This SOP defines the standardized process for deploying software applications to production environments"
+    expected_purpose = ("This SOP defines the standardized process for "
+                        "deploying software applications to production "
+                        "environments")
 
-    for i, block in enumerate(all_blocks):
+    for i, block in enumerate(all_blocks):  # pylint: disable=too-many-nested-blocks
         if block.get("type") == "heading_2":
             heading_text = notion_utils.get_block_plain_text(block)
             if "Purpose" in heading_text:
@@ -105,26 +111,30 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
     # Check 3: Verify Context section and child_page callouts
     context_found = False
     child_pages_updated = 0
-    expected_context = "Software deployments are critical operations that can impact system availability"
+    expected_context = ("Software deployments are critical operations that "
+                        "can impact system availability")
     expected_child_callouts = [
         (
             "Change Management Policy (SOP-001)",
-            "Defines approval workflows and change review processes for all production modifications",
+            ("Defines approval workflows and change review processes for "
+             "all production modifications"),
             "Contacting IT",
         ),
         (
             "Incident Response Procedures (SOP-003)",
-            "Emergency procedures for handling deployment failures and system outages",
+            ("Emergency procedures for handling deployment failures and "
+             "system outages"),
             "Team lunches",
         ),
         (
             "Security Compliance Guidelines (SOP-007)",
-            "Security requirements and validation steps for production deployments",
+            ("Security requirements and validation steps for production "
+             "deployments"),
             "Sending swag",
         ),
     ]
 
-    for i, block in enumerate(all_blocks):
+    for i, block in enumerate(all_blocks):  # pylint: disable=too-many-nested-blocks
         if block.get("type") == "heading_2":
             heading_text = notion_utils.get_block_plain_text(block)
             if "Context" in heading_text:
@@ -159,7 +169,7 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
                                             child_page_title = title_list[0].get(
                                                 "plain_text", ""
                                             )
-                                except:
+                                except (KeyError, TypeError, IndexError):
                                     child_page_title = ""
 
                                 child_blocks = notion_utils.get_all_blocks_recursively(
@@ -184,9 +194,10 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
                                                 in child_page_title
                                             ):
                                                 child_pages_updated += 1
-                                                verification_results.append(
-                                                    f"✅ Context child_page '{expected_page_title}' updated correctly"
-                                                )
+                                                msg = (f"✅ Context child_page "
+                                                       f"'{expected_page_title}' "
+                                                       "updated correctly")
+                                                verification_results.append(msg)
                                                 break
 
     if context_found:
@@ -197,21 +208,25 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
             "✅ All 3 Context child_page callouts updated correctly"
         )
     else:
-        verification_results.append(
-            f"❌ Only {child_pages_updated}/3 Context child_page callouts updated correctly (Contacting IT, Team lunches, Sending swag)"
-        )
+        msg = (f"❌ Only {child_pages_updated}/3 Context child_page callouts "
+               "updated correctly (Contacting IT, Team lunches, Sending swag)")
+        verification_results.append(msg)
 
     # Check 4: Verify Terminologies section with exact 4 bulleted items
     terminologies_found = False
     terminology_items = []
     expected_terminologies = [
-        "Blue-Green Deployment: A deployment strategy that maintains two identical production environments",
-        "Rollback Window: The maximum time allowed to revert a deployment (30 minutes)",
-        "Smoke Test: Initial verification tests run immediately after deployment",
-        "Production Gateway: The approval checkpoint before production release",
+        ("Blue-Green Deployment: A deployment strategy that maintains "
+         "two identical production environments"),
+        ("Rollback Window: The maximum time allowed to revert a deployment "
+         "(30 minutes)"),
+        ("Smoke Test: Initial verification tests run immediately after "
+         "deployment"),
+        ("Production Gateway: The approval checkpoint before production "
+         "release"),
     ]
 
-    for i, block in enumerate(all_blocks):
+    for i, block in enumerate(all_blocks):  # pylint: disable=too-many-nested-blocks
         if block.get("type") == "heading_2":
             heading_text = notion_utils.get_block_plain_text(block)
             if "Terminologies" in heading_text:
@@ -248,9 +263,10 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
             "✅ Terminologies section with exactly 4 correct items"
         )
     else:
-        verification_results.append(
-            f"❌ Terminologies: expected 4 items, found {len(terminology_items)}, {terminology_matches} correct"
-        )
+        items_count = len(terminology_items)
+        msg = (f"❌ Terminologies: expected 4 items, found {items_count}, "
+               f"{terminology_matches} correct")
+        verification_results.append(msg)
 
     # Check 5: Verify Tools section with 2 child_page callouts
     tools_found = False
@@ -260,7 +276,7 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
         ("Kubernetes Dashboard", "rollback operations"),
     ]
 
-    for i, block in enumerate(all_blocks):
+    for i, block in enumerate(all_blocks):  # pylint: disable=too-many-nested-blocks
         if block.get("type") == "heading_2":
             heading_text = notion_utils.get_block_plain_text(block)
             if "Tools" in heading_text:
@@ -312,13 +328,17 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
     roles_found = False
     role_items = []
     expected_roles = [
-        "DevOps Engineer: Executes deployment, monitors system health, initiates rollbacks if needed",
-        "Lead Developer: Reviews code changes, approves deployment package, validates functionality",
-        "QA Engineer: Verifies smoke tests, confirms user acceptance criteria",
-        "Security Officer: Validates security compliance, approves security-sensitive deployments",
+        ("DevOps Engineer: Executes deployment, monitors system health, "
+         "initiates rollbacks if needed"),
+        ("Lead Developer: Reviews code changes, approves deployment package, "
+         "validates functionality"),
+        ("QA Engineer: Verifies smoke tests, confirms user acceptance "
+         "criteria"),
+        ("Security Officer: Validates security compliance, approves "
+         "security-sensitive deployments"),
     ]
 
-    for i, block in enumerate(all_blocks):
+    for i, block in enumerate(all_blocks):  # pylint: disable=too-many-nested-blocks
         if block.get("type") == "heading_2":
             heading_text = notion_utils.get_block_plain_text(block)
             if "Roles" in heading_text and "responsibilities" in heading_text:
@@ -345,7 +365,8 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
                 break
 
     role_matches = sum(
-        1 for expected in expected_roles if any(expected in item for item in role_items)
+        1 for expected in expected_roles
+        if any(expected in item for item in role_items)
     )
 
     if roles_found and len(role_items) == 4 and role_matches == 4:
@@ -353,16 +374,18 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
             "✅ Roles & responsibilities section with exactly 4 correct items"
         )
     else:
-        verification_results.append(
-            f"❌ Roles section: expected 4 items, found {len(role_items)}, {role_matches} correct"
-        )
+        items_count = len(role_items)
+        msg = (f"❌ Roles section: expected 4 items, found {items_count}, "
+               f"{role_matches} correct")
+        verification_results.append(msg)
 
     # Check 7: Verify Procedure section with exactly 3 numbered items
     procedure_found = False
     procedure_items = []
     expected_procedures = [
         ("Pre-deployment", "Lead Developer and Security Officer", "rollback plan"),
-        ("Deployment execution", "staging environment first", "blue-green strategy"),
+        ("Deployment execution", "staging environment first",
+         "blue-green strategy"),
         (
             "Post-deployment",
             "minimum 30 minutes",
@@ -370,7 +393,7 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
         ),
     ]
 
-    for i, block in enumerate(all_blocks):
+    for i, block in enumerate(all_blocks):  # pylint: disable=too-many-nested-blocks
         if block.get("type") == "heading_2":
             heading_text = notion_utils.get_block_plain_text(block)
             if "Procedure" in heading_text:
@@ -398,7 +421,8 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
 
     procedure_matches = 0
     for item_text in procedure_items:
-        for expected_title, expected_content1, expected_content2 in expected_procedures:
+        for (expected_title, expected_content1,
+             expected_content2) in expected_procedures:
             if (
                 expected_title in item_text
                 and expected_content1 in item_text
@@ -410,9 +434,10 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
     if procedure_found and len(procedure_items) == 3 and procedure_matches == 3:
         verification_results.append("✅ Procedure section with exactly 3 correct items")
     else:
-        verification_results.append(
-            f"❌ Procedure: expected 3 items, found {len(procedure_items)}, {procedure_matches} correct"
-        )
+        items_count = len(procedure_items)
+        msg = (f"❌ Procedure: expected 3 items, found {items_count}, "
+               f"{procedure_matches} correct")
+        verification_results.append(msg)
 
     # Calculate overall success
     total_checks = 14  # Number of major verification points
@@ -452,12 +477,10 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
     if success:
         print("\n🎉 SUCCESS: All SOP template requirements completed correctly!")
         return True, ""
-    else:
-        print(
-            f"\n❌ FAILURE: SOP template verification failed. {successful_checks}/{total_checks} requirements met.",
-            file=sys.stderr,
-        )
-        return False, f"SOP template verification failed. {successful_checks}/{total_checks} requirements met."
+    msg = (f"\n❌ FAILURE: SOP template verification failed. "
+           f"{successful_checks}/{total_checks} requirements met.")
+    print(msg, file=sys.stderr)
+    return False, msg
 
 
 def main():
@@ -466,7 +489,7 @@ def main():
     """
     notion = notion_utils.get_notion_client()
     main_id = sys.argv[1] if len(sys.argv) > 1 else None
-    success, error_msg = verify(notion, main_id)
+    success, _error_msg = verify(notion, main_id)
     if success:
         sys.exit(0)
     else:

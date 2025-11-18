@@ -28,7 +28,7 @@ Create a table called `available_films` with the following structure:
 
 Populate this table with films that meet these criteria:
 - Have rental_rate between $3.00 and $5.00
-- Have length greater than 100 minutes  
+- Have length greater than 100 minutes
 - Are available in store_id = 1 (have at least 1 inventory record)
 
 
@@ -55,7 +55,7 @@ Populate this table with a summary query that shows:
 - Count of inventory records in store_id = 2
 
 Requirements for the summary report:
-- Include only films that currently have at least one inventory record  
+- Include only films that currently have at least one inventory record
 - Insert the results sorted by inventory count from highest to lowest, and then alphabetically by film title
 - Ensure all counts reflect the state after completing the previous operations
 

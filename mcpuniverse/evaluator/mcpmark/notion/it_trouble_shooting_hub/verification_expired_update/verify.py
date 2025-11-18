@@ -1,4 +1,9 @@
+"""Verification module for Verification Expired Update task in Notion workspace."""
+
+# pylint: disable=duplicate-code,import-error,astroid-error
+
 import sys
+from typing import Optional
 from notion_client import Client
 from mcpuniverse.evaluator.mcpmark.notion.utils import notion_utils
 
@@ -12,7 +17,7 @@ PRIORITY_HIGH = "High"
 STATUS_IN_PROGRESS = "In progress"
 
 
-def _get_main_page_id(notion: Client, main_id: str | None) -> str | None:
+def _get_main_page_id(notion: Client, main_id: Optional[str]) -> Optional[str]:
     """Resolve the main page id starting from CLI arg or by title search."""
     if main_id:
         found_id, obj_type = notion_utils.find_page_or_database_by_id(notion, main_id)
@@ -24,7 +29,7 @@ def _get_main_page_id(notion: Client, main_id: str | None) -> str | None:
 
 def _fetch_database_id(
     notion: Client, parent_page_id: str, db_title: str
-) -> str | None:
+) -> Optional[str]:
     """Locate a child database by title inside a given page."""
     return notion_utils.find_database_in_block(notion, parent_page_id, db_title)
 
@@ -73,7 +78,7 @@ def _check_callout_present(notion: Client, page_id: str) -> bool:
     return CALL_OUT_TEXT in plain_text
 
 
-def _find_request_page(notion: Client, db_id: str) -> dict | None:
+def _find_request_page(notion: Client, db_id: str) -> Optional[dict]:
     """Find the IT Request page with the expected title."""
     # Use a simple search inside database
     res = notion.databases.query(
@@ -114,7 +119,8 @@ def _request_page_contains_mentions(
     return all(pid in mentioned_ids for pid in expected_page_ids)
 
 
-def verify(notion: Client, main_id: str | None = None) -> tuple[bool, str]:
+def verify(notion: Client, main_id: Optional[str] = None) -> tuple[bool, str]:  # pylint: disable=too-many-return-statements
+    """Verify that verification expired callouts and tickets are correctly updated."""
     main_page_id = _get_main_page_id(notion, main_id)
     if not main_page_id:
         print(
@@ -187,7 +193,7 @@ def main():
     """Main verification function."""
     notion = notion_utils.get_notion_client()
     main_id = sys.argv[1] if len(sys.argv) > 1 else None
-    success, error_msg = verify(notion, main_id)
+    success, _error_msg = verify(notion, main_id)
     if success:
         sys.exit(0)
     else:

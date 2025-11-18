@@ -1,7 +1,10 @@
+"""Verification module for label color standardization in claude-code repository."""
+# pylint: disable=R0911,R0912,R0914,R0915,astroid-error,duplicate-code,import-error
+import base64
 import sys
 import os
-import requests
 from typing import Dict, List, Optional, Tuple
+import requests
 from dotenv import load_dotenv
 
 
@@ -14,12 +17,11 @@ def _get_github_api(
         response = requests.get(url, headers=headers)
         if response.status_code == 200:
             return True, response.json()
-        elif response.status_code == 404:
+        if response.status_code == 404:
             return False, "API error", None
-        else:
-            print(f"API error for {endpoint}: {response.status_code}", file=sys.stderr)
-            return False, "API error", None
-    except Exception as e:
+        print(f"API error for {endpoint}: {response.status_code}", file=sys.stderr)
+        return False, "API error", None
+    except (requests.RequestException, IOError, OSError, ValueError) as e:
         print(f"Exception for {endpoint}: {e}", file=sys.stderr)
         return False, "API error", None
 
@@ -41,7 +43,6 @@ def _check_file_content(
     repo: str = "claude-code",
 ) -> Optional[str]:
     """Get file content from a branch."""
-    import base64
 
     success, result = _get_github_api(
         f"contents/{file_path}?ref={branch}", headers, org, repo
@@ -53,7 +54,7 @@ def _check_file_content(
         try:
             content = base64.b64decode(result.get("content", "")).decode("utf-8")
             return content
-        except Exception as e:
+        except (IOError, OSError, UnicodeDecodeError) as e:
             print(f"Content decode error for {file_path}: {e}", file=sys.stderr)
             return None
 
@@ -167,11 +168,11 @@ def verify() -> tuple[bool, str]:
         return False, "GITHUB_EVAL_ORG environment variable not set"
 
     # Configuration constants
-    BRANCH_NAME = "feat/label-color-guide"
+    branch_name = "feat/label-color-guide"
 
     # Issue requirements
-    ISSUE_TITLE_KEYWORDS = ["Document label organization", "label guide"]
-    ISSUE_KEYWORDS = [
+    issue_title_keywords = ["Document label organization", "label guide"]
+    issue_keywords = [
         "label documentation",
         "visual organization",
         "label guide",
@@ -179,8 +180,8 @@ def verify() -> tuple[bool, str]:
     ]
 
     # PR requirements
-    PR_TITLE_KEYWORDS = ["label organization guide", "visual organization"]
-    PR_KEYWORDS = [
+    pr_title_keywords = ["label organization guide", "visual organization"]
+    pr_keywords = [
         "label documentation",
         "organization guide",
         "visual improvement",
@@ -190,7 +191,7 @@ def verify() -> tuple[bool, str]:
     # All expected labels in the repository that are actually used/discoverable via MCP tools
     # Note: Excludes 'wontfix', 'invalid', 'good first issue', 'help wanted' as they exist
     # in the repository but are not used by any issues (not discoverable via MCP search)
-    ALL_EXPECTED_LABELS = [
+    all_expected_labels = [
         "bug",
         "enhancement",
         "duplicate",
@@ -225,14 +226,14 @@ def verify() -> tuple[bool, str]:
 
     # 1. Check that feature branch exists
     print("1. Verifying feature branch exists...")
-    if not _check_branch_exists(BRANCH_NAME, headers, github_org):
-        print(f"Error: Branch '{BRANCH_NAME}' not found", file=sys.stderr)
-        return False, f"Branch '{BRANCH_NAME}' not found"
+    if not _check_branch_exists(branch_name, headers, github_org):
+        print(f"Error: Branch '{branch_name}' not found", file=sys.stderr)
+        return False, f"Branch '{branch_name}' not found"
 
     # 2. Check documentation file exists and has correct format
     print("2. Verifying label documentation file...")
     doc_content = _check_file_content(
-        BRANCH_NAME, "docs/LABEL_COLORS.md", headers, github_org
+        branch_name, "docs/LABEL_COLORS.md", headers, github_org
     )
     if not doc_content:
         print("Error: docs/LABEL_COLORS.md not found", file=sys.stderr)
@@ -249,11 +250,11 @@ def verify() -> tuple[bool, str]:
 
     # 3. Verify labels are documented
     print("3. Verifying expected labels are documented...")
-    print(f"  ✓ {len(ALL_EXPECTED_LABELS)} expected labels defined for verification")
+    print(f"  ✓ {len(all_expected_labels)} expected labels defined for verification")
 
     # 4. Find the created issue
     print("4. Verifying issue creation...")
-    issue = _find_issue_by_title_keywords(ISSUE_TITLE_KEYWORDS, headers, github_org)
+    issue = _find_issue_by_title_keywords(issue_title_keywords, headers, github_org)
     if not issue:
         print(
             "Error: Issue with title containing required keywords not found",
@@ -272,8 +273,8 @@ def verify() -> tuple[bool, str]:
             return False, f"Issue body missing required section: {section}"
 
     # Check issue has required keywords
-    if not all(keyword.lower() in issue_body.lower() for keyword in ISSUE_KEYWORDS):
-        missing_keywords = [kw for kw in ISSUE_KEYWORDS if kw.lower() not in issue_body.lower()]
+    if not all(keyword.lower() in issue_body.lower() for keyword in issue_keywords):
+        missing_keywords = [kw for kw in issue_keywords if kw.lower() not in issue_body.lower()]
         print(f"Error: Issue body missing required keywords: {missing_keywords}", file=sys.stderr)
         return False, f"Issue body missing required keywords: {missing_keywords}"
 
@@ -287,7 +288,7 @@ def verify() -> tuple[bool, str]:
 
     # 5. Find the created PR
     print("5. Verifying pull request creation...")
-    pr = _find_pr_by_title_keywords(PR_TITLE_KEYWORDS, headers, github_org)
+    pr = _find_pr_by_title_keywords(pr_title_keywords, headers, github_org)
     if not pr:
         print(
             "Error: PR with title containing required keywords not found",
@@ -312,8 +313,8 @@ def verify() -> tuple[bool, str]:
             return False, f"PR body missing required section: {section}"
 
     # Check PR has required keywords
-    if not all(keyword.lower() in pr_body.lower() for keyword in PR_KEYWORDS):
-        missing_keywords = [kw for kw in PR_KEYWORDS if kw.lower() not in pr_body.lower()]
+    if not all(keyword.lower() in pr_body.lower() for keyword in pr_keywords):
+        missing_keywords = [kw for kw in pr_keywords if kw.lower() not in pr_body.lower()]
         print(f"Error: PR body missing required keywords: {missing_keywords}", file=sys.stderr)
         return False, f"PR body missing required keywords: {missing_keywords}"
 
@@ -326,7 +327,7 @@ def verify() -> tuple[bool, str]:
     print("6. Verifying issue has all expected labels applied...")
     issue_label_names = [label["name"] for label in issue.get("labels", [])]
     # Use our expected labels list instead of all repo labels (excludes unused labels)
-    expected_labels_to_check = ALL_EXPECTED_LABELS
+    expected_labels_to_check = all_expected_labels
     missing_labels = []
 
     for expected_label in expected_labels_to_check:
@@ -338,7 +339,10 @@ def verify() -> tuple[bool, str]:
             f"Error: Issue missing {len(missing_labels)} expected labels: {missing_labels[:5]}...",
             file=sys.stderr,
         )
-        return False, f"Issue missing {len(missing_labels)} expected labels: {missing_labels[:5]}..."
+        missing_count = len(missing_labels)
+        missing_preview = missing_labels[:5]
+        return False, (f"Issue missing {missing_count} expected labels: "
+                      f"{missing_preview}...")
 
     print(f"  ✓ Issue has all {len(expected_labels_to_check)} expected labels applied")
 
@@ -347,62 +351,73 @@ def verify() -> tuple[bool, str]:
     issue_comments = _get_issue_comments(issue_number, headers, github_org)
 
     found_update_comment = False
-    comment_required_keywords = ["documentation created", "label guide complete", "organization complete"]
-    
+    comment_required_keywords = [
+        "documentation created",
+        "label guide complete",
+        "organization complete"
+    ]
+
     for comment in issue_comments:
         body = comment.get("body", "")
         # Check for PR reference and required keywords
-        if (f"PR #{pr_number}" in body and 
-            any(keyword.lower() in body.lower() for keyword in comment_required_keywords) and
-            "total" in body.lower() and "labels" in body.lower()):
+        has_pr_ref = f"PR #{pr_number}" in body
+        has_keywords = any(
+            keyword.lower() in body.lower()
+            for keyword in comment_required_keywords
+        )
+        has_total_labels = ("total" in body.lower() and
+                           "labels" in body.lower())
+        if has_pr_ref and has_keywords and has_total_labels:
             found_update_comment = True
             break
 
     if not found_update_comment:
-        print("Error: Issue missing comment documenting changes with required content", file=sys.stderr)
-        print("  Comment should include: PR reference, label count, and completion keywords", file=sys.stderr)
-        return False, "Issue missing comment documenting changes with required content"
+        msg = ("Error: Issue missing comment documenting changes with "
+               "required content")
+        print(msg, file=sys.stderr)
+        print("  Comment should include: PR reference, label count, "
+              "and completion keywords", file=sys.stderr)
+        return False, msg
 
     # 8. Final verification of complete workflow
     print("8. Final verification of workflow completion...")
-    
-    # Skip repository label existence check - we trust that our expected labels 
+
+    # Skip repository label existence check - we trust that our expected labels
     # are the ones actually discoverable/usable via MCP tools
 
     # Ensure expected labels are documented (not all repo labels, since some are unused)
     documented_label_count = len(documented_labels)
-    expected_label_count = len(ALL_EXPECTED_LABELS)
+    expected_label_count = len(all_expected_labels)
 
     if documented_label_count < expected_label_count:
-        print(
-            f"Error: Documentation incomplete - {documented_label_count} documented vs {expected_label_count} expected",
-            file=sys.stderr,
-        )
-        return False, f"Documentation incomplete - {documented_label_count} documented vs {expected_label_count} expected"
+        msg = (f"Error: Documentation incomplete - {documented_label_count} "
+               f"documented vs {expected_label_count} expected")
+        print(msg, file=sys.stderr)
+        return False, msg
 
     # Check that all expected labels are documented
     missing_documented_labels = []
-    for expected_label in ALL_EXPECTED_LABELS:
+    for expected_label in all_expected_labels:
         if expected_label not in documented_labels:
             missing_documented_labels.append(expected_label)
 
     if missing_documented_labels:
-        print(
-            f"Error: Documentation missing expected labels: {missing_documented_labels}",
-            file=sys.stderr,
-        )
-        return False, f"Documentation missing expected labels: {missing_documented_labels}"
+        msg = (f"Error: Documentation missing expected labels: "
+               f"{missing_documented_labels}")
+        print(msg, file=sys.stderr)
+        return False, msg
 
     print(f"  ✓ All {expected_label_count} expected labels documented")
-    print(f"  ✓ All {len(ALL_EXPECTED_LABELS)} expected labels present and documented")
+    print(f"  ✓ All {len(all_expected_labels)} expected labels present and documented")
 
     print("\n✓ All verification checks passed!")
     print("Label documentation workflow completed successfully:")
-    print(
-        f"  - Issue #{issue_number}: {issue.get('title')} (with all {len(issue_label_names)} labels)"
-    )
+    issue_title = issue.get('title')
+    label_count = len(issue_label_names)
+    print(f"  - Issue #{issue_number}: {issue_title} "
+          f"(with all {label_count} labels)")
     print(f"  - PR #{pr_number}: {pr.get('title')}")
-    print(f"  - Branch: {BRANCH_NAME}")
+    print(f"  - Branch: {branch_name}")
     print("  - Documentation: docs/LABEL_COLORS.md")
     print(f"  - {expected_label_count} labels documented for better organization")
     return True, ""
@@ -410,7 +425,7 @@ def verify() -> tuple[bool, str]:
 
 def main():
     """Main verification function."""
-    success, error_msg = verify()
+    success, _error_msg = verify()
     if success:
         sys.exit(0)
     else:

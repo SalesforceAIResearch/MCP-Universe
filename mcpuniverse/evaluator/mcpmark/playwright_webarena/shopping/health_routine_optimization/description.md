@@ -44,4 +44,3 @@ InitialSubtotal|$XX.XX
 FinalSubtotal|$XX.XX
 </answer>
 ```
-

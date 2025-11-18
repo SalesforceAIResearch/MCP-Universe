@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
+# pylint: disable=duplicate-code,line-too-long
 Verification script for File Context Task: Convert Files to Uppercase
 """
 
 import sys
 from pathlib import Path
 import os
-import re
 import json
 
 def get_test_directory() -> Path:
@@ -14,19 +14,19 @@ def get_test_directory() -> Path:
     test_root = os.environ.get("FILESYSTEM_TEST_DIR")
     if not test_root:
         raise ValueError("FILESYSTEM_TEST_DIR environment variable is required")
-    
+
     # Ensure the path includes the category
     # Read category from meta.json
     meta_file = Path(__file__).parent / "meta.json"
     with open(meta_file, 'r', encoding='utf-8') as f:
         meta = json.load(f)
         category = meta.get("category_id", "file_context")
-    
+
     # If test_root doesn't end with category, append it
     test_path = Path(test_root)
     if test_path.name != category:
         test_path = test_path / category
-    
+
     return test_path
 
 def verify_uppercase_directory_exists(test_dir: Path) -> tuple:
@@ -83,7 +83,7 @@ def verify_uppercase_content(test_dir: Path) -> tuple:
                 print(f"| ❌ File '{filename}' content is not properly converted to uppercase")
                 return False, f"File '{filename}' content is not properly converted to uppercase"
 
-        except Exception as e:
+        except (ValueError, IOError, OSError, AttributeError, KeyError, TypeError, UnicodeDecodeError) as e:
             print(f"| ❌ Error reading file '{filename}': {e}")
             return False, f"Error reading file '{filename}': {e}"
 
@@ -102,7 +102,7 @@ def verify_answer_file_exists(test_dir: Path) -> tuple:
     print("| ✓ Answer file found in uppercase directory")
     return True, ""
 
-def verify_answer_format(test_dir: Path) -> tuple:
+def verify_answer_format(test_dir: Path) -> tuple:  # pylint: disable=R0911
     """Verify that the answer file has the correct format."""
     uppercase_dir = test_dir / "uppercase"
     answer_file = uppercase_dir / "answer.txt"
@@ -159,7 +159,7 @@ def verify_answer_format(test_dir: Path) -> tuple:
         print("| ✓ Answer format is correct")
         return True, ""
 
-    except Exception as e:
+    except (ValueError, IOError, OSError, AttributeError, KeyError, TypeError, UnicodeDecodeError) as e:
         print(f"| ❌ Error reading answer file: {e}")
         return False, f"Error reading answer file: {e}"
 
@@ -170,7 +170,7 @@ def count_words_in_file(file_path: Path) -> int:
         # Split by whitespace and filter out empty strings
         words = [word for word in content.split() if word.strip()]
         return len(words)
-    except Exception as e:
+    except (ValueError, IOError, OSError, AttributeError, KeyError, TypeError, UnicodeDecodeError) as e:
         print(f"| ❌ Error reading file {file_path}: {e}")
         return 0
 
@@ -218,7 +218,7 @@ def verify_word_counts_are_correct(test_dir: Path) -> tuple:
         print("| ✓ All word counts are correct")
         return True, ""
 
-    except Exception as e:
+    except (ValueError, IOError, OSError, AttributeError, KeyError, TypeError, UnicodeDecodeError) as e:
         print(f"| ❌ Error verifying word counts: {e}")
         return False, f"Error verifying word counts: {e}"
 
@@ -252,7 +252,7 @@ def verify_all_files_are_included(test_dir: Path) -> tuple:
         print("| ✓ All 10 files are included in answer")
         return True, ""
 
-    except Exception as e:
+    except (ValueError, IOError, OSError, AttributeError, KeyError, TypeError, UnicodeDecodeError) as e:
         print(f"| ❌ Error verifying file inclusion: {e}")
         return False, f"Error verifying file inclusion: {e}"
 
@@ -287,14 +287,14 @@ def main():
     try:
         test_dir = get_test_directory()
         passed, error_msg = verify(test_dir)
-        
+
         if passed:
             sys.exit(0)
         else:
             print(f"| ❌ Verification failed: {error_msg}")
             sys.exit(1)
 
-    except Exception as e:
+    except (ValueError, IOError, OSError, AttributeError, KeyError, TypeError, UnicodeDecodeError) as e:
         print(f"| ❌ Verification failed with error: {e}")
         sys.exit(1)
 

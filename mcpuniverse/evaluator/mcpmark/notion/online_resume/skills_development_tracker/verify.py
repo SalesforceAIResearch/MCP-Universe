@@ -1,9 +1,13 @@
+"""Verification module for Skills Development Tracker task in Notion workspace."""
+
+# pylint: disable=duplicate-code,import-error,astroid-error
+
 import sys
 from notion_client import Client
 from mcpuniverse.evaluator.mcpmark.notion.utils import notion_utils
 
 
-def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
+def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:  # pylint: disable=too-many-branches,too-many-locals,too-many-return-statements,too-many-statements
     """
     Verifies that the Skills Development Tracker database and callout block were created correctly.
     """
@@ -55,11 +59,11 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
                 )
                 return False, f"Error: Property '{prop_name}' not found in database."
             if properties[prop_name]["type"] != expected_type:
-                print(
-                    f"Error: Property '{prop_name}' has incorrect type. Expected '{expected_type}', got '{properties[prop_name]['type']}'.",
-                    file=sys.stderr,
-                )
-                return False, f"Error: Property '{prop_name}' has incorrect type. Expected '{expected_type}', got '{properties[prop_name]['type']}'."
+                found_type = properties[prop_name]['type']
+                msg = (f"Error: Property '{prop_name}' has incorrect type. "
+                       f"Expected '{expected_type}', got '{found_type}'.")
+                print(msg, file=sys.stderr)
+                return False, msg
 
         # Verify Target Proficiency is percent format
         if (
@@ -72,7 +76,7 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
             )
             return False, "Error: Target Proficiency should have 'percent' format."
 
-    except Exception as e:
+    except (ValueError, KeyError, TypeError, AttributeError) as e:
         print(f"Error retrieving database info: {e}", file=sys.stderr)
         return False, f"Error retrieving database info: {e}"
 
@@ -105,7 +109,7 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
                             "level": skill_level,
                         }
                     )
-    except Exception as e:
+    except (ValueError, KeyError, TypeError, AttributeError) as e:
         print(f"Error querying Skills database: {e}", file=sys.stderr)
         return False, f"Error querying Skills database: {e}"
 
@@ -182,7 +186,7 @@ def verify(notion: Client, main_id: str = None) -> tuple[bool, str]:
                 )
                 return False, f"Error: Entry '{name_text}' missing Progress Notes."
 
-    except Exception as e:
+    except (ValueError, KeyError, TypeError, AttributeError) as e:
         print(f"Error querying Skills Development Tracker: {e}", file=sys.stderr)
         return False, f"Error querying Skills Development Tracker: {e}"
 
@@ -255,7 +259,7 @@ def main():
     """
     notion = notion_utils.get_notion_client()
     main_id = sys.argv[1] if len(sys.argv) > 1 else None
-    success, error_msg = verify(notion, main_id)
+    success, _error_msg = verify(notion, main_id)
     if success:
         sys.exit(0)
     else:

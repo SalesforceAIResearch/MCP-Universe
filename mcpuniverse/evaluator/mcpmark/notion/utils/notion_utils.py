@@ -1,10 +1,13 @@
+"""Utility functions for Notion API interactions in verification scripts."""
+# pylint: disable=duplicate-code,import-error,astroid-error
 import os
-from notion_client import Client
 import sys
 from dotenv import load_dotenv
+from notion_client import Client
 
 
 def get_notion_client():
+    """Get a Notion API client instance using credentials from environment."""
     # Construct the absolute path to the .env file in the project root
     load_dotenv(dotenv_path=".mcp_env")
     api_key = os.getenv("EVAL_NOTION_API_KEY")
@@ -69,7 +72,7 @@ def get_page_by_id(notion: Client, page_id: str):
     """Gets a page by its ID. Returns the page object if found, None otherwise."""
     try:
         return notion.pages.retrieve(page_id=page_id)
-    except Exception:
+    except (ValueError, KeyError, TypeError, AttributeError):
         return None
 
 
@@ -78,7 +81,7 @@ def find_page_by_id(notion: Client, page_id: str):
     try:
         notion.pages.retrieve(page_id=page_id)
         return page_id
-    except Exception:
+    except (ValueError, KeyError, TypeError, AttributeError):
         return None
 
 
@@ -87,7 +90,7 @@ def find_database_by_id(notion: Client, database_id: str):
     try:
         notion.databases.retrieve(database_id=database_id)
         return database_id
-    except Exception:
+    except (ValueError, KeyError, TypeError, AttributeError):
         return None
 
 
@@ -100,14 +103,14 @@ def find_page_or_database_by_id(notion: Client, object_id: str):
     try:
         notion.pages.retrieve(page_id=object_id)
         return (object_id, "page")
-    except Exception:
+    except (ValueError, KeyError, TypeError, AttributeError):
         pass
 
     # Try as database
     try:
         notion.databases.retrieve(database_id=object_id)
         return (object_id, "database")
-    except Exception:
+    except (ValueError, KeyError, TypeError, AttributeError):
         pass
 
     return (None, None)
@@ -146,7 +149,7 @@ def get_all_blocks_recursively(notion: Client, block_id: str):
         direct_children = notion.blocks.children.list(block_id=block_id).get(
             "results", []
         )
-    except Exception:
+    except (ValueError, KeyError, TypeError, AttributeError):
         return []
 
     for block in direct_children:
