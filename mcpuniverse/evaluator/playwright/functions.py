@@ -140,7 +140,7 @@ async def playwright__get_flight_price(
             await page.wait_for_selector("#flightcard-0", timeout=30000)  # 30 seconds timeout
 
             # Extract the price content from the specified selector
-            price_selector = '#flightcard-0 [data-testid="flight_card_price_main_price"]'
+            price_selector = '#flightcard-0 [data-testid="upt_price"]'
             print(f"Looking for price element: {price_selector}")
 
             # Wait for the price element specifically
@@ -217,7 +217,7 @@ async def playwright__get_flight_price_with_time(depart_date: str):
             await page.wait_for_selector("#flightcard-0", timeout=30000)  # 30 seconds timeout
 
             # Extract the price content from the specified selector
-            price_selector = '#flightcard-0 [data-testid="flight_card_price_main_price"]'
+            price_selector = '#flightcard-0 [data-testid="upt_price"]'
             print(f"Looking for price element: {price_selector}")
 
             # Wait for the price element specifically

@@ -248,13 +248,19 @@ class AgentPipeline(metaclass=AutodocABCMeta):
     def _get_queue_size(self, queue_name) -> int:
         return self._redis_client.llen(queue_name)
 
-    def send_task(self, agent_collection_name: str, task_config: TaskConfig | dict) -> bool:
+    def send_task(
+            self,
+            agent_collection_name: str,
+            task_config: TaskConfig | dict,
+            metadata: dict = None
+    ) -> bool:
         """
         Send a task to an agent using round-robin scheduling.
         
         Args:
             agent_collection_name: Name of the agent collection to send task to.
             task_config: Configuration for the task to be executed.
+            metadata: Additional metadata for the task.
             
         Raises:
             RuntimeError: If agent collection name is invalid.
@@ -277,7 +283,8 @@ class AgentPipeline(metaclass=AutodocABCMeta):
                 kwargs={
                     "agent_collection_name": agent_collection_name,
                     "agent_index": agent_index,
-                    "task_config": json.dumps(task_config.model_dump(mode="json"))
+                    "task_config": json.dumps(task_config.model_dump(mode="json")),
+                    "metadata": metadata if metadata else {}
                 },
                 queue=queue_name
             )
