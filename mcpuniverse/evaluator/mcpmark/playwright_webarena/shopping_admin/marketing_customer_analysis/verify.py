@@ -1,5 +1,5 @@
 """Verification module for marketing customer analysis task."""
-# pylint: disable=astroid-error,R0911,R0915
+# pylint: disable=astroid-error,R0911,R0912,R0914,R0915,duplicate-code
 import asyncio
 import sys
 import re
@@ -351,7 +351,10 @@ async def verify() -> tuple[bool, str]:
                             f"{missing_str}. Row text: {row_text[:100]}..."
                         )
 
-                    return True, f"Customer verified with all required fields: {', '.join(found_fields)}"
+                    return True, (
+                        f"Customer verified with all required fields: "
+                        f"{', '.join(found_fields)}"
+                    )
 
                 except RuntimeError:
                     # Fall back to original simple validation
@@ -367,9 +370,15 @@ async def verify() -> tuple[bool, str]:
                             missing_fields.append(field)
 
                     if missing_fields:
-                        return False, f"Customer found but missing fields (fallback): {', '.join(missing_fields)}"
+                        return False, (
+                            f"Customer found but missing fields (fallback): "
+                            f"{', '.join(missing_fields)}"
+                        )
 
-                    return True, f"Customer verified with all required fields (fallback): {', '.join(found_fields)}"
+                    return True, (
+                        f"Customer verified with all required fields (fallback): "
+                        f"{', '.join(found_fields)}"
+                    )
 
             # Check both customers
             customer1_exists, customer1_msg = await check_customer_exists(customer1_requirements)

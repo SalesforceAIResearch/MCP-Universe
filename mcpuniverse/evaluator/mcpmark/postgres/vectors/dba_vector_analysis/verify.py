@@ -9,7 +9,7 @@ and stored their findings in appropriate result tables.
 import os
 import sys
 
-import psycopg2
+import psycopg2  # type: ignore
 
 
 def get_connection_params():

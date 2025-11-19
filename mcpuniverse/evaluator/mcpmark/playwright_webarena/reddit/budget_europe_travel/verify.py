@@ -1,5 +1,5 @@
 """Verification module for budget Europe travel task."""
-# pylint: disable=R0911,R0912,R0914,R0915,R1702,W0702
+# pylint: disable=R0911,R0912,R0914,R0915,R1702,W0702,line-too-long,duplicate-code
 import asyncio
 import re
 import sys

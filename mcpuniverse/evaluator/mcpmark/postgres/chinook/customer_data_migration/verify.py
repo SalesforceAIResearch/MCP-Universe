@@ -7,7 +7,7 @@ import os
 import pickle
 import sys
 
-import psycopg2
+import psycopg2  # type: ignore
 
 def get_connection_params() -> dict:
     """Get database connection parameters."""

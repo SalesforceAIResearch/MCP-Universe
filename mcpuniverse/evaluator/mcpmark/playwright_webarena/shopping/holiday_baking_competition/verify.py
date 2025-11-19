@@ -1,5 +1,5 @@
 """Verification module for holiday baking competition task."""
-# pylint: disable=R0912,R1702
+# pylint: disable=R0912,R0914,R0915,R1702,duplicate-code
 import asyncio
 import sys
 import re
@@ -147,7 +147,11 @@ def compare_answers(model_answer, expected_answer):
                     f"{key}: expected '{expected_value}', got '{model_value}'"
                 )
 
-        elif key in ["HighestRatedCookieSKURating", "CheapestChocolatePriceReviews", "Page2ThirdProductSKUPrice"]:
+        elif key in [
+            "HighestRatedCookieSKURating",
+            "CheapestChocolatePriceReviews",
+            "Page2ThirdProductSKUPrice"
+        ]:
             # Colon-separated fields (sku:rating, price:reviews, sku:price)
             if ":" in expected_value and ":" in model_value:
                 expected_parts = expected_value.split(":", 1)
@@ -158,7 +162,8 @@ def compare_answers(model_answer, expected_answer):
                         # Check if price part has correct format ($XX.XX)
                         if not model_parts[0].startswith("$"):
                             mismatches.append(
-                                f"{key}: incorrect format - price part should start with '$', got '{model_value}'"
+                                f"{key}: incorrect format - price part should start "
+                                f"with '$', got '{model_value}'"
                             )
                         else:
                             expected_price = expected_parts[0].replace("$", "").replace(",", "")
@@ -178,7 +183,8 @@ def compare_answers(model_answer, expected_answer):
                         # Check if price part has correct format ($XX.XX)
                         if not model_parts[1].startswith("$"):
                             mismatches.append(
-                                f"{key}: incorrect format - price part should start with '$', got '{model_value}'"
+                                f"{key}: incorrect format - price part should start "
+                                f"with '$', got '{model_value}'"
                             )
                         else:
                             expected_price = expected_parts[1].replace("$", "").replace(",", "")

@@ -8,7 +8,7 @@ import sys
 from datetime import datetime
 from decimal import Decimal
 
-import psycopg2
+import psycopg2  # type: ignore
 
 def rows_match(actual_row, expected_row):
     """

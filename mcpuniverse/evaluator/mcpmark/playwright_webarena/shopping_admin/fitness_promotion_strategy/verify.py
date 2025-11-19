@@ -1,5 +1,5 @@
 """Verification module for fitness promotion strategy task."""
-# pylint: disable=R0912,R0915,R1702,R1724
+# pylint: disable=R0912,R0914,R0915,R1702,R1724,duplicate-code
 import asyncio
 import sys
 import re
@@ -123,7 +123,10 @@ def compare_answers(model_answer, expected_answer):
                             if exp.lower() != mod.lower():
                                 mismatches.append(f"{key} part {i}: expected '{exp}', got '{mod}'")
                 else:
-                    mismatches.append(f"{key}: format mismatch - expected '{expected_value}', got '{model_value}'")
+                    mismatches.append(
+                        f"{key}: format mismatch - expected '{expected_value}', "
+                        f"got '{model_value}'"
+                    )
             else:
                 if expected_value != model_value:
                     mismatches.append(f"{key}: expected '{expected_value}', got '{model_value}'")
@@ -138,7 +141,9 @@ def compare_answers(model_answer, expected_answer):
                 exp_float = float(expected_inv.replace(',', ''))
                 mod_float = float(model_inv.replace(',', ''))
                 if abs(exp_float - mod_float) > 0.0001:
-                    mismatches.append(f"{key} inventory: expected '{expected_inv}', got '{model_inv}'")
+                    mismatches.append(
+                        f"{key} inventory: expected '{expected_inv}', got '{model_inv}'"
+                    )
             else:
                 if expected_value != model_value:
                     mismatches.append(f"{key}: expected '{expected_value}', got '{model_value}'")
@@ -166,7 +171,9 @@ def compare_answers(model_answer, expected_answer):
                 exp_pct_clean = expected_pct.replace('%', '').strip()
                 mod_pct_clean = model_pct.replace('%', '').strip()
                 if exp_pct_clean != mod_pct_clean:
-                    mismatches.append(f"{key} percentage: expected '{expected_pct}', got '{model_pct}'")
+                    mismatches.append(
+                        f"{key} percentage: expected '{expected_pct}', got '{model_pct}'"
+                    )
             else:
                 if expected_value != model_value:
                     mismatches.append(f"{key}: expected '{expected_value}', got '{model_value}'")
@@ -186,7 +193,10 @@ def compare_answers(model_answer, expected_answer):
                     if exp_group.lower() != mod_group.lower():
                         mismatches.append(f"{key} group: expected '{exp_group}', got '{mod_group}'")
                 else:
-                    mismatches.append(f"{key}: format mismatch - expected '{expected_value}', got '{model_value}'")
+                    mismatches.append(
+                        f"{key}: format mismatch - expected '{expected_value}', "
+                        f"got '{model_value}'"
+                    )
             else:
                 if expected_value != model_value:
                     mismatches.append(f"{key}: expected '{expected_value}', got '{model_value}'")

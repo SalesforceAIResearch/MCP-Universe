@@ -1,5 +1,5 @@
 """Verification module for search filtering operations task."""
-# pylint: disable=E0102,E1121,R0911,R0912
+# pylint: disable=E0102,E1121,R0911,R0912,R0914,R0915,R1702,duplicate-code
 import asyncio
 import re
 import json
@@ -43,7 +43,9 @@ def verify(messages):
                             break
             elif isinstance(content, str):
                 # Look for answer tags in string content
-                answer_match = re.search(r"<answer>(.*?)</answer>", content, re.DOTALL | re.IGNORECASE)
+                answer_match = re.search(
+                    r"<answer>(.*?)</answer>", content, re.DOTALL | re.IGNORECASE
+                )
                 if answer_match:
                     answer_content = answer_match.group(1).strip()
                     break
@@ -100,7 +102,10 @@ def verify(messages):
 
     # 1. TankSearchCount should be a number (2 terms containing 'tank')
     if not extracted_data["TankSearchCount"].isdigit():
-        return False, f"TankSearchCount should be a number, got: {extracted_data['TankSearchCount']}"
+        return False, (
+            f"TankSearchCount should be a number, "
+            f"got: {extracted_data['TankSearchCount']}"
+        )
 
     # Expected: "Antonia Racer Tank" and "tanks" contain 'tank'
     if extracted_data["TankSearchCount"] != "2":
@@ -108,18 +113,27 @@ def verify(messages):
 
     # 2. ZeroResultsCount should be a number (nike has 0 results)
     if not extracted_data["ZeroResultsCount"].isdigit():
-        return False, f"ZeroResultsCount should be a number, got: {extracted_data['ZeroResultsCount']}"
+        return False, (
+            f"ZeroResultsCount should be a number, "
+            f"got: {extracted_data['ZeroResultsCount']}"
+        )
 
     if extracted_data["ZeroResultsCount"] != "1":
         return False, f"ZeroResultsCount should be '1', got: {extracted_data['ZeroResultsCount']}"
 
     # 3. HighestUseTerm should be in format "term:uses"
     if ":" not in extracted_data["HighestUseTerm"]:
-        return False, f"HighestUseTerm should be in format 'term:uses', got: {extracted_data['HighestUseTerm']}"
+        return False, (
+            f"HighestUseTerm should be in format 'term:uses', "
+            f"got: {extracted_data['HighestUseTerm']}"
+        )
 
     # hollister has 19 uses (highest among terms with > 10 uses)
     if extracted_data["HighestUseTerm"] != "hollister:19":
-        return False, f"HighestUseTerm should be 'hollister:19', got: {extracted_data['HighestUseTerm']}"
+        return False, (
+            f"HighestUseTerm should be 'hollister:19', "
+            f"got: {extracted_data['HighestUseTerm']}"
+        )
 
     # 4. Results20to30Term should be in format "term:results"
     if ":" not in extracted_data["Results20to30Term"]:
@@ -141,7 +155,10 @@ def verify(messages):
 
     # 5. Hits15PlusCount should be a number (only hollister has 19 hits > 15)
     if not extracted_data["Hits15PlusCount"].isdigit():
-        return False, f"Hits15PlusCount should be a number, got: {extracted_data['Hits15PlusCount']}"
+        return False, (
+            f"Hits15PlusCount should be a number, "
+            f"got: {extracted_data['Hits15PlusCount']}"
+        )
 
     if extracted_data["Hits15PlusCount"] != "1":
         return False, f"Hits15PlusCount should be '1', got: {extracted_data['Hits15PlusCount']}"
@@ -162,10 +179,16 @@ def verify(messages):
 
     # 7. DefaultStoreViewCount should be a number (all 7 terms are from Default Store View)
     if not extracted_data["DefaultStoreViewCount"].isdigit():
-        return False, f"DefaultStoreViewCount should be a number, got: {extracted_data['DefaultStoreViewCount']}"
+        return False, (
+            f"DefaultStoreViewCount should be a number, "
+            f"got: {extracted_data['DefaultStoreViewCount']}"
+        )
 
     if extracted_data["DefaultStoreViewCount"] != "7":
-        return False, f"DefaultStoreViewCount should be '7', got: {extracted_data['DefaultStoreViewCount']}"
+        return False, (
+            f"DefaultStoreViewCount should be '7', "
+            f"got: {extracted_data['DefaultStoreViewCount']}"
+        )
 
     # 8. OneResultTerm should be in format "term:uses"
     if ":" not in extracted_data["OneResultTerm"]:
@@ -215,7 +238,10 @@ def verify(messages):
 
     # 11. TopUseTerm should be in format "term:uses"
     if ":" not in extracted_data["TopUseTerm"]:
-        return False, f"TopUseTerm should be in format 'term:uses', got: {extracted_data['TopUseTerm']}"
+        return False, (
+            f"TopUseTerm should be in format 'term:uses', "
+            f"got: {extracted_data['TopUseTerm']}"
+        )
 
     # hollister has 19 uses (highest)
     if extracted_data["TopUseTerm"] != "hollister:19":
@@ -230,11 +256,17 @@ def verify(messages):
 
     # When sorted by results ascending, first non-zero is WP10 (has 1 result)
     if extracted_data["FirstNonZeroResult"] != "WP10:1":
-        return False, f"FirstNonZeroResult should be 'WP10:1', got: {extracted_data['FirstNonZeroResult']}"
+        return False, (
+            f"FirstNonZeroResult should be 'WP10:1', "
+            f"got: {extracted_data['FirstNonZeroResult']}"
+        )
 
     # 13. TotalUniqueTerms should be a number
     if not extracted_data["TotalUniqueTerms"].isdigit():
-        return False, f"TotalUniqueTerms should be a number, got: {extracted_data['TotalUniqueTerms']}"
+        return False, (
+            f"TotalUniqueTerms should be a number, "
+            f"got: {extracted_data['TotalUniqueTerms']}"
+        )
 
     # There are 7 unique search terms in the system
     if extracted_data["TotalUniqueTerms"] != "7":

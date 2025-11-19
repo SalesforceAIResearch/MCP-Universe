@@ -1,5 +1,5 @@
 """Verification module for buyitforlife research task."""
-# pylint: disable=R0911,R1702
+# pylint: disable=R0911,R0912,R0914,R0915,R1702,duplicate-code
 import asyncio
 import sys
 import re
@@ -111,7 +111,10 @@ async def check_submission_exists(page):
         post_locator = page.locator('a:has-text("Research Report for BuyItForLife")')
 
         if not await post_locator.count():
-            print("Error: Could not find post with title 'Research Report for BuyItForLife'", file=sys.stderr)
+            print(
+                "Error: Could not find post with title 'Research Report for BuyItForLife'",
+                file=sys.stderr
+            )
             return False, None
 
         # Click on the post to view its content
@@ -138,7 +141,10 @@ async def check_submission_exists(page):
                         text = await post_content_element.nth(i).inner_text()
                         if "Post1_Title" in text:
                             post_content = text
-                            print(f"Found post content using selector: {selector} (element {i})", file=sys.stderr)
+                            print(
+                                f"Found post content using selector: {selector} (element {i})",
+                                file=sys.stderr
+                            )
                             break
                 else:
                     post_content = await post_content_element.first.inner_text()
@@ -152,7 +158,10 @@ async def check_submission_exists(page):
             return False, None
 
         print("Post content found:", file=sys.stderr)
-        print(post_content[:200] + "..." if len(post_content) > 200 else post_content, file=sys.stderr)
+        print(
+            post_content[:200] + "..." if len(post_content) > 200 else post_content,
+            file=sys.stderr
+        )
 
         # Parse the markdown list format
         extracted_data = parse_markdown_list_format(post_content)
@@ -183,7 +192,10 @@ async def verify() -> tuple[bool, str]:
             print("=== Step 1: Checking account creation ===", file=sys.stderr)
             account_ok = await check_account_login(page)
             if not account_ok:
-                print("Error: Account 'buyitforlife_researcher' cannot be logged in", file=sys.stderr)
+                print(
+                    "Error: Account 'buyitforlife_researcher' cannot be logged in",
+                    file=sys.stderr
+                )
                 return False, "Account 'buyitforlife_researcher' cannot be logged in"
 
             # Step 2: Check submission exists and get content
@@ -250,7 +262,9 @@ async def verify() -> tuple[bool, str]:
                             expected_int = int(expected_val)
                             actual_int = int(actual_val)
                             if expected_int != actual_int:
-                                errors.append(f"{key} mismatch: got {actual_int}, expected {expected_int}")
+                                errors.append(
+                                    f"{key} mismatch: got {actual_int}, expected {expected_int}"
+                                )
                         except ValueError:
                             errors.append(f"{key} should be numeric: got '{actual_val}'")
                     else:
@@ -259,10 +273,14 @@ async def verify() -> tuple[bool, str]:
                             expected_core = expected_val.strip('_')
                             actual_core = actual_val.strip('_')
                             if expected_core != actual_core:
-                                errors.append(f"{key} mismatch: got '{actual_val}', expected '{expected_val}'")
+                                errors.append(
+                                    f"{key} mismatch: got '{actual_val}', expected '{expected_val}'"
+                                )
                         else:
                             if expected_val != actual_val:
-                                errors.append(f"{key} mismatch: got '{actual_val}', expected '{expected_val}'")
+                                errors.append(
+                                    f"{key} mismatch: got '{actual_val}', expected '{expected_val}'"
+                                )
 
             # Verify upvotes are in descending order
             try:
@@ -287,7 +305,10 @@ async def verify() -> tuple[bool, str]:
             # All checks passed
             print("\n=== SUCCESS ===", file=sys.stderr)
             print("✓ Account 'buyitforlife_researcher' created and can login", file=sys.stderr)
-            print("✓ Submission 'Research Report for BuyItForLife' found in correct forum", file=sys.stderr)
+            print(
+                "✓ Submission 'Research Report for BuyItForLife' found in correct forum",
+                file=sys.stderr
+            )
             print("✓ All 14 required fields present and correct", file=sys.stderr)
             print("✓ Data matches expected values from label.txt", file=sys.stderr)
             print("✓ Posts ordered by upvotes (descending)", file=sys.stderr)

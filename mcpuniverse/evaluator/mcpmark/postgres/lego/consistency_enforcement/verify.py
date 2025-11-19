@@ -8,8 +8,8 @@ import os
 import sys
 from typing import Optional, Tuple
 
-import psycopg2
-import psycopg2.errors
+import psycopg2  # type: ignore
+import psycopg2.errors  # type: ignore
 
 
 def get_connection_params() -> dict:

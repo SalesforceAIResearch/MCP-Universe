@@ -1,5 +1,5 @@
 """Verification module for customer segmentation setup task."""
-# pylint: disable=R0911,R0912,R0914,R0915,R1702
+# pylint: disable=R0911,R0912,R0914,R0915,R1702,duplicate-code
 import asyncio
 import sys
 import re
@@ -298,7 +298,9 @@ async def verify() -> tuple[bool, str]:
             grid_loaded = False
             for _ in range(3):
                 # Look for grid container and wait for it to populate
-                grid_container = page.locator(".admin__data-grid-outer-wrap, .data-grid, table").first
+                grid_container = page.locator(
+                    ".admin__data-grid-outer-wrap, .data-grid, table"
+                ).first
                 if await grid_container.count() > 0:
                     # Check if there are customer rows loaded
                     customer_rows = page.locator("td[data-column='email'], td:has-text('@')")
@@ -344,10 +346,14 @@ async def verify() -> tuple[bool, str]:
                         no_records = await page.locator(no_records_locator).count() > 0
                         if no_records:
                             print(
-                                "✗ Customer 'isabella.romano@premium.eu' not found - search returned no results",
+                                "✗ Customer 'isabella.romano@premium.eu' not found - "
+                                "search returned no results",
                                 file=sys.stderr,
                             )
-                            return False, "Customer 'isabella.romano@premium.eu' not found - search returned no results"
+                            return False, (
+                                "Customer 'isabella.romano@premium.eu' not found - "
+                                "search returned no results"
+                            )
                 except RuntimeError as error:
                     print(f"✗ Search failed: {str(error)}", file=sys.stderr)
 
@@ -407,12 +413,14 @@ async def verify() -> tuple[bool, str]:
                                 expected_customer = expected_answer['LastOrderCustomer']
                                 print(
                                     f"✗ Last Order Customer mismatch: "
-                                    f"Expected '{expected_customer}' but actual is '{last_customer}'",
+                                    f"Expected '{expected_customer}' but actual is "
+                                    f"'{last_customer}'",
                                     file=sys.stderr,
                                 )
                                 return False, (
                                     f"Last Order Customer mismatch: "
-                                    f"Expected '{expected_customer}' but actual is '{last_customer}'"
+                                    f"Expected '{expected_customer}' but actual is "
+                                    f"'{last_customer}'"
                                 )
             else:
                 print(

@@ -1,4 +1,5 @@
 """Verification module for advanced product analysis task."""
+# pylint: disable=R0912,duplicate-code
 import asyncio
 import sys
 import re
@@ -145,7 +146,8 @@ def compare_answers(model_answer, expected_answer):
 
         elif key == "LatestReviewer":
             # Check reviewer name (allow partial match for names)
-            if expected_value.lower() not in model_value.lower() and model_value.lower() not in expected_value.lower():
+            if (expected_value.lower() not in model_value.lower() and
+                    model_value.lower() not in expected_value.lower()):
                 mismatches.append(
                     f"{key}: expected '{expected_value}', got '{model_value}'"
                 )

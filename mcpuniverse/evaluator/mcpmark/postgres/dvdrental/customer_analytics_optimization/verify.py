@@ -5,7 +5,7 @@ Verification script for PostgreSQL Task 1: Customer Payment Query Optimization
 
 import os
 import sys
-import psycopg2
+import psycopg2  # type: ignore
 
 def get_connection_params() -> dict:
     """Get database connection parameters."""

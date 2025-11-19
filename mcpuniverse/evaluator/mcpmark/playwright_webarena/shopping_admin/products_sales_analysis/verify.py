@@ -1,5 +1,5 @@
 """Verification module for products sales analysis task."""
-# pylint: disable=R0911
+# pylint: disable=R0911,R0912,duplicate-code
 import asyncio
 import sys
 import re

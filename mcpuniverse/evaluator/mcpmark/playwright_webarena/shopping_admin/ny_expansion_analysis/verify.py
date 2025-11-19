@@ -1,5 +1,5 @@
 """Verification module for NY expansion analysis task."""
-# pylint: disable=C0411,C0412,C0413,R0911,W1309
+# pylint: disable=C0411,C0412,C0413,R0911,R0912,R1702,W1309,duplicate-code
 import asyncio
 import sys
 import re
@@ -37,7 +37,10 @@ def get_model_response():
 
         # Check if messages is a list
         if not isinstance(messages, list):
-            print(f"ERROR: Messages file should contain a list, got {type(messages).__name__}", file=sys.stderr)
+            print(
+                f"ERROR: Messages file should contain a list, got {type(messages).__name__}",
+                file=sys.stderr
+            )
             return None
 
         # Find the last assistant message
@@ -135,7 +138,10 @@ def parse_answer_format(text):
     # Check for unexpected keys
     unexpected_keys = set(parsed_keys) - set(expected_keys)
     if unexpected_keys:
-        print(f"WARNING: Unexpected keys found: {', '.join(sorted(unexpected_keys))}", file=sys.stderr)
+        print(
+            f"WARNING: Unexpected keys found: {', '.join(sorted(unexpected_keys))}",
+            file=sys.stderr
+        )
 
     if not result:
         print("ERROR: No valid key-value pairs parsed from answer", file=sys.stderr)
@@ -223,7 +229,10 @@ def compare_answers(model_answer, expected_answer):
             # Allow some flexibility in message text
             # Check for key words
             if 'disabled' not in model_value.lower() and 'enable' not in model_value.lower():
-                mismatches.append(f"{key}: expected message about chart being disabled, got '{model_value}'")
+                mismatches.append(
+                    f"{key}: expected message about chart being disabled, "
+                    f"got '{model_value}'"
+                )
 
         elif key == 'Default_Source_State':
             # Handle 'None' or empty state

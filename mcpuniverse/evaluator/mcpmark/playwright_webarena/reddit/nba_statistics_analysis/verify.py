@@ -1,5 +1,5 @@
 """Verification module for NBA statistics analysis task."""
-# pylint: disable=R0911,R0912,R0915,R1702
+# pylint: disable=R0911,R0912,R0914,R0915,R1702,duplicate-code
 import asyncio
 import sys
 import os
@@ -113,7 +113,8 @@ async def verify() -> tuple[bool, str]:
 
             # Look for the submission with our specific title
             print(
-                "Looking for submission 'Statistical Analysis: NBA Content Engagement on This Forum'...",
+                "Looking for submission 'Statistical Analysis: NBA Content Engagement "
+                "on This Forum'...",
                 file=sys.stderr,
             )
             post_link = page.locator(
@@ -225,7 +226,8 @@ async def verify() -> tuple[bool, str]:
                     expected_total = int(expected_data["Total_NBA_Posts"])
                     if total_posts != expected_total:
                         errors.append(
-                            f"Total_NBA_Posts mismatch: got {total_posts}, expected {expected_total}"
+                            f"Total_NBA_Posts mismatch: got {total_posts}, "
+                            f"expected {expected_total}"
                         )
                 elif (
                     total_posts < 5

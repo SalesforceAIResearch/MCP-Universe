@@ -3,7 +3,7 @@
 import os
 import sys
 
-import psycopg2
+import psycopg2  # type: ignore
 
 
 def verify() -> tuple[bool, str]:

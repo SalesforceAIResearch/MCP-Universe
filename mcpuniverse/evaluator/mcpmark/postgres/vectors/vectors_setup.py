@@ -14,7 +14,7 @@ import random
 from typing import List
 
 import numpy as np
-import psycopg2
+import psycopg2  # type: ignore
 
 logger = logging.getLogger(__name__)
 

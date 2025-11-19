@@ -1,5 +1,5 @@
 """Verification module for multi category budget analysis task."""
-# pylint: disable=R0912
+# pylint: disable=R0912,R0914,R0915,R1702,duplicate-code
 import asyncio
 import sys
 import re
@@ -114,13 +114,18 @@ def compare_answers(model_answer, expected_answer):
             model_products = model_value.split(";")
 
             if len(expected_products) != len(model_products):
-                mismatches.append(f"{key}: expected {len(expected_products)} products, got {len(model_products)}")
+                mismatches.append(
+                    f"{key}: expected {len(expected_products)} products, "
+                    f"got {len(model_products)}"
+                )
             else:
                 for i, (exp, mod) in enumerate(zip(expected_products, model_products)):
                     exp_parts = exp.strip().split(":")
                     mod_parts = mod.strip().split(":")
                     if len(exp_parts) != 2 or len(mod_parts) != 2:
-                        mismatches.append(f"{key}: product {i+1} format error - expected 'price:SKU'")
+                        mismatches.append(
+                            f"{key}: product {i+1} format error - expected 'price:SKU'"
+                        )
                     else:
                         # Check price format (should start with $)
                         if not mod_parts[0].startswith("$"):
@@ -129,33 +134,52 @@ def compare_answers(model_answer, expected_answer):
                                 f"expected '$XX.XX' format, got '{mod_parts[0]}'"
                             )
                         elif exp_parts[0] != mod_parts[0] or exp_parts[1] != mod_parts[1]:
-                            mismatches.append(f"{key}: product {i+1} mismatch - expected '{exp}', got '{mod}'")
+                            mismatches.append(
+                                f"{key}: product {i+1} mismatch - expected '{exp}', got '{mod}'"
+                            )
 
         elif key == "tabletop_product":
             # Parse and compare tabletop product with price:SKU format
             exp_parts = expected_value.strip().split(":")
             mod_parts = model_value.strip().split(":")
             if len(exp_parts) != 2 or len(mod_parts) != 2:
-                mismatches.append(f"{key}: format error - expected 'price:SKU', got '{model_value}'")
+                mismatches.append(
+                    f"{key}: format error - expected 'price:SKU', got '{model_value}'"
+                )
             else:
                 # Check price format (should start with $)
                 if not mod_parts[0].startswith("$"):
-                    mismatches.append(f"{key}: price format error - expected '$XX.XX' format, got '{mod_parts[0]}'")
+                    mismatches.append(
+                        f"{key}: price format error - expected '$XX.XX' format, "
+                        f"got '{mod_parts[0]}'"
+                    )
                 elif exp_parts[0] != mod_parts[0] or exp_parts[1] != mod_parts[1]:
-                    mismatches.append(f"{key}: mismatch - expected '{expected_value}', got '{model_value}'")
+                    mismatches.append(
+                        f"{key}: mismatch - expected '{expected_value}', got '{model_value}'"
+                    )
 
         elif key == "tabletop_reviews":
             # Parse and compare tabletop reviews with NumberOfReviews:Rating format
             exp_parts = expected_value.strip().split(":")
             mod_parts = model_value.strip().split(":")
             if len(exp_parts) != 2 or len(mod_parts) != 2:
-                mismatches.append(f"{key}: format error - expected 'NumberOfReviews:Rating', got '{model_value}'")
+                mismatches.append(
+                    f"{key}: format error - expected 'NumberOfReviews:Rating', "
+                    f"got '{model_value}'"
+                )
             else:
                 # Check if both parts match
                 if exp_parts[0] != mod_parts[0] or exp_parts[1] != mod_parts[1]:
-                    mismatches.append(f"{key}: mismatch - expected '{expected_value}', got '{model_value}'")
+                    mismatches.append(
+                        f"{key}: mismatch - expected '{expected_value}', got '{model_value}'"
+                    )
 
-        elif key in ["chocolate_sum", "price_difference", "cart_subtotal", "cheapest_computer_accessory"]:
+        elif key in [
+            "chocolate_sum",
+            "price_difference",
+            "cart_subtotal",
+            "cheapest_computer_accessory"
+        ]:
             # For price fields, only support $XX.XX format
             # Check if model value has correct format
             if not model_value.startswith("$"):

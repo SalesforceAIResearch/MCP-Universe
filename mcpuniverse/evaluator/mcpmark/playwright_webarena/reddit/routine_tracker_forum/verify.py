@@ -1,5 +1,5 @@
 """Verification module for routine tracker forum task."""
-# pylint: disable=R0911,R0915,R1702,W1309
+# pylint: disable=R0911,R0912,R0914,R0915,R1702,W1309,duplicate-code
 import asyncio
 import sys
 import os
@@ -64,7 +64,10 @@ async def verify() -> tuple[bool, str]:
             post_link = page.locator(f'a:has-text("{expected_title}")')
 
             if not await post_link.count():
-                print(f"Error: Post with title '{expected_title}' not found in LifeProTips forum", file=sys.stderr)
+                print(
+                    f"Error: Post with title '{expected_title}' not found in LifeProTips forum",
+                    file=sys.stderr
+                )
                 return False, f"Post with title '{expected_title}' not found in LifeProTips forum"
 
             # Click on the post to verify content

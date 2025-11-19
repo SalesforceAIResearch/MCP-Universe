@@ -1,5 +1,5 @@
 """Verification module for gaming accessories analysis task."""
-# pylint: disable=astroid-error
+# pylint: disable=astroid-error,R0912,duplicate-code
 import asyncio
 import sys
 import re

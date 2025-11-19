@@ -1,4 +1,5 @@
 """Verification module for running shoes purchase task."""
+# pylint: disable=R0912,duplicate-code
 import asyncio
 import sys
 import re

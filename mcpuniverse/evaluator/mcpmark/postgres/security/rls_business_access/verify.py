@@ -5,7 +5,7 @@
 import os
 import sys
 
-import psycopg2
+import psycopg2  # type: ignore
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 
 def verify() -> tuple[bool, str]:

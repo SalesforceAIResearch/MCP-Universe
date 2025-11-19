@@ -1,5 +1,5 @@
 """Verification module for movie reviewer analysis task."""
-# pylint: disable=R0911,R0912,R0915,R1702
+# pylint: disable=R0911,R0912,R0914,R0915,R1702,duplicate-code
 import asyncio
 import sys
 import re
@@ -221,7 +221,8 @@ async def verify() -> tuple[bool, str]:
                     expected_total = int(expected_data["Total_Year_Posts"])
                     if total_posts != expected_total:
                         errors.append(
-                            f"Total_Year_Posts mismatch: got {total_posts}, expected {expected_total}"
+                            f"Total_Year_Posts mismatch: got {total_posts}, "
+                            f"expected {expected_total}"
                         )
             except ValueError:
                 errors.append(

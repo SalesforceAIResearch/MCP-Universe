@@ -1,5 +1,5 @@
 """Verification module for LLM research summary task."""
-# pylint: disable=R0911,R0912,R0915,R1702
+# pylint: disable=R0911,R0912,R0914,R0915,R1702,duplicate-code
 import asyncio
 import sys
 import os
@@ -216,7 +216,8 @@ async def verify() -> tuple[bool, str]:
                     expected_total = int(expected_data["Total_LLM_Posts"])
                     if total_posts != expected_total:
                         errors.append(
-                            f"Total_LLM_Posts mismatch: got {total_posts}, expected {expected_total}"
+                            f"Total_LLM_Posts mismatch: got {total_posts}, "
+                            f"expected {expected_total}"
                         )
                 elif total_posts < 5:  # Based on exploration, should be at least 5
                     errors.append(f"Total_LLM_Posts seems too low: {total_posts}")
@@ -275,7 +276,8 @@ async def verify() -> tuple[bool, str]:
 
                 if not top1_votes >= top2_votes >= top3_votes:
                     errors.append(
-                        f"Top posts should be ordered by upvotes: {top1_votes} >= {top2_votes} >= {top3_votes}"
+                        f"Top posts should be ordered by upvotes: "
+                        f"{top1_votes} >= {top2_votes} >= {top3_votes}"
                     )
             except (ValueError, KeyError):
                 pass  # Already reported above
@@ -300,7 +302,8 @@ async def verify() -> tuple[bool, str]:
             )
             print("- Top 3 posts by upvotes identified and documented")
             print(
-                f"- Deeplearning forum page 2 most discussed post: {extracted_data['Deeplearning_MostDiscussed']}"
+                f"- Deeplearning forum page 2 most discussed post: "
+                f"{extracted_data['Deeplearning_MostDiscussed']}"
             )
             print("- All data in correct Key: Value format with 12 lines")
             return True, ""

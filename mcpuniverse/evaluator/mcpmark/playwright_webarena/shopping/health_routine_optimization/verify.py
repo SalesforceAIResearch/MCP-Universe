@@ -1,4 +1,5 @@
 """Verification module for health routine optimization task."""
+# pylint: disable=duplicate-code
 import asyncio
 import sys
 import os

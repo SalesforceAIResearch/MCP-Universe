@@ -7,7 +7,7 @@ import os
 import sys
 from decimal import Decimal
 
-import psycopg2
+import psycopg2  # type: ignore
 
 def rows_match(actual_row, expected_row):
     """Compare two rows with appropriate tolerance for decimals and floats."""

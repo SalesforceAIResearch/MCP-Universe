@@ -1,5 +1,5 @@
 """Verification module for AI data analyst task."""
-# pylint: disable=R0911,R0912,R0915,R1702
+# pylint: disable=R0911,R0912,R0914,R0915,R1702,duplicate-code
 import asyncio
 import sys
 import re
@@ -29,7 +29,9 @@ def parse_key_value_format(text):
         "Transformer_Third_Result": r"(?:[-•*]\s*)?Transformer_Third_Result\s*\|\s*(.+?)(?=\n|$)",
         "Page2_Top_Post_Title": r"(?:[-•*]\s*)?Page2_Top_Post_Title\s*\|\s*(.+?)(?=\n|$)",
         "Page2_Top_Post_Votes": r"(?:[-•*]\s*)?Page2_Top_Post_Votes\s*\|\s*(\d+)",
-        "Page2_Last_Comment_Username": r"(?:[-•*]\s*)?Page2_Last_Comment_Username\s*\|\s*(.+?)(?=\n|$)",
+        "Page2_Last_Comment_Username": (
+            r"(?:[-•*]\s*)?Page2_Last_Comment_Username\s*\|\s*(.+?)(?=\n|$)"
+        ),
         "Page2_Last_Comment_Text": r"(?:[-•*]\s*)?Page2_Last_Comment_Text\s*\|\s*(.+?)(?=\n|$)",
     }
 
@@ -144,7 +146,10 @@ async def verify() -> tuple[bool, str]:
                     "in MachineLearning forum"
                 )
 
-            print("PASSED: Found submission 'MachineLearning_Extraction' in MachineLearning forum", file=sys.stderr)
+            print(
+                "PASSED: Found submission 'MachineLearning_Extraction' in MachineLearning forum",
+                file=sys.stderr
+            )
 
             # Step 3: Check submission content matches expected values
             print("\nStep 3: Verifying submission content...", file=sys.stderr)
@@ -243,11 +248,13 @@ async def verify() -> tuple[bool, str]:
                     expected_count = int(expected_data["Deeplearning_Post_Count"])
                     if post_count != expected_count:
                         errors.append(
-                            f"Deeplearning_Post_Count mismatch: got {post_count}, expected {expected_count}"
+                            f"Deeplearning_Post_Count mismatch: got {post_count}, "
+                    f"expected {expected_count}"
                         )
             except ValueError:
                 errors.append(
-                    f"Deeplearning_Post_Count must be a number, got: {extracted_data['Deeplearning_Post_Count']}"
+                    f"Deeplearning_Post_Count must be a number, "
+                    f"got: {extracted_data['Deeplearning_Post_Count']}"
                 )
 
             # If we have expected data, compare against it
@@ -309,15 +316,23 @@ async def verify() -> tuple[bool, str]:
             # All checks passed
             print("\n=== VERIFICATION SUCCESSFUL ===")
             print("✓ Step 1: Account AIDataAnalyst2025 can login with password SecurePass123!")
-            print("✓ Step 2: Submission 'MachineLearning_Extraction' found in MachineLearning forum")
+            print(
+                "✓ Step 2: Submission 'MachineLearning_Extraction' found in "
+                "MachineLearning forum"
+            )
             print("✓ Step 3: All submission content matches expected values:")
             print(f"  - Deeplearning_Post_Count: {extracted_data['Deeplearning_Post_Count']}")
             print(f"  - ChatGPT_Tool_Vote_Count: {extracted_data['ChatGPT_Tool_Vote_Count']}")
             print(f"  - Transformer_Third_Result: {extracted_data['Transformer_Third_Result']}")
             print(f"  - Page2_Top_Post_Title: {extracted_data['Page2_Top_Post_Title']}")
             print(f"  - Page2_Top_Post_Votes: {extracted_data['Page2_Top_Post_Votes']}")
-            print(f"  - Page2_Last_Comment_Username: {extracted_data['Page2_Last_Comment_Username']}")
-            print(f"  - Page2_Last_Comment_Text: {extracted_data['Page2_Last_Comment_Text']}")
+            print(
+                f"  - Page2_Last_Comment_Username: "
+                f"{extracted_data['Page2_Last_Comment_Username']}"
+            )
+            print(
+                f"  - Page2_Last_Comment_Text: {extracted_data['Page2_Last_Comment_Text']}"
+            )
             print("✓ All data in correct pipe-separated markdown format")
             return True, ""
 

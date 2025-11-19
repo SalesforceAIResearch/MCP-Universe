@@ -7,7 +7,7 @@ import os
 import sys
 from decimal import Decimal
 
-import psycopg2
+import psycopg2  # type: ignore
 
 def get_connection_params() -> dict:
     """Get database connection parameters."""
