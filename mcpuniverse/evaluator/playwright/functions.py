@@ -266,22 +266,22 @@ async def playwright__get_hotel_price(checkin_date: str):
     """
     async with async_playwright() as p:
         # Launch browser
-        browser = await p.chromium.launch(headless=True, )  # Set to True for headless mode
+        browser = await p.chromium.launch(headless=True)  # Set to True for headless mode
         page = await browser.new_page()
 
         try:
             # Calculate checkout date as one day after checkin date
             checkin_datetime = datetime.strptime(checkin_date, "%Y-%m-%d")
             checkout_datetime = checkin_datetime + timedelta(days=1)
-            checkin_date_formated = checkin_datetime.strftime("%Y/%m/%d")
-            checkout_date_formated = checkout_datetime.strftime("%Y/%m/%d")
+            checkin_date_formatted = checkin_datetime.strftime("%Y/%m/%d")
+            checkout_date_formatted = checkout_datetime.strftime("%Y/%m/%d")
 
             # Navigate to the booking.com hotel URL
             url = (
                 "https://www.trip.com/hotels/list?"
                 "city=734&cityName=Kyoto&provinceId=11087&countryId=78&districtId=0&"
-                f"checkin={checkin_date_formated}&"
-                f"checkout={checkout_date_formated}&"
+                f"checkin={checkin_date_formatted}&"
+                f"checkout={checkout_date_formatted}&"
                 "barCurr=HKD&searchType=CT&"
                 "searchWord=Kyoto&searchValue=19~734*19*734*1&"
                 "searchCoordinate=3_-1_-1_0~2_-1_-1_0~1_-1_-1_0~NORMAL_35.0116363_135.7680294_0&"
@@ -291,7 +291,7 @@ async def playwright__get_hotel_price(checkin_date: str):
             )
 
             print(f"Navigating to: {url}")
-            print(f"Check-in: {checkin_date_formated}, Check-out: {checkout_date_formated}")
+            print(f"Check-in: {checkin_date_formatted}, Check-out: {checkout_date_formatted}")
             await page.goto(url, wait_until="networkidle")
 
             # Wait for the hotel card element to appear
@@ -473,7 +473,7 @@ async def playwright__booking_com_get_hotel_price_with_lowest_price_highest_rati
     Returns:
         str: The content of the price element, or None if not found
 
-    ToDO: combine with playwright__get_hotel_price_with_conditions
+    TODO: combine with playwright__get_hotel_price_with_conditions
     """
     async with async_playwright() as p:
         # Launch browser
