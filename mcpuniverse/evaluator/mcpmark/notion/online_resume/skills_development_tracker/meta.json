@@ -1,0 +1,27 @@
+{
+  "task_id": "skills_development_tracker",
+  "task_name": "Skills Development Tracker",
+  "category_id": "online_resume",
+  "category_name": "Online Resume",
+  "description": "Create a comprehensive skills audit system with development tracking for skills below 70% proficiency.",
+  "author": "Xiangyan Liu",
+  "created_at": "2025-07-27",
+  "difficulty": "L3",
+  "tags": [
+    "database manipulation",
+    "cross-reference linking",
+    "conditional filtering",
+    "data aggregation",
+    "template population",
+    "visual formatting"
+  ],
+  "mcp": [
+    "notion"
+  ],
+  "meta_data": {
+    "stateType": "url",
+    "stateContent": null,
+    "stateUrl": "https://painted-tennis-ebc.notion.site/Online-Resume-23181626b6d781159faaeb5eadaf612e",
+    "stateOriginalUrl": "https://www.notion.so/marketplace/templates/online-resume"
+  }
+}

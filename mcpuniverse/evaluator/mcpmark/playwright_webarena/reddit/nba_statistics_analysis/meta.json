@@ -1,0 +1,25 @@
+{
+  "task_id": "nba_statistics_analysis",
+  "task_name": "NBA Statistics Analysis",
+  "category_id": "reddit",
+  "category_name": "Reddit",
+  "description": "Create sports analytics account, collect NBA player statistics from forum discussions, analyze basketball performance metrics, and compile comprehensive statistical report with community insights.",
+  "author": "Fanqing Meng",
+  "created_at": "2025-08-12",
+  "difficulty": "L3",
+  "tags": [
+    "user interaction",
+    "data extraction",
+    "comparative analysis",
+    "content submission"
+  ],
+  "mcp": [
+    "playwright"
+  ],
+  "meta_data": {
+    "stateType": "video",
+    "stateContent": null,
+    "stateUrl": "https://storage.mcpmark.ai/tasks_state/playwright_video/postmill.mp4",
+    "stateOriginalUrl": "https://github.com/web-arena-x/webarena/tree/main/environment_docker"
+  }
+}

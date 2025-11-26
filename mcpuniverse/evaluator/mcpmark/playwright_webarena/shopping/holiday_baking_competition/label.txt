@@ -1,0 +1,7 @@
+SecondGingerbreadSKU|B0075AO9RI
+HighestRatedCookieSKURating|B0951CPYV7:86%
+CheapestChocolatePriceReviews|$1.04:12
+CartSubtotalAfterUpdate|$128.07
+TotalCartItems|8
+Page2ThirdProductSKUPrice|B09RPXCB47:$21.99
+ProductManufacturer|That Melanin Tho

@@ -1,0 +1,23 @@
+{
+  "task_id": "remove_osaka_itinerary",
+  "task_name": "Remove Osaka Itinerary",
+  "category_id": "japan_travel_planner",
+  "category_name": "Japan Travel Planner",
+  "description": "Remove the itinerary items in Osaka after 6 PM from Day 1 and Day 2 travel schedules.",
+  "author": "Xiangyan Liu",
+  "created_at": "2025-07-27",
+  "difficulty": "L3",
+  "tags": [
+    "conditional filtering",
+    "automated migration"
+  ],
+  "mcp": [
+    "notion"
+  ],
+  "meta_data": {
+    "stateType": "url",
+    "stateContent": null,
+    "stateUrl": "https://painted-tennis-ebc.notion.site/Japan-Travel-Planner-23181626b6d781c4b6bedb12786b5abe",
+    "stateOriginalUrl": "https://www.notion.so/marketplace/templates/japantravelplanner101"
+  }
+}

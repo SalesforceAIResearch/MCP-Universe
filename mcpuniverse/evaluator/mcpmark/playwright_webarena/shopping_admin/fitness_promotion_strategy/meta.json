@@ -1,0 +1,25 @@
+{
+  "task_id": "fitness_promotion_strategy",
+  "task_name": "Fitness Promotion Strategy",
+  "category_id": "shopping_admin",
+  "category_name": "Shopping Admin",
+  "description": "Develop fitness product promotion campaigns by analyzing sales data, creating targeted offers, configuring promotional rules, and implementing cross-selling strategies in admin dashboard.",
+  "author": "Fanqing Meng",
+  "created_at": "2025-08-17",
+  "difficulty": "L3",
+  "tags": [
+    "data extraction",
+    "comparative analysis",
+    "inventory management",
+    "content submission"
+  ],
+  "mcp": [
+    "playwright"
+  ],
+  "meta_data": {
+    "stateType": "video",
+    "stateContent": null,
+    "stateUrl": "https://storage.mcpmark.ai/tasks_state/playwright_video/magento-admin.mp4",
+    "stateOriginalUrl": "https://github.com/web-arena-x/webarena/tree/main/environment_docker"
+  }
+}

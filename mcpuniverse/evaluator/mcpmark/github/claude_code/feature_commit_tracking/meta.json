@@ -1,0 +1,23 @@
+{
+  "task_id": "feature_commit_tracking",
+  "task_name": "Feature Commit Tracking",
+  "category_id": "claude-code",
+  "category_name": "Claude Code",
+  "description": "Research development history across branches to track when specific features were introduced and create comprehensive documentation.",
+  "author": "Zijian Wu",
+  "created_at": "2025-08-15",
+  "difficulty": "L3",
+  "tags": [
+    "repository analysis",
+    "release coordination"
+  ],
+  "mcp": [
+    "github"
+  ],
+  "meta_data": {
+    "stateType": "url",
+    "stateContent": null,
+    "stateUrl": "https://github.com/mcpmark-source/claude-code",
+    "stateOriginalUrl": "https://github.com/anthropics/claude-code"
+  }
+}

@@ -144,6 +144,23 @@
     }
   },
 
+  "github_mcpmark": {
+    "stdio": {
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "-e",
+        "GITHUB_PERSONAL_ACCESS_TOKEN",
+        "ghcr.io/github/github-mcp-server"
+      ]
+    },
+    "env": {
+      "GITHUB_PERSONAL_ACCESS_TOKEN": "{{GITHUB_TOKENS}}"
+    }
+  },
+
   "google-sheets": {
     "stdio": {
       "command": "python3",
@@ -176,6 +193,17 @@
     }
   },
 
+  "filesystem_mcpmark": {
+    "stdio": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "{{FILESYSTEM_TEST_DIR}}"
+      ]
+    }
+  },
+
   "slack": {
     "stdio": {
       "command": "npx",
@@ -197,6 +225,18 @@
         "-y",
         "@modelcontextprotocol/server-postgres",
         "{{POSTGRES_ADDRESS}}"
+      ]
+    }
+  },
+
+  "postgres-pro": {
+    "stdio": {
+      "command": "uvx",
+      "args": [
+        "postgres-mcp",
+        "{{POSTGRES_ADDRESS}}",
+        "--access-mode",
+        "unrestricted"
       ]
     }
   },
@@ -245,6 +285,18 @@
     },
     "env": {
       "OPENAPI_MCP_HEADERS": "{\"Authorization\": \"Bearer {{NOTION_API_KEY}}\", \"Notion-Version\": \"2022-06-28\" }"
+    }
+  },
+
+  "notion_mcpmark": {
+    "stdio": {
+      "command": "npx",
+      "args": [
+        "-y", "@notionhq/notion-mcp-server"
+      ]
+    },
+    "env": {
+      "OPENAPI_MCP_HEADERS": "{\"Authorization\": \"Bearer {{EVAL_NOTION_API_KEY}}\", \"Notion-Version\": \"2022-06-28\" }"
     }
   },
 

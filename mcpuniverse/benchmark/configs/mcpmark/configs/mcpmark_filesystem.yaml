@@ -1,0 +1,75 @@
+kind: llm
+spec:
+  name: llm-1
+  type: openai
+  config:
+    model_name: gpt-4o
+
+---
+kind: agent
+spec:
+  name: ReAct-agent
+  type: react
+  config:
+    llm: llm-1
+    instruction: You are an agent for filesystem operations and file management tasks.
+    max_iterations: 20
+    summarize_tool_response: false
+
+---
+kind: benchmark
+spec:
+  description: Benchmark for mcpmark Filesystem tasks with Desktop, Desktop Template, File Context, File Property, Folder Structure, Legal Document, Papers, Student Database, ThreeStudio, and VoteNet categories (30 tasks).
+  agent: ReAct-agent
+  tasks:
+    # Desktop tasks (3)
+    - mcpmark/configs/filesystem/desktop/music_report.json
+    - mcpmark/configs/filesystem/desktop/project_management.json
+    - mcpmark/configs/filesystem/desktop/timeline_extraction.json
+    
+    # Desktop Template tasks (3)
+    - mcpmark/configs/filesystem/desktop_template/budget_computation.json
+    - mcpmark/configs/filesystem/desktop_template/contact_information.json
+    - mcpmark/configs/filesystem/desktop_template/file_arrangement.json
+    
+    # File Context tasks (5)
+    - mcpmark/configs/filesystem/file_context/duplicates_searching.json
+    - mcpmark/configs/filesystem/file_context/file_merging.json
+    - mcpmark/configs/filesystem/file_context/file_splitting.json
+    - mcpmark/configs/filesystem/file_context/pattern_matching.json
+    - mcpmark/configs/filesystem/file_context/uppercase.json
+    
+    # File Property tasks (2)
+    - mcpmark/configs/filesystem/file_property/size_classification.json
+    - mcpmark/configs/filesystem/file_property/time_classification.json
+    
+    # Folder Structure tasks (2)
+    - mcpmark/configs/filesystem/folder_structure/structure_analysis.json
+    - mcpmark/configs/filesystem/folder_structure/structure_mirror.json
+    
+    # Legal Document tasks (3)
+    - mcpmark/configs/filesystem/legal_document/dispute_review.json
+    - mcpmark/configs/filesystem/legal_document/individual_comments.json
+    - mcpmark/configs/filesystem/legal_document/solution_tracing.json
+    
+    # Papers tasks (3)
+    - mcpmark/configs/filesystem/papers/author_folders.json
+    - mcpmark/configs/filesystem/papers/find_math_paper.json
+    - mcpmark/configs/filesystem/papers/organize_legacy_papers.json
+    
+    # Student Database tasks (3)
+    - mcpmark/configs/filesystem/student_database/duplicate_name.json
+    - mcpmark/configs/filesystem/student_database/english_talent.json
+    - mcpmark/configs/filesystem/student_database/gradebased_score.json
+    
+    # ThreeStudio tasks (3)
+    - mcpmark/configs/filesystem/threestudio/code_locating.json
+    - mcpmark/configs/filesystem/threestudio/output_analysis.json
+    - mcpmark/configs/filesystem/threestudio/requirements_completion.json
+    
+    # VoteNet tasks (3)
+    - mcpmark/configs/filesystem/votenet/dataset_comparison.json
+    - mcpmark/configs/filesystem/votenet/debugging.json
+    - mcpmark/configs/filesystem/votenet/requirements_writing.json
+
+

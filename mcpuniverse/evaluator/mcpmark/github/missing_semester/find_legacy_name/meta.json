@@ -1,0 +1,22 @@
+{
+  "task_id": "find_legacy_name",
+  "task_name": "Find Legacy Name",
+  "category_id": "missing-semester",
+  "category_name": "Missing Semester",
+  "description": "Find the old name and domain of The Missing Semester course from commit history and document the findings.",
+  "author": "Zijian Wu",
+  "created_at": "2025-08-15",
+  "difficulty": "L3",
+  "tags": [
+    "repository analysis"
+  ],
+  "mcp": [
+    "github"
+  ],
+  "meta_data": {
+    "stateType": "url",
+    "stateContent": null,
+    "stateUrl": "https://github.com/mcpmark-source/missing-semester",
+    "stateOriginalUrl": "https://github.com/missing-semester/missing-semester"
+  }
+}

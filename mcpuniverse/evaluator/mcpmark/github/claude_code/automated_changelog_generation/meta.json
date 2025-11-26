@@ -1,0 +1,23 @@
+{
+  "task_id": "automated_changelog_generation",
+  "task_name": "Automated Changelog Generation",
+  "category_id": "claude-code",
+  "category_name": "Claude Code",
+  "description": "Analyze closed issues and open PRs to generate comprehensive documentation including changelog, migration guide, and analysis reports.",
+  "author": "Zijian Wu",
+  "created_at": "2025-08-15",
+  "difficulty": "L3",
+  "tags": [
+    "release coordination",
+    "workflow automation"
+  ],
+  "mcp": [
+    "github"
+  ],
+  "meta_data": {
+    "stateType": "url",
+    "stateContent": null,
+    "stateUrl": "https://github.com/mcpmark-source/claude-code",
+    "stateOriginalUrl": "https://github.com/anthropics/claude-code"
+  }
+}

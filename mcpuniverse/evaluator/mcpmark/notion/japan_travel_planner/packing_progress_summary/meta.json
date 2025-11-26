@@ -1,0 +1,25 @@
+{
+  "task_id": "packing_progress_summary",
+  "task_name": "Packing Progress Summary",
+  "category_id": "japan_travel_planner",
+  "category_name": "Japan Travel Planner",
+  "description": "Update packing list items and create a progress summary section showing statistics for each category.",
+  "author": "Xiangyan Liu",
+  "created_at": "2025-07-27",
+  "difficulty": "L3",
+  "tags": [
+    "database manipulation",
+    "data aggregation",
+    "report generation",
+    "status tracking"
+  ],
+  "mcp": [
+    "notion"
+  ],
+  "meta_data": {
+    "stateType": "url",
+    "stateContent": null,
+    "stateUrl": "https://painted-tennis-ebc.notion.site/Japan-Travel-Planner-23181626b6d781c4b6bedb12786b5abe",
+    "stateOriginalUrl": "https://www.notion.so/marketplace/templates/japantravelplanner101"
+  }
+}

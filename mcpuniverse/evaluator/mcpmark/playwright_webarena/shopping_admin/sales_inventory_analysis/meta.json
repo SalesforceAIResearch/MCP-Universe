@@ -1,0 +1,24 @@
+{
+  "task_id": "sales_inventory_analysis",
+  "task_name": "Sales Inventory Analysis",
+  "category_id": "shopping_admin",
+  "category_name": "Shopping Admin",
+  "description": "Analyze sales patterns and inventory levels to optimize stock management, identify slow-moving items, predict demand trends, and generate restocking recommendations.",
+  "author": "Fanqing Meng",
+  "created_at": "2025-08-17",
+  "difficulty": "L3",
+  "tags": [
+    "data extraction",
+    "comparative analysis",
+    "inventory management"
+  ],
+  "mcp": [
+    "playwright"
+  ],
+  "meta_data": {
+    "stateType": "video",
+    "stateContent": null,
+    "stateUrl": "https://storage.mcpmark.ai/tasks_state/playwright_video/magento-admin.mp4",
+    "stateOriginalUrl": "https://github.com/web-arena-x/webarena/tree/main/environment_docker"
+  }
+}

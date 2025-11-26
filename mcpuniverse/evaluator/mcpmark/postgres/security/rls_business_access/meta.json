@@ -1,0 +1,24 @@
+{
+  "task_id": "rls_business_access",
+  "task_name": "RLS Business Access",
+  "category_id": "security",
+  "category_name": "Security",
+  "description": "Implement Row Level Security policies for social platform with proper access control for posts, comments, and channels.",
+  "author": "Fanshi Zhang",
+  "created_at": "2025-08-17",
+  "difficulty": "L3",
+  "tags": [
+    "security and access control",
+    "stored procedures and functions",
+    "schema design"
+  ],
+  "mcp": [
+    "postgres"
+  ],
+  "meta_data": {
+    "stateType": "text",
+    "stateContent": "Table \"users\" {\n  \"id\" uuid [pk, not null, default: `gen_random_uuid()`]\n  \"username\" varchar(50) [unique, not null]\n  \"email\" varchar(100) [unique, not null]\n  \"is_public\" bool [default: false]\n  \"created_at\" timestamp [default: `CURRENT_TIMESTAMP`]\n\n  Indexes {\n    is_public [type: btree, name: \"idx_users_is_public\"]\n  }\n}\n\nTable \"channels\" {\n  \"id\" uuid [pk, not null, default: `gen_random_uuid()`]\n  \"name\" varchar(100) [not null]\n  \"description\" text\n  \"is_public\" bool [default: true]\n  \"owner_id\" uuid\n  \"created_at\" timestamp [default: `CURRENT_TIMESTAMP`]\n\n  Indexes {\n    is_public [type: btree, name: \"idx_channels_is_public\"]\n    owner_id [type: btree, name: \"idx_channels_owner_id\"]\n  }\n}\n\nTable \"channel_moderators\" {\n  \"channel_id\" uuid [not null]\n  \"user_id\" uuid [not null]\n  \"created_at\" timestamp [default: `CURRENT_TIMESTAMP`]\n\n  Indexes {\n    (channel_id, user_id) [type: btree, name: \"channel_moderators_pkey\"]\n    (channel_id, user_id) [type: btree, name: \"idx_channel_moderators_channel_user\"]\n    user_id [type: btree, name: \"idx_channel_moderators_user\"]\n  }\n}\n\nTable \"posts\" {\n  \"id\" uuid [pk, not null, default: `gen_random_uuid()`]\n  \"channel_id\" uuid\n  \"author_id\" uuid\n  \"title\" varchar(200) [not null]\n  \"content\" text\n  \"created_at\" timestamp [default: `CURRENT_TIMESTAMP`]\n  \"updated_at\" timestamp [default: `CURRENT_TIMESTAMP`]\n\n  Indexes {\n    author_id [type: btree, name: \"idx_posts_author_id\"]\n    channel_id [type: btree, name: \"idx_posts_channel_id\"]\n    created_at [type: btree, name: \"idx_posts_created_at\"]\n  }\n}\n\nTable \"comments\" {\n  \"id\" uuid [pk, not null, default: `gen_random_uuid()`]\n  \"post_id\" uuid\n  \"author_id\" uuid\n  \"content\" text [not null]\n  \"created_at\" timestamp [default: `CURRENT_TIMESTAMP`]\n  \"updated_at\" timestamp [default: `CURRENT_TIMESTAMP`]\n\n  Indexes {\n    author_id [type: btree, name: \"idx_comments_author_id\"]\n    created_at [type: btree, name: \"idx_comments_created_at\"]\n    post_id [type: btree, name: \"idx_comments_post_id\"]\n  }\n}\n\nRef \"channel_moderators_channel_id_fkey\":\"channels\".\"id\" < \"channel_moderators\".\"channel_id\" [delete: cascade]\n\nRef \"channel_moderators_user_id_fkey\":\"users\".\"id\" < \"channel_moderators\".\"user_id\" [delete: cascade]\n\nRef \"channels_owner_id_fkey\":\"users\".\"id\" < \"channels\".\"owner_id\" [delete: cascade]\n\nRef \"comments_author_id_fkey\":\"users\".\"id\" < \"comments\".\"author_id\" [delete: cascade]\n\nRef \"comments_post_id_fkey\":\"posts\".\"id\" < \"comments\".\"post_id\" [delete: cascade]\n\nRef \"posts_author_id_fkey\":\"users\".\"id\" < \"posts\".\"author_id\" [delete: cascade]\n\nRef \"posts_channel_id_fkey\":\"channels\".\"id\" < \"posts\".\"channel_id\" [delete: cascade]\n",
+    "stateUrl": null,
+    "stateOriginalUrl": null
+  }
+}

@@ -1,0 +1,6 @@
+PrinterSKUID|B09J8KQX6V
+PrinterPrice|$248.04
+KeyboardSKUID|B08JD7F3F5
+KeyboardPrice|$85.99
+KeyboardReviews|12
+KeyboardRating|77%

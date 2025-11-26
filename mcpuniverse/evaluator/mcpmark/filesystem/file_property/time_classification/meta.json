@@ -1,0 +1,24 @@
+{
+  "task_id": "time_classification",
+  "task_name": "Time Classification",
+  "category_id": "file_property",
+  "category_name": "File Property",
+  "description": "Organize files based on modification timestamps into temporal categories and create a detailed time-based classification report with groupings.",
+  "author": "Lingjun Chen",
+  "created_at": "2025-08-07",
+  "difficulty": "L3",
+  "tags": [
+    "file organization",
+    "data extraction",
+    "pattern analysis"
+  ],
+  "mcp": [
+    "filesystem"
+  ],
+  "meta_data": {
+    "stateType": "text",
+    "stateContent": "file_property/\n    ├── bear.jpg\n    ├── bridge.jpg\n    ├── bus.MOV\n    ├── random_file_1.txt\n    ├── random_file_2.txt\n    ├── random_file_3.txt\n    ├── road.MOV\n    └── sg.jpg",
+    "stateUrl": "https://storage.mcpmark.ai/filesystem/file_property.zip",
+    "stateOriginalUrl": null
+  }
+}

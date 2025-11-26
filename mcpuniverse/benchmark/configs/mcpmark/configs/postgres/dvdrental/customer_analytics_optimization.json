@@ -1,0 +1,36 @@
+{
+    "category": "dvdrental",
+    "question": "Optimize slow customer analytics query in the DVD rental database.\n\n## Background\n\nThe business intelligence team is running customer analytics reports, but one of their critical queries has become extremely slow. The query that used to run in milliseconds is now taking over a second to complete, causing timeout issues in their reporting dashboard.\n\n## Your Task\n\nAnalyze and optimize the performance of this customer analytics query:\n\n```sql\nSELECT \n    c.customer_id,\n    c.first_name,\n    c.last_name,\n    c.email,\n    COUNT(DISTINCT p.payment_id) as total_payments,\n    SUM(p.amount) as total_spent,\n    AVG(p.amount) as avg_payment,\n    COUNT(DISTINCT EXTRACT(month FROM p.payment_date)) as active_months,\n    MAX(p.payment_date) as last_payment,\n    MIN(p.payment_date) as first_payment,\n    (SELECT COUNT(*) FROM payment p2 WHERE p2.customer_id = c.customer_id AND p2.amount > 5.0) as high_value_payments,\n    (SELECT SUM(amount) FROM payment p3 WHERE p3.customer_id = c.customer_id AND p3.payment_date >= '2007-03-01') as recent_spending\nFROM customer c\nJOIN payment p ON c.customer_id = p.customer_id\nWHERE c.active = 1\nGROUP BY c.customer_id, c.first_name, c.last_name, c.email\nHAVING COUNT(p.payment_id) >= 10\nORDER BY total_spent DESC, total_payments DESC;\n```",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "postgres-pro"
+        }
+    ],
+    "output_format": {
+        "optimization_status": "Query optimization completion report"
+    },
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "postgres_customer_analytics_optimization_verifier",
+            "value": "success",
+            "op_args": {},
+            "desc": "Check if the AI agent optimized the slow customer analytics query"
+        }
+    ],
+    "prepares": [
+        {
+            "prepare_func": "mcpmark_postgres_setup",
+            "prepare_args": {}
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "mcpmark",
+            "tool": "",
+            "cleanup_func": "postgres_cleanup",
+            "cleanup_args": {}
+        }
+    ]
+}

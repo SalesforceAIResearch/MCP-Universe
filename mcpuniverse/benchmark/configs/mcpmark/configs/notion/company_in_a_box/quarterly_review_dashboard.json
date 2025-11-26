@@ -1,0 +1,33 @@
+{
+    "category": "company_in_a_box",
+    "question": "Create a quarterly business review dashboard in Notion based on the existing **Company In A Box** workspace.\n\n**Task Requirements:**\n1. Inside the **Company Wiki** page you will find a sub-page named **Company Goals**. Extract every departmental objective listed under the four departments — **Product**, **Marketing**, **Sales**, and **HR**.\n2. Under the top-level page **Company In A Box**, create a new child page titled **Q4 2024 Business Review Dashboard**.\n3. Inside that new page build the following structure (all parts must exist):\n   1. A single **callout** block near the top that summarises progress toward the three *Current Goals* shown on the main page:\n      • *LATAM expansion*  • *Enterprise push*  • *Employee engagement*  \n      (All three phrases must appear in the callout text.)\n   2. Four separate **section headings** (any heading level) – one for each department (**Product**, **Marketing**, **Sales**, **Human Resources**) – placed below the callout.  Under each heading list that department's objectives in a progress-tracking format (e.g. to-dos, check-box list). Each objective from the **Company Goals** page must appear at least once.\n   3. Add a **database** named **Action Items** with the following properties *exactly*:\n      • **Task Name** – title\n      • **Department** – select (options: Product, Marketing, Sales, HR)\n      • **Priority** – select (options: High, Medium, Low)\n      • **Status** – status\n      Populate this database with **≥ 5** action-item pages derived from the departmental objectives, making sure every field in each entry is filled:\n       • **Task Name** & **Department** must correctly correspond to the underlying objective/department.\n       • **Priority** and **Status** can be any allowed value, but they must **not** be left empty.\n4. Keep the overall visual style consistent with the existing wiki (use headings, dividers, etc.).",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "notion_mcpmark"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "mcpmark.notion.verify_quarterly_review_dashboard",
+            "value": "completed",
+            "op_args": {},
+            "desc": "Verify Q4 2024 Business Review Dashboard with callout, department sections, and Action Items database"
+        }
+    ],
+    "prepares": [
+        {
+            "prepare_func": "mcpmark_notion_setup",
+            "prepare_args": {}
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "mcpmark",
+            "tool": "",
+            "cleanup_func": "notion_cleanup",
+            "cleanup_args": {}
+        }
+    ]
+}

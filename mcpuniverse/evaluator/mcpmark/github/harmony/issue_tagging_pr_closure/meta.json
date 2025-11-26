@@ -1,0 +1,23 @@
+{
+  "task_id": "issue_tagging_pr_closure",
+  "task_name": "Issue Tagging Pr Closure",
+  "category_id": "harmony",
+  "category_name": "Harmony",
+  "description": "Simulate development workflow where enhancement PR is closed without merging due to technical constraints discovered during implementation.",
+  "author": "Zijian Wu",
+  "created_at": "2025-08-15",
+  "difficulty": "L3",
+  "tags": [
+    "issue management",
+    "pr workflows"
+  ],
+  "mcp": [
+    "github"
+  ],
+  "meta_data": {
+    "stateType": "url",
+    "stateContent": null,
+    "stateUrl": "https://github.com/mcpmark-source/harmony",
+    "stateOriginalUrl": "https://github.com/openai/harmony"
+  }
+}

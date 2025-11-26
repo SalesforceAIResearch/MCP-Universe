@@ -1,0 +1,25 @@
+{
+  "task_id": "layout_adjustment",
+  "task_name": "Layout Adjustment",
+  "category_id": "online_resume",
+  "category_name": "Online Resume",
+  "description": "This task involves modifying the layout and content of an online resume page by restructuring the Skills section with icon indicators and adjusting the Work History and Education sections to use equal column widths with placeholder images.",
+  "author": "Xiangyan Liu",
+  "created_at": "2025-08-14",
+  "difficulty": "L3",
+  "tags": [
+    "content organization",
+    "visual formatting",
+    "conditional filtering",
+    "template population"
+  ],
+  "mcp": [
+    "notion"
+  ],
+  "meta_data": {
+    "stateType": "url",
+    "stateContent": null,
+    "stateUrl": "https://painted-tennis-ebc.notion.site/Online-Resume-23181626b6d781159faaeb5eadaf612e",
+    "stateOriginalUrl": "https://www.notion.so/marketplace/templates/online-resume"
+  }
+}

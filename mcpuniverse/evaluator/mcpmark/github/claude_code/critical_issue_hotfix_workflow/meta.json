@@ -1,0 +1,23 @@
+{
+  "task_id": "critical_issue_hotfix_workflow",
+  "task_name": "Critical Issue Hotfix Workflow",
+  "category_id": "claude-code",
+  "category_name": "Claude Code",
+  "description": "Implement a critical issue hotfix workflow for memory and context management issues with proper PR management and issue tracking.",
+  "author": "Zijian Wu",
+  "created_at": "2025-08-15",
+  "difficulty": "L3",
+  "tags": [
+    "issue management",
+    "pr workflows"
+  ],
+  "mcp": [
+    "github"
+  ],
+  "meta_data": {
+    "stateType": "url",
+    "stateContent": null,
+    "stateUrl": "https://github.com/mcpmark-source/claude-code",
+    "stateOriginalUrl": "https://github.com/anthropics/claude-code"
+  }
+}

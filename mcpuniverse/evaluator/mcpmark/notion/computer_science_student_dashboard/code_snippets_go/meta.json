@@ -1,0 +1,24 @@
+{
+  "task_id": "code_snippets_go",
+  "task_name": "Code Snippets Go",
+  "category_id": "computer_science_student_dashboard",
+  "category_name": "Computer Science Student Dashboard",
+  "description": "Add a new Go column to the Code Snippets section between Python and JavaScript columns.",
+  "author": "Zijian Wu",
+  "created_at": "2025-07-27",
+  "difficulty": "L3",
+  "tags": [
+    "content organization",
+    "visual formatting",
+    "template population"
+  ],
+  "mcp": [
+    "notion"
+  ],
+  "meta_data": {
+    "stateType": "url",
+    "stateContent": null,
+    "stateUrl": "https://painted-tennis-ebc.notion.site/Computer-Science-Student-Dashboard-23e81626b6d78083b787d3c832b02ef4",
+    "stateOriginalUrl": "https://www.notion.so/marketplace/templates/computer-science-student-dashboard"
+  }
+}

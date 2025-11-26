@@ -1,0 +1,5 @@
+SKUID|B08KKX1WXQ
+Price|$56.21
+NumberOfReviews|46
+ReviewRating|86%
+Subtotal|$112.42

@@ -1,0 +1,25 @@
+{
+  "task_id": "r1_arxiv",
+  "task_name": "R1 Arxiv",
+  "category_id": "web_search",
+  "category_name": "Web Search",
+  "description": "Search arXiv for R1 model research papers, extract technical specifications, analyze methodology sections, compile research findings, and generate comprehensive literature review.",
+  "author": "Arvin Xu",
+  "created_at": "2025-08-18",
+  "difficulty": "L3",
+  "tags": [
+    "search aggregation",
+    "data extraction",
+    "comparative analysis",
+    "content submission"
+  ],
+  "mcp": [
+    "playwright"
+  ],
+  "meta_data": {
+    "stateType": null,
+    "stateContent": null,
+    "stateUrl": null,
+    "stateOriginalUrl": null
+  }
+}

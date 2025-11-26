@@ -1,0 +1,5 @@
+GingerAleSKU|B071KC37VD
+IntelNUCSKU|B01DJ9XID4
+CartTotal|$668.49
+ReviewCount|12
+LatestReviewer|jwm

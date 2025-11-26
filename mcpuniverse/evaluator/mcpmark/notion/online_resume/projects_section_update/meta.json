@@ -1,0 +1,26 @@
+{
+  "task_id": "projects_section_update",
+  "task_name": "Projects Section Update",
+  "category_id": "online_resume",
+  "category_name": "Online Resume",
+  "description": "Reorganize the projects section by removing outdated projects and adding new relevant work with proper formatting.",
+  "author": "Xiangyan Liu",
+  "created_at": "2025-07-27",
+  "difficulty": "L3",
+  "tags": [
+    "database manipulation",
+    "template population",
+    "data aggregation",
+    "visual formatting",
+    "cross-reference linking"
+  ],
+  "mcp": [
+    "notion"
+  ],
+  "meta_data": {
+    "stateType": "url",
+    "stateContent": null,
+    "stateUrl": "https://painted-tennis-ebc.notion.site/Online-Resume-23181626b6d781159faaeb5eadaf612e",
+    "stateOriginalUrl": "https://www.notion.so/marketplace/templates/online-resume"
+  }
+}

@@ -1,0 +1,36 @@
+{
+    "category": "easyr1",
+    "question": "The EasyR1 repository has a critical production issue: all development happens directly on the `main` branch, which is extremely risky for a project with 25 active issues. A recent commit `098931530606d22f867fd121b1dcb3225a43661f` introduced protocol changes that need to be properly managed through a structured branching workflow. I need you to implement a complete GitFlow strategy by working through a realistic development scenario.\n\n**The Scenario:** You're preparing for the v1.0.0 release while simultaneously handling a critical protocol serialization bug that was introduced in the recent data proto changes.\n\n**Step 1: Initialize GitFlow Structure**\nCreate a `develop` branch from `main` as the new integration branch. Then create a `release/v1.0.0` branch from `develop` to prepare for the upcoming release.\n\n**Step 2: Address the Critical Bug**\nCreate a `feature/protocol-serialization-fix` branch from `develop`. In this branch, create a new file called `PROTOCOL_FIXES.md` with the exact content:\n```\n# Protocol Serialization Fixes\n\n## Critical Fix for Data Proto Issue\n- Enhanced serialization safety check implemented\n- Addresses issue from commit 098931530606d22f867fd121b1dcb3225a43661f\n- Status: Ready for integration testing\n```\n\n**Step 3: Integrate the Fix Through Proper Workflow**\nCreate a pull request from `feature/protocol-serialization-fix` to `develop` to integrate the fix documentation. This demonstrates the feature → develop integration pattern.\n\n**Step 4: Update Release Branch and CI/CD**\nMerge the develop branch changes into `release/v1.0.0` branch to include the critical fix in the release.\n\n**Step 5: Document the New Process**\nCreate an issue titled `Implement Advanced Branch Protection Strategy` with exactly these 3 checkboxes in the body:\n- [ ] All development flows through develop branch\n- [ ] Release preparation happens in release/v1.0.0 branch  \n- [ ] Feature integration uses PR workflow\n\nAdd the label `process-implementation` to this issue to track the process implementation.",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "github_mcpmark"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "mcpmark_github.verify_advanced_branch_strategy",
+            "value": "completed",
+            "op_args": {
+                "owner": "{{GITHUB_EVAL_ORG}}",
+                "repo": "EasyR1"
+            },
+            "desc": "Verify GitFlow structure with develop, release, and feature branches, PR workflow, and process documentation"
+        }
+    ],
+    "prepares": [
+        {
+            "prepare_func": "mcpmark_github_setup",
+            "prepare_args": {}
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "mcpmark",
+            "tool": "",
+            "cleanup_func": "github_cleanup",
+            "cleanup_args": {}
+        }
+    ]
+}

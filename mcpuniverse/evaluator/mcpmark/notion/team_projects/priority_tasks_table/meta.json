@@ -1,0 +1,25 @@
+{
+  "task_id": "priority_tasks_table",
+  "task_name": "Priority Tasks Table",
+  "category_id": "team_projects",
+  "category_name": "Team Projects",
+  "description": "Create a five-column table listing tasks with 50% or less progress or P0 priority tasks not completed.",
+  "author": "Zijian Wu",
+  "created_at": "2025-08-12",
+  "difficulty": "L3",
+  "tags": [
+    "conditional filtering",
+    "database manipulation",
+    "data aggregation",
+    "visual formatting"
+  ],
+  "mcp": [
+    "notion"
+  ],
+  "meta_data": {
+    "stateType": "url",
+    "stateContent": null,
+    "stateUrl": "https://painted-tennis-ebc.notion.site/Team-Projects-24e81626b6d7809c982fdb7a25825898",
+    "stateOriginalUrl": "https://www.notion.so/marketplace/templates/gantt-chart"
+  }
+}

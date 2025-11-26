@@ -1,0 +1,24 @@
+{
+  "task_id": "health_routine_optimization",
+  "task_name": "Health Routine Optimization",
+  "category_id": "shopping",
+  "category_name": "Shopping",
+  "description": "Optimize health and wellness product selections by analyzing nutritional supplements, fitness equipment, creating personalized routines, and tracking health metrics for lifestyle improvements.",
+  "author": "Yaoqi Ye",
+  "created_at": "2025-08-17",
+  "difficulty": "L3",
+  "tags": [
+    "data extraction",
+    "comparative analysis",
+    "content submission"
+  ],
+  "mcp": [
+    "playwright"
+  ],
+  "meta_data": {
+    "stateType": "video",
+    "stateContent": null,
+    "stateUrl": "https://storage.mcpmark.ai/tasks_state/playwright_video/one-stop-market.mp4",
+    "stateOriginalUrl": "https://github.com/web-arena-x/webarena/tree/main/environment_docker"
+  }
+}

@@ -1,0 +1,58 @@
+kind: llm
+spec:
+  name: llm-2
+  type: openai
+  config:
+    model_name: z-ai/glm-4.5
+
+---
+kind: agent
+spec:
+  name: ReAct-agent
+  type: react
+  config:
+    llm: llm-2
+    instruction: You are an agent for PostgreSQL database operations.
+    max_iterations: 20
+    summarize_tool_response: false
+
+---
+kind: benchmark
+spec:
+  description: Benchmark for mcpmark PostgreSQL tasks.
+  agent: ReAct-agent
+  tasks:
+    # Chinook tasks (3)
+    - mcpmark/configs/postgres/chinook/customer_data_migration.json
+    - mcpmark/configs/postgres/chinook/employee_hierarchy_management.json
+    - mcpmark/configs/postgres/chinook/sales_and_music_charts.json
+    
+    # DVD Rental tasks (3)
+    - mcpmark/configs/postgres/dvdrental/customer_analysis_fix.json
+    - mcpmark/configs/postgres/dvdrental/customer_analytics_optimization.json
+    - mcpmark/configs/postgres/dvdrental/film_inventory_management.json
+    
+    # Employees tasks (6)
+    - mcpmark/configs/postgres/employees/employee_demographics_report.json
+    - mcpmark/configs/postgres/employees/employee_performance_analysis.json
+    - mcpmark/configs/postgres/employees/employee_project_tracking.json
+    - mcpmark/configs/postgres/employees/employee_retention_analysis.json
+    - mcpmark/configs/postgres/employees/executive_dashboard_automation.json
+    - mcpmark/configs/postgres/employees/management_structure_analysis.json
+    
+    # Lego tasks (3)
+    - mcpmark/configs/postgres/lego/consistency_enforcement.json
+    - mcpmark/configs/postgres/lego/database_security_policies.json
+    - mcpmark/configs/postgres/lego/transactional_inventory_transfer.json
+    
+    # Security tasks (2)
+    - mcpmark/configs/postgres/security/rls_business_access.json
+    - mcpmark/configs/postgres/security/user_permission_audit.json
+    
+    # Sports tasks (3)
+    - mcpmark/configs/postgres/sports/baseball_player_analysis.json
+    - mcpmark/configs/postgres/sports/participant_report_optimization.json
+    - mcpmark/configs/postgres/sports/team_roster_management.json
+    
+    # Vectors tasks (1)
+    - mcpmark/configs/postgres/vectors/dba_vector_analysis.json

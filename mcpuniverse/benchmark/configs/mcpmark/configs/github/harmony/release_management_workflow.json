@@ -1,0 +1,36 @@
+{
+    "category": "harmony",
+    "question": "I need help implementing a comprehensive release management workflow for this harmony repository. Here's what I need you to do:\n\n**Step 1: Analyze Current State** \nFirst, analyze the current open pull requests to understand what changes they contain and their impact on the codebase.\n\n**Step 2: Create Release Branch**\nCreate a release preparation branch called 'release-v1.1.0' from the current main branch.\n\n**Step 3: Apply Critical Bug Fixes**\nOn the release branch, apply the MetaSep token fix from PR #25 by creating/updating the file `src/encoding.rs` with the corrected content where FormattingToken::MetaSep maps to \"<|meta_sep|>\" instead of \"<|channel|>\".\n\nAlso create/update `src/registry.rs` to include the missing MetaSep and MetaEnd token registrations:\n```rust\n(FormattingToken::MetaSep, \"<|meta_sep|>\"),\n(FormattingToken::MetaEnd, \"<|meta_end|>\"),\n```\n\n**Step 4: Add Missing Utility File**\nFrom PR #26, create the missing shadcn utils file `demo/harmony-demo/src/lib/utils.ts` with content:\n```typescript\nimport { clsx, type ClassValue } from \"clsx\"\nimport { twMerge } from \"tailwind-merge\"\n\nexport function cn(...inputs: ClassValue[]) {\n  return twMerge(clsx(inputs))\n}\n```\n\nAnd create/update `.gitignore` to add:\n```\n# Avoid ignoring shadcn utils\n!demo/harmony-demo/src/lib\n```\n\n**Step 5: Version Update**\nUpdate the version number in `Cargo.toml`: Change the `version` field in the `[package]` section to `version = \"1.1.0\"`.\n\n**Step 6: Create Comprehensive Changelog**\nCreate a `CHANGELOG.md` file in the release branch with the following content:\n```markdown\n# Changelog\n\n## [1.1.0] - 2025-08-07\n\n### Added\n- Added missing shadcn utils.ts file for demo application\n- Enhanced gitignore rules to preserve shadcn utilities\n\n### Fixed\n- Fixed MetaSep token mapping bug (was incorrectly mapped to channel token)\n- Added missing MetaSep and MetaEnd token registrations in registry\n- Improved tokenizer registry functionality for meta formatting tokens\n\n### Changed\n- Updated version to 1.1.0 for new release cycle\n\n### Technical Details\n- MetaSep token now correctly maps to `<|meta_sep|>` instead of `<|channel|>`\n- Registry now properly recognizes MetaSep and MetaEnd formatting tokens\n- Demo application now includes required utility functions for UI components\n```\n\n**Step 7: Create Release Pull Request**\nCreate a pull request from 'release-v1.1.0' to 'main' with title \"Release v1.1.0 - Bug fixes and utility additions\" and a detailed description explaining all the integrated changes.\n\n**Step 8: Merge the Pull Request**\nAfter creating the PR, merge it into the main branch using the \"squash and merge\" method.\n\n**Step 9: Verification**\nEnsure the release branch contains at least 4 distinct commits before merging:\n1. MetaSep token fix commit\n2. Utility file addition commit  \n3. Version update commit\n4. Changelog addition commit",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "github_mcpmark"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "mcpmark_github.verify_release_management_workflow",
+            "value": "completed",
+            "op_args": {
+                "owner": "{{GITHUB_EVAL_ORG}}",
+                "repo": "harmony"
+            },
+            "desc": "Verify release branch with bug fixes, utility files, version update, changelog, and merged release PR"
+        }
+    ],
+    "prepares": [
+        {
+            "prepare_func": "mcpmark_github_setup",
+            "prepare_args": {}
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "mcpmark",
+            "tool": "",
+            "cleanup_func": "github_cleanup",
+            "cleanup_args": {}
+        }
+    ]
+}

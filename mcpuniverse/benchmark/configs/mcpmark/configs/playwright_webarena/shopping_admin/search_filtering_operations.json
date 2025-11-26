@@ -1,0 +1,36 @@
+{
+    "category": "shopping_admin",
+    "question": "Perform comprehensive search and filtering operations in the Magento Admin panel to extract specific business insights using advanced search techniques.\n\n\n**Important:** The Magento Admin panel is accessible at http://localhost:7780/admin\n\n**Task Requirements:**\n\n1. Login with username 'admin' and password 'admin1234'\n\n2. To analyze search behavior and term effectiveness, check the Search Terms of Marketing and perform complex filtering:\n   - Search for all terms containing 'tank' in their name - count the exact number of results\n   - Clear filters and find terms with exactly 0 results - count how many such terms exist\n   - Apply a filter to show only terms with more than 10 uses - record the term with highest uses and its count (You need to see how many there are and record them all.)\n   - Find the search term that has results between 20-30 - record its name and exact result count\n\n3. To gather detailed marketing insights from search data, go to Search Terms in Reports:\n   - Apply filter for terms with more than 15 hits - count total filtered results\n   - Find the term with ID between 10-15 that has the most results - record term name and result count (You need to see how many there are and record them all.)\n   - Filter to show only terms from \"Default Store View\" - count total results\n\n4. To examine real-time search trends and top performers, from the Dashboard, perform targeted searches:\n   - In the 'Top Search Terms' table, find the term with exactly 1 result - record its name and uses\n   - In the 'Last Search Terms' table, identify the term with the both the highest number of results and uses - record name and the number of results\n   - In the 'Bestsellers' tab, find the product at position #3 - record name and quantity\n\n5. To identify patterns in search usage and results, navigate to Search Terms (main grid) in step 2:\n   - Sort by 'Uses' column (descending) - record the top term and its uses count\n   - Sort by 'Results' column (ascending) - record the first non-zero result term and its count\n   - Count total number of unique search terms in the system\n\n6. To provide a comprehensive report of all gathered data, compile all findings and output in the following exact format:\n\n```\n<answer>\nTankSearchCount|count\nZeroResultsCount|count\nHighestUseTerm|term:uses\nResults20to30Term|term1:results1|term2:result2|term3:result3|...\nHits15PlusCount|count\nID10to15MaxResults|term:results\nDefaultStoreViewCount|count\nOneResultTerm|term1:uses1|term2:uses2|term3:uses3|...\nHighestResultLastSearch|term:results\nPosition3Bestseller|product:quantity\nTopUseTerm|term:uses\nFirstNonZeroResult|term:results\nTotalUniqueTerms|count\n</answer>\n```\n\n**Example Output:**\n```\n<answer>\nTankSearchCount|X\nZeroResultsCount|X\nHighestUseTerm|search_term:XX\nResults20to30Term|search_term1:XX1|search_term2:XX2|search_term3:XX3|...\nHits15PlusCount|X\nID10to15MaxResults|Product Name:XX\nDefaultStoreViewCount|X\nOneResultTerm|search_term1:XX1|search_term2:XX2|search_term3:XX3|...\nHighestResultLastSearch|search_term:XX\nPosition3Bestseller|Product Name:X\nTopUseTerm|search_term:XX\nFirstNonZeroResult|search_term:X\nTotalUniqueTerms|X\n</answer>\n```\n\n**Success Criteria:**\n- Successfully logged into Magento Admin\n- Applied complex search filters in Search Terms section\n- Used range filters for results and hits\n- Sorted columns to find specific records\n- Navigated between different report views\n- Extracted data from filtered and sorted results\n- Counted records accurately after applying filters\n- Output answer in exact format with 13 data lines\n- Answer wrapped in <answer> tags",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "playwright"
+        }
+    ],
+    "output_format": {
+        "filtering_analysis": "Structured answer format"
+    },
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "mcpmark.playwright.verify_search_filtering_operations",
+            "value": "completed",
+            "op_args": {},
+            "desc": "Check if the AI agent completed the search filtering operations analysis with correct structured output"
+        }
+    ],
+    "prepares": [
+        {
+            "prepare_func": "mcpmark_playwright_webarena_setup",
+            "prepare_args": {}
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "mcpmark",
+            "tool": "",
+            "cleanup_func": "playwright_webarena_cleanup",
+            "cleanup_args": {}
+        }
+    ]
+}

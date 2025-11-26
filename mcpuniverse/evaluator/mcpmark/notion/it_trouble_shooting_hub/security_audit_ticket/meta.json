@@ -1,0 +1,25 @@
+{
+  "task_id": "security_audit_ticket",
+  "task_name": "Security Audit Ticket",
+  "category_id": "it_trouble_shooting_hub",
+  "category_name": "IT Trouble Shooting Hub",
+  "description": "Create a comprehensive security audit ticket based on expired inventory items and security FAQ entries.",
+  "author": "Zijian Wu",
+  "created_at": "2025-07-27",
+  "difficulty": "L3",
+  "tags": [
+    "conditional filtering",
+    "database manipulation",
+    "data aggregation",
+    "report generation"
+  ],
+  "mcp": [
+    "notion"
+  ],
+  "meta_data": {
+    "stateType": "url",
+    "stateContent": null,
+    "stateUrl": "https://painted-tennis-ebc.notion.site/It-Trouble-Shooting-Hub-23e81626b6d78020aba7eb65ae1cc2d5",
+    "stateOriginalUrl": "https://www.notion.so/marketplace/templates/it-trouble-shooting-hub"
+  }
+}

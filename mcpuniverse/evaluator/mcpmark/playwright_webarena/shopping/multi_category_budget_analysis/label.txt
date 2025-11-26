@@ -1,0 +1,11 @@
+chocolate_products|$1.04:B071954ZDC;$1.89:B07ND598N3;$2.50:B01G26DMSC
+chocolate_sum|$5.43
+tabletop_search_count|60
+tabletop_product|$169.99:B09NPX5CDP
+tabletop_reviews|4:95%
+cheapest_computer_accessory|$1.17
+price_difference|$168.82
+comparison_count|3
+cart_subtotal|$2.21
+cart_item_count|2
+under_60_budget|YES

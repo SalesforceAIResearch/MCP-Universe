@@ -1,0 +1,26 @@
+{
+  "task_id": "asset_retirement_migration",
+  "task_name": "Asset Retirement Migration",
+  "category_id": "it_trouble_shooting_hub",
+  "category_name": "IT Trouble Shooting Hub",
+  "description": "Restructure the IT Inventory database by migrating expired assets to a new IT Asset Retirement Queue database.",
+  "author": "Zijian Wu",
+  "created_at": "2025-07-27",
+  "difficulty": "L3",
+  "tags": [
+    "database manipulation",
+    "automated migration",
+    "conditional filtering",
+    "data aggregation",
+    "report generation"
+  ],
+  "mcp": [
+    "notion"
+  ],
+  "meta_data": {
+    "stateType": "url",
+    "stateContent": null,
+    "stateUrl": "https://painted-tennis-ebc.notion.site/It-Trouble-Shooting-Hub-23e81626b6d78020aba7eb65ae1cc2d5",
+    "stateOriginalUrl": "https://www.notion.so/marketplace/templates/it-trouble-shooting-hub"
+  }
+}

@@ -1,0 +1,13 @@
+SpriteProducts|16
+Quantity100Products|1886
+WS12Info|Radiant Tee:$22.00
+PendingOrders|10
+GraceOrderID|000000114
+HighestOrderInfo|Samantha Jones:$292.40
+CheapProduct|Sprite Yoga Strap 6 foot:6
+OvernightDufflePrice|$45.00
+HollisterPosition|1st
+CostelloCustomers|0
+SarahMillerInfo|General:Apr 19, 2023 5:45:07 PM
+PaidInvoices|2
+Invoice002BillTo|Veronica Costello

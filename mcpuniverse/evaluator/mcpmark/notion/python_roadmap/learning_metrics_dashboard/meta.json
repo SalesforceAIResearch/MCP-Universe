@@ -1,0 +1,25 @@
+{
+  "task_id": "learning_metrics_dashboard",
+  "task_name": "Learning Metrics Dashboard",
+  "category_id": "python_roadmap",
+  "category_name": "Python Roadmap",
+  "description": "Create a comprehensive Learning Metrics Dashboard section displaying precise statistics and recommendations based on the Steps database.",
+  "author": "Lingjun Chen",
+  "created_at": "2025-08-02",
+  "difficulty": "L3",
+  "tags": [
+    "data aggregation",
+    "conditional filtering",
+    "report generation",
+    "visual formatting"
+  ],
+  "mcp": [
+    "notion"
+  ],
+  "meta_data": {
+    "stateType": "url",
+    "stateContent": null,
+    "stateUrl": "https://painted-tennis-ebc.notion.site/Python-Roadmap-25281626b6d78012bf2bce1fa8711f4d",
+    "stateOriginalUrl": "https://www.notion.so/marketplace/templates/python-roadmap"
+  }
+}

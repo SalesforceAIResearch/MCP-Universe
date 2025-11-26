@@ -1,0 +1,36 @@
+{
+    "category": "employees",
+    "question": "Conduct a comprehensive management structure analysis to evaluate leadership effectiveness and organizational hierarchy. The executive team needs insights into management tenure, span of control, and leadership transitions to optimize the management structure and succession planning.\n\n## Your Tasks:\n\n1. **Create the manager profile table** — build a table called `manager_profile` in the `employees` schema with these exact columns:\n   * `manager_id` (bigint) — the manager's employee ID\n   * `manager_name` (varchar) — concatenated first and last name\n   * `current_department` (varchar) — current department they manage (NULL if not current)\n   * `management_periods` (integer) — total number of management assignments (including multiple periods in same department)\n   * `current_manager` (boolean) — whether they are currently a manager\n\n2. **Create the department leadership table** — build a table called `department_leadership` in the `employees` schema with:\n   * `department_name` (varchar) — the department name\n   * `current_manager_name` (varchar) — current manager's full name\n   * `manager_start_date` (date) — when current manager started\n   * `total_historical_managers` (integer) — total number of managers this department has had\n\n3. **Create the management transition table** — build a table called `management_transitions` in the `employees` schema with:\n   * `department_name` (varchar) — the department name\n   * `transition_year` (integer) — year when management changed\n   * `outgoing_manager` (varchar) — previous manager's name\n   * `incoming_manager` (varchar) — new manager's name ('No Successor' if department had no immediate replacement)\n   * `transition_gap_days` (integer) — days between managers (0 if immediate or no successor)\n\n4. **Create the span of control table** — build a table called `span_of_control` in the `employees` schema with:\n   * `manager_id` (bigint) — the manager's employee ID\n   * `manager_name` (varchar) — manager's full name\n   * `department_name` (varchar) — department they manage\n   * `direct_reports` (integer) — number of employees reporting directly to this manager\n   * `total_team_size` (integer) — total employees in their department (including indirect reports)",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "postgres-pro"
+        }
+    ],
+    "output_format": {
+        "management_status": "Management structure analysis completion status"
+    },
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "postgres_management_structure_analysis_verifier",
+            "value": "completed",
+            "op_args": {},
+            "desc": "Check if the AI agent completed the management structure analysis"
+        }
+    ],
+    "prepares": [
+        {
+            "prepare_func": "mcpmark_postgres_setup",
+            "prepare_args": {}
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "mcpmark",
+            "tool": "",
+            "cleanup_func": "postgres_cleanup",
+            "cleanup_args": {}
+        }
+    ]
+}

@@ -1,0 +1,33 @@
+{
+    "category": "file_context",
+    "question": "Please use FileSystem tools to finish the following task:\n\n### Task Description\n\nYou need to process 10 text files (file_01.txt to file_10.txt) and convert their content to uppercase format.\n\n### Task Objectives\n\n1. **Create an uppercase directory** in the test environment root\n2. **Convert each file** from file_01.txt to file_10.txt to uppercase\n3. **Save converted files** in the uppercase/ directory with the same names\n4. **Count words** in each original file (file_01.txt to file_10.txt)\n5. **Create answer.txt** with word counts in the specified format\n\n### Specified Format of answer.txt\n\nCreate a file named `answer.txt` in the `uppercase/` directory\n\n**Requirements:**\n\n- Each line should follow the format: `<filename>:<word_count>`\n- Include all 10 files: file_01.txt, file_02.txt, ..., file_10.txt\n- Use the exact filename format (file_01.txt, file_02.txt, etc.)\n- One entry per line\n- Total of 10 lines\n\n### Expected Output\n\n- Directory: `uppercase/`\n- Files: `file_01.txt` to `file_10.txt` (all in uppercase)\n- File: `uppercase/answer.txt` with word counts",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "filesystem_mcpmark"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "mcpmark.filesystem.file_context.verify_uppercase",
+            "value": "completed",
+            "op_args": {},
+            "desc": "Verify uppercase conversion with correct content and word counts"
+        }
+    ],
+    "prepares": [
+        {
+            "prepare_func": "mcpmark_filesystem_setup",
+            "prepare_args": {}
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "mcpmark",
+            "tool": "",
+            "cleanup_func": "filesystem_cleanup",
+            "cleanup_args": {}
+        }
+    ]
+}

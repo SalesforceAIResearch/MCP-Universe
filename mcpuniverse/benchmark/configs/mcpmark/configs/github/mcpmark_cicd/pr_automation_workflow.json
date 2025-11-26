@@ -1,0 +1,36 @@
+{
+    "category": "mcpmark_cicd",
+    "question": "I need you to create a comprehensive Pull Request automation workflow for this Node.js project. The project currently has no GitHub Actions workflows, so you'll be building a PR-focused CI/CD workflow from scratch that responds to pull request events. Here's what needs to be implemented:\n\n## Pull Request Automation Workflow\n\nCreate `.github/workflows/pr-automation.yml` that triggers on `pull_request` events (opened, synchronize, reopened) with these jobs:\n\n### 1. **code-quality** job (name: `code-quality`):\n  - Runs ESLint checks using `npm run lint`\n  - Runs Prettier formatting checks\n  - Posts code quality results as PR comment (must include keywords: \"Code Quality Report\", \"ESLint\", \"Prettier\")\n\n### 2. **testing-suite** job (name: `testing-suite`):\n  - Runs full test suite with `npm test`\n  - Generates test coverage report\n  - Posts coverage summary as PR comment (must include keywords: \"Test Coverage Report\")\n  - Uploads coverage artifacts\n\n### 3. **security-scan** job (name: `security-scan`):\n  - Runs dependency vulnerability checks\n  - Scans for secrets in code changes\n  - Creates security report as PR comment (must include keywords: \"Security Scan Report\", \"Vulnerabilities\", \"Dependencies\")\n\n### 4. **build-validation** job (name: `build-validation`):\n  - Attempts to build the application\n  - Validates all endpoints are accessible\n  - Creates deployment preview artifacts\n  - Posts build status as PR comment (must include keywords: \"Build Validation\")\n\n**IMPORTANT: All four jobs must run in parallel.**\n\n## Implementation Requirements:\n\n**Step 1: Create Feature Branch**\nCreate a new branch called `pr-automation-workflow` from main.\n\n**Step 2: Create the Workflow**\nCreate `.github/workflows/pr-automation.yml` with proper YAML syntax:\n- Appropriate triggers for pull_request events\n- All four jobs configured to run in parallel\n- Avoid identifier conflicts in github-script actions\n\n**Step 3: Create and Merge Pull Request**\nCreate a comprehensive pull request and merge it to main:\n- Title: \"Implement Pull Request Automation Workflow\"\n- Detailed description of the workflow and its purpose\n- Merge the pull request to main branch\n\n## Important Notes:\n\n- **All jobs MUST run in parallel**\n- Ensure your PR satisfies ALL required checks\n- The workflow should handle edge cases, have proper error recovery, and provide clear logging",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "github_mcpmark"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "mcpmark_github.verify_pr_automation_workflow",
+            "value": "completed",
+            "op_args": {
+                "owner": "{{GITHUB_EVAL_ORG}}",
+                "repo": "mcpmark-cicd"
+            },
+            "desc": "Verify PR automation workflow with code-quality, testing-suite, security-scan, build-validation jobs running in parallel"
+        }
+    ],
+    "prepares": [
+        {
+            "prepare_func": "mcpmark_github_setup",
+            "prepare_args": {}
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "mcpmark",
+            "tool": "",
+            "cleanup_func": "github_cleanup",
+            "cleanup_args": {}
+        }
+    ]
+}

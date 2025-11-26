@@ -1,0 +1,36 @@
+{
+    "category": "shopping_admin",
+    "question": "Our marketing team is planning a new promotion for our bestselling fitness products. We need to analyze the current performance of our top-selling items and their related promotions to optimize our strategy.\n\n\n**Important:** The Magento Admin panel is accessible at http://localhost:7780/admin\n\n**Task Requirements:**\n\n1. If need to login, login with username 'admin' and password 'admin1234'\n\n2. Start by checking our current bestsellers:\n   - Identify the top 3 bestselling products based on their Price\tand Quantity - record their names, prices, and quantities sold\n   - Note the total Revenue amount displayed\n   - Check if any of these bestsellers appear in the Top Search Terms table - if yes, record the search term and its usage count, else output 'No:0'\n\n3. Investigate these bestselling products in detail:\n   - For each of the top 3 bestsellers identified, search for them by name and record:\n     - Their SKU\n     - Current inventory quantity\n     - Whether they are 'Enabled' or 'Disabled'\n\n4. Check if we have existing promotions for these products:\n   - Look for any active rules that might apply to fitness/yoga products\n   - Find if there's a rule offering percentage discount - record the rule name and discount percentage\n   - Count total number of active rules\n\n5. Analyze customer purchasing patterns:\n   - Count total number of orders in the system\n   - Note the ID of the most recent order\n\n6. Review our top customers who might be interested:\n   - Find the customer who appears in the Last Orders section of the dashboard with the highest total\n   - Look up this customer in the All Customers list and record his email and customer group\n   - Count how many other customers are in the same group\n\n7. Compile your findings and output them in the following exact format:\n\n```\n<answer>\nBestseller1|name:price:quantity:sku:inventory:status\nBestseller2|name:price:quantity:sku:inventory:status\nBestseller3|name:price:quantity:sku:inventory:status\nTotalRevenue|amount\nBestsellerInSearch|term:count\nPercentageDiscountRule|name:percentage\nActiveRulesCount|count\nTotalOrders|count\nMostRecentOrderID|id\nTopCustomer|name:email:group\nSameGroupCustomers|count\n</answer>\n```\n\n**Example Output:**\n```\n<answer>\nBestseller1|Product Name:$XX.XX:X:XXX(SKU):X:Enabled/Disabled\nBestseller2|Product Name:$XX.XX:X:XXX(SKU):X:Enabled/Disabled\nBestseller3|Product Name:$XX.XX:X:XXX(SKU):X:Enabled/Disabled\nTotalRevenue|$XX.XX\nBestsellerInSearch|Term:X or None:0\nPercentageDiscountRule|Rule Name:XX%\nActiveRulesCount|X\nTotalOrders|X\nMostRecentOrderID|X or None\nTopCustomer|Customer Name:email@example.com:Group Name\nSameGroupCustomers|X\n</answer>\n```",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "playwright"
+        }
+    ],
+    "output_format": {
+        "promotion_analysis": "Structured answer format"
+    },
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "mcpmark.playwright.verify_fitness_promotion_strategy",
+            "value": "completed",
+            "op_args": {},
+            "desc": "Verify AI agent completed fitness promotion strategy analysis task with correct structured output"
+        }
+    ],
+    "prepares": [
+        {
+            "prepare_func": "mcpmark_playwright_webarena_setup",
+            "prepare_args": {}
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "mcpmark",
+            "tool": "",
+            "cleanup_func": "playwright_webarena_cleanup",
+            "cleanup_args": {}
+        }
+    ]
+}

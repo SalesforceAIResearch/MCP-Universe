@@ -1,0 +1,12 @@
+- Total_LLM_Posts|9
+- Top1_Title|[P] I made a command-line tool that explains your errors using ChatGPT (link in comments)
+- Top1_Upvotes|2655
+- Top1_Date|3 years ago
+- Top2_Title|[P] I built Adrenaline, a debugger that fixes errors and explains them with GPT-3
+- Top2_Upvotes|1542
+- Top2_Date|3 years ago
+- Top3_Title|[N] OpenAI may have benchmarked GPT-4's coding ability on it's own training data
+- Top3_Upvotes|925
+- Top3_Date|2 years ago
+- Deeplearning_MostDiscussed|Do companies actually care about their model's training/inference speed?
+- Deeplearning_Comments|39

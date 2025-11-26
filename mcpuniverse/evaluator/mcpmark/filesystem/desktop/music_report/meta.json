@@ -1,0 +1,23 @@
+{
+  "task_id": "music_report",
+  "task_name": "Music Report",
+  "category_id": "desktop",
+  "category_name": "Desktop",
+  "description": "Search and analyze desktop music files to generate a scored recommendation list using specified computation rules and criteria.",
+  "author": "Lingjun Chen",
+  "created_at": "2025-08-12",
+  "difficulty": "L3",
+  "tags": [
+    "data extraction",
+    "pattern analysis"
+  ],
+  "mcp": [
+    "filesystem"
+  ],
+  "meta_data": {
+    "stateType": "text",
+    "stateContent": "desktop/\n    ├── exp_logs/\n    │       ├── aug/\n    │       │       └── augmentation_log.txt\n    │       ├── project_1/\n    │       │       ├── data.csv\n    │       │       ├── model.py\n    │       │       └── README.md\n    │       ├── project_2/\n    │       │       ├── analysis_report.md\n    │       │       └── data_analysis.py\n    │       ├── sep/\n    │       │       └── september_summary.csv\n    │       ├── exp_record.md\n    │       ├── experiment_summary.md\n    │       └── results_record.csv\n    ├── learning/\n    │       ├── 2024/\n    │       │       └── learning_progress.csv\n    │       ├── 2025/\n    │       │       └── learning_roadmap.md\n    │       ├── activities/\n    │       │       └── study_notes.py\n    │       ├── research/\n    │       │       └── research_topics.md\n    │       ├── schedule/\n    │       │       └── weekly_schedule.csv\n    │       └── learning_goals.md\n    ├── music/\n    │       ├── beni/\n    │       │       └── playlist_manager.py\n    │       ├── jay_chou/\n    │       │       └── favorite_songs.csv\n    │       ├── jj_lin/\n    │       │       └── top_songs.txt\n    │       └── music_collection.md\n    ├── old_homebrew/\n    │       ├── 2023-09-23_22/\n    │       │       ├── opt/\n    │       │       └── Users/\n    │       └── 2023-09-23_23/\n    │               ├── opt/\n    │               └── Users/\n    ├── play/\n    │       ├── game_plan/\n    │       │       └── gaming_schedule.md\n    │       ├── hongkong_tour/\n    │       │       └── travel_itinerary.csv\n    │       ├── kit&shoes_collection/\n    │       │       └── inventory.py\n    │       └── others/\n    │               └── entertainment_planner.md\n    └── travel_plan/\n            ├── travel_bucket_list.md\n            └── travel_calculator.py\n",
+    "stateUrl": "https://storage.mcpmark.ai/filesystem/desktop.zip",
+    "stateOriginalUrl": null
+  }
+}

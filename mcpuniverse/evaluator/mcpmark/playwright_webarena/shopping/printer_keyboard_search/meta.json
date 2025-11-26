@@ -1,0 +1,24 @@
+{
+  "task_id": "printer_keyboard_search",
+  "task_name": "Printer Keyboard Search",
+  "category_id": "shopping",
+  "category_name": "Shopping",
+  "description": "Search and evaluate office equipment by comparing printer specifications, keyboard ergonomics, analyzing user reviews, tracking prices, and generating detailed purchase recommendations report.",
+  "author": "Yaoqi Ye",
+  "created_at": "2025-08-17",
+  "difficulty": "L3",
+  "tags": [
+    "search aggregation",
+    "comparative analysis",
+    "content submission"
+  ],
+  "mcp": [
+    "playwright"
+  ],
+  "meta_data": {
+    "stateType": "video",
+    "stateContent": null,
+    "stateUrl": "https://storage.mcpmark.ai/tasks_state/playwright_video/one-stop-market.mp4",
+    "stateOriginalUrl": "https://github.com/web-arena-x/webarena/tree/main/environment_docker"
+  }
+}

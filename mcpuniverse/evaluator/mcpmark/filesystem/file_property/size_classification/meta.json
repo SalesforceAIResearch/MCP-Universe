@@ -1,0 +1,23 @@
+{
+  "task_id": "size_classification",
+  "task_name": "Size Classification",
+  "category_id": "file_property",
+  "category_name": "File Property",
+  "description": "Classify all files in the folder by size into distinct categories (small/medium/large) and generate a comprehensive summary report with statistics.",
+  "author": "Lingjun Chen",
+  "created_at": "2025-08-07",
+  "difficulty": "L3",
+  "tags": [
+    "file organization",
+    "pattern analysis"
+  ],
+  "mcp": [
+    "filesystem"
+  ],
+  "meta_data": {
+    "stateType": "text",
+    "stateContent": "file_property/\n    ├── bear.jpg\n    ├── bridge.jpg\n    ├── bus.MOV\n    ├── random_file_1.txt\n    ├── random_file_2.txt\n    ├── random_file_3.txt\n    ├── road.MOV\n    └── sg.jpg",
+    "stateUrl": "https://storage.mcpmark.ai/filesystem/file_property.zip",
+    "stateOriginalUrl": null
+  }
+}

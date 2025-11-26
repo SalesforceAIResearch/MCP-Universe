@@ -1,0 +1,4 @@
+Assign assignees for each open issue and open PR by adding labels instead of using direct assignees. Only contributors who appeared in the past 100 commits are considered. First, collect all such contributors and identify the most frequent author among them. For each open issue or PR, assign using labels according to the following rules:
+	•	If the comments mention an author with @username, add a label in the format assigned-username.
+	•	If multiple authors are mentioned, add labels in the same format for all of them.
+	•	If no authors are mentioned in the comments, add a label for the most frequent contributor from the past 100 commits, using the format assigned-username.

@@ -1,0 +1,37 @@
+{
+    "category": "claude_code",
+    "question": "I need you to research the development history of the repository across multiple branches and commits, then create a comprehensive feature tracking document and submit it as a new file to the repository.\n\n**Step 1: Multi-Branch Feature Investigation**\nResearch and identify the exact commit SHAs where these specific features were introduced by analyzing commits across different branches:\n\n1. **Shell Completion Scripts**: Find when shell completion functionality was first added to the repository\n2. **CHANGELOG Version 1.0.65**: Find when the changelog was updated to include version 1.0.65 \n3. **Rust Extraction Improvements**: Find when workflow improvements for Rust code extraction were implemented\n\n**Step 2: Create Feature Tracking Documentation**\nCreate a file called `FEATURE_COMMITS.md` in the repository root with:\n\n- A \"# Feature Development Tracking\" title\n- A \"## Overview\" section explaining this tracks major feature additions across repository branches\n- A \"## Feature Commit History\" section with this exact table format:\n```markdown\n| Feature Name | Commit SHA | Author | Branch | Date | Files Changed | Commit Message |\n|-------------|------------|---------|---------|------|---------------|----------------|\n```\n\nFor each feature, populate the table with:\n- Exact commit SHA (full 40-character hash)\n- GitHub username of the commit author\n- Branch where the commit was made\n- Commit date in YYYY-MM-DD format\n- Number of files changed in that commit\n- First line of the commit message\n\n**Step 3: Commit Documentation to Repository**\nCommit the `FEATURE_COMMITS.md` file to the main branch with:\n- Commit message: \"Add feature development tracking documentation\"\n- Ensure the file is properly formatted markdown\n- Verify all commit SHAs in the table are accurate and verifiable\n\nThe verification process will check that your table contains the correct commit SHAs for each specific feature, along with accurate author, branch, and date information.",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "github_mcpmark"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "mcpmark_github.verify_feature_commit_tracking",
+            "value": "completed",
+            "op_args": {
+                "owner": "{{GITHUB_EVAL_ORG}}",
+                "repo": "claude-code",
+                "branch": "main"
+            },
+            "desc": "Verify that feature commit tracking documentation is accurate with correct SHAs, authors, and dates"
+        }
+    ],
+    "prepares": [
+        {
+            "prepare_func": "mcpmark_github_setup",
+            "prepare_args": {}
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "mcpmark",
+            "tool": "",
+            "cleanup_func": "github_cleanup",
+            "cleanup_args": {}
+        }
+    ]
+}

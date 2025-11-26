@@ -1,0 +1,22 @@
+{
+  "task_id": "claude_collaboration_analysis",
+  "task_name": "Claude Collaboration Analysis",
+  "category_id": "claude-code",
+  "category_name": "Claude Code",
+  "description": "Analyze Claude AI collaboration patterns in commit history and create a comprehensive report of co-authored commits and top collaborators.",
+  "author": "Zijian Wu",
+  "created_at": "2025-08-15",
+  "difficulty": "L3",
+  "tags": [
+    "repository analysis"
+  ],
+  "mcp": [
+    "github"
+  ],
+  "meta_data": {
+    "stateType": "url",
+    "stateContent": null,
+    "stateUrl": "https://github.com/mcpmark-source/claude-code",
+    "stateOriginalUrl": "https://github.com/anthropics/claude-code"
+  }
+}
