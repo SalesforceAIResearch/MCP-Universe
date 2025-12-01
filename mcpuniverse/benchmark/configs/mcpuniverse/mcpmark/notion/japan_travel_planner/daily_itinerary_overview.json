@@ -1,0 +1,33 @@
+{
+    "category": "japan_travel_planner",
+    "question": "Create a comprehensive daily itinerary overview page to help organize my Japan travel plans. I need you to create a new page called 'Daily Itinerary Overview' as a child of the main Japan Travel Planner page.\n\n**Task Requirements:**\n1. Create a new page titled 'Daily Itinerary Overview' as a child page of the main Japan Travel Planner page\n2. Query the Travel Itinerary database to retrieve all activities\n3. Structure the page with the following specific format:\n   - Add a heading_1 block with text \"📅 Daily Itinerary Overview\"\n   - Add a heading_2 block with text \"📊 Trip Summary\"\n   - Under Trip Summary, add a paragraph listing the total number of visited activities\n   - Create heading_2 blocks for \"🌅 Day 1\", \"🌆 Day 2\", and \"🌃 Day 3\"\n   - Under each day heading, list the activities scheduled for that day in to do list\n   - Each activity (use To-do list) should show: Activity Name - City (if available), for example, \"Osaka Castle - Osaka\". Check it if it's visited.\n4. The summary paragraph must contain the exact text \"Total activities visited (from Day 1 to Day 3): [NUMBER]\" where [NUMBER] is the actual count.\n5. Ensure all headings use the exact emoji and text format specified above",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "notion_mcpmark"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "mcpmark.notion.verify_daily_itinerary_overview",
+            "value": "completed",
+            "op_args": {},
+            "desc": "Verify Daily Itinerary Overview page created with trip summary and daily activities"
+        }
+    ],
+    "prepares": [
+        {
+            "prepare_func": "mcpmark_notion_setup",
+            "prepare_args": {}
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "mcpmark",
+            "tool": "",
+            "cleanup_func": "notion_cleanup",
+            "cleanup_args": {}
+        }
+    ]
+}

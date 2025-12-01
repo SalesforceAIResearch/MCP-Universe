@@ -1,0 +1,33 @@
+{
+    "category": "papers",
+    "question": "Please use FileSystem tools to finish the following task:\n\n### Task Description\n\nYou are given a directory containing multiple paper files. You have a collection of academic papers in HTML format from arXiv. Your task is to analyze these papers, identify authors who have published multiple papers, and organize them into author-specific folders based on specified criteria.\n\n### Task Objectives\n\n#### Part 1: Frequent Authors (≥4 papers)\n1. **Extract author information** from all HTML papers in the given directory\n2. **Identify authors** who appear in 4 or more papers\n3. **Create a directory** `frequent_authors`\n4. **Create individual folders** within this directory for each frequent author (lowercase names with underscores)\n5. **Copy their papers** to their respective folders\n\n#### Part 2: Prolific 2025 Authors (≥3 papers)\n1. **Extract publication dates** along with author information\n2. **Identify authors** who published 3 or more papers in 2025\n3. **Create a directory** `2025_authors` for 2025 authors\n4. **Create individual folders** within this directory for each prolific 2025 author (lowercase names with underscores)\n5. **Copy their 2025 papers** to their respective folders\n\n### Expected Output\n\n#### Directory Structure:\n```\n[given_task_folder]/\n├── [original HTML files remain untouched]\n├── frequent_authors/              # Authors with ≥4 papers total\n│   ├── smith_john/\n│   │   └── [copied papers]\n│   ├── johnson_sarah/\n│   │   └── [copied papers]\n│   └── ...\n└── 2025_authors/                  # Authors with ≥3 papers in 2025\n    ├── williams_david/\n    │   └── [copied 2025 papers]\n    ├── brown_emily/\n    │   └── [copied 2025 papers]\n    └── ...\n```\n\n#### Requirements:\n- Author folder names should be **lowercase** with underscores replacing spaces/commas (e.g., `smith_john`, `williams_david`)\n- Papers should be **copied** (not moved) to preserve originals\n- Author extraction should handle various name formats correctly",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "filesystem_mcpmark"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "mcpmark.filesystem.papers.verify_author_folders",
+            "value": "completed",
+            "op_args": {},
+            "desc": "Verify author-based paper organization with correct folder creation and paper copying"
+        }
+    ],
+    "prepares": [
+        {
+            "prepare_func": "mcpmark_filesystem_setup",
+            "prepare_args": {}
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "mcpmark",
+            "tool": "",
+            "cleanup_func": "filesystem_cleanup",
+            "cleanup_args": {}
+        }
+    ]
+}

@@ -1,0 +1,33 @@
+{
+    "category": "votenet",
+    "question": "Please use FileSystem tools to finish the following task:\n\n### Task Description\n\nThe VoteNet project is a 3D object detection framework for point clouds. Your task is to create a `requirements.txt` file that lists all the necessary Python dependencies for running this codebase.\n\n### Task Objectives\n\n1. **Create a requirements.txt file** in the main directory\n2. **Include all essential dependencies** needed to run the VoteNet codebase\n3. **Ensure the file format is correct** (one dependency per line)\n4. **Save the file as `requirements.txt`** in the current working directory\n5. **Not just** pip install or conda install, your answer should contain **every necessary dependencies in the whole process of VoteNet**.\n\n### Requirements\n\nThe requirements.txt file should contain Python packages that are necessary for:\n- 3D point cloud processing\n- Deep learning frameworks\n- Computer vision libraries\n- Data visualization\n- 3D mesh processing\n- Network/graph operations\n\n### Note\n\n- You can examine the codebase structure and README to understand what packages are needed\n- The file should be saved as `requirements.txt` in the current directory\n- Each dependency should be on a separate line\n\n### Success Criteria\n\nThe requirements.txt file should contain at least these dependencies:\n- matplotlib\n- opencv\n- plyfile\n- trimesh\n- pointnet2\n- networkx\n\nAnd should have:\n- At least 3 dependencies\n- No duplicate entries\n- Proper file format",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "filesystem_mcpmark"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "mcpmark.filesystem.votenet.verify_requirements_writing",
+            "value": "completed",
+            "op_args": {},
+            "desc": "Verify requirements.txt created with all necessary dependencies"
+        }
+    ],
+    "prepares": [
+        {
+            "prepare_func": "mcpmark_filesystem_setup",
+            "prepare_args": {}
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "mcpmark",
+            "tool": "",
+            "cleanup_func": "filesystem_cleanup",
+            "cleanup_args": {}
+        }
+    ]
+}

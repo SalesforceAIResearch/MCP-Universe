@@ -1,0 +1,33 @@
+{
+    "category": "toronto_guide",
+    "question": "Navigate to the Toronto Guide page in Notion and change all pink-colored elements (tags and callout colors) to different colors.\n\n## Requirements\n1. Find and access the Toronto Guide page in Notion\n2. Identify and change all pink elements including:\n   - Pink tags in databases\n   - Pink callout backgrounds\n3. Change all pink colors to any other color of your choice",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "notion_mcpmark"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "mcpmark.notion.verify_change_color",
+            "value": "completed",
+            "op_args": {},
+            "desc": "Verify all pink-colored elements changed to different colors in databases and callouts"
+        }
+    ],
+    "prepares": [
+        {
+            "prepare_func": "mcpmark_notion_setup",
+            "prepare_args": {}
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "mcpmark",
+            "tool": "",
+            "cleanup_func": "notion_cleanup",
+            "cleanup_args": {}
+        }
+    ]
+}

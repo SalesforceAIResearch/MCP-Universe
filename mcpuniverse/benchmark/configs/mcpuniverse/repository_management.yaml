@@ -1,0 +1,57 @@
+kind: llm
+spec:
+  name: llm-1
+  type: openai
+  config:
+    model_name: gpt-4.1
+
+---
+kind: agent
+spec:
+  name: ReAct-agent
+  type: react
+  config:
+    llm: llm-1
+    instruction: You are an agent for repository management.
+    max_iterations: 20
+    summarize_tool_response: false
+
+---
+kind: benchmark
+spec:
+  description: Test agent for github tasks.
+  agent: ReAct-agent
+  tasks:
+    - mcpuniverse/repository_management/github_task_0001.json
+    - mcpuniverse/repository_management/github_task_0002.json
+    - mcpuniverse/repository_management/github_task_0003.json
+    - mcpuniverse/repository_management/github_task_0004.json
+    - mcpuniverse/repository_management/github_task_0005.json
+    - mcpuniverse/repository_management/github_task_0006.json
+    - mcpuniverse/repository_management/github_task_0007.json
+    - mcpuniverse/repository_management/github_task_0008.json
+    - mcpuniverse/repository_management/github_task_0009.json
+    - mcpuniverse/repository_management/github_task_0010.json
+    - mcpuniverse/repository_management/github_task_0011.json
+    - mcpuniverse/repository_management/github_task_0012.json
+    - mcpuniverse/repository_management/github_task_0014.json
+    - mcpuniverse/repository_management/github_task_0015.json
+    - mcpuniverse/repository_management/github_task_0016.json
+    - mcpuniverse/repository_management/github_task_0017.json
+    - mcpuniverse/repository_management/github_task_0018.json
+    - mcpuniverse/repository_management/github_task_0019.json
+    - mcpuniverse/repository_management/github_task_0021.json
+    - mcpuniverse/repository_management/github_task_0022.json
+    - mcpuniverse/repository_management/github_task_0023.json
+    - mcpuniverse/repository_management/github_task_0024.json
+    - mcpuniverse/repository_management/github_task_0025.json
+    - mcpuniverse/repository_management/github_task_0026.json
+    - mcpuniverse/repository_management/github_task_0027.json
+    - mcpuniverse/repository_management/github_task_0028.json
+    - mcpuniverse/repository_management/github_task_0029.json
+    - mcpuniverse/repository_management/github_task_0030.json
+    - mcpuniverse/multi_server/multi-server_task_playwright_github_0001.json
+    - mcpuniverse/multi_server/multi-server_task_playwright_github_0002.json
+    - mcpuniverse/multi_server/multi-server_task_playwright_github_0003.json
+    - mcpuniverse/multi_server/multi-server_task_playwright_github_0004.json
+    - mcpuniverse/multi_server/multi-server_task_playwright_github_0005.json

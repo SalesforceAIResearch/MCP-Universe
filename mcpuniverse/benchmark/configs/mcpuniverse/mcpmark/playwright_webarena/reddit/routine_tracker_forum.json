@@ -1,0 +1,36 @@
+{
+    "category": "reddit",
+    "question": "Create a daily routine tracking system on the Postmill forum platform by setting up a new account and engaging with productivity-related content in the LifeProTips community.\n\n\n**Important:** The forum is accessible at http://localhost:9999\n\n**Task Requirements:**\n\n1. Create a new account with the exact username \"RoutineTracker2025\" and password \"DailyRoutine123!\"\n\n2. Locate the following specific post:\n   - Title: \"LPT: Use your calendar as your to-do list. Assigning dedicated time to tasks increases the likelyhood of you acting upon it.\"\n   - Record the content of the most upvoted comment of this post\n\n3. Create a new submission in the LifeProTips forum with these exact specifications:\n   - Title: \"My 5-Step Morning Routine That Increased My Productivity by 200%\"\n   - Body content must be the content recorded in the above step\n\n4. After successfully posting, verify that your post appears in the LifeProTips forum listing\n\n5. Engage with the community by upvoting exactly these two posts:\n   - The calendar to-do list post you found in step 2\n   - The post titled \"LPT: clean your stovetop after using the oven. The heat loosens grime for easy removal\"",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "playwright"
+        }
+    ],
+    "output_format": {
+        "completion_status": "Task completion report"
+    },
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "mcpmark.playwright.verify_routine_tracker_forum",
+            "value": "completed",
+            "op_args": {},
+            "desc": "Verify AI agent completed routine tracker forum task with all required steps"
+        }
+    ],
+    "prepares": [
+        {
+            "prepare_func": "mcpmark_playwright_webarena_setup",
+            "prepare_args": {}
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "mcpmark",
+            "tool": "",
+            "cleanup_func": "playwright_webarena_cleanup",
+            "cleanup_args": {}
+        }
+    ]
+}

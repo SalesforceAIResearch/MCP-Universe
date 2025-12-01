@@ -1,0 +1,33 @@
+{
+    "category": "toronto_guide",
+    "question": "Create a comprehensive weekend adventure planner that analyzes the Toronto Guide databases and generates a structured itinerary page. I need you to create a new page called 'Perfect Weekend Adventure' as a child of the main Toronto Guide page.\n\n**Task Requirements:**\n1. Create a new page titled 'Perfect Weekend Adventure' as a child page of the main Toronto Guide page\n2. Query the Activities database to identify all activities that have the \"Beaches\" tag\n3. Query the Food database to find all restaurants with \"Turkish\" or \"Hakka\" tags\n4. Query the Cafes database to retrieve all cafes entries\n5. Structure the page with the following specific format:\n   - Add a heading_1 block with text \"🎒 Perfect Weekend Adventure\"\n   - Add a heading_2 block with text \"🏖️ Beach Activities\"\n   - Under Beach Activities, create a bulleted list with all activities that have the \"Beaches\" tag, showing: Name - Google Maps Link (if available)\n   - Add a heading_2 block with text \"🍽️ Cultural Dining Experience\"\n   - Under Cultural Dining, create a numbered list of all restaurants with \"Turkish\" or \"Hakka\" tags, formatted as: Restaurant Name (Tag: [actual tag name])\n   - Add a heading_2 block with text \"☕ Coffee Break Spots\"\n   - Under Coffee Break Spots, create a toggle block titled \"Top Cafes to Visit\" containing all cafe entries as to-do items (unchecked), each showing just the cafe name\n   - Add a heading_2 block with text \"📊 Weekend Summary\"\n   - Under Weekend Summary, add a paragraph with the exact text: \"This weekend includes [X] beach activities, [Y] cultural dining options, and [Z] coffee spots to explore!\" where [X], [Y], and [Z] are the actual counts\n6. After the summary paragraph, add a divider block\n7. Finally, add a callout block with the 💡 emoji containing the text: \"Pro tip: Check the Seasons database for the best time to enjoy outdoor activities!\"\n8. Ensure all headings use the exact emoji and text format specified above\n9. The lists must be in the exact format specified (bulleted for beaches, numbered for restaurants, to-do for cafes)",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "notion_mcpmark"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "mcpmark.notion.verify_weekend_adventure_planner",
+            "value": "completed",
+            "op_args": {},
+            "desc": "Verify Perfect Weekend Adventure page created with structured itinerary from Toronto Guide databases"
+        }
+    ],
+    "prepares": [
+        {
+            "prepare_func": "mcpmark_notion_setup",
+            "prepare_args": {}
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "mcpmark",
+            "tool": "",
+            "cleanup_func": "notion_cleanup",
+            "cleanup_args": {}
+        }
+    ]
+}

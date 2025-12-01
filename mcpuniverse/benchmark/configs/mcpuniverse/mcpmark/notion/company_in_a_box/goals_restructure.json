@@ -1,0 +1,33 @@
+{
+    "category": "company_in_a_box",
+    "question": "Please restructure the **Current Goals** section on my **Company In A Box** page as follows:\n\n1. **Add a new goal heading** — create a new `heading_3` block titled:\n   \n   `🔄 Digital Transformation Initiative`\n\n2. **Convert all four goal headings to toggles** — the three existing goals\n   * ⚙️ Expand Operations to LATAM  \n   * 🛠️ Push for Enterprise  \n   * 🩶 Boost Employee Engagement  \n   * 🔄 Digital Transformation Initiative  \n\n3. **Move descriptions inside the toggles** — every paragraph or list that originally sat directly under a goal heading should become a **child block** of that heading after it is made toggleable.\n\n4. **Preserve content & order** — apart from the changes above, do **not** modify the text, formatting, or order of existing goal descriptions.\n\nThe end result should be a clean **Current Goals** section containing four toggleable goal headings, each with its corresponding details tucked inside.",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "notion_mcpmark"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "mcpmark.notion.verify_goals_restructure",
+            "value": "completed",
+            "op_args": {},
+            "desc": "Verify that Current Goals section has been restructured with four toggle blocks containing all goal descriptions"
+        }
+    ],
+    "prepares": [
+        {
+            "prepare_func": "mcpmark_notion_setup",
+            "prepare_args": {}
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "mcpmark",
+            "tool": "",
+            "cleanup_func": "notion_cleanup",
+            "cleanup_args": {}
+        }
+    ]
+}

@@ -1,0 +1,33 @@
+{
+    "category": "python_roadmap",
+    "question": "# Task: Learning Metrics Dashboard\n\n## Objective\nCreate a comprehensive Learning Metrics Dashboard section in the Python Roadmap page that displays precise statistics and recommendations based on the Steps database content.\n\n## Requirements\n\n### 1. Section Placement\n- Add new content immediately after the Learning Materials section (before `Whether you're starting from scratch or`).\n\n### 2. Dashboard Header\n- **Type**: heading_3\n- **Text**: `📊 Learning Metrics Dashboard`\n\n### 3. Course Statistics Block\n- **Type**: callout\n- **Background Color**: Brown\n- **Icon**: None\n- **Title**: **Course Statistics** (bold, heading_3). Use the same color scheme as other callout headings.\n- **Content**: Bulleted list with the following items in exact order:\n  - `Total Lessons: [X]` (count all entries in Steps database)\n  - `Completed: [X] ([Y]%)` (count Status=\"Done\", calculate percentage to 1 decimal)\n  - `In Progress: [X] ([Y]%)` (count Status=\"In Progress\", calculate percentage to 1 decimal)\n  - `Beginner Level: [X] lessons ([Y] completed)` (filter by Chapters relation to Beginner Level)\n  - `Intermediate Level: [X] lessons ([Y] completed)` (filter by Chapters relation to Intermediate Level)\n  - `Advanced Level: [X] lessons ([Y] completed)` (filter by Chapters relation to Advanced Level)\n\n### 4. Completed Topics Section\n- **Type**: toggle\n- **Text**: `🏆 Completed Topics (Click to expand)`\n- **Nested Content**: Numbered list containing exactly 5 items\n  - List lessons with Status=\"Done\"",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "notion_mcpmark"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "mcpmark.notion.verify_learning_metrics_dashboard",
+            "value": "completed",
+            "op_args": {},
+            "desc": "Verify Learning Metrics Dashboard created with course statistics and completed topics"
+        }
+    ],
+    "prepares": [
+        {
+            "prepare_func": "mcpmark_notion_setup",
+            "prepare_args": {}
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "mcpmark",
+            "tool": "",
+            "cleanup_func": "notion_cleanup",
+            "cleanup_args": {}
+        }
+    ]
+}

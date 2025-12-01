@@ -1,0 +1,37 @@
+{
+    "category": "claude_code",
+    "question": "I need you to analyze the collaboration patterns between human developers and Claude (the AI assistant) in the repository by examining all available commit history, then create a comprehensive analysis report and submit it as a new file to the repository.\n\n**Step 1: Commit History Analysis**\nAnalyze ALL commits in the repository to identify:\n\n1. **Claude Co-Authored Commits**: Find all commits that were co-authored by Claude (look for \"Co-Authored-By: Claude <noreply@anthropic.com>\" in commit messages)\n2. **Top Claude Collaborators**: Identify the top 3 human developers who most frequently collaborated with Claude\n\n**Step 2: Create Collaboration Analysis Report**\nCreate a file called `CLAUDE_COLLABORATION_ANALYSIS.md` in the repository root with:\n\n- A \"# Claude AI Collaboration Analysis\" title\n- A \"## Summary Statistics\" section with these exact format requirements:\n  - \"Total commits analyzed: [NUMBER]\"\n  - \"Number of Claude co-authored commits found: [NUMBER]\"\n  - \"Percentage of commits with Claude collaboration: [NUMBER]%\"\n  - \"Number of unique human collaborators who worked with Claude: [NUMBER]\"\n\n- A \"## Top Claude Collaborators\" section with this exact table format:\n```markdown\n| Developer | GitHub Username | Claude Collaborations |\n|-----------|----------------|----------------------|\n```\nInclude the top 3 developers by number of Claude collaborations.\n\n**Step 3: Commit Analysis to Repository**\nCommit the `CLAUDE_COLLABORATION_ANALYSIS.md` file to the main branch with:\n- Commit message: \"Add Claude AI collaboration analysis report\"\n- Ensure all statistics are accurate based on actual commit data",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "github_mcpmark"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "mcpmark_github.verify_claude_collaboration",
+            "value": "completed",
+            "op_args": {
+                "owner": "{{GITHUB_EVAL_ORG}}",
+                "repo": "claude-code",
+                "branch": "main"
+            },
+            "desc": "Verify that collaboration analysis is accurate with correct statistics and top collaborators"
+        }
+    ],
+    "prepares": [
+        {
+            "prepare_func": "mcpmark_github_setup",
+            "prepare_args": {}
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "mcpmark",
+            "tool": "",
+            "cleanup_func": "github_cleanup",
+            "cleanup_args": {}
+        }
+    ]
+}

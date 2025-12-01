@@ -1,0 +1,37 @@
+{
+    "category": "claude_code",
+    "question": "I need you to implement a comprehensive label documentation and organization workflow for the repository.\n\n**Step 1: Create Label Documentation Issue**\nCreate a new issue with:\n- Title containing: \"Document label organization for better visual organization\" and \"label guide\"\n- Body must include:\n  - A \"## Problem\" heading describing the need for better label documentation\n  - A \"## Proposed Solution\" heading about creating a comprehensive label guide for different label categories\n  - A \"## Benefits\" heading listing improved visual organization and easier issue triage\n  - Keywords: \"label documentation\", \"visual organization\", \"label guide\", \"organization\"\n- Labels: Initially add \"enhancement\" and \"documentation\" labels to the issue\n\n**Step 2: Create Feature Branch**\nCreate a new branch called 'feat/label-color-guide' from main.\n\n**Step 3: Create Label Documentation**\nOn the feature branch, create the file `docs/LABEL_COLORS.md` with:\n- A \"# Label Organization Guide\" title\n- A \"## Label Categories\" section with a table that MUST follow this exact format:\n```markdown\n| Label Name | Category | Description |\n|------------|----------|-------------|\n```\nThe table must include ALL existing labels in the repository. For each label:\n- Group labels by category (e.g., issue-type, platform, area, status, performance)\n- Include a description for each label\n\n- A \"## Usage Guidelines\" section explaining when to use each label category\n\n**Step 4: Apply ALL Labels to the Documentation Issue**\nUpdate the issue you created in Step 1 by adding ALL existing labels from the repository. This serves as a visual demonstration of the label organization. The issue should have every single label that exists in the repository applied to it.\n\n**Step 5: Create Pull Request**\nCreate a pull request from 'feat/label-color-guide' to 'main' with:\n- Title containing: \"Add label organization guide\" and \"visual organization\"  \n- Body must include:\n  - A \"## Summary\" heading explaining the label organization documentation\n  - A \"## Changes\" heading with a bullet list of what was added\n  - \"Fixes #[ISSUE_NUMBER]\" pattern linking to your created issue\n  - A \"## Verification\" section stating that all labels have been documented\n  - Keywords: \"label documentation\", \"organization guide\", \"visual improvement\", \"documentation\"\n- Labels: Add a reasonable subset of labels to the PR (at least 5-10 labels from different categories)\n\n**Step 6: Document Changes in Issue**\nAdd a comment to the original issue with:\n- Confirmation that the label documentation has been created\n- Total count of labels documented\n- Reference to the PR using \"PR #[NUMBER]\" pattern\n- Keywords: \"documentation created\", \"label guide complete\", \"organization complete\"",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "github_mcpmark"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "mcpmark_github.verify_label_color_standardization",
+            "value": "completed",
+            "op_args": {
+                "owner": "{{GITHUB_EVAL_ORG}}",
+                "repo": "claude-code",
+                "branch": "feat/label-color-guide"
+            },
+            "desc": "Verify that label documentation is complete with all labels properly categorized"
+        }
+    ],
+    "prepares": [
+        {
+            "prepare_func": "mcpmark_github_setup",
+            "prepare_args": {}
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "mcpmark",
+            "tool": "",
+            "cleanup_func": "github_cleanup",
+            "cleanup_args": {}
+        }
+    ]
+}

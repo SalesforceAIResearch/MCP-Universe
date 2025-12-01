@@ -1,0 +1,33 @@
+{
+    "category": "desktop",
+    "question": "Please use FileSystem tools to finish the following task:\n\n### 1. Data Loading\n\n- Read and extract song information from `jay_chou/`\n- Read and extract song information from `jj_lin/`\n\n### 2. Popularity Score Calculation\n\nFor each songs, calculate popularity scores using this formula (keep 3 decimal places):\n\n```\npopularity_score = (rating × 0.4) + (play_count_normalized × 0.4) + (year_factor × 0.2)\n\nWhere:\n- rating: song rating (1-5 scale)\n- play_count_normalized: play_count / 250 (0-1 scale)\n- year_factor: (2025 - release_year) / 25 (recency bonus)\n```\n\n### 3. Generate Analysis Report\n\nCreate a file named `music_analysis_report.txt` in the `music/` folder with the following exact format:\n\n**Lines 1-20**: Each line contains one song in format `songname:popularity_score`\n\n- Sort songs by popularity_score in descending order (highest first)\n- Use exact song names as they appear in the source files\n- Include all 20 songs from both artists\n\n**Lines 21-25**: Top 5 song names only (one per line)\n\n- List the top 5 songs by popularity_score\n- No scores, just song names\n- One song name per line\n\n**Important**: The file must contain exactly 25 lines with no additional content, headers, or formatting.",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "filesystem_mcpmark"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "mcpmark.filesystem.desktop.verify_music_report",
+            "value": "completed",
+            "op_args": {},
+            "desc": "Verify music collection analysis report with correct song rankings and popularity scores"
+        }
+    ],
+    "prepares": [
+        {
+            "prepare_func": "mcpmark_filesystem_setup",
+            "prepare_args": {}
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "mcpmark",
+            "tool": "",
+            "cleanup_func": "filesystem_cleanup",
+            "cleanup_args": {}
+        }
+    ]
+}

@@ -1,0 +1,36 @@
+{
+    "category": "shopping_admin",
+    "question": "Perform a comprehensive marketing and customer analysis workflow in the Magento Admin panel to understand search behavior patterns and promotional effectiveness.\n\n\n**Important:** The Magento Admin panel is accessible at http://localhost:7780/admin\n\n**Task Requirements:**\n\n1. First, we need to access the system to begin our comprehensive analysis:\n   if need to login, login with username 'admin' and password 'admin1234'\n\n2. Let's start by analyzing customer search behavior to understand what customers are looking for:\n   Go to Search Terms in Reports and analyze the search data:\n   - Identify the TOP 2 search terms with the highest number of hits (record exact terms and hit counts)\n   - Find a search term that has 0 results but still has search hits (record exact term and hit count)\n   - Count the total number of search terms displayed in the report\n\n3. Next, we'll examine our promotional strategies to understand current marketing efforts:\n   Navigate to Cart Price Rules and identify:\n   - Find ALL rules that contain a coupon code\n   - Record the exact coupon codes and the complete rule names for each\n   - Count how many active rules exist in total\n\n4. Now let's analyze our email marketing reach and subscriber engagement:\n   Go to Newsletter Subscribers:\n   - Apply filter to show only 'Subscribed' status\n   - Count the total number of subscribed users showing after filter\n   - Verify whether these TWO emails appear in the subscribed list:\n     * john.smith.xyz@gmail.com\n     * admin@magento.com\n\n5. To support our analysis, we need to create test customer profiles for different segments:\n   Create TWO new customers with the following details:\n   \n   Customer 1:\n   - First Name: Marketing1\n   - Last Name: Analy\n   - Email: marketdata1.analysis@magento.com\n   - Associate to Website: Main Website\n   - Group: General\n   \n   Customer 2:\n   - First Name: Analytics1\n   - Last Name: Report\n   - Email: analytics1.report@magento.com\n   - Associate to Website: Main Website\n   - Group: Wholesale\n\n6. Finally, let's review overall business performance metrics from the main dashboard:\n   Go to Dashboard and identify:\n   - The names and sales quantities of the products that are both the best-selling and most expensive\n   - The total revenue displayed on the dashboard\n\n7. Compile all your findings and must output them in the following exact format at last:\n\n```\n<answer>\nTop2SearchTerms|term1:hits1,term2:hits2\nZeroResultTerm|term:hits\nTotalSearchTerms|count\nCouponCodes|code1:rulename1,code2:rulename2\nActiveRulesCount|count\nSubscribedCount|count\nEmailVerification|john.smith.xyz@gmail.com:yes/no,admin@magento.com:yes/no\nTopProduct|name:quantity\nTotalRevenue|amount\n</answer>\n```\n\n**Example Output:**\n```\n<answer>\nTop2SearchTerms|term1:XX,term2:XX\nZeroResultTerm|term:XX\nTotalSearchTerms|XX\nCouponCodes|CODE:Rule Name Here\nActiveRulesCount|X\nSubscribedCount|XX\nEmailVerification|john.smith.xyz@gmail.com:yes/no,admin@magento.com:yes/no\nTopProduct|Product Name:XX\nTotalRevenue|$XX.XX\n</answer>\n```\n\n**Success Criteria:**\n- Successfully logged into Magento Admin\n- Navigated to Search Terms Report and identified top 2 terms\n- Found search term with 0 results but has hits\n- Counted total search terms in report\n- Located all Cart Price Rules with coupon codes\n- Extracted exact coupon codes and rule names\n- Counted active rules\n- Filtered Newsletter Subscribers by 'Subscribed' status\n- Counted total subscribed users\n- Verified presence of two specific email addresses\n- Created two new customers successfully\n- Found top bestselling product from dashboard\n- Identified total revenue from dashboard\n- Output answer in exact format with 9 data lines\n- Answer wrapped in <answer> tags",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "playwright"
+        }
+    ],
+    "output_format": {
+        "analysis_results": "Structured answer format"
+    },
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "mcpmark.playwright.verify_marketing_customer_analysis",
+            "value": "completed",
+            "op_args": {},
+            "desc": "Verify AI agent completed marketing customer analysis task with correct structured output and browser verification"
+        }
+    ],
+    "prepares": [
+        {
+            "prepare_func": "mcpmark_playwright_webarena_setup",
+            "prepare_args": {}
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "mcpmark",
+            "tool": "",
+            "cleanup_func": "playwright_webarena_cleanup",
+            "cleanup_args": {}
+        }
+    ]
+}

@@ -1,0 +1,33 @@
+{
+    "category": "self_assessment",
+    "question": "Please find all numbered list items in the Self Assessment page, use Notion tools to replace the numbers with corresponding emoji numbers (e.g., 1️⃣, 2️⃣, 3️⃣). For example:\nHere is the translated and reformatted version of your request:\n\nIf the original numbered list is:\n\n1. First step\n2. Second step\n3. Third step\n\nIt should become:\n\n1️⃣ First step\n2️⃣ Second step\n3️⃣ Third step",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "notion_mcpmark"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "mcpmark.notion.verify_numbered_list_emojis",
+            "value": "completed",
+            "op_args": {},
+            "desc": "Verify all numbered list items replaced with corresponding emoji numbers"
+        }
+    ],
+    "prepares": [
+        {
+            "prepare_func": "mcpmark_notion_setup",
+            "prepare_args": {}
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "mcpmark",
+            "tool": "",
+            "cleanup_func": "notion_cleanup",
+            "cleanup_args": {}
+        }
+    ]
+}

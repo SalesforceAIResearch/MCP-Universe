@@ -1,0 +1,37 @@
+{
+    "category": "claude_code",
+    "question": "I need you to analyze all recently closed issues and open pull requests in the repository, then generate comprehensive documentation and organize them properly.\n\n**Step 1: Create Documentation Branch**\nCreate a new branch called 'docs/changelog-and-migration' from the main branch.\n\n**Step 2: Generate Changelog from Closed Issues**\nFind all closed issues in the repository and create the file `CHANGELOG-GENERATED.md` on your branch with:\n- A heading \"# Changelog - Recent Fixes\"\n- A \"### 🐛 Bug Fixes\" section listing all closed issues with bug label, formatted as: \"- **#[NUMBER]**: [Title] ([labels])\"\n- A \"### 📚 Documentation\" section for closed issues with documentation label\n- A \"### 🔄 Duplicates\" section for issues marked as duplicate\n- A \"### 📊 Statistics\" section with:\n  - Total number of closed issues\n  - Distribution by platform labels (platform:macos, platform:linux, etc.)\n  - Distribution by area labels (area:core, area:tools, etc.)\n\n**Step 3: Create Migration Guide for Open PRs**\nAnalyze all open pull requests and create the file `docs/MIGRATION_GUIDE.md` with:\n- A heading \"# Migration Guide for Pending Features\"\n- For each open PR, create a section with:\n  - PR title and number\n  - Summary of changes based on the PR description\n  - Any new configuration or environment variables mentioned\n  - Installation or usage instructions if applicable\n\n**Step 4: Create Issue Analysis Report**\nCreate the file `reports/ISSUE_ANALYSIS.md` with:\n- A heading \"# Issue Analysis Report\"\n- A \"## Closed Issues by Category\" section grouping closed issues by their primary label\n- A \"## Resolution Patterns\" section identifying common themes\n- A \"## Platform Impact Analysis\" section showing which platforms were most affected\n- Include references to specific issues that had cross-project impact or memory-related problems\n\n**Step 5: Create PR Integration Plan**\nCreate the file `reports/PR_INTEGRATION_PLAN.md` with:\n- A heading \"# Pull Request Integration Strategy\"\n- A \"## Open PRs Overview\" section listing each open PR with a technical summary\n- A \"## Dependencies and Conflicts\" section analyzing potential conflicts between PRs\n- A \"## Recommended Merge Order\" section with reasoning\n- A \"## Risk Assessment\" section linking any risks to previously closed issues\n\n**Step 6: Create Documentation PR**\nCreate a pull request from 'docs/changelog-and-migration' to 'main' with:\n- Title: \"docs: Generated changelog and migration documentation\"\n- Body including:\n  - A \"## Summary\" section describing what was generated\n  - A \"## Files Created\" section listing all new documentation\n  - A \"## Issues Processed\" section mentioning the number of closed issues analyzed\n  - A \"## PRs Analyzed\" section mentioning the open PRs reviewed\n\n**Step 7: Merge Documentation PR**\nMerge the documentation pull request using the \"squash\" merge method.",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "github_mcpmark"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "mcpmark_github.verify_automated_changelog",
+            "value": "completed",
+            "op_args": {
+                "owner": "{{GITHUB_EVAL_ORG}}",
+                "repo": "claude-code",
+                "docs_branch": "docs/changelog-and-migration"
+            },
+            "desc": "Verify that all documentation files are created with proper content and structure"
+        }
+    ],
+    "prepares": [
+        {
+            "prepare_func": "mcpmark_github_setup",
+            "prepare_args": {}
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "mcpmark",
+            "tool": "",
+            "cleanup_func": "github_cleanup",
+            "cleanup_args": {}
+        }
+    ]
+}

@@ -1,0 +1,33 @@
+{
+    "category": "file_property",
+    "question": "Please use FileSystem tools to finish the following task:\n\n### Task Description\n\nAnalyze the creation time (ctime) of all files in the test directory and organize them into a hierarchical directory structure based on their creation dates.\n\n### Task Objectives\n\n1. **Read metadata** of all files in the test directory\n2. **Analyze creation times** (ctime) of all files (excluding .DS_Store)\n3. **Create directory structure** organized by month/day based on creation time\n4. **Move files** to appropriate directories\n5. **Create metadata analysis files** in each directory\n\n### Expected Output\n\n#### Directory Structure\n\nCreate directories in the format: `MM/DD/` where:\n- MM = month (two digits, e.g., 01, 02, or month name like Jul, Aug)\n- DD = day (two digits, e.g., 07, 09, 11, 26)\n\n#### Metadata Analysis Files\n\nCreate a file named `metadata_analyse.txt` in each directory containing exactly two lines:\n- **Line 1**: Oldest filename and its creation time\n- **Line 2**: Latest filename and its creation time\n\nEach line should include the filename, month, day, and year (2025).",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "filesystem_mcpmark"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "mcpmark.filesystem.file_property.verify_time_classification",
+            "value": "completed",
+            "op_args": {},
+            "desc": "Verify file organization by creation time with correct directory structure and metadata analysis"
+        }
+    ],
+    "prepares": [
+        {
+            "prepare_func": "mcpmark_filesystem_setup",
+            "prepare_args": {}
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "mcpmark",
+            "tool": "",
+            "cleanup_func": "filesystem_cleanup",
+            "cleanup_args": {}
+        }
+    ]
+}
