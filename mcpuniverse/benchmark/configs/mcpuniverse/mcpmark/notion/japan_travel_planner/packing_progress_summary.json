@@ -1,0 +1,33 @@
+{
+    "category": "japan_travel_planner",
+    "question": "I'm preparing for my Japan trip and need to organize my packing list. Please help me:\n\n**Step 1: Update Items in the Packing List Database**\nIn the Clothes category, all items have already been packed except for the hat After this, check the `SIM Card` entry and the `Wallet` entry.\n\n**Step 2: Create Packing Progress Summary**\nAfter adding the items, create a new section in the main Japan Travel Planner page immediately after the \"Packing List 💼\" heading. This section should contain:\n\n1. A paragraph block with the bold text \"**Packing Progress Summary**\"\n2. Followed by bullet list items showing statistics for each category in the format:\n   - \"Category: X/Y packed\" (where X is packed items, Y is total items), for example: \"Shoes: 2/10 packed\"\n   - ...",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "notion_mcpmark"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "mcpmark.notion.verify_packing_progress_summary",
+            "value": "completed",
+            "op_args": {},
+            "desc": "Verify packing items updated and progress summary section created with category statistics"
+        }
+    ],
+    "prepares": [
+        {
+            "prepare_func": "mcpmark_notion_setup",
+            "prepare_args": {}
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "mcpmark",
+            "tool": "",
+            "cleanup_func": "notion_cleanup",
+            "cleanup_args": {}
+        }
+    ]
+}

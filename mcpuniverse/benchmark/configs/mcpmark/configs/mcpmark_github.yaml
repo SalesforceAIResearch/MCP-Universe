@@ -1,0 +1,58 @@
+kind: llm
+spec:
+  name: llm-1
+  type: openai
+  config:
+    model_name: gpt-4o
+
+---
+kind: agent
+spec:
+  name: ReAct-agent
+  type: react
+  config:
+    llm: llm-1
+    instruction: You are an agent for GitHub repository operations and analysis. Focus on the repositories that you can have access to.
+    max_iterations: 20
+    summarize_tool_response: false
+
+---
+kind: benchmark
+spec:
+  description: Benchmark for mcpmark GitHub tasks (Build Your Own X, Claude Code, EasyR1, MCPMark-CICD, Missing Semester, Harmony).
+  agent: ReAct-agent
+  tasks:
+    # Build Your Own X tasks (2)
+    - mcpmark/configs/github/build_your_own_x/find_commit_date.json
+    - mcpmark/configs/github/build_your_own_x/find_rag_commit.json
+    
+    # Claude Code tasks (5)
+    - mcpmark/configs/github/claude_code/automated_changelog_generation.json
+    - mcpmark/configs/github/claude_code/claude_collaboration_analysis.json
+    - mcpmark/configs/github/claude_code/critical_issue_hotfix_workflow.json
+    - mcpmark/configs/github/claude_code/feature_commit_tracking.json
+    - mcpmark/configs/github/claude_code/label_color_standardization.json
+    
+    # EasyR1 tasks (4)
+    - mcpmark/configs/github/easyr1/advanced_branch_strategy.json
+    - mcpmark/configs/github/easyr1/config_parameter_audit.json
+    - mcpmark/configs/github/easyr1/performance_regression_investigation.json
+    - mcpmark/configs/github/easyr1/qwen3_issue_management.json
+    
+    # MCPMark-CICD tasks (4)
+    - mcpmark/configs/github/mcpmark_cicd/deployment_status_workflow.json
+    - mcpmark/configs/github/mcpmark_cicd/issue_management_workflow.json
+    - mcpmark/configs/github/mcpmark_cicd/linting_ci_workflow.json
+    - mcpmark/configs/github/mcpmark_cicd/pr_automation_workflow.json
+    
+    # Missing Semester tasks (3)
+    - mcpmark/configs/github/missing_semester/assign_contributor_labels.json
+    - mcpmark/configs/github/missing_semester/find_legacy_name.json
+    - mcpmark/configs/github/missing_semester/find_salient_file.json
+    
+    # # Harmony tasks (5)
+    - mcpmark/configs/github/harmony/fix_conflict.json
+    - mcpmark/configs/github/harmony/issue_pr_commit_workflow.json
+    - mcpmark/configs/github/harmony/issue_tagging_pr_closure.json
+    - mcpmark/configs/github/harmony/multi_branch_commit_aggregation.json
+    - mcpmark/configs/github/harmony/release_management_workflow.json

@@ -1,0 +1,33 @@
+{
+    "category": "desktop",
+    "question": "Please use FileSystem tools to finish the following task:\n\n1. **Create the main directory structure** in `desktop_2`:\n\n   - Create a new directory in main directory called `organized_projects`\n   - Inside `organized_projects`, create 3 main subdirectories: `experiments`, `learning`, and `personal`\n   - Inside `experiments`, create 2 subdirectories: `ml_projects` and `data_analysis`\n   - Inside `learning`, create 2 subdirectories: `progress_tracking` and `resources`\n   - Inside `personal`, create 2 subdirectories: `entertainment` and `collections`\n\n2. **Move all the Python files** to `experiments/ml_projects/`:\n\n3. **Move all the CSV files** to `experiments/data_analysis/`:\n\n4. **Only Move learning-related markdown files** to `learning/resources/`:\n\n5. **Only Move entertainment planning-related markdown files** to `personal/entertainment/`:\n\n6. **Only Move music collection-related markdown files** to `personal/collections/`:\n\n7. **step 4.5.6 should move all the markdown files.**\n\n8. **Create a project structure documentation file**:\n\n   - Create `project_structure.md` in the `organized_projects` directory\n   - Document the new organization with exact file counts for each subdirectory\n   - Include a summary of what types of files are in each directory",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "filesystem_mcpmark"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "mcpmark.filesystem.desktop.verify_project_management",
+            "value": "completed",
+            "op_args": {},
+            "desc": "Verify file reorganization with correct directory structure and file placement"
+        }
+    ],
+    "prepares": [
+        {
+            "prepare_func": "mcpmark_filesystem_setup",
+            "prepare_args": {}
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "mcpmark",
+            "tool": "",
+            "cleanup_func": "filesystem_cleanup",
+            "cleanup_args": {}
+        }
+    ]
+}

@@ -1,0 +1,33 @@
+{
+    "category": "self_assessment",
+    "question": "Go to my Self Assessment page, and then create a hyperfocus analysis report by analyzing sessions with high productivity but significant challenges.\n\n**Task Requirements:**\n1. Create a new page titled \"Hyperfocus Analysis Report\" as a child of the Self Assessment page. The new page should be located between 'Why Use the Term \"Hyperfocus\"?' callout and the following divider line.\n2. Query the \"Hyperfocus Self-Assessment Worksheet\" database to find all sessions where:\n   - Work Completion Rate is greater than 80% (0.8)\n   - At least one challenge is present in the Challenges field\n3. For each qualifying session, create a section with:\n   - A heading showing the date and activity type (format: YYYY-MM-DD Activity)\n   - A bullet list containing:\n     - Focus factors used (e.g., Focus factors: XXX, YYY)\n     - Energy level and mood (format: \"Energy: X/10, Mood: Y/10\")\n     - Challenges faced (e.g., Challenges: XXX, YYY)\n     - Strategies that helped overcome challenges (e.g., Strategies: XXX, YYY)\n     - Work completion rate (format: \"Completion: XX%\")\n4. At the top of the page, add a callout block (type: \"info\") with:\n   - Title: \"Top 2 Most Effective Strategies\"\n   - Content: List the 2 most frequently used strategies from all sessions, each on a new line with format \"• Strategy Name (used in X sessions)\"\n\n**Structure Requirements:**\n- The page must have the exact title \"Hyperfocus Analysis Report\"\n- Each session section must start with a level 2 heading\n- All session details must be in bullet point format\n- The summary callout must be at the top of the page before any session details",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "notion_mcpmark"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "mcpmark.notion.verify_hyperfocus_analysis_report",
+            "value": "completed",
+            "op_args": {},
+            "desc": "Verify Hyperfocus Analysis Report page created with high-productivity sessions and top strategies"
+        }
+    ],
+    "prepares": [
+        {
+            "prepare_func": "mcpmark_notion_setup",
+            "prepare_args": {}
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "mcpmark",
+            "tool": "",
+            "cleanup_func": "notion_cleanup",
+            "cleanup_args": {}
+        }
+    ]
+}

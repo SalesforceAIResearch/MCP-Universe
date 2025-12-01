@@ -1,0 +1,36 @@
+{
+    "category": "harmony",
+    "question": "I have some pull requests that won't merge due to conflicts. Can you help me fix the merge conflicts by creating the missing infrastructure?\n\n**Step 1: Find Conflicted PR**\nLook through the open pull requests and find the one that has `mergeable: false` and `mergeable_state: \"dirty\"`. Check what file it's trying to modify - it appears to be missing a file that the PR is trying to add or modify.\n\n**Step 2: Create Infrastructure PR**  \nCreate a new branch and PR to add the missing file that the conflicted PR needs. The PR must have:\n\n- **Title**: Must contain \"Add CI infrastructure\" and \"resolve conflicts\"\n- **Body**: Must include:\n  - Reference to the conflicted PR using \"Fixes #[PR_NUMBER]\" or \"Resolves #[PR_NUMBER]\" \n  - Explanation that this \"prepares infrastructure\" for the other PR\n  - Mention of \"missing .github directory\" and \"workflow conflicts\"\n- **File Content**: Extract the complete file content from the conflicted PR's changes and add it to main. This ensures the conflicted PR can merge cleanly without conflicts.\n\n**Step 3: Merge Infrastructure PR**\nMerge the infrastructure PR to main.\n\n**Step 4: Add Comment to Original PR**\nAdd a comment to the original conflicted PR that references the infrastructure PR you just created and merged. The comment must mention the infrastructure PR number using \"PR #[NUMBER]\" format.\n\n**Step 5: Merge Original PR**\nNow merge the original conflicted PR since it should be able to merge cleanly.",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "github_mcpmark"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "mcpmark_github.verify_fix_conflict",
+            "value": "completed",
+            "op_args": {
+                "owner": "{{GITHUB_EVAL_ORG}}",
+                "repo": "harmony"
+            },
+            "desc": "Verify infrastructure PR created and merged, CI file exists, and original PR linked and merged"
+        }
+    ],
+    "prepares": [
+        {
+            "prepare_func": "mcpmark_github_setup",
+            "prepare_args": {}
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "mcpmark",
+            "tool": "",
+            "cleanup_func": "github_cleanup",
+            "cleanup_args": {}
+        }
+    ]
+}

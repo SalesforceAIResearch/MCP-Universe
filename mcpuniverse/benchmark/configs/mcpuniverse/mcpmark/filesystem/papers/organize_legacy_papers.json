@@ -1,0 +1,33 @@
+{
+    "category": "papers",
+    "question": "Please use FileSystem tools to finish the following task:\n\n### Task Description\n\nYou are given a directory containing multiple paper files. You have a collection of arXiv papers saved as HTML files in the papers directory, along with a BibTeX file. Your task is to organize the older papers (2023 and earlier) into a structured year-based hierarchy with proper documentation, while leaving newer papers in the original location.\n\n### Task Objectives\n\n1. **Organize by year**: Create a year-based directory structure for papers from 2023 and earlier\n2. **Generate documentation**: Create INDEX.md files for each year with paper metadata\n3. **Create summary**: Build a master SUMMARY.md file linking to all year indexes\n\n### Detailed Requirements\n\n#### Step 1: Organization\n- Create directory structure: `organized/{year}/` where year is extracted from the arXiv ID\n  - Example: `1707.06347.html` → `organized/2017/1707.06347.html`\n- Move each HTML file from 2023 and earlier to its corresponding year folder, keeping original filenames\n- Papers from 2024 onwards (arXiv IDs starting with `24` or `25`) should remain in the original papers directory\n\n#### Step 2: Year Index Files\nFor each year folder, create an `INDEX.md` file containing:\n- A markdown table with three columns: `ArXiv ID | Authors | Local Path`\n- Extract authors from `<meta name=\"citation_author\" content=\"...\"/>` tags, keeping only the first 3 authors\n- If there are more than 3 authors, list the first 3 followed by \"et al.\"\n- Format authors as: \"Author1, Author2, Author3\" or \"Author1, Author2, Author3, et al.\"\n- Local Path should be just the filename (e.g., `1707.06347.html`)\n- Sort entries by arXiv ID in ascending order\n\n#### Step 3: Master Summary\nCreate `organized/SUMMARY.md` with:\n- A markdown table with columns: `Year | Paper Count | Index Link`\n- Index Link should be a relative markdown link (e.g., `[View Index](2017/INDEX.md)`)\n- Sort by year in ascending order\n\n### Expected Output Structure\n\n```\npapers/\n├── arxiv_2025.bib (remains here)\n├── (2024+ HTML files remain here)\n└── organized/\n    ├── SUMMARY.md\n    ├── 2017/\n    │   ├── INDEX.md\n    │   └── 1707.06347.html\n    ├── 2021/\n    │   ├── INDEX.md\n    │   └── 2105.04165.html\n    ├── 2022/\n    │   ├── INDEX.md\n    │   └── 2201.11903.html\n    └── 2023/\n        ├── INDEX.md\n        ├── 2303.08774.html\n        ├── 2306.08640.html\n        ├── 2310.02255.html\n        ├── 2310.08446.html\n        ├── 2312.00849.html\n        ├── 2312.07533.html\n        └── 2312.11805.html\n```",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "filesystem_mcpmark"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "mcpmark.filesystem.papers.verify_organize_legacy_papers",
+            "value": "completed",
+            "op_args": {},
+            "desc": "Verify legacy papers organization with year-based directories, INDEX.md files, and SUMMARY.md"
+        }
+    ],
+    "prepares": [
+        {
+            "prepare_func": "mcpmark_filesystem_setup",
+            "prepare_args": {}
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "mcpmark",
+            "tool": "",
+            "cleanup_func": "filesystem_cleanup",
+            "cleanup_args": {}
+        }
+    ]
+}

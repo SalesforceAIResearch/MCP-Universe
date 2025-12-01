@@ -1,0 +1,33 @@
+{
+    "category": "company_in_a_box",
+    "question": "Build an integrated **Employee Onboarding** system for the existing **Company In A Box** page.\n\n**Task Requirements:**\n1. Create a new **database** titled **Employee Onboarding Checklist** with the following properties *exactly*:\n   • **Employee Name** – title  \n   • **Start Date** – date  \n   • **Department** – select (options: Product, Marketing, Sales, HR, Engineering)  \n\n   Populate this database with **3** sample new-hire pages covering three different departments. Every property in each entry must be filled.\n\n2. Under the top-level page **Company In A Box**, create a new child page titled **Onboarding Hub** containing, in order:\n   1) The **Employee Onboarding Checklist** database embedded at the top.  \n   2) A section headed **Benefits Overview** that includes linked mentions (@-mentions or link-to-page blocks) to **≥ 3** distinct benefit-policy pages from the **Company Wiki** (for example *Benefits policy*, *Vacation Policy*, *Corporate travel*).  \n   3) A section headed **30-Day Timeline** that presents a numbered list with **7** steps covering the first 30 days. **Each step must reference (via @-mention) an existing page or database**.  \n   4) A section headed **Feedback Form** that provides **≥ 3** to-do items for new hires to check off.",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "notion_mcpmark"
+        }
+    ],
+    "prepares": [
+        {
+            "prepare_func": "mcpmark_notion_setup",
+            "prepare_args": {}
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "mcpmark",
+            "tool": "",
+            "cleanup_func": "notion_cleanup",
+            "cleanup_args": {}
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "mcpmark.notion.verify_employee_onboarding",
+            "value": "completed",
+            "op_args": {},
+            "desc": "Verify Employee Onboarding system with database, Onboarding Hub page, and all required sections"
+        }
+    ]
+}

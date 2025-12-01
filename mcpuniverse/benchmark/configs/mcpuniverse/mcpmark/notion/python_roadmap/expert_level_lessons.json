@@ -1,0 +1,33 @@
+{
+    "category": "python_roadmap",
+    "question": "# Task: Expert Level Learning Path with Complex Prerequisites\n\n## Objective\nCreate an Expert Level chapter in the Python Roadmap with sophisticated prerequisite chains that require deep understanding of the existing course structure.\n\n## Requirements\n\n### 1. Create Expert Level Chapter\n- **Database**: Chapters database\n- **Properties**:\n  - Name: `Expert Level`\n  - Icon: 🟣 (purple circle emoji)\n  - Must appear after Advanced Level in the database\n\n### 2. Create Bridge Lesson\nCreate a lesson that bridges advanced and expert content:\n- **Title**: `Advanced Foundations Review`\n- **Status**: Done\n- **Chapter**: Link to Expert Level\n- **Parent item**: Link to the lesson that currently has status \"In Progress\" and contains \"Control\" in its title\n- **Sub-items**: Must link to exactly these three lessons:\n  - The lesson with title containing \"Decorators\"\n  - The lesson with title containing \"Calling API\"\n  - The lesson with title containing \"Regular Expressions\"\n\n### 3. Create Expert Level Lessons\nAdd exactly 4 expert lessons to the Steps database:\n\n**Lesson 1**: `Metaprogramming and AST Manipulation`\n- Status: To Do\n- Chapter: Expert Level\n- Parent item: Link to \"Advanced Foundations Review\"\n- Date: 2025-09-15\n\n**Lesson 2**: `Async Concurrency Patterns`\n- Status: To Do\n- Chapter: Expert Level\n- Parent item: Link to the lesson titled \"Calling API\"\n- Date: 2025-09-20\n\n**Lesson 3**: `Memory Management and GC Tuning`\n- Status: In Progress\n- Chapter: Expert Level\n- Parent item: Link to \"Advanced Foundations Review\"\n- Sub-item: Must have exactly 2 links:\n  - Link to any lesson from \"Data Structures\" that has status \"To Do\"\n  - Link to the lesson containing \"OOP\" in its title\n- Date: 2025-09-25\n\n**Lesson 4**: `Building Python C Extensions`\n- Status: To Do\n- Chapter: Expert Level\n- Parent item: Link to \"Metaprogramming and AST Manipulation\"\n- Date: 2025-10-01\n\n### 4. Update Existing Lessons\n- Change the status of \"Decorators\" from \"To Do\" to \"Done\"\n- Add \"Async Concurrency Patterns\" as a Sub-item to \"Error Handling\"\n- Update \"Control Flow\" status from \"In Progress\" to \"Done\"\n\n### 5. Create Learning Path Notes\nAdd content to the \"Advanced Foundations Review\" lesson page:\n- **Block 1**: Heading 2 with text `Prerequisites Checklist`\n- **Block 2**: Bulleted list with exactly 3 items:\n  - `✅ Advanced Python Features (Decorators, Context Managers)`\n  - `✅ API Integration and Async Basics`\n  - `✅ Pattern Matching and Text Processing`\n- **Block 3**: Paragraph with text: `This lesson serves as a checkpoint before entering expert-level content. Ensure you have mastered all prerequisites listed above.`",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "notion_mcpmark"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "mcpmark.notion.verify_expert_level_lessons",
+            "value": "completed",
+            "op_args": {},
+            "desc": "Verify Expert Level chapter created with 4 lessons and complex prerequisite relationships"
+        }
+    ],
+    "prepares": [
+        {
+            "prepare_func": "mcpmark_notion_setup",
+            "prepare_args": {}
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "mcpmark",
+            "tool": "",
+            "cleanup_func": "notion_cleanup",
+            "cleanup_args": {}
+        }
+    ]
+}

@@ -1,0 +1,36 @@
+{
+    "category": "easyr1",
+    "question": "In the EasyR1 repo, I've discovered that the recent commit `098931530606d22f867fd121b1dcb3225a43661f` (which fixed data proto) may have introduced performance regressions based on user reports in issues #39 and #41. I need you to create a systematic investigation workflow:\n\n**Step 1: Create Main Tracking Issue**\nCreate a main issue with the exact title \"Performance Regression Analysis: Data Protocol Changes\" and add these 3 labels: \"bug\", \"performance\", \"investigation\".\n\n**Step 2: Create Investigation Branches** \nCreate exactly 3 feature branches from main for different investigation tracks:\n- `investigate-protocol-changes` - for testing protocol-related performance issues\n- `investigate-batch-processing` - for testing batch processing performance issues  \n- `investigate-memory-usage` - for testing memory utilization performance issues\n\n**Step 3: Create Sub-Issues**\nCreate 3 sub-issues and link them to the main tracking issue using sub-issue functionality:\n- \"Test Performance Impact: fix multi modal data oom\" \n- \"Test Performance Impact: upgrade vllm to 0.10\"\n- \"Test Performance Impact: non blocking false by default\"\n\n**Step 4: Document Changes**\nAdd at least 2 comments to the main tracking issue documenting the specific file changes from commit `098931530606d22f867fd121b1dcb3225a43661f`. Reference the exact files `verl/protocol.py` and `examples/config.yaml` with their commit SHA.\n\n**Step 5: Create Analysis PR**\nCreate a pull request from the `investigate-protocol-changes` branch to main with the exact title \"Performance Analysis: Protocol Changes Investigation\".",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "github_mcpmark"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "mcpmark_github.verify_performance_regression_investigation",
+            "value": "completed",
+            "op_args": {
+                "owner": "{{GITHUB_EVAL_ORG}}",
+                "repo": "EasyR1"
+            },
+            "desc": "Verify tracking issue with labels, 3 investigation branches, 3 sub-issues, comments with file references, and analysis PR"
+        }
+    ],
+    "prepares": [
+        {
+            "prepare_func": "mcpmark_github_setup",
+            "prepare_args": {}
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "mcpmark",
+            "tool": "",
+            "cleanup_func": "github_cleanup",
+            "cleanup_args": {}
+        }
+    ]
+}

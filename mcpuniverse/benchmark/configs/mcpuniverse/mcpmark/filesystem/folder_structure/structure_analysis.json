@@ -1,0 +1,33 @@
+{
+    "category": "folder_structure",
+    "question": "Please use FileSystem tools to finish the following task:\n\nYou need to recursively traverse the entire folder structure under the main directory and generate a detailed statistical report in a file named `structure_analysis.txt`.\n\n**Important**: \n- In all tasks, ignore `.DS_Store` files (except for subtask 1 total size calculation).\n- You should not change or delete any existed files.\n- Do not try to use python code.\n\n---\n\n### 1. File Statistics\n\nCount the following information for the entire directory structure:\n- total number of files (exclude .DS_Store)\n- total number of folders\n- total size of all files (in bytes, include .DS_Store only in this subtask)\n\n**Format (one item per line):**\ntotal number of files: X\ntotal number of folders: Y\ntotal size of all files: Z\n\n---\n\n### 2. Depth Analysis\n\nIdentify the deepest folder path(s) in the directory and calculate its depth level.\n- Use relative paths based on main directory.\n- **Write the folder path only up to the folder, not including the file name. For example, if the file path is `./complex_structure/A/B/C/def.txt`, then the path in your report should be `complex_structure/A/B/C`, and the depth is `4`.**\n- If multiple deepest paths exist, list only one.\n\n**Format (one item per line):**\ndepth: N\nPATH\n\n---\n\n### 3. File Type Classification\n\nCategorize files by their extensions and count the number of files for each type. Files without extensions should also be included.\n\n**Format (one extension per line):**\ntxt: count\npy: count\njpg: count\nmov: count\n(no extension): count",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "filesystem_mcpmark"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "mcpmark.filesystem.folder_structure.verify_structure_analysis",
+            "value": "completed",
+            "op_args": {},
+            "desc": "Verify directory structure analysis with correct file statistics, depth analysis, and file type classification"
+        }
+    ],
+    "prepares": [
+        {
+            "prepare_func": "mcpmark_filesystem_setup",
+            "prepare_args": {}
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "mcpmark",
+            "tool": "",
+            "cleanup_func": "filesystem_cleanup",
+            "cleanup_args": {}
+        }
+    ]
+}

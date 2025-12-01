@@ -1,0 +1,30 @@
+kind: llm
+spec:
+  name: llm-1
+  type: openai
+  config:
+    model_name: gpt-4o
+
+---
+kind: agent
+spec:
+  name: ReAct-agent
+  type: react
+  config:
+    llm: llm-1
+    instruction: You are an agent for MCPMark Playwright tasks.
+    max_iterations: 20
+    summarize_tool_response: false
+
+---
+kind: benchmark
+spec:
+  description: MCPMark Playwright tasks benchmark
+  agent: ReAct-agent
+  tasks:
+    - mcpmark/configs/playwright/eval_web-cloudflare_turnstile_challenge.json
+    - mcpmark/configs/playwright/eval_web-extraction_table.json
+    - mcpmark/configs/playwright/web_search-birth_of_arvinxu.json
+    - mcpmark/configs/playwright/web_search-r1_arxiv.json
+
+

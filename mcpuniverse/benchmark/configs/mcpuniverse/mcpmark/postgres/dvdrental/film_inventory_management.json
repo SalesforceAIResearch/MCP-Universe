@@ -1,0 +1,36 @@
+{
+    "category": "dvdrental",
+    "question": "Manage film inventory operations in the DVD rental database.\n\n## Background\n\nYou are the database administrator for the DVD rental store. The store manager has requested several database operations to manage the film inventory. You need to perform multiple operations including adding new films, updating inventory, querying available films, and cleaning up old records.\n\n## Your Task\n\nComplete the following database operations in sequence:\n\n### 1. Add New Films\nAdd these two new films to the database:\n- **Film 1**: Title \"Data Science Adventures\", Description \"A thrilling journey through machine learning algorithms\", Release Year 2024, Language ID 1, Rental Duration 5 days, Rental Rate $3.99, Length 120 minutes, Replacement Cost $15.99, Rating 'PG-13'\n- **Film 2**: Title \"Cloud Computing Chronicles\", Description \"Exploring the world of distributed systems\", Release Year 2024, Language ID 1, Rental Duration 7 days, Rental Rate $4.99, Length 135 minutes, Replacement Cost $18.99, Rating 'PG'\n\n### 2. Add Inventory Records\nFor each new film, add 3 inventory records for store_id = 1 and 2 inventory records for store_id = 2.\n\n### 3. Update Film Information\nUpdate the rental_rate of all films with rating 'PG-13' to increase by 10% (multiply by 1.1).\n\n### 4. Create Available Films Table\nCreate a table called `available_films` with the following structure:\n- `film_id` (INTEGER, PRIMARY KEY)\n- `title` (VARCHAR(255), NOT NULL)\n- `rental_rate` (NUMERIC(4,2), NOT NULL)\n- `length` (SMALLINT)\n\nPopulate this table with films that meet these criteria:\n- Have rental_rate between $3.00 and $5.00",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "postgres-pro"
+        }
+    ],
+    "output_format": {
+        "inventory_status": "Film inventory management completion report"
+    },
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "postgres_film_inventory_verifier",
+            "value": "success",
+            "op_args": {},
+            "desc": "Check if the AI agent completed all film inventory management operations"
+        }
+    ],
+    "prepares": [
+        {
+            "prepare_func": "mcpmark_postgres_setup",
+            "prepare_args": {}
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "mcpmark",
+            "tool": "",
+            "cleanup_func": "postgres_cleanup",
+            "cleanup_args": {}
+        }
+    ]
+}

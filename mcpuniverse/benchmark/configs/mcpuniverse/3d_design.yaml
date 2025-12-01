@@ -1,0 +1,45 @@
+kind: llm
+spec:
+  name: llm-1
+  type: openai
+  config:
+    model_name: gpt-4.1
+
+---
+kind: agent
+spec:
+  name: ReAct-agent
+  type: react
+  config:
+    llm: llm-1
+    instruction: You are an agent for 3D Designing and a Blender expert.
+    max_iterations: 20
+    summarize_tool_response: false
+    servers:
+      - name: blender
+
+---
+kind: benchmark
+spec:
+  description: Test agent for blender tasks.
+  agent: ReAct-agent
+  tasks:
+    - mcpuniverse/3d_design/blender_task_0001.json
+    - mcpuniverse/3d_design/blender_task_0002.json
+    - mcpuniverse/3d_design/blender_task_0003.json
+    - mcpuniverse/3d_design/blender_task_0004.json
+    - mcpuniverse/3d_design/blender_task_0005.json
+    - mcpuniverse/3d_design/blender_task_0006.json
+    - mcpuniverse/3d_design/blender_task_0007.json
+    - mcpuniverse/3d_design/blender_task_0008.json
+    - mcpuniverse/3d_design/blender_task_0009.json
+    - mcpuniverse/3d_design/blender_task_0010.json
+    - mcpuniverse/3d_design/blender_task_0011.json
+    - mcpuniverse/3d_design/blender_task_0012.json
+    - mcpuniverse/3d_design/blender_task_0013.json
+    - mcpuniverse/3d_design/blender_task_0014.json
+    - mcpuniverse/3d_design/blender_task_0015.json
+    - mcpuniverse/3d_design/blender_task_0016.json
+    - mcpuniverse/3d_design/blender_task_0017.json
+    - mcpuniverse/3d_design/blender_task_0019.json
+    - mcpuniverse/3d_design/blender_task_0020.json

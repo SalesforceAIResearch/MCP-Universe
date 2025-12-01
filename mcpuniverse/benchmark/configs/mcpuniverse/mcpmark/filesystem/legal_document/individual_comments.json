@@ -1,0 +1,33 @@
+{
+    "category": "legal_document",
+    "question": "Please use FileSystem tools to finish the following task:\n\n**Overview**\n\nThe folder \"legal_files/\" contains all versions (Preferred_Stock_Purchase_Agreement_v0.txt -- Preferred_Stock_Purchase_Agreement_v10.txt) of the Stock Purchase Agreement for a corporate investment project.\n\nThere are comments in it, come from four people:\n- **Bill Harvey** (Company CEO)\n- **Michelle Jackson** (Investor)\n- **David Russel** (Company Counsel)\n- **Tony Taylor** (Investor Counsel)\n\nBetween v1 and v9, these four people make comments on the clauses. The comment format is `[name:content]`, where:\n- `name` is the commenter's name\n- `content` is the revision note\n\n**Special Note:** If the name is \"All parties\", it represents a joint comment from all parties, which counts as one comment but does not count toward any individual's personal comment count.\n\n## Task\n\nYour task is to count the number of comments made by Bill Harvey (Company CEO), Michelle Jackson (Investor), David Russel (Company Counsel), and Tony Taylor (Investor Counsel) in clauses 1.1, 1.3, 4.6, 4.16, 6.8, and 6.16 **in version 5-8.** Please generate `individual_comment.csv` in the **main directory** where the first row contains these clauses (1.1, 1.3, 4.6, 4.16, 6.8, 6.16) and the first column contains the four names (Bill Harvey, Michelle Jackson, David Russel, Tony Taylor). Fill in the table with the number of comments for each person and each clause. If there are no comments, write 0.",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "filesystem_mcpmark"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "mcpmark.filesystem.legal_document.verify_individual_comments",
+            "value": "completed",
+            "op_args": {},
+            "desc": "Verify individual comment counts for 4 people across 6 clauses in v5-8"
+        }
+    ],
+    "prepares": [
+        {
+            "prepare_func": "mcpmark_filesystem_setup",
+            "prepare_args": {}
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "mcpmark",
+            "tool": "",
+            "cleanup_func": "filesystem_cleanup",
+            "cleanup_args": {}
+        }
+    ]
+}

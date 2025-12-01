@@ -1,0 +1,3 @@
+[submodule "third_party/mcpmark"]
+	path = third_party/mcpmark
+	url = git@github.com:eval-sys/mcpmark.git

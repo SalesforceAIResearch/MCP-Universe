@@ -1,0 +1,81 @@
+kind: llm
+spec:
+  name: llm-1
+  type: openrouter
+  config:
+    model_name: GPTOSS120B_OR
+    reasoning: high
+
+---
+kind: agent
+spec:
+  name: HarmonyReAct-agent
+  type: harmony_react
+  config:
+    llm: llm-1
+    instruction: You are an agent for web searching. If you don't have enough information to answer the question, you can use the google-search tool. If you want to obtain the information with a specific URL, you can use the fetch tool.
+    max_iterations: 50
+    summarize_tool_response: true
+
+---
+kind: benchmark
+spec:
+  description: Test agent for google search tasks.
+  agent: HarmonyReAct-agent
+  tasks:
+    - mcpuniverse/web_search/info_search_task_0001.json
+    - mcpuniverse/web_search/info_search_task_0002.json
+    - mcpuniverse/web_search/info_search_task_0003.json
+    - mcpuniverse/web_search/info_search_task_0004.json
+    - mcpuniverse/web_search/info_search_task_0005.json
+    - mcpuniverse/web_search/info_search_task_0006.json
+    - mcpuniverse/web_search/info_search_task_0007.json
+    - mcpuniverse/web_search/info_search_task_0008.json
+    - mcpuniverse/web_search/info_search_task_0009.json
+    - mcpuniverse/web_search/info_search_task_0010.json
+    - mcpuniverse/web_search/info_search_task_0011.json
+    - mcpuniverse/web_search/info_search_task_0012.json
+    - mcpuniverse/web_search/info_search_task_0013.json
+    - mcpuniverse/web_search/info_search_task_0014.json
+    - mcpuniverse/web_search/info_search_task_0015.json
+    - mcpuniverse/web_search/info_search_task_0016.json
+    - mcpuniverse/web_search/info_search_task_0017.json
+    - mcpuniverse/web_search/info_search_task_0018.json
+    - mcpuniverse/web_search/info_search_task_0019.json
+    - mcpuniverse/web_search/info_search_task_0020.json
+    - mcpuniverse/web_search/info_search_task_0021.json
+    - mcpuniverse/web_search/info_search_task_0022.json
+    - mcpuniverse/web_search/info_search_task_0023.json
+    - mcpuniverse/web_search/info_search_task_0024.json
+    - mcpuniverse/web_search/info_search_task_0025.json
+    - mcpuniverse/web_search/info_search_task_0026.json
+    - mcpuniverse/web_search/info_search_task_0027.json
+    - mcpuniverse/web_search/info_search_task_0028.json
+    - mcpuniverse/web_search/info_search_task_0029.json
+    - mcpuniverse/web_search/info_search_task_0030.json
+    - mcpuniverse/web_search/info_search_task_0031.json
+    - mcpuniverse/web_search/info_search_task_0032.json
+    - mcpuniverse/web_search/info_search_task_0033.json
+    - mcpuniverse/web_search/info_search_task_0034.json
+    - mcpuniverse/web_search/info_search_task_0035.json
+    - mcpuniverse/web_search/info_search_task_0036.json
+    - mcpuniverse/web_search/info_search_task_0037.json
+    - mcpuniverse/web_search/info_search_task_0038.json
+    - mcpuniverse/web_search/info_search_task_0039.json
+    - mcpuniverse/web_search/info_search_task_0040.json
+    - mcpuniverse/web_search/info_search_task_0041.json
+    - mcpuniverse/web_search/info_search_task_0042.json
+    - mcpuniverse/web_search/info_search_task_0043.json
+    - mcpuniverse/web_search/info_search_task_0044.json
+    - mcpuniverse/web_search/info_search_task_0045.json
+    - mcpuniverse/web_search/info_search_task_0046.json
+    - mcpuniverse/web_search/info_search_task_0047.json
+    - mcpuniverse/web_search/info_search_task_0048.json
+    - mcpuniverse/web_search/info_search_task_0049.json
+    - mcpuniverse/web_search/info_search_task_0050.json
+    - mcpuniverse/multi_server/multi-server_task_google_search_notion_0001.json
+    - mcpuniverse/multi_server/multi-server_task_google_search_notion_0002.json
+    - mcpuniverse/multi_server/multi-server_task_google_search_notion_0003.json
+    - mcpuniverse/multi_server/multi-server_task_google_search_notion_0004.json
+    - mcpuniverse/multi_server/multi-server_task_google_search_notion_0005.json
+    

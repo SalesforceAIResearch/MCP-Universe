@@ -40,3 +40,6 @@ yfinance==0.2.61
 blender-mcp==1.1.3
 playwright==1.52.0
 mathutils==3.3.0
+
+# MCPMark
+notion-client==2.7.0

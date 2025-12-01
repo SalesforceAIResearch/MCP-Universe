@@ -1,0 +1,37 @@
+{
+    "category": "missing_semester",
+    "question": "I want to know which file has been modified most frequently in the past 100 commits. However, I don't want to consider files related to GitHub Actions.\nPlease find the file and create an ANSWER.md, then write the file name in it.",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "github_mcpmark"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "mcpmark_github.verify_find_salient_file",
+            "value": "completed",
+            "op_args": {
+                "owner": "{{GITHUB_EVAL_ORG}}",
+                "repo": "missing-semester",
+                "branch": "master"
+            },
+            "desc": "Verify ANSWER.md contains the most frequently modified file 'index.md' (excluding GitHub Actions files)"
+        }
+    ],
+    "prepares": [
+        {
+            "prepare_func": "mcpmark_github_setup",
+            "prepare_args": {}
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "mcpmark",
+            "tool": "",
+            "cleanup_func": "github_cleanup",
+            "cleanup_args": {}
+        }
+    ]
+}

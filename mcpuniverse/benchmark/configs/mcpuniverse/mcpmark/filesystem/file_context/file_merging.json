@@ -1,0 +1,33 @@
+{
+    "category": "file_context",
+    "question": "Please use FileSystem tools to finish the following task:\n\n### Task Description\n\nYou are given a directory containing multiple text files of varying sizes. Your task is to identify the 10 smallest .txt files, merge their content in alphabetical order, and create a consolidated file called \"merged_content.txt\" with proper formatting.\n\n### Task Objectives\n\n1. **Identify the 10 smallest .txt files** in the test directory (excluding file_12.txt)\n2. **Sort the selected files alphabetically** by filename\n3. **Merge the content** of these files into a single file named `merged_content.txt`\n4. **Add file headers** (file name) before each file's content\n5. **Maintain the original content** of each file without modifications\n\n### Expected Output\n\n- File name: `merged_content.txt`\n- Content should include all 10 files in alphabetical order\n- Each file section should start with the filename\n- Original file content should be preserved exactly",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "filesystem_mcpmark"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "mcpmark.filesystem.file_context.verify_file_merging",
+            "value": "completed",
+            "op_args": {},
+            "desc": "Verify file merging with correct file selection, alphabetical order, and content integrity"
+        }
+    ],
+    "prepares": [
+        {
+            "prepare_func": "mcpmark_filesystem_setup",
+            "prepare_args": {}
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "mcpmark",
+            "tool": "",
+            "cleanup_func": "filesystem_cleanup",
+            "cleanup_args": {}
+        }
+    ]
+}

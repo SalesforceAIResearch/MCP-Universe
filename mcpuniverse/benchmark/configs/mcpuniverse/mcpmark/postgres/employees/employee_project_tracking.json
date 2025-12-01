@@ -1,0 +1,36 @@
+{
+    "category": "employees",
+    "question": "Create and manage a comprehensive employee project tracking system using database schema design and data manipulation operations. The IT team needs you to build the database structure from scratch and populate it with specific initial data to support project management workflows.\n\n## Your Tasks:\n\n1. **Create the project tracking tables** — build three new tables in the `employees` schema:\n   \n   **Table 1: `employee_projects`**\n   * `project_id` (integer, primary key, auto-increment)\n   * `project_name` (varchar(100), not null)\n   * `start_date` (date, not null)\n   * `end_date` (date)\n   * `budget` (decimal(10,2))\n   * `status` (varchar(20), default 'active')\n\n   **Table 2: `project_assignments`**\n   * `assignment_id` (integer, primary key, auto-increment)\n   * `employee_id` (bigint, not null)\n   * `project_id` (integer, not null)\n   * `role` (varchar(50), not null)\n   * `allocation_percentage` (integer, check constraint: between 1 and 100)\n   * `assigned_date` (date, not null)\n\n   **Table 3: `project_milestones`**\n   * `milestone_id` (integer, primary key, auto-increment)\n   * `project_id` (integer, not null)\n   * `milestone_name` (varchar(100), not null)\n   * `target_date` (date, not null)\n   * `completed_date` (date)\n   * `status` (varchar(20), default 'pending')",
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "postgres-pro"
+        }
+    ],
+    "output_format": {
+        "tracking_status": "Employee project tracking system completion status"
+    },
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "postgres_employee_project_tracking_verifier",
+            "value": "success",
+            "op_args": {},
+            "desc": "Check if the AI agent created the employee project tracking system"
+        }
+    ],
+    "prepares": [
+        {
+            "prepare_func": "mcpmark_postgres_setup",
+            "prepare_args": {}
+        }
+    ],
+    "cleanups": [
+        {
+            "server": "mcpmark",
+            "tool": "",
+            "cleanup_func": "postgres_cleanup",
+            "cleanup_args": {}
+        }
+    ]
+}

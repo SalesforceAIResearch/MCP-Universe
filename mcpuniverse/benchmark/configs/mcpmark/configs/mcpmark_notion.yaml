@@ -1,0 +1,72 @@
+kind: llm
+spec:
+  name: llm-1
+  type: openai
+  config:
+    model_name: z-ai/glm-4.5
+
+---
+kind: agent
+spec:
+  name: ReAct-agent
+  type: react
+  config:
+    llm: llm-1
+    instruction: You are an agent for Notion workspace operations and content management.
+    max_iterations: 20
+    summarize_tool_response: false
+
+---
+kind: benchmark
+spec:
+  description: Benchmark for mcpmark Notion tasks across 10 projects with 28 verification functions.
+  agent: ReAct-agent
+  tasks:
+    # Company In A Box tasks (3)
+    - mcpmark/configs/notion/company_in_a_box/employee_onboarding.json
+    - mcpmark/configs/notion/company_in_a_box/goals_restructure.json
+    - mcpmark/configs/notion/company_in_a_box/quarterly_review_dashboard.json
+    
+    # Computer Science Student Dashboard tasks (3)
+    - mcpmark/configs/notion/computer_science_student_dashboard/code_snippets_go.json
+    - mcpmark/configs/notion/computer_science_student_dashboard/courses_internships_relation.json
+    - mcpmark/configs/notion/computer_science_student_dashboard/study_session_tracker.json
+    
+    # IT Trouble Shooting Hub tasks (3)
+    - mcpmark/configs/notion/it_trouble_shooting_hub/asset_retirement_migration.json
+    - mcpmark/configs/notion/it_trouble_shooting_hub/security_audit_ticket.json
+    - mcpmark/configs/notion/it_trouble_shooting_hub/verification_expired_update.json
+    
+    # Japan Travel Planner tasks (4)
+    - mcpmark/configs/notion/japan_travel_planner/daily_itinerary_overview.json
+    - mcpmark/configs/notion/japan_travel_planner/packing_progress_summary.json
+    - mcpmark/configs/notion/japan_travel_planner/remove_osaka_itinerary.json
+    - mcpmark/configs/notion/japan_travel_planner/restaurant_expenses_sync.json
+    
+    # Online Resume tasks (4)
+    - mcpmark/configs/notion/online_resume/layout_adjustment.json
+    - mcpmark/configs/notion/online_resume/projects_section_update.json
+    - mcpmark/configs/notion/online_resume/skills_development_tracker.json
+    - mcpmark/configs/notion/online_resume/work_history_addition.json
+    
+    # Python Roadmap tasks (2)
+    - mcpmark/configs/notion/python_roadmap/expert_level_lessons.json
+    - mcpmark/configs/notion/python_roadmap/learning_metrics_dashboard.json
+    
+    # Self Assessment tasks (3)
+    - mcpmark/configs/notion/self_assessment/faq_column_layout.json
+    - mcpmark/configs/notion/self_assessment/hyperfocus_analysis_report.json
+    - mcpmark/configs/notion/self_assessment/numbered_list_emojis.json
+    
+    # Standard Operating Procedure tasks (2)
+    - mcpmark/configs/notion/standard_operating_procedure/deployment_process_sop.json
+    - mcpmark/configs/notion/standard_operating_procedure/section_organization.json
+    
+    # Team Projects tasks (2)
+    - mcpmark/configs/notion/team_projects/priority_tasks_table.json
+    - mcpmark/configs/notion/team_projects/swap_tasks.json
+    
+    # Toronto Guide tasks (2)
+    - mcpmark/configs/notion/toronto_guide/change_color.json
+    - mcpmark/configs/notion/toronto_guide/weekend_adventure_planner.json
+
