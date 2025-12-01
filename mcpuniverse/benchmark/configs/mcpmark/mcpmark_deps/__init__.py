@@ -1,1 +1,0 @@
-# MCPMark dependencies for MCPUniverse

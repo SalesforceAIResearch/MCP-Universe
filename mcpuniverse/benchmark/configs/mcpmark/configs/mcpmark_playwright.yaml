@@ -3,7 +3,7 @@ spec:
   name: llm-1
   type: openai
   config:
-    model_name: z-ai/glm-4.5
+    model_name: gpt-4o
 
 ---
 kind: agent
