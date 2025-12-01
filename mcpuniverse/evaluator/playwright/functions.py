@@ -133,7 +133,7 @@ async def playwright__get_flight_price(
             )
 
             print(f"Navigating to: {url}")
-            await page.goto(url, wait_until="networkidle")
+            await page.goto(url, wait_until="domcontentloaded")
 
             # Wait for the flight card element to appear
             print("Waiting for #flightcard-0 element...")
@@ -210,7 +210,7 @@ async def playwright__get_flight_price_with_time(depart_date: str):
 
             print(f"Navigating to: {url}")
             print(f"Departure: {depart_date}, Return: {return_date}")
-            await page.goto(url, wait_until="networkidle")
+            await page.goto(url, wait_until="domcontentloaded")
 
             # Wait for the flight card element to appear
             print("Waiting for #flightcard-0 element...")
@@ -292,7 +292,7 @@ async def playwright__get_hotel_price(checkin_date: str):
 
             print(f"Navigating to: {url}")
             print(f"Check-in: {checkin_date_formated}, Check-out: {checkout_date_formated}")
-            await page.goto(url, wait_until="networkidle")
+            await page.goto(url, wait_until="domcontentloaded")
 
             # Wait for the hotel card element to appear
             print('Waiting for #meta-real-price element...')
@@ -397,7 +397,7 @@ async def playwright__get_hotel_price_with_conditions(checkin_date: str, currenc
 
             print(f"Navigating to: {url}")
             print(f"Check-in: {checkin_date}, Check-out: {checkout_date}")
-            await page.goto(url, wait_until="networkidle")
+            await page.goto(url, wait_until="domcontentloaded")
 
             # Wait for the hotel card element to appear
             print('Waiting for [data-testid="property-card"] element...')
@@ -497,7 +497,7 @@ async def playwright__booking_com_get_hotel_price_with_lowest_price_highest_rati
 
             print(f"Navigating to: {url}")
 
-            await page.goto(url, wait_until="networkidle")
+            await page.goto(url, wait_until="domcontentloaded")
 
             # Wait for the hotel card element to appear
             print('Waiting for [data-testid="property-card"] element...')
@@ -557,7 +557,7 @@ async def playwright__get_rwsentosa_price_with_conditions(checkin_date: str, the
                    f"&VisitDate={checkin_date}")
 
             print(f"Navigating to: {url}")
-            await page.goto(url, wait_until="networkidle")
+            await page.goto(url, wait_until="domcontentloaded")
 
             # Wait for the attraction booking widget elements to appear
             print('Waiting for .attraction-booking-widget__control .control-wrapper elements...')

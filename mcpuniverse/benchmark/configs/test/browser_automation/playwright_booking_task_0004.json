@@ -22,7 +22,7 @@
             "op": "playwright.check_rwsentosa_price_with_conditions",
             "op_args": {
                 "days_after": 3,
-                "theme_parks": ["USS", "CWP"],
+                "theme_parks": ["USS", "ACW"],
                 "adults": 2,
                 "children": 1
             }
