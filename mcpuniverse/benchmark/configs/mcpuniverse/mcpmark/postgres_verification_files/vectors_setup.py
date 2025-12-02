@@ -7,12 +7,13 @@ Used by all vector database tasks.
 """
 
 import os
-import logging
-import psycopg2
 import json
 import random
-import numpy as np
+import logging
 from typing import List
+
+import numpy as np
+import psycopg2
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +55,7 @@ def create_vector_extension():
         conn.close()
 
     except psycopg2.Error as e:
-        logger.error(f"Failed to create pgvector extension: {e}")
+        logger.error("Failed to create pgvector extension: %s", e)
         raise
 
 
@@ -161,7 +162,7 @@ def create_vector_tables():
         conn.close()
 
     except psycopg2.Error as e:
-        logger.error(f"Failed to create vector tables: {e}")
+        logger.error("Failed to create vector tables: %s", e)
         raise
 
 
@@ -195,9 +196,9 @@ def create_vector_indexes():
                             CREATE INDEX IF NOT EXISTS {idx_name}
                             ON {table_name} USING ivfflat ({column_name} vector_cosine_ops) WITH (lists = 100);
                         """)
-                    logger.info(f"Created index {idx_name} on {table_name}")
+                    logger.info("Created index %s on %s", idx_name, table_name)
                 except psycopg2.Error as e:
-                    logger.warning(f"Could not create {method} index {idx_name}: {e}")
+                    logger.warning("Could not create %s index %s: %s", method, idx_name, e)
                     # Try with IVFFlat as fallback
                     if method == "hnsw":
                         try:
@@ -205,9 +206,12 @@ def create_vector_indexes():
                                 CREATE INDEX IF NOT EXISTS {idx_name}_ivf
                                 ON {table_name} USING ivfflat ({column_name} vector_cosine_ops) WITH (lists = 100);
                             """)
-                            logger.info(f"Created fallback IVFFlat index {idx_name}_ivf on {table_name}")
+                            logger.info(
+                                "Created fallback IVFFlat index %s_ivf on %s",
+                                idx_name, table_name
+                            )
                         except psycopg2.Error as e2:
-                            logger.warning(f"Could not create fallback index: {e2}")
+                            logger.warning("Could not create fallback index: %s", e2)
 
             # Regular indexes for performance
             regular_indexes = [
@@ -225,20 +229,20 @@ def create_vector_indexes():
             for idx_name, table_name, column_name in regular_indexes:
                 try:
                     cur.execute(f"CREATE INDEX IF NOT EXISTS {idx_name} ON {table_name} ({column_name});")
-                    logger.debug(f"Created regular index {idx_name}")
+                    logger.debug("Created regular index %s", idx_name)
                 except psycopg2.Error as e:
-                    logger.warning(f"Could not create regular index {idx_name}: {e}")
+                    logger.warning("Could not create regular index %s: %s", idx_name, e)
 
             logger.info("Vector indexes created successfully")
 
         conn.close()
 
     except psycopg2.Error as e:
-        logger.error(f"Failed to create vector indexes: {e}")
+        logger.error("Failed to create vector indexes: %s", e)
         raise
 
 
-def insert_sample_data():
+def insert_sample_data():  # pylint: disable=too-many-locals
     """Insert sample data into vector tables."""
     conn_params = get_connection_params()
 
@@ -276,25 +280,92 @@ def insert_sample_data():
 
             kb_ids = []
             for kb_data in knowledge_bases:
+                extra_data = (
+                    random.randint(50, 500),
+                    random.randint(200, 2000),
+                    round(random.uniform(10.5, 250.8), 2)
+                )
                 cur.execute("""
-                    INSERT INTO knowledge_base (kb_name, description, domain, total_documents, total_chunks, total_storage_mb)
+                    INSERT INTO knowledge_base (
+                        kb_name, description, domain, total_documents, total_chunks, total_storage_mb
+                    )
                     VALUES (%s, %s, %s, %s, %s, %s)
                     RETURNING id;
-                """, kb_data + (random.randint(50, 500), random.randint(200, 2000), round(random.uniform(10.5, 250.8), 2)))
+                """, kb_data + extra_data)
                 kb_ids.append(cur.fetchone()[0])
 
             # Insert sample documents
             sample_documents = [
-                ("PostgreSQL Performance Tuning", "Comprehensive guide to optimizing PostgreSQL database performance including indexing strategies, query optimization, and configuration tuning.", "https://example.com/pg-performance", "technical_guide"),
-                ("Vector Similarity Search", "Understanding vector embeddings and similarity search algorithms for AI applications and recommendation systems.", "https://example.com/vector-search", "technical_guide"),
-                ("RAG Implementation Best Practices", "Best practices for implementing Retrieval-Augmented Generation systems using vector databases and large language models.", "https://example.com/rag-practices", "best_practices"),
-                ("Database Security Guidelines", "Security considerations and implementation guidelines for PostgreSQL databases in production environments.", "https://example.com/db-security", "security_guide"),
-                ("Machine Learning with SQL", "Integrating machine learning workflows with SQL databases and leveraging database extensions for AI applications.", "https://example.com/ml-sql", "tutorial"),
-                ("API Documentation Standards", "Standards and best practices for creating comprehensive and user-friendly API documentation.", "https://example.com/api-docs", "documentation"),
-                ("Microservices Architecture", "Design patterns and implementation strategies for microservices architecture in modern applications.", "https://example.com/microservices", "architecture_guide"),
-                ("Data Pipeline Optimization", "Optimizing data processing pipelines for scalability, reliability, and performance in enterprise environments.", "https://example.com/data-pipelines", "optimization_guide"),
-                ("Cloud Database Migration", "Step-by-step guide for migrating on-premises databases to cloud infrastructure with minimal downtime.", "https://example.com/cloud-migration", "migration_guide"),
-                ("NoSQL vs SQL Comparison", "Detailed comparison of NoSQL and SQL databases, including use cases, performance characteristics, and selection criteria.", "https://example.com/nosql-sql", "comparison_guide"),
+                (
+                    "PostgreSQL Performance Tuning",
+                    "Comprehensive guide to optimizing PostgreSQL database performance "
+                    "including indexing strategies, query optimization, and configuration tuning.",
+                    "https://example.com/pg-performance",
+                    "technical_guide"
+                ),
+                (
+                    "Vector Similarity Search",
+                    "Understanding vector embeddings and similarity search algorithms "
+                    "for AI applications and recommendation systems.",
+                    "https://example.com/vector-search",
+                    "technical_guide"
+                ),
+                (
+                    "RAG Implementation Best Practices",
+                    "Best practices for implementing Retrieval-Augmented Generation systems "
+                    "using vector databases and large language models.",
+                    "https://example.com/rag-practices",
+                    "best_practices"
+                ),
+                (
+                    "Database Security Guidelines",
+                    "Security considerations and implementation guidelines for PostgreSQL "
+                    "databases in production environments.",
+                    "https://example.com/db-security",
+                    "security_guide"
+                ),
+                (
+                    "Machine Learning with SQL",
+                    "Integrating machine learning workflows with SQL databases and leveraging "
+                    "database extensions for AI applications.",
+                    "https://example.com/ml-sql",
+                    "tutorial"
+                ),
+                (
+                    "API Documentation Standards",
+                    "Standards and best practices for creating comprehensive and "
+                    "user-friendly API documentation.",
+                    "https://example.com/api-docs",
+                    "documentation"
+                ),
+                (
+                    "Microservices Architecture",
+                    "Design patterns and implementation strategies for microservices "
+                    "architecture in modern applications.",
+                    "https://example.com/microservices",
+                    "architecture_guide"
+                ),
+                (
+                    "Data Pipeline Optimization",
+                    "Optimizing data processing pipelines for scalability, reliability, "
+                    "and performance in enterprise environments.",
+                    "https://example.com/data-pipelines",
+                    "optimization_guide"
+                ),
+                (
+                    "Cloud Database Migration",
+                    "Step-by-step guide for migrating on-premises databases to cloud "
+                    "infrastructure with minimal downtime.",
+                    "https://example.com/cloud-migration",
+                    "migration_guide"
+                ),
+                (
+                    "NoSQL vs SQL Comparison",
+                    "Detailed comparison of NoSQL and SQL databases, including use cases, "
+                    "performance characteristics, and selection criteria.",
+                    "https://example.com/nosql-sql",
+                    "comparison_guide"
+                ),
             ]
 
             doc_ids = []
@@ -315,9 +386,12 @@ def insert_sample_data():
                 # Generate 3-7 chunks per document
                 num_chunks = random.randint(3, 7)
                 for chunk_idx in range(num_chunks):
-                    chunk_text = f"This is chunk {chunk_idx + 1} of document {doc_id}. " + \
-                               "It contains relevant information that would be useful for similarity search and RAG applications. " + \
-                               "The content includes technical details, examples, and best practices."
+                    chunk_text = (
+                        f"This is chunk {chunk_idx + 1} of document {doc_id}. "
+                        "It contains relevant information that would be useful for "
+                        "similarity search and RAG applications. "
+                        "The content includes technical details, examples, and best practices."
+                    )
                     chunk_size = len(chunk_text)
                     overlap_size = random.randint(20, 50) if chunk_idx > 0 else 0
                     embedding = generate_mock_embedding(1536)
@@ -355,7 +429,13 @@ def insert_sample_data():
             for i in range(5):
                 query_hash = f"hash_{random.randint(100000, 999999)}"
                 query_text = f"Sample cached query {i + 1}"
-                results = [{"doc_id": random.randint(1, len(doc_ids)), "similarity": round(random.uniform(0.7, 0.95), 3)} for _ in range(3)]
+                results = [
+                    {
+                        "doc_id": random.randint(1, len(doc_ids)),
+                        "similarity": round(random.uniform(0.7, 0.95), 3)
+                    }
+                    for _ in range(3)
+                ]
                 result_count = len(results)
                 search_time = random.randint(10, 100)
                 threshold = round(random.uniform(0.6, 0.8), 3)
@@ -365,17 +445,17 @@ def insert_sample_data():
                     VALUES (%s, %s, %s, %s, %s, %s);
                 """, (query_hash, query_text, json.dumps(results), result_count, search_time, threshold))
 
-            logger.info(f"Sample data inserted successfully:")
-            logger.info(f"   {len(sample_documents)} documents")
-            logger.info(f"   {chunk_count} document chunks")
-            logger.info(f"   {len(sample_queries)} user queries")
-            logger.info(f"   {len(embedding_models)} embedding models")
-            logger.info(f"   {len(knowledge_bases)} knowledge bases")
+            logger.info("Sample data inserted successfully:")
+            logger.info("   %d documents", len(sample_documents))
+            logger.info("   %d document chunks", chunk_count)
+            logger.info("   %d user queries", len(sample_queries))
+            logger.info("   %d embedding models", len(embedding_models))
+            logger.info("   %d knowledge bases", len(knowledge_bases))
 
         conn.close()
 
     except psycopg2.Error as e:
-        logger.error(f"Failed to insert sample data: {e}")
+        logger.error("Failed to insert sample data: %s", e)
         raise
 
 
@@ -408,7 +488,7 @@ def verify_vector_setup():
                 cur.execute(f'SELECT COUNT(*) FROM {table}')
                 count = cur.fetchone()[0]
                 table_counts[table] = count
-                logger.info(f"Table {table}: {count} records")
+                logger.info("Table %s: %d records", table, count)
 
             # Check vector columns
             cur.execute("""
@@ -420,9 +500,9 @@ def verify_vector_setup():
             """)
 
             vector_columns = cur.fetchall()
-            logger.info(f"Found {len(vector_columns)} vector columns:")
+            logger.info("Found %d vector columns:", len(vector_columns))
             for table, column, dtype in vector_columns:
-                logger.info(f"   {table}.{column} ({dtype})")
+                logger.info("   %s.%s (%s)", table, column, dtype)
 
             # Check indexes
             cur.execute("""
@@ -433,9 +513,9 @@ def verify_vector_setup():
             """)
 
             vector_indexes = cur.fetchall()
-            logger.info(f"Found {len(vector_indexes)} vector indexes:")
-            for schema, table, index, definition in vector_indexes:
-                logger.info(f"   {index} on {table}")
+            logger.info("Found %d vector indexes:", len(vector_indexes))
+            for _, table, index, _ in vector_indexes:
+                logger.info("   %s on %s", index, table)
 
             # Test a simple vector similarity query
             mock_embedding = generate_mock_embedding(1536)
@@ -447,14 +527,14 @@ def verify_vector_setup():
             """, (mock_embedding, mock_embedding))
 
             results = cur.fetchall()
-            logger.info(f"Vector similarity query returned {len(results)} results")
+            logger.info("Vector similarity query returned %d results", len(results))
 
         conn.close()
         logger.info("Vector database verification completed successfully")
         return table_counts, vector_columns, vector_indexes
 
     except psycopg2.Error as e:
-        logger.error(f"Verification failed: {e}")
+        logger.error("Verification failed: %s", e)
         raise
 
 
@@ -479,9 +559,9 @@ def prepare_vector_environment():
         table_counts, vector_columns, vector_indexes = verify_vector_setup()
 
         logger.info("Vector database environment prepared successfully!")
-        logger.info(f"Total tables created: {len(table_counts)}")
-        logger.info(f"Total vector columns: {len(vector_columns)}")
-        logger.info(f"Total vector indexes: {len(vector_indexes)}")
+        logger.info("Total tables created: %d", len(table_counts))
+        logger.info("Total vector columns: %d", len(vector_columns))
+        logger.info("Total vector indexes: %d", len(vector_indexes))
 
         return {
             'table_counts': table_counts,
@@ -489,8 +569,8 @@ def prepare_vector_environment():
             'vector_indexes': vector_indexes
         }
 
-    except Exception as e:
-        logger.error(f"Failed to prepare vector environment: {e}")
+    except psycopg2.Error as e:
+        logger.error("Failed to prepare vector environment: %s", e)
         raise
 
 
