@@ -5,6 +5,7 @@ from mcpuniverse.benchmark.runner import BenchmarkRunner
 from mcpuniverse.benchmark.report import BenchmarkReport
 from mcpuniverse.callbacks.handlers.vprint import get_vprint_callbacks
 from mcpuniverse.benchmark.configs.mcpmark.prepares import PREPARE_FUNCTIONS
+from mcpuniverse.common.context import Context
 
 
 class TestBenchmarkRunnerMCPMarkGitHub(unittest.IsolatedAsyncioTestCase):
@@ -13,7 +14,8 @@ class TestBenchmarkRunnerMCPMarkGitHub(unittest.IsolatedAsyncioTestCase):
         """Test MCPMark GitHub tasks (Build Your Own X + Claude Code)."""
 
         print("Preparing GitHub environment...")
-        prepare_response = await PREPARE_FUNCTIONS["mcpmark_github_setup"]()
+        context = Context()
+        prepare_response = await PREPARE_FUNCTIONS["mcpmark_github_setup"](context=context)
         print(prepare_response)
 
         print("Running GitHub tasks...")
