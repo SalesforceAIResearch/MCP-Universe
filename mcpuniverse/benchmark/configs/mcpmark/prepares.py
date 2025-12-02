@@ -22,8 +22,13 @@ logger = logging.getLogger(__name__)
 def _add_mcpmark_to_path():
     """Add mcpmark dependencies directory to Python path for imports."""
     import sys  # pylint: disable=import-outside-toplevel
-    # mcpmark_deps_path = Path(__file__).parent / "mcpmark_deps"
-    mcpmark_deps_path = Path(".") / "third_party" / "mcpmark"
+    # Get project root directory (parent of mcpuniverse package)
+    project_root = Path(__file__).parent.parent.parent.parent.parent
+    # Add project root to path so third_party module can be found
+    if str(project_root) not in sys.path:
+        sys.path.insert(0, str(project_root))
+    # Also add third_party/mcpmark for direct imports
+    mcpmark_deps_path = project_root / "third_party" / "mcpmark"
     if str(mcpmark_deps_path) not in sys.path:
         sys.path.insert(0, str(mcpmark_deps_path))
     return mcpmark_deps_path
