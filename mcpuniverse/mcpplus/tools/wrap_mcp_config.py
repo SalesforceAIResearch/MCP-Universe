@@ -139,6 +139,7 @@ def _prepare_wrap_changes(
     servers: Optional[List[str]] = None,
     llm_model: str = "gpt-4.1",
     llm_api_key_env: str = "OPENAI_API_KEY",
+    token_threshold: int = 400,
 ) -> Tuple[Dict[str, Any], Dict[str, Any], Dict[str, Tuple[Path, Dict[str, Any]]], Optional[str]]:
     """
     Prepare the changes that will be made (without writing anything).
@@ -205,6 +206,7 @@ def _prepare_wrap_changes(
             env=env,
             llm_model=llm_model,
             llm_api_key_env=llm_api_key_env,
+            token_threshold=token_threshold,
         )
 
         proxy_config_path = config_dir / f"proxy_{name}.json"
@@ -230,6 +232,7 @@ def wrap_servers(
     servers: Optional[List[str]] = None,
     llm_model: str = "gpt-4.1",
     llm_api_key_env: str = "OPENAI_API_KEY",
+    token_threshold: int = 400,
     dry_run: bool = False,
     yes: bool = False,
     output_path: Optional[Path] = None,
@@ -242,6 +245,7 @@ def wrap_servers(
         servers: List of server names to wrap (None = all)
         llm_model: LLM model to use for post-processing
         llm_api_key_env: Environment variable name for API key
+        token_threshold: Min tokens to trigger post-processing
         dry_run: If True, don't write files, just print what would be done
         yes: If True, skip confirmation prompt
         output_path: Path to write the updated config (default: same as input)
@@ -255,6 +259,7 @@ def wrap_servers(
         servers=servers,
         llm_model=llm_model,
         llm_api_key_env=llm_api_key_env,
+        token_threshold=token_threshold,
     )
 
     if not new_entries:
@@ -293,7 +298,7 @@ def wrap_servers(
     print("  output filtering. Long tool outputs are processed by an LLM to")
     print("  extract only the information relevant to your query.")
     print(f"\n  LLM Model: {llm_model}")
-    print("  Token Threshold: 400 (outputs shorter than this pass through)")
+    print(f"  Token Threshold: {token_threshold} (outputs shorter than this pass through)")
 
     if dry_run:
         print("\n[Dry Run] No changes were made.")
@@ -352,6 +357,12 @@ def parse_args() -> argparse.Namespace:
         help="Env var name for LLM API key (default: OPENAI_API_KEY)",
     )
     parser.add_argument(
+        "--token-threshold",
+        type=int,
+        default=400,
+        help="Min tokens to trigger post-processing (default: 400)",
+    )
+    parser.add_argument(
         "--output",
         help="Path to write updated config (default: overwrite input)",
     )
@@ -384,6 +395,7 @@ def main() -> None:
         servers=args.servers,
         llm_model=args.llm_model,
         llm_api_key_env=args.llm_api_key_env,
+        token_threshold=args.token_threshold,
         dry_run=args.dry_run,
         yes=args.yes,
         output_path=output_path,
