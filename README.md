@@ -65,6 +65,7 @@ The MCPUniverse architecture consists of the following key components:
 - **Agents** (`mcpuniverse/agent/`): Base implementations for different agent types
 - **Workflows** (`mcpuniverse/workflows/`): Orchestration and coordination layer
 - **MCP Servers** (`mcpuniverse/mcp/`): Protocol management and external service integration
+- **MCP+** (`mcpuniverse/mcpplus/`): MCP client context management via agentic post-processing of MCP server responses ([docs](docs/mcp-plus.md))
 - **LLM Integration** (`mcpuniverse/llm/`): Multi-provider language model support
 - **Benchmarking** (`mcpuniverse/benchmark/`): Evaluation and testing framework
 - **Dashboard** (`mcpuniverse/dashboard/`): Visualization and monitoring interface

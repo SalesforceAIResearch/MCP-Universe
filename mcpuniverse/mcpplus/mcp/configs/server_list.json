@@ -1,0 +1,184 @@
+{
+  "echo-test": {
+    "stdio": {
+      "command": "python3",
+      "args": [
+        "-m",
+        "mcpuniverse.mcp.servers.echo"
+      ]
+    },
+    "sse": {
+      "command": "python3",
+      "args": [
+        "-m",
+        "mcpuniverse.mcp.servers.echo",
+        "--transport",
+        "sse",
+        "--port",
+        "{{PORT}}"
+      ]
+    }
+  },
+  "yfinance": {
+    "stdio": {
+      "command": "python3",
+      "args": [
+        "-m",
+        "mcpuniverse.mcp.servers.yahoo_finance"
+      ]
+    },
+    "sse": {
+      "command": "python3",
+      "args": [
+        "-m",
+        "mcpuniverse.mcp.servers.yahoo_finance",
+        "--transport",
+        "sse",
+        "--port",
+        "{{PORT}}"
+      ]
+    }
+  },
+  "google_search": {
+    "stdio": {
+      "command": "python3",
+      "args": [
+        "-m",
+        "mcpuniverse.mcp.servers.google_search"
+      ]
+    },
+    "sse": {
+      "command": "python3",
+      "args": [
+        "-m",
+        "mcpuniverse.mcp.servers.google_search",
+        "--transport",
+        "sse",
+        "--port",
+        "{{PORT}}"
+      ]
+    }
+  },
+  "google_sheets": {
+    "stdio": {
+      "command": "python3",
+      "args": [
+        "-m",
+        "mcpuniverse.mcp.servers.google_sheets"
+      ]
+    },
+    "sse": {
+      "command": "python3",
+      "args": [
+        "-m",
+        "mcpuniverse.mcp.servers.google_sheets",
+        "--transport",
+        "sse",
+        "--port",
+        "{{PORT}}"
+      ]
+    }
+  },
+  "wikipedia": {
+    "stdio": {
+      "command": "python3",
+      "args": [
+        "-m",
+        "mcpuniverse.mcp.servers.wikipedia"
+      ]
+    },
+    "sse": {
+      "command": "python3",
+      "args": [
+        "-m",
+        "mcpuniverse.mcp.servers.wikipedia",
+        "--transport",
+        "sse",
+        "--port",
+        "{{PORT}}"
+      ]
+    }
+  },
+  "weather": {
+    "stdio": {
+      "command": "python3",
+      "args": [
+        "-m",
+        "mcpuniverse.mcp.servers.weather"
+      ]
+    },
+    "sse": {
+      "command": "python3",
+      "args": [
+        "-m",
+        "mcpuniverse.mcp.servers.weather",
+        "--transport",
+        "sse",
+        "--port",
+        "{{PORT}}"
+      ]
+    }
+  },
+  "blender": {
+    "stdio": {
+      "command": "python3",
+      "args": [
+        "-m",
+        "mcpuniverse.mcp.servers.blender"
+      ]
+    },
+    "sse": {
+      "command": "python3",
+      "args": [
+        "-m",
+        "mcpuniverse.mcp.servers.blender",
+        "--transport",
+        "sse",
+        "--port",
+        "{{PORT}}"
+      ]
+    }
+  },
+  "date": {
+    "stdio": {
+      "command": "python3",
+      "args": [
+        "-m",
+        "mcpuniverse.mcp.servers.date"
+      ]
+    },
+    "sse": {
+      "command": "python3",
+      "args": [
+        "-m",
+        "mcpuniverse.mcp.servers.date",
+        "--transport",
+        "sse",
+        "--port",
+        "{{PORT}}"
+      ]
+    }
+  },
+  "fin": {
+    "stdio": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "/Users/akhilesh.gotmare/Desktop/mcp-server",
+        "run",
+        "server.py"
+      ]
+    }
+  },
+  "finance": {
+    "stdio": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "/Users/akhilesh.gotmare/Desktop/mcp-server",
+        "run",
+        "server.py"
+      ]
+    }
+  }
+}
