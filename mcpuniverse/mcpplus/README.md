@@ -18,7 +18,7 @@ MCP+ intercepts tool calls and post-processes outputs using:
 - **Direct extraction** - For simple, visible data that can be extracted immediately
 - **Code generation** - For complex transformations requiring parsing, filtering, or restructuring
 
-This is not simple truncation - MCP+ uses LLM reasoning to understand what information is relevant to the agent's stated goal and extracts/transforms accordingly.
+MCP+ uses LLM reasoning to understand what information is relevant to the agent's stated goal and extracts/transforms accordingly.
 
 ## Quick Start
 
@@ -37,13 +37,6 @@ mcp-build-plus --mcp-config ~/.cursor/mcp.json
 4. LLM decides: direct extraction or code generation
 5. Validated, relevant output returned to agent
 
-## Key Benefits
-
-- **Preserve context quality** - Only relevant information enters the context window
-- **Reduce token costs** - 50-90% reduction on verbose outputs
-- **Improve agent accuracy** - Less noise means better reasoning
-- **Drop-in replacement** - No changes to existing MCP servers required
-
 ## Configuration
 
 | Option | Description | Default |
@@ -61,4 +54,8 @@ See [docs/mcp-plus.md](../../docs/mcp-plus.md) for full documentation.
 
 - Remove synthetic UX delays for lower latency
 - Skip validation step (`enable_reflection: false`) for faster processing
-- Use function calling for more reliable structured extraction
+
+## Next steps
+
+- Support other LLM vendors for MCP+ agent besides OpenAI
+- Test with remote MCP servers
