@@ -121,7 +121,11 @@ Return the final answer in the final channel.
             tools_namespace_ts=self._tools_namespace_ts,
             user_first_message=question,
             rounds=self._history,
-            reasoning=self._llm.config.reasoning,
+            reasoning=getattr(
+                self._llm.config,
+                "reasoning",
+                getattr(self._llm.config, "reasoning_effort", "medium"),
+            ),
         )
 
         return prompt

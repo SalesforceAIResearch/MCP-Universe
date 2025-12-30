@@ -13,7 +13,7 @@ class TestBenchmarkRunner(unittest.IsolatedAsyncioTestCase):
         trace_collector = FileCollector(log_file="log/multi_server.log")
         benchmark = BenchmarkRunner("test/multi_server.yaml")
         benchmark_results = await benchmark.run(trace_collector=trace_collector, callbacks=get_vprint_callbacks())
-        report = BenchmarkReport(benchmark)
+        report = BenchmarkReport(benchmark, trace_collector=trace_collector)
         report.dump()
 
         print('=' * 66)
