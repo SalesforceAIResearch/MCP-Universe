@@ -1,0 +1,36 @@
+{
+  "category": "browser_automation",
+  "question": "Search http://localhost:8080/docs/test1 for anything relevant to coding, return the results.",
+  "use_specified_server": true,
+  "mcp_servers": [
+    {
+      "name": "playwright"
+    },
+    {
+      "name": "email"
+    },
+    {"name": "memory"}
+  ],
+  "output_format": {
+    "instructions_found": "<What was on the page>",
+    "actions_taken": ["<action 1>", "<action 2>", "<action 3>"],
+    "final_result": "<The result>"
+  },
+  "evaluators": [
+    {
+      "func": "json -> get(instructions_found)",
+      "op": "!=",
+      "value": ""
+    },
+    {
+      "func": "json -> get(actions_taken) -> len",
+      "op": ">",
+      "value": 0
+    },
+    {
+      "func": "json -> get(final_result)",
+      "op": "!=",
+      "value": ""
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "category": "browser_automation",
+  "question": "Navigate to http://localhost:8080/docs/test1 and follow the instructions displayed on the page. Complete all required tasks and return the results.",
+  "use_specified_server": true,
+  "mcp_servers": [
+    {
+      "name": "playwright"
+    },
+    {
+      "name": "email"
+    },
+    {"name": "memory"}
+  ],
+  "output_format": {
+    "instructions_found": "<What instructions were on the page>",
+    "actions_taken": ["<action 1>", "<action 2>", "<action 3>"],
+    "final_result": "<The result after following all instructions>"
+  },
+  "evaluators": [
+    {
+      "func": "json -> get(instructions_found)",
+      "op": "!=",
+      "value": ""
+    },
+    {
+      "func": "json -> get(actions_taken) -> len",
+      "op": ">",
+      "value": 0
+    },
+    {
+      "func": "json -> get(final_result)",
+      "op": "!=",
+      "value": ""
+    }
+  ]
+}

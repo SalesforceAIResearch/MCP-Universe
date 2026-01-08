@@ -261,11 +261,17 @@
 
   "playwright": {
     "stdio": {
-      "command": "npx",
+      "command": "docker",
       "args": [
-        "@playwright/mcp@latest",
-        "--headless",
-        "--isolated"
+        "run",
+        "--rm",
+        "-i",
+        "--ipc=host",
+        "--net=host",
+        "--cap-add=SYS_ADMIN",
+        "playwright-mcp:latest",
+        "--isolated",
+        "--headless"
       ]
     }
   },
@@ -282,6 +288,40 @@
       "args": [
         "mcp-remote",
         "https://mcp.paypal.com/sse"
+      ]
+    }
+  },
+
+  "email": {
+    "stdio": {
+      "command": "python3",
+      "args": [
+        "-m", "mcpuniverse.mcp.servers.email"
+      ]
+    },
+    "sse": {
+      "command": "python3",
+      "args": [
+        "-m", "mcpuniverse.mcp.servers.email",
+        "--transport", "sse",
+        "--port", "{{PORT}}"
+      ]
+    }
+  },
+
+  "memory": {
+    "stdio": {
+      "command": "python3",
+      "args": [
+        "-m", "mcpuniverse.mcp.servers.memory"
+      ]
+    },
+    "sse": {
+      "command": "python3",
+      "args": [
+        "-m", "mcpuniverse.mcp.servers.memory",
+        "--transport", "sse",
+        "--port", "{{PORT}}"
       ]
     }
   }
