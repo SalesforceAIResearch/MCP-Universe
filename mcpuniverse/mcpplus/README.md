@@ -13,12 +13,11 @@ When MCP tools return large outputs (API responses, web scrapes, database result
 
 ## The Solution
 
-MCP+ intercepts tool calls and post-processes outputs using:
+MCP+ intercepts tool calls and post-processes outputs using dual extraction:
 
-- **Direct extraction** - For simple, visible data that can be extracted immediately
-- **Code generation** - For complex transformations requiring parsing, filtering, or restructuring
+- **Direct extraction** and **code generation** in a single LLM call
 
-MCP+ uses LLM reasoning to understand what information is relevant to the agent's stated goal and extracts/transforms accordingly.
+It uses LLM reasoning to understand what information is relevant to the agent's stated goal and extracts/transforms accordingly.
 
 ## Quick Start
 
@@ -41,7 +40,7 @@ mcp-build-plus --mcp-config ~/.cursor/mcp.json [OPTIONS]
 | `--servers` | Specific server names to wrap (space-separated) | All servers |
 | `--llm-model` | LLM model for post-processing | `gpt-4.1` |
 | `--llm-api-key-env` | Environment variable name for API key | `OPENAI_API_KEY` |
-| `--token-threshold` | Min tokens to trigger post-processing | `400` |
+| `--token-threshold` | Min tokens to trigger post-processing | `500` |
 | `--output` | Path to write updated config | Overwrite input |
 | `--dry-run` | Preview changes without writing | - |
 | `-y, --yes` | Skip confirmation prompt | - |
@@ -60,7 +59,7 @@ mcp-build-plus --mcp-config ~/.cursor/mcp.json --dry-run
 1. Agent calls tool with `expected_info` parameter describing what it needs
 2. MCP+ forwards the call to the upstream server
 3. If output exceeds token threshold, post-processor analyzes it
-4. LLM decides: direct extraction or code generation
+4. LLM returns both direct extraction and code (dual extraction)
 5. Validated, relevant output returned to agent
 
 ## Per-Server Configuration
@@ -69,10 +68,13 @@ Each `-plus` server has a config file in `~/.mcpplus/configs/proxy_<server>.json
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `token_threshold` | Min tokens to trigger post-processing | 400 |
-| `max_iterations` | ReAct iterations for code refinement | 3 |
-| `enable_reflection` | Validate output quality via LLM | true |
-| `post_processor_type` | `"extract"` (intelligent) or `"react"` (code-only) | `"extract"` |
+| `token_threshold` | Min tokens to trigger post-processing | 500 |
+| `max_iterations` | Dual retries before giving up | 3 |
+| `enable_reflection` | Validate output quality via LLM | false |
+| `execution_timeout` | Timeout in seconds for LLM call and code execution | 500 |
+| `max_tool_output_chars` | Max chars passed to the post-processor (null = no truncation) | null |
+
+Note: `post_processor_type` is deprecated and ignored. MCP+ always uses the dual post-processor.
 
 ## Documentation
 
@@ -80,8 +82,8 @@ See [docs/mcp-plus.md](../../docs/mcp-plus.md) for full documentation.
 
 ## Future Optimizations
 
-- Remove synthetic UX delays for lower latency
-- Skip validation step (`enable_reflection: false`) for faster processing
+- Tighten `execution_timeout` or `max_iterations` for lower latency
+- Keep `enable_reflection: false` to avoid extra LLM calls
 
 ## Next steps
 

@@ -16,7 +16,7 @@ MCP+ is a **context management solution** that prevents these issues by intellig
 ## How It Works
 
 1. **Intercepting tool calls** - Adding an `expected_info` parameter to capture what the agent actually needs
-2. **Intelligent post-processing** - Using LLM-generated code or direct extraction to process outputs (not simple truncation)
+2. **Intelligent post-processing** - Dual extraction returns both direct extraction and code-based extraction in one LLM call
 3. **Context preservation** - Only relevant, high-quality information enters the agent's context window
 
 ## Quick Start
@@ -68,12 +68,12 @@ pip install mcpuniverse
 
 1. **Tool Call**: Agent calls a tool with `expected_info` describing what it needs
 2. **Upstream Execution**: MCP+ forwards the call to the original server
-3. **Threshold Check**: If output < 400 tokens, return as-is
+3. **Threshold Check**: If output < 500 tokens, return as-is
 4. **Post-Processing**:
-   - LLM analyzes output and `expected_info`
-   - Decides between direct extraction or code generation
+   - LLM returns both direct extraction and code in one call
    - Executes extraction code safely
-   - Validates output quality via reflection
+   - Applies size checks to prevent output blow-ups
+   - Optionally validates output quality via reflection
 5. **Return**: Post-processed output returned to agent with processing summary
 
 ### Example
@@ -88,7 +88,7 @@ Change: +2.3%
 
 ---
 [MCP+ Post-Processing Summary]
-Route: Code generation (new)
+Route: Dual extraction
 Iterations: 1/3
 Reduction: 15,234 -> 48 chars (99%)
 ```
@@ -119,20 +119,24 @@ Each `-plus` server has a config in `~/.mcpplus/configs/`:
 {
   "wrapper": {
     "enabled": true,
-    "token_threshold": 400,
+    "token_threshold": 500,
     "max_iterations": 3,
-    "post_processor_type": "extract",
-    "enable_reflection": true
+    "enable_reflection": false,
+    "execution_timeout": 500,
+    "max_tool_output_chars": null
   }
 }
 ```
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `token_threshold` | Min tokens to trigger post-processing | 400 |
-| `max_iterations` | ReAct loop iterations for code refinement | 3 |
-| `post_processor_type` | `"extract"` (intelligent) or `"react"` (code-only) | `"extract"` |
-| `enable_reflection` | Validate output quality via LLM | true |
+| `token_threshold` | Min tokens to trigger post-processing | 500 |
+| `max_iterations` | Dual loop iterations for retries | 3 |
+| `enable_reflection` | Validate output quality via LLM | false |
+| `execution_timeout` | Timeout in seconds for LLM call and code execution | 500 |
+| `max_tool_output_chars` | Max chars passed to the post-processor (null = no truncation) | null |
+
+Note: `post_processor_type` is deprecated and ignored. MCP+ always uses the dual post-processor.
 
 ## Logging
 
@@ -168,7 +172,7 @@ All servers may already have `-plus` versions. Check your mcp.json.
 Ensure `OPENAI_API_KEY` is set before running `mcp-build-plus`. The key gets embedded in the generated configs.
 
 ### Post-processing not triggering
-Output may be below the token threshold (400). Adjust `token_threshold` in the proxy config.
+Output may be below the token threshold (500). Adjust `token_threshold` in the proxy config.
 
 ### Verbose logging in Cursor
 Set `MCPPLUS_LOG_LEVEL=WARNING` (default) for quiet operation.
@@ -177,9 +181,9 @@ Set `MCPPLUS_LOG_LEVEL=WARNING` (default) for quiet operation.
 
 To further reduce latency:
 
-1. **Remove synthetic delays** - The 0.5s UX pauses in `react_extract_postprocess.py` can be removed for faster processing
-2. **Skip validation step** - Disable `enable_reflection: false` to skip the second LLM call that validates output quality
-3. **Use function calling** - Replace text-based JSON parsing with structured function calling for more reliable extraction
+1. **Tighten timeouts** - Reduce `execution_timeout` or `max_iterations` for faster responses
+2. **Skip validation step** - Keep `enable_reflection: false` to avoid extra LLM calls
+3. **Use structured output** - Replace text-based JSON parsing with structured function calling
 
 ## API
 
@@ -191,8 +195,10 @@ from mcpuniverse.mcpplus.mcp import MCPWrapperManager, WrapperConfig
 # Create wrapper manager
 wrapper_config = WrapperConfig(
     enabled=True,
-    token_threshold=400,
-    post_processor_type="extract"
+    token_threshold=500,
+    enable_reflection=False,
+    execution_timeout=500,
+    max_tool_output_chars=None,
 )
 manager = MCPWrapperManager(wrapper_config=wrapper_config)
 manager.load_configs("path/to/server_list.json")

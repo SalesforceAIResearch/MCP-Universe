@@ -51,8 +51,7 @@ def _build_proxy_config(
     env: Optional[Dict[str, str]] = None,
     llm_model: str = "gpt-4.1",
     llm_api_key_env: str = "OPENAI_API_KEY",
-    token_threshold: int = 400,
-    post_processor_type: str = "extract",
+    token_threshold: int = 500,
 ) -> Dict[str, Any]:
     """Build a proxy wrapper config for the given upstream server."""
     return {
@@ -77,10 +76,9 @@ def _build_proxy_config(
             "use_agent_llm": False,
             "post_process_llm": None,
             "enable_memory": True,
-            "execution_timeout": 10,
+            "execution_timeout": 500,
             "max_iterations": 3,
-            "post_processor_type": post_processor_type,
-            "enable_reflection": True,
+            "enable_reflection": False,
             "max_tool_output_chars": None,
         },
     }
@@ -139,7 +137,7 @@ def _prepare_wrap_changes(
     servers: Optional[List[str]] = None,
     llm_model: str = "gpt-4.1",
     llm_api_key_env: str = "OPENAI_API_KEY",
-    token_threshold: int = 400,
+    token_threshold: int = 500,
 ) -> Tuple[Dict[str, Any], Dict[str, Any], Dict[str, Tuple[Path, Dict[str, Any]]], Optional[str]]:
     """
     Prepare the changes that will be made (without writing anything).
@@ -232,7 +230,7 @@ def wrap_servers(
     servers: Optional[List[str]] = None,
     llm_model: str = "gpt-4.1",
     llm_api_key_env: str = "OPENAI_API_KEY",
-    token_threshold: int = 400,
+    token_threshold: int = 500,
     dry_run: bool = False,
     yes: bool = False,
     output_path: Optional[Path] = None,
@@ -359,8 +357,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--token-threshold",
         type=int,
-        default=400,
-        help="Min tokens to trigger post-processing (default: 400)",
+        default=500,
+        help="Min tokens to trigger post-processing (default: 500)",
     )
     parser.add_argument(
         "--output",

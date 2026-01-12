@@ -36,13 +36,11 @@ class WrapperConfig:
         enable_memory (bool): Enable session memory for code reuse.
         execution_timeout (int): Max seconds for filter code execution.
         max_iterations (int): Maximum iterations for post-processor to refine code on failures.
-        post_processor_type (str): Type of post-processor agent ("basic", "react", or "extract").
-            - "basic": Simple post-processor from mcpuniverse
-            - "react": Code generation only (always writes Python code)
-            - "extract": Intelligent selection (decides between direct extraction or code generation)
-        enable_reflection (bool): Enable LLM-based reflection on output quality (react and extract).
+        post_processor_type (str): Deprecated. Retained for backward compatibility but ignored.
+            MCP+ uses the dual post-processor by default.
+        enable_reflection (bool): Enable LLM-based reflection on output quality.
         max_tool_output_chars (Optional[int]): Maximum characters of tool output to show to post-processor LLM.
-            If None or 0, shows entire output. Default is 2000.
+            If None or 0, shows entire output. Default is None.
         expected_info_prompt_file (Optional[str]): Path to a text file containing the custom expected_info
             parameter description. If not provided, uses the default built-in prompt.
     """
@@ -51,11 +49,11 @@ class WrapperConfig:
     use_agent_llm: bool = True
     post_process_llm: Optional[Dict] = None
     enable_memory: bool = True
-    execution_timeout: int = 10
+    execution_timeout: int = 500
     max_iterations: int = 3
-    post_processor_type: str = "react"
-    enable_reflection: bool = True
-    max_tool_output_chars: Optional[int] = 2000
+    post_processor_type: str = "dual"
+    enable_reflection: bool = False
+    max_tool_output_chars: Optional[int] = None
     expected_info_prompt_file: Optional[str] = None
 
 
@@ -622,7 +620,9 @@ class WrappedMCPClient(MCPClient):
             Formatted summary string.
         """
         # Determine route description
-        if stats.extraction_method == "direct":
+        if stats.extraction_method == "dual":
+            route = "Dual extraction"
+        elif stats.extraction_method == "direct":
             route = "Direct extraction"
         elif stats.postprocessor_iterations == 0 and stats.success:
             route = "Code generation (cached)"
@@ -842,23 +842,16 @@ class MCPWrapperManager(MCPManager):
         """
         config = self._wrapper_config
 
-        # Import the correct post-processor agent type
-        if config.post_processor_type == "react":
-            from mcpuniverse.mcpplus.agent.react_postprocess import PostProcessAgent
-            self._logger.info("Using ReAct-style post-processor (code generation only)")
-        elif config.post_processor_type == "extract":
-            from mcpuniverse.mcpplus.agent.react_extract_postprocess import PostProcessAgent
-            self._logger.info("Using Extract-style post-processor (intelligent direct/code selection)")
-        elif config.post_processor_type == "basic":
-            # Basic post-processor not yet implemented in mcpuniverse
-            raise ValueError(
-                "Basic post-processor not available. Use 'react' or 'extract'"
+        # MCP+ uses the dual post-processor by default.
+        if config.post_processor_type and config.post_processor_type != "dual":
+            self._logger.warning(
+                "post_processor_type is deprecated and ignored. Using 'dual' instead of '%s'.",
+                config.post_processor_type
             )
-        else:
-            raise ValueError(
-                f"Invalid post_processor_type: {config.post_processor_type}. "
-                "Must be 'basic', 'react', or 'extract'"
-            )
+        from mcpuniverse.mcpplus.agent.react_dual_postprocess import (
+            DualPostProcessAgent as PostProcessAgent
+        )
+        self._logger.info("Using dual post-processor (direct + code in one call)")
 
         # Determine which LLM to use
         # EXISTING: Tried to build LLM from config dict when use_agent_llm=False
@@ -885,7 +878,6 @@ class MCPWrapperManager(MCPManager):
             )
         post_process_llm = self._llm
 
-        # Create safe executor (now uses blacklist only, no whitelists needed)
         safe_executor = SafeCodeExecutor(
             timeout=config.execution_timeout
         )
@@ -896,7 +888,8 @@ class MCPWrapperManager(MCPManager):
             "enable_memory": config.enable_memory,
             "max_iterations": config.max_iterations,
             "enable_reflection": config.enable_reflection,
-            "max_tool_output_chars": config.max_tool_output_chars
+            "max_tool_output_chars": config.max_tool_output_chars,
+            "execution_timeout": config.execution_timeout
         }
 
         # Create and return post-processor with new BaseAgent interface
