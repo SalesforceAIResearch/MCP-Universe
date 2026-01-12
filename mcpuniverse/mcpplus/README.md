@@ -29,6 +29,32 @@ mcp-build-plus --mcp-config ~/.cursor/mcp.json
 # Restart your MCP client → use finance-plus instead of finance
 ```
 
+## CLI Options
+
+```bash
+mcp-build-plus --mcp-config ~/.cursor/mcp.json [OPTIONS]
+```
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `--mcp-config` | Path to your mcp.json config file | Required |
+| `--servers` | Specific server names to wrap (space-separated) | All servers |
+| `--llm-model` | LLM model for post-processing | `gpt-4.1` |
+| `--llm-api-key-env` | Environment variable name for API key | `OPENAI_API_KEY` |
+| `--token-threshold` | Min tokens to trigger post-processing | `400` |
+| `--output` | Path to write updated config | Overwrite input |
+| `--dry-run` | Preview changes without writing | - |
+| `-y, --yes` | Skip confirmation prompt | - |
+
+**Examples:**
+```bash
+# Wrap specific servers with custom threshold
+mcp-build-plus --mcp-config ~/.cursor/mcp.json --servers finance weather --token-threshold 500
+
+# Preview changes without applying
+mcp-build-plus --mcp-config ~/.cursor/mcp.json --dry-run
+```
+
 ## How It Works
 
 1. Agent calls tool with `expected_info` parameter describing what it needs
@@ -37,7 +63,9 @@ mcp-build-plus --mcp-config ~/.cursor/mcp.json
 4. LLM decides: direct extraction or code generation
 5. Validated, relevant output returned to agent
 
-## Configuration
+## Per-Server Configuration
+
+Each `-plus` server has a config file in `~/.mcpplus/configs/proxy_<server>.json`:
 
 | Option | Description | Default |
 |--------|-------------|---------|
