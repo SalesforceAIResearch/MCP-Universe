@@ -90,6 +90,9 @@ dashboard = [
     "gradio>=5.42.0",
 ]
 
+[project.scripts]
+mcp-build-plus = "mcpuniverse.mcpplus.tools.wrap_mcp_config:main"
+
 [project.urls]
 Homepage = "https://github.com/SalesforceAIResearch/MCP-Universe"
 Repository = "https://github.com/SalesforceAIResearch/MCP-Universe"
@@ -103,9 +106,10 @@ include = ["mcpuniverse*"]
 [tool.setuptools.package-data]
 mcpuniverse = [
     "agent/configs/*",
-    "app/db/migration/*", 
+    "app/db/migration/*",
     "benchmark/configs/*",
     "dashboard/static/*",
     "dashboard/templates/*",
-    "mcp/configs/*"
+    "mcp/configs/*",
+    "mcpplus/mcp/configs/*"
 ]
