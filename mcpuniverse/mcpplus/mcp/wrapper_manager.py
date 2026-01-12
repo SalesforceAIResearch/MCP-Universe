@@ -4,10 +4,11 @@ MCPWrapperManager for building MCP clients with optional wrapper support.
 This module extends MCPManager to support building wrapped clients that can
 post-process tool outputs.
 """
-# pylint: disable=broad-exception-caught
+# pylint: disable=broad-exception-caught,protected-access,import-outside-toplevel
+# pylint: disable=too-few-public-methods
 import json
 import signal
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Optional, Union, Dict, Any, List, TYPE_CHECKING
 
 from mcp.types import TextContent, CallToolResult
@@ -195,7 +196,7 @@ class SafeCodeExecutor:
                 "Variable reference error in generated code: %s\nCode:\n%s",
                 str(e), code
             )
-            raise ValueError(f"Generated code has variable reference error: {e}")
+            raise ValueError(f"Generated code has variable reference error: {e}") from e
         except Exception as e:
             # Log the error with code context
             self._logger.error(
@@ -290,15 +291,21 @@ class WrappedMCPClient(MCPClient):
 
         # Default prompt (existing)
         return (
-            'A precise description of what specific information you need from this tool call to accomplish your immediate goal. '
-            'Be explicit about:\n'
-            '1. WHAT data/information you need (e.g., "the adult ticket price", "list of product URLs", "error message text")\n'
-            '2. WHY you need it (e.g., "to answer the user\'s question", "to visit in the next step", "to debug the issue")\n'
-            '3. Any CONSTRAINTS (e.g., "only from the pricing section", "maximum 10 items", "published after 2023")\n'
+            'A precise description of what specific information you need from '
+            'this tool call to accomplish your immediate goal. Be explicit about:\n'
+            '1. WHAT data/information you need (e.g., "the adult ticket price", '
+            '"list of product URLs", "error message text")\n'
+            '2. WHY you need it (e.g., "to answer the user\'s question", '
+            '"to visit in the next step", "to debug the issue")\n'
+            '3. Any CONSTRAINTS (e.g., "only from the pricing section", '
+            '"maximum 10 items", "published after 2023")\n'
             'Example good descriptions:\n'
-            '  - "The adult ticket price for Universal Studios from the pricing table, needed to answer the user\'s question about ticket cost"\n'
-            '  - "URLs of all product links on the page, needed to visit each product page in subsequent steps"\n'
-            '  - "All information is needed because I need the complete page structure to locate the navigation menu"\n'
+            '  - "The adult ticket price for Universal Studios from the pricing '
+            'table, needed to answer the user\'s question about ticket cost"\n'
+            '  - "URLs of all product links on the page, needed to visit each '
+            'product page in subsequent steps"\n'
+            '  - "All information is needed because I need the complete page '
+            'structure to locate the navigation menu"\n'
             'Example bad descriptions:\n'
             '  - "get information" (too vague)\n'
             '  - "price" (unclear which price, why needed, from where)\n'
@@ -520,8 +527,8 @@ class WrappedMCPClient(MCPClient):
                 self._manager._postprocessor_tracer = Tracer(collector=collector)
                 self._wrapper_logger.warning(
                     "No tracer provided from agent. Using shared post-processor tracer "
-                    f"(trace_id: {self._manager._postprocessor_tracer.trace_id}, "
-                    f"collector: {collector})"
+                    "(trace_id: %s, collector: %s)",
+                    self._manager._postprocessor_tracer.trace_id, collector
                 )
             tracer = self._manager._postprocessor_tracer
 
@@ -647,7 +654,8 @@ class WrappedMCPClient(MCPClient):
             "[MCP+ Post-Processing Summary]",
             f"Route: {route}",
             f"Iterations: {stats.postprocessor_iterations}/3",
-            f"Reduction: {orig_chars} -> {filt_chars} chars ({char_reduction_pct}%) | {orig_tokens} -> {filt_tokens} tokens ({token_reduction_pct}%)"
+            f"Reduction: {orig_chars} -> {filt_chars} chars ({char_reduction_pct}%) | "
+            f"{orig_tokens} -> {filt_tokens} tokens ({token_reduction_pct}%)"
         ]
 
         return "\n".join(summary_lines)
@@ -842,8 +850,10 @@ class MCPWrapperManager(MCPManager):
             from mcpuniverse.mcpplus.agent.react_extract_postprocess import PostProcessAgent
             self._logger.info("Using Extract-style post-processor (intelligent direct/code selection)")
         elif config.post_processor_type == "basic":
-            from mcpuniverse.agent.postprocess import PostProcessAgent
-            self._logger.info("Using basic post-processor")
+            # Basic post-processor not yet implemented in mcpuniverse
+            raise ValueError(
+                "Basic post-processor not available. Use 'react' or 'extract'"
+            )
         else:
             raise ValueError(
                 f"Invalid post_processor_type: {config.post_processor_type}. "
@@ -869,11 +879,10 @@ class MCPWrapperManager(MCPManager):
                 # Temporarily disable to avoid errors
                 config.enabled = False
                 return  # Don't initialize post-processor
-            else:
-                raise RuntimeError(
-                    "use_agent_llm=False but LLM not set. "
-                    "Builder should have resolved post_process_llm.llm reference and called set_llm()."
-                )
+            raise RuntimeError(
+                "use_agent_llm=False but LLM not set. "
+                "Builder should have resolved post_process_llm.llm reference and called set_llm()."
+            )
         post_process_llm = self._llm
 
         # Create safe executor (now uses blacklist only, no whitelists needed)
@@ -934,7 +943,7 @@ class MCPWrapperManager(MCPManager):
         transport: str = "stdio",
         timeout: int = 30,
         mcp_gateway_address: str = "",
-        permissions: Optional[List[Dict[str, str]]] = None
+        permissions: Optional[List[Dict[str, str]]] = None  # pylint: disable=unused-argument
     ) -> MCPClient:
         """
         Build a wrapped MCP client with post-processing capabilities.

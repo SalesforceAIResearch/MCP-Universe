@@ -4,11 +4,11 @@ Post-process agent for filtering structured tool outputs.
 This agent generates Python code to filter and extract relevant information
 from long structured tool outputs based on expected information.
 """
-# pylint: disable=broad-exception-caught
+# pylint: disable=broad-exception-caught,unsubscriptable-object,import-outside-toplevel
 import json
 from typing import Any, Dict, List, Optional, Tuple, Union
 from datetime import datetime
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from mcpuniverse.llm.base import BaseLLM
 from mcpuniverse.common.logger import get_logger
@@ -257,7 +257,6 @@ class PostProcessAgent(BaseAgent):
 
     async def cleanup(self):
         """Cleanup resources (no-op for post-processor)."""
-        pass
 
     async def _execute(
         self,
@@ -429,10 +428,9 @@ class PostProcessAgent(BaseAgent):
                         success=True
                     )
                     return result, stats
-                else:
-                    self._logger.warning(
-                        "Cached code failed: %s. Falling back to ReAct loop", error
-                    )
+                self._logger.warning(
+                    "Cached code failed: %s. Falling back to ReAct loop", error
+                )
             except Exception as e:
                 self._logger.warning(
                     "Cached code execution failed: %s. Falling back to ReAct loop", str(e)
@@ -522,13 +520,12 @@ class PostProcessAgent(BaseAgent):
                 self._logger.debug("Iteration %d SUCCESS", iteration)
                 self._logger.debug("Quality check: %s", quality_reasoning)
                 break
-            else:
-                # Code runs but output doesn't meet the goal
-                self._logger.warning(
-                    "Iteration %d: Code executes but output quality insufficient",
-                    iteration
-                )
-                self._logger.warning("Quality issue: %s", quality_reasoning)
+            # Code runs but output doesn't meet the goal
+            self._logger.warning(
+                "Iteration %d: Code executes but output quality insufficient",
+                iteration
+            )
+            self._logger.warning("Quality issue: %s", quality_reasoning)
 
         # Step 3: Handle final result
         if successful_result is not None:
@@ -545,7 +542,12 @@ class PostProcessAgent(BaseAgent):
             )
 
             # Clean INFO log at end with stats
-            reduction_pct = round((original_chars - len(successful_result)) / original_chars * 100) if original_chars > 0 else 0
+            if original_chars > 0:
+                reduction_pct = round(
+                    (original_chars - len(successful_result)) / original_chars * 100
+                )
+            else:
+                reduction_pct = 0
             self._logger.info(
                 "Done: %d -> %d chars (%d%% reduced, %d iteration%s)",
                 original_chars, len(successful_result), reduction_pct,
@@ -567,39 +569,39 @@ class PostProcessAgent(BaseAgent):
                 success=True
             )
             return successful_result, stats
-        else:
-            # All iterations failed
-            # Add last attempt to memory as failure
-            last_entry = iteration_history[-1] if iteration_history else None
-            if last_entry:
-                self._add_to_memory(
-                    tool_name=tool_name,
-                    expected_info=expected_info,
-                    filter_code=last_entry['code'],
-                    success=False,
-                    error=last_entry['execution_error'],
-                    output_length=len(tool_output),
-                    filtered_length=0,
-                    iterations_taken=iterations_taken
-                )
 
-            error_msg = f"Failed to generate working code after {iterations_taken} iterations"
-            self._logger.error(error_msg)
-            self._logger.warning("Returning original tool output after all iterations failed")
-
-            # Return original output with failure stats
-            stats = PostProcessStats(
-                postprocessor_iterations=iterations_taken,
-                original_chars=original_chars,
-                filtered_chars=original_chars,  # No filtering occurred
-                chars_reduced=0,
-                original_tokens=original_tokens,
-                filtered_tokens=original_tokens,  # No filtering occurred
-                tokens_reduced=0,
-                postprocessor_llm_tokens=0,
-                success=False
+        # All iterations failed
+        # Add last attempt to memory as failure
+        last_entry = iteration_history[-1] if iteration_history else None
+        if last_entry:
+            self._add_to_memory(
+                tool_name=tool_name,
+                expected_info=expected_info,
+                filter_code=last_entry['code'],
+                success=False,
+                error=last_entry['execution_error'],
+                output_length=len(tool_output),
+                filtered_length=0,
+                iterations_taken=iterations_taken
             )
-            return tool_output, stats
+
+        error_msg = f"Failed to generate working code after {iterations_taken} iterations"
+        self._logger.error(error_msg)
+        self._logger.warning("Returning original tool output after all iterations failed")
+
+        # Return original output with failure stats
+        stats = PostProcessStats(
+            postprocessor_iterations=iterations_taken,
+            original_chars=original_chars,
+            filtered_chars=original_chars,  # No filtering occurred
+            chars_reduced=0,
+            original_tokens=original_tokens,
+            filtered_tokens=original_tokens,  # No filtering occurred
+            tokens_reduced=0,
+            postprocessor_llm_tokens=0,
+            success=False
+        )
+        return tool_output, stats
 
     async def generate_filter_code(
         self,
@@ -675,7 +677,10 @@ class PostProcessAgent(BaseAgent):
 
         # Build iteration instruction section
         if iteration == 1:
-            iteration_instruction_section = f"\nThis is iteration 1 of {self._max_iterations}. Generate your best initial solution."
+            iteration_instruction_section = (
+                f"\nThis is iteration 1 of {self._max_iterations}. "
+                "Generate your best initial solution."
+            )
         else:
             attempts_remaining = self._max_iterations - iteration + 1
             iteration_instruction_section = f"""
@@ -748,18 +753,21 @@ Generate CORRECTED code that fixes these specific issues.
                 iterations = entry.get('iterations_taken', 1)
                 memory_lines.append(f"\n  Example {i} (solved in {iterations} iteration(s)):")
                 memory_lines.append(f"    Expected Info: {entry['expected_info']}")
-                memory_lines.append(f"    Code Used:")
+                memory_lines.append("    Code Used:")
                 code_lines = entry['filter_code'].split('\n')
                 for line in code_lines:
                     memory_lines.append(f"      {line}")
-                memory_lines.append(f"    Result: Reduced from {entry['output_length']} to {entry['filtered_length']} chars")
+                memory_lines.append(
+                    f"    Result: Reduced from {entry['output_length']} to "
+                    f"{entry['filtered_length']} chars"
+                )
 
         if failed:
             memory_lines.append("\nFailed Examples (avoid these patterns):")
             for i, entry in enumerate(reversed(failed[-2:]), 1):
                 memory_lines.append(f"\n  Failed Example {i}:")
                 memory_lines.append(f"    Expected Info: {entry['expected_info']}")
-                memory_lines.append(f"    Code Attempted:")
+                memory_lines.append("    Code Attempted:")
                 code_lines = entry['filter_code'].split('\n')
                 for line in code_lines:
                     memory_lines.append(f"      {line}")
@@ -784,12 +792,12 @@ Generate CORRECTED code that fixes these specific issues.
             execution_success = entry.get('execution_success', entry.get('success', False))
 
             if not execution_success:
-                lines.append(f"\n  Execution Result: FAILED")
+                lines.append("\n  Execution Result: FAILED")
                 error = entry.get('execution_error', entry.get('error', 'Unknown error'))
                 error_escaped = str(error).replace('{', '{{').replace('}', '}}')
                 lines.append(f"  Error: {error_escaped}")
             else:
-                lines.append(f"\n  Execution Result: SUCCESS")
+                lines.append("\n  Execution Result: SUCCESS")
                 result_preview = str(entry.get('result', ''))[:200]
                 result_escaped = result_preview.replace('{', '{{').replace('}', '}}')
                 lines.append(f"  Output Preview: {result_escaped}...")
@@ -806,7 +814,10 @@ Generate CORRECTED code that fixes these specific issues.
 
             lines.append("")
 
-        lines.append("Analyze what went wrong in previous attempts and generate IMPROVED code that addresses these issues.\n")
+        lines.append(
+            "Analyze what went wrong in previous attempts and generate IMPROVED code "
+            "that addresses these issues.\n"
+        )
 
         return "\n".join(lines)
 

@@ -11,12 +11,14 @@ Unlike the standard react_postprocess agent, this agent:
 - Re-evaluates the decision if reflection fails
 - Only caches generated code (not direct extractions)
 """
-# pylint: disable=broad-exception-caught
+# pylint: disable=broad-exception-caught,unsubscriptable-object,import-outside-toplevel
+# pylint: disable=too-many-lines,too-many-statements,too-many-locals,too-many-return-statements
+# pylint: disable=too-many-branches,too-many-arguments,cyclic-import,fixme
 import asyncio
 import json
 from typing import Any, Dict, List, Optional, Tuple, Union
 from datetime import datetime
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from mcpuniverse.llm.base import BaseLLM
 from mcpuniverse.common.logger import get_logger
@@ -263,7 +265,7 @@ accidentally filtering out important information.
 Output ONLY the Python code, no explanations. The code should be executable as-is.
 """.strip()
 
-examples = """
+EXAMPLES = """
 Example 3 - Extract links from HTML:
 Agent's Goal: "All hyperlink URLs from the HTML content, needed to navigate to linked pages"
 ```python
@@ -415,7 +417,6 @@ class PostProcessAgent(BaseAgent):
 
     async def cleanup(self):
         """Cleanup resources (no-op for post-processor)."""
-        pass
 
     async def _execute(
         self,
@@ -590,10 +591,9 @@ class PostProcessAgent(BaseAgent):
                         success=True
                     )
                     return result, stats
-                else:
-                    self._logger.warning(
-                        "Cached code failed: %s. Falling back to ReAct loop", error
-                    )
+                self._logger.warning(
+                    "Cached code failed: %s. Falling back to ReAct loop", error
+                )
             except Exception as e:
                 self._logger.warning(
                     "Cached code execution failed: %s. Falling back to ReAct loop", str(e)
@@ -710,13 +710,12 @@ class PostProcessAgent(BaseAgent):
                     f"Complete: {len(tool_output)} → {len(result)} chars ({reduction_pct}% reduction)"
                 )
                 break
-            else:
-                # Execution succeeded but quality check failed - will re-evaluate decision
-                self._logger.warning(
-                    "⚠ Iteration %d: %s method succeeded but output quality insufficient",
-                    iteration, decision.upper()
-                )
-                self._logger.warning("Quality issue: %s", quality_reasoning)
+            # Execution succeeded but quality check failed - will re-evaluate decision
+            self._logger.warning(
+                "⚠ Iteration %d: %s method succeeded but output quality insufficient",
+                iteration, decision.upper()
+            )
+            self._logger.warning("Quality issue: %s", quality_reasoning)
 
         # Step 3: Handle final result
         if successful_result is not None:
@@ -733,7 +732,7 @@ class PostProcessAgent(BaseAgent):
                     iterations_taken=iterations_taken
                 )
                 self._logger.debug("Cached successful code to memory")
-            else:
+            elif successful_method == "direct":
                 self._logger.debug("Direct extraction used - not caching to memory")
 
             # Calculate final statistics
@@ -762,42 +761,41 @@ class PostProcessAgent(BaseAgent):
                 code_attempts=code_attempts
             )
             return successful_result, stats
-        else:
-            # All iterations failed
-            # Add last code attempt to memory as failure (only if code was used)
-            last_entry = iteration_history[-1] if iteration_history else None
-            if last_entry and last_entry.get('code'):
-                self._add_to_memory(
-                    tool_name=tool_name,
-                    expected_info=expected_info,
-                    filter_code=last_entry['code'],
-                    success=False,
-                    error=last_entry.get('execution_error', 'Unknown error'),
-                    output_length=len(tool_output),
-                    filtered_length=0,
-                    iterations_taken=iterations_taken
-                )
-
-            error_msg = f"Failed after {iterations_taken} iterations"
-            self._logger.error(error_msg)
-            self._logger.warning("Returning original tool output after all iterations failed")
-
-            # Return original output with failure stats
-            stats = PostProcessStats(
-                postprocessor_iterations=iterations_taken,
-                original_chars=original_chars,
-                filtered_chars=original_chars,  # No filtering occurred
-                chars_reduced=0,
-                original_tokens=original_tokens,
-                filtered_tokens=original_tokens,  # No filtering occurred
-                tokens_reduced=0,
-                postprocessor_llm_tokens=0,
+        # All iterations failed
+        # Add last code attempt to memory as failure (only if code was used)
+        last_entry = iteration_history[-1] if iteration_history else None
+        if last_entry and last_entry.get('code'):
+            self._add_to_memory(
+                tool_name=tool_name,
+                expected_info=expected_info,
+                filter_code=last_entry['code'],
                 success=False,
-                extraction_method="unknown",
-                direct_attempts=direct_attempts,
-                code_attempts=code_attempts
+                error=last_entry.get('execution_error', 'Unknown error'),
+                output_length=len(tool_output),
+                filtered_length=0,
+                iterations_taken=iterations_taken
             )
-            return tool_output, stats
+
+        error_msg = f"Failed after {iterations_taken} iterations"
+        self._logger.error(error_msg)
+        self._logger.warning("Returning original tool output after all iterations failed")
+
+        # Return original output with failure stats
+        stats = PostProcessStats(
+            postprocessor_iterations=iterations_taken,
+            original_chars=original_chars,
+            filtered_chars=original_chars,  # No filtering occurred
+            chars_reduced=0,
+            original_tokens=original_tokens,
+            filtered_tokens=original_tokens,  # No filtering occurred
+            tokens_reduced=0,
+            postprocessor_llm_tokens=0,
+            success=False,
+            extraction_method="unknown",
+            direct_attempts=direct_attempts,
+            code_attempts=code_attempts
+        )
+        return tool_output, stats
 
     async def decide_and_extract(
         self,
@@ -839,27 +837,25 @@ class PostProcessAgent(BaseAgent):
 
         # Safety check: If tool output is extremely large (>5MB), truncate it
         # This prevents hitting LLM provider limits (e.g., OpenAI 10MB limit)
-        MAX_OUTPUT_SIZE = 5_000_000  # 5MB safety limit
+        max_output_size = 5_000_000  # 5MB safety limit
         tool_output_for_prompt = tool_output
-        output_truncated = False
 
-        if len(tool_output) > MAX_OUTPUT_SIZE:
+        if len(tool_output) > max_output_size:
             self._logger.warning(
                 "Tool output extremely large (%d chars). Truncating to %d chars for LLM prompt.",
-                len(tool_output), MAX_OUTPUT_SIZE
+                len(tool_output), max_output_size
             )
             # Show first 2.5MB and last 2.5MB
-            half_budget = MAX_OUTPUT_SIZE // 2
+            half_budget = max_output_size // 2
             first_part = tool_output[:half_budget]
             last_part = tool_output[-half_budget:]
-            omitted_chars = len(tool_output) - MAX_OUTPUT_SIZE
+            omitted_chars = len(tool_output) - max_output_size
 
             tool_output_for_prompt = (
                 f"{first_part}\n\n"
                 f"... [TRUNCATED: {omitted_chars:,} characters omitted from middle] ...\n\n"
                 f"{last_part}"
             )
-            output_truncated = True
 
         # Build tool description section
         tool_description_section = ""
@@ -877,7 +873,9 @@ class PostProcessAgent(BaseAgent):
 
         # Build iteration instruction section
         if iteration == 1:
-            iteration_instruction_section = f"\nThis is iteration 1 of {self._max_iterations}. Provide your best solution."
+            iteration_instruction_section = (
+                f"\nThis is iteration 1 of {self._max_iterations}. Provide your best solution."
+            )
         else:
             attempts_remaining = self._max_iterations - iteration + 1
             iteration_instruction_section = f"""
@@ -939,32 +937,29 @@ CRITICAL: Review the previous attempts above. Learn from what failed and try a d
                 if extracted_data:
                     self._logger.debug("Action: Direct extraction - %s...", str(extracted_data)[:100])
                     return ("direct", True, str(extracted_data), None, thought, None)
-                else:
-                    error_msg = "Direct extraction chosen but no extracted_data provided in response"
-                    self._logger.warning(error_msg)
-                    return ("direct", False, None, None, thought, error_msg)
-            else:
-                # CODE GENERATION + EXECUTION PATH
-                code = response_data.get("code")
-                if not code:
-                    error_msg = "Code decision chosen but no code provided in response"
-                    self._logger.warning(error_msg)
-                    return ("code", False, None, None, thought, error_msg)
+                error_msg = "Direct extraction chosen but no extracted_data provided in response"
+                self._logger.warning(error_msg)
+                return ("direct", False, None, None, thought, error_msg)
+            # CODE GENERATION + EXECUTION PATH
+            code = response_data.get("code")
+            if not code:
+                error_msg = "Code decision chosen but no code provided in response"
+                self._logger.warning(error_msg)
+                return ("code", False, None, None, thought, error_msg)
 
-                self._logger.debug("Action: Generated code\n```python\n%s\n```", code)
+            self._logger.debug("Action: Generated code\n```python\n%s\n```", code)
 
-                # Execute the code immediately
-                self._logger.debug("Executing generated code...")
-                execution_success, result, execution_error = await self._execute_and_evaluate(
-                    code, tool_output
-                )
+            # Execute the code immediately
+            self._logger.debug("Executing generated code...")
+            execution_success, result, execution_error = await self._execute_and_evaluate(
+                code, tool_output
+            )
 
-                if execution_success:
-                    self._logger.debug("Code executed successfully, result: %s...", str(result)[:100])
-                    return ("code", True, result, code, thought, None)
-                else:
-                    self._logger.warning("Code execution failed: %s", execution_error)
-                    return ("code", False, None, code, thought, execution_error)
+            if execution_success:
+                self._logger.debug("Code executed successfully, result: %s...", str(result)[:100])
+                return ("code", True, result, code, thought, None)
+            self._logger.warning("Code execution failed: %s", execution_error)
+            return ("code", False, None, code, thought, execution_error)
 
         except json.JSONDecodeError as e:
             error_msg = f"Failed to parse JSON response: {str(e)}"
@@ -1092,7 +1087,10 @@ CRITICAL: Review the previous attempts above. Learn from what failed and try a d
 
         # Build iteration instruction section
         if iteration == 1:
-            iteration_instruction_section = f"\nThis is iteration 1 of {self._max_iterations}. Generate your best initial solution."
+            iteration_instruction_section = (
+                f"\nThis is iteration 1 of {self._max_iterations}. "
+                "Generate your best initial solution."
+            )
         else:
             attempts_remaining = self._max_iterations - iteration + 1
             iteration_instruction_section = f"""
@@ -1176,12 +1174,16 @@ Generate CORRECTED code that fixes these specific issues.
                 iterations = entry.get('iterations_taken', 1)
                 memory_lines.append(f"\n  Example {i} (solved in {iterations} iteration(s)):")
                 memory_lines.append(f"    Expected Info: {entry['expected_info']}")
-                memory_lines.append(f"    Code Used:")
+                memory_lines.append("    Code Used:")
                 # Indent the code
                 code_lines = entry['filter_code'].split('\n')
                 for line in code_lines:
                     memory_lines.append(f"      {line}")
-                memory_lines.append(f"    Result: Reduced from {entry['output_length']} to {entry['filtered_length']} chars")
+                result_line = (
+                    f"    Result: Reduced from {entry['output_length']} to "
+                    f"{entry['filtered_length']} chars"
+                )
+                memory_lines.append(result_line)
 
         # Show up to 2 most recent failed examples to learn from mistakes
         if failed:
@@ -1189,7 +1191,7 @@ Generate CORRECTED code that fixes these specific issues.
             for i, entry in enumerate(reversed(failed[-2:]), 1):
                 memory_lines.append(f"\n  Failed Example {i}:")
                 memory_lines.append(f"    Expected Info: {entry['expected_info']}")
-                memory_lines.append(f"    Code Attempted:")
+                memory_lines.append("    Code Attempted:")
                 code_lines = entry['filter_code'].split('\n')
                 for line in code_lines:
                     memory_lines.append(f"      {line}")
@@ -1225,13 +1227,13 @@ Generate CORRECTED code that fixes these specific issues.
 
             if not execution_success:
                 # Execution failed
-                lines.append(f"\n  Execution Result: FAILED")
+                lines.append("\n  Execution Result: FAILED")
                 error = entry.get('execution_error', entry.get('error', 'Unknown error'))
                 error_escaped = str(error).replace('{', '{{').replace('}', '}}')
                 lines.append(f"  Error: {error_escaped}")
             else:
                 # Execution succeeded, check quality
-                lines.append(f"\n  Execution Result: SUCCESS")
+                lines.append("\n  Execution Result: SUCCESS")
 
                 result_preview = str(entry.get('result', ''))[:200]
                 result_escaped = result_preview.replace('{', '{{').replace('}', '}}')
@@ -1250,7 +1252,10 @@ Generate CORRECTED code that fixes these specific issues.
 
             lines.append("")  # Blank line between iterations
 
-        lines.append("Analyze what went wrong in previous attempts and generate IMPROVED code that addresses these issues.\n")
+        lines.append(
+            "Analyze what went wrong in previous attempts and generate IMPROVED code "
+            "that addresses these issues.\n"
+        )
 
         return "\n".join(lines)
 

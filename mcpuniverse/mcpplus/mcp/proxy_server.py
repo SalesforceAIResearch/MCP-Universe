@@ -5,7 +5,7 @@ This server exposes the same tools as the upstream MCP server, but routes calls
 through MCP+'s WrappedMCPClient so long outputs can be filtered by the
 post-processing agent before being returned to the caller.
 """
-# pylint: disable=protected-access,broad-exception-caught
+# pylint: disable=protected-access,broad-exception-caught,no-value-for-parameter,line-too-long
 import asyncio
 import json
 import os
@@ -15,11 +15,10 @@ from typing import Optional, Any
 
 import click
 from mcp.server.fastmcp import FastMCP, Context as FastMCPContext
-from mcp.types import CallToolResult, TextContent, ToolAnnotations
+from mcp.types import ToolAnnotations
 
 from mcpuniverse.mcpplus.common.logger import get_logger
 from mcpuniverse.mcpplus.mcp.wrapper_manager import MCPWrapperManager, WrapperConfig
-from mcpuniverse.mcp.manager import MCPManager
 from mcpuniverse.llm.manager import ModelManager
 from mcpuniverse.common.context import Context
 

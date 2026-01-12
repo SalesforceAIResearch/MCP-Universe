@@ -87,7 +87,7 @@ def _build_proxy_config(
 
 
 def _build_cursor_entry(
-    server_name: str,
+    server_name: str,  # pylint: disable=unused-argument
     config_path: Path,
     llm_api_key_env: str = "OPENAI_API_KEY",
     llm_api_key_value: Optional[str] = None,
@@ -283,7 +283,7 @@ def wrap_servers(
 
     # Show proxy configs that will be created
     print(f"\n[Proxy Configs] Will create {len(proxy_configs)} file(s) in ~/.mcpplus/configs/:")
-    for plus_name, (config_path, _) in proxy_configs.items():
+    for _, (config_path, _) in proxy_configs.items():
         print(f"  - {config_path}")
 
     # Show entries that will be added to mcp.json
@@ -314,7 +314,7 @@ def wrap_servers(
     print("\nApplying changes...")
 
     # Write proxy configs
-    for plus_name, (config_path, proxy_config) in proxy_configs.items():
+    for _, (config_path, proxy_config) in proxy_configs.items():
         _write_json(config_path, proxy_config)
         print(f"  Created: {config_path}")
 

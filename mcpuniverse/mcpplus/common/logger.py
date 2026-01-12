@@ -6,6 +6,7 @@ This module provides a minimal logger that:
 - Defaults to WARNING level (quiet by default)
 - Can be set to DEBUG via MCPPLUS_LOG_LEVEL environment variable
 """
+# pylint: disable=invalid-name,global-statement,cyclic-import
 import logging
 import os
 
