@@ -8,6 +8,7 @@ post-processing agent before being returned to the caller.
 # pylint: disable=protected-access,broad-exception-caught,no-value-for-parameter,line-too-long
 import asyncio
 import json
+import keyword
 import os
 from dataclasses import dataclass
 from pathlib import Path
@@ -161,8 +162,25 @@ class ProxyServer:
             properties = input_schema.get("properties", {}) if isinstance(input_schema, dict) else {}
             required = set(input_schema.get("required", [])) if isinstance(input_schema, dict) else set()
 
-            param_parts = []
-            param_names = []
+            required_params = []
+            optional_params = []
+            used_param_names = set()
+
+            def _make_safe_name(name: str) -> str:
+                safe_name = name
+                if not safe_name.isidentifier() or keyword.iskeyword(safe_name):
+                    safe_name = "".join(ch if ch.isalnum() or ch == "_" else "_" for ch in safe_name)
+                    if not safe_name or safe_name[0].isdigit():
+                        safe_name = f"param_{safe_name}"
+                    if keyword.iskeyword(safe_name):
+                        safe_name = f"{safe_name}_param"
+                base_name = safe_name
+                suffix = 1
+                while safe_name in used_param_names:
+                    safe_name = f"{base_name}_{suffix}"
+                    suffix += 1
+                used_param_names.add(safe_name)
+                return safe_name
             for pname, schema in properties.items():
                 stype = schema.get("type") if isinstance(schema, dict) else None
                 ann = "str"
@@ -177,26 +195,35 @@ class ProxyServer:
                 elif stype == "object":
                     ann = "dict"
 
+                safe_name = _make_safe_name(pname)
                 if pname in required:
-                    param_parts.append(f"{pname}: {ann}")
+                    required_params.append((safe_name, pname, ann))
                 else:
-                    param_parts.append(f"{pname}: {ann} | None = None")
-                param_names.append(pname)
+                    optional_params.append((safe_name, pname, ann))
 
             # Ensure expected_info exists (wrapper added it upstream)
-            if "expected_info" not in param_names:
-                param_parts.append("expected_info: str")
-                param_names.append("expected_info")
+            actual_names = {pname for _, pname, _ in required_params + optional_params}
+            if "expected_info" not in actual_names:
+                safe_name = _make_safe_name("expected_info")
+                required_params.append((safe_name, "expected_info", "str"))
                 required.add("expected_info")
+
+            param_parts = [f"{pname}: {ann}" for pname, _, ann in required_params]
+            param_parts += [
+                f"{pname}: {ann} | None = None" for pname, _, ann in optional_params
+            ]
+            param_names = [(pname, actual) for pname, actual, _ in required_params + optional_params]
 
             signature = ", ".join(param_parts)
             # Add ctx parameter for progress reporting
             lines = [f"async def _tool(ctx: FastMCPContext, {signature}):"]
             lines.append("    args = {}")
-            for pname in param_names:
+            for pname, actual_name in param_names:
                 # always include required fields; include optional if not None
-                lines.append(f"    if '{pname}' in {list(required)!r} or {pname} is not None:")
-                lines.append(f"        args['{pname}'] = {pname}")
+                lines.append(
+                    f"    if {actual_name!r} in {list(required)!r} or {pname} is not None:"
+                )
+                lines.append(f"        args[{actual_name!r}] = {pname}")
             # Safety: if expected_info still missing, provide a default to trigger wrapper
             lines.append("    if 'expected_info' not in args:")
             lines.append("        args['expected_info'] = 'All information is needed; summarize concisely.'")
