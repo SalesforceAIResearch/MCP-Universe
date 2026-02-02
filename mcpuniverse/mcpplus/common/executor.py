@@ -75,7 +75,7 @@ class SafeCodeExecutor:
 
             # Process/system operations
             'os.system', 'os.popen', 'os.spawn', 'os.exec',
-            'subprocess', 'popen', 'sys.modules', 'ctypes'
+            'subprocess', 'popen', 'sys.modules', 'ctypes',
 
             # Input operations
             'input(', 'raw_input(',
