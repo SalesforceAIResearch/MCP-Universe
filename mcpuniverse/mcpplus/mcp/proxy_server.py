@@ -164,9 +164,9 @@ class ProxyServer:
 
             required_params = []
             optional_params = []
-            used_param_names = set()
+            used_param_names: set = set()
 
-            def _make_safe_name(name: str) -> str:
+            def _make_safe_name(name: str, used_names: set) -> str:
                 safe_name = name
                 if not safe_name.isidentifier() or keyword.iskeyword(safe_name):
                     safe_name = "".join(ch if ch.isalnum() or ch == "_" else "_" for ch in safe_name)
@@ -176,10 +176,10 @@ class ProxyServer:
                         safe_name = f"{safe_name}_param"
                 base_name = safe_name
                 suffix = 1
-                while safe_name in used_param_names:
+                while safe_name in used_names:
                     safe_name = f"{base_name}_{suffix}"
                     suffix += 1
-                used_param_names.add(safe_name)
+                used_names.add(safe_name)
                 return safe_name
             for pname, schema in properties.items():
                 stype = schema.get("type") if isinstance(schema, dict) else None
@@ -195,7 +195,7 @@ class ProxyServer:
                 elif stype == "object":
                     ann = "dict"
 
-                safe_name = _make_safe_name(pname)
+                safe_name = _make_safe_name(pname, used_param_names)
                 if pname in required:
                     required_params.append((safe_name, pname, ann))
                 else:
@@ -204,7 +204,7 @@ class ProxyServer:
             # Ensure expected_info exists (wrapper added it upstream)
             actual_names = {pname for _, pname, _ in required_params + optional_params}
             if "expected_info" not in actual_names:
-                safe_name = _make_safe_name("expected_info")
+                safe_name = _make_safe_name("expected_info", used_param_names)
                 required_params.append((safe_name, "expected_info", "str"))
                 required.add("expected_info")
 

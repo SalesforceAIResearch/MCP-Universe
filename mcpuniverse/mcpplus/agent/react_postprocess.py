@@ -15,7 +15,7 @@ from mcpuniverse.common.logger import get_logger
 from mcpuniverse.agent.base import BaseAgentConfig, BaseAgent
 from mcpuniverse.agent.types import AgentResponse
 from mcpuniverse.tracer import Tracer
-from mcpuniverse.mcpplus.mcp.wrapper_manager import SafeCodeExecutor
+from mcpuniverse.mcpplus.common.executor import SafeCodeExecutor
 
 
 def count_tokens(text: str, model: str = "gpt-4") -> int:

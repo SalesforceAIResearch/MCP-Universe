@@ -19,7 +19,8 @@ from mcpuniverse.agent.base import BaseAgent, BaseAgentConfig
 from mcpuniverse.agent.types import AgentResponse
 from mcpuniverse.llm.base import BaseLLM
 from mcpuniverse.common.logger import get_logger
-from mcpuniverse.mcpplus.mcp.wrapper_manager import SafeCodeExecutor
+from mcpuniverse.tracer import Tracer
+from mcpuniverse.mcpplus.common.executor import SafeCodeExecutor
 from mcpuniverse.mcpplus.agent.react_postprocess import count_tokens, PostProcessStats
 
 
@@ -180,15 +181,19 @@ class DualPostProcessAgent(BaseAgent):
             self._extraction_prompt = DUAL_EXTRACTION_PROMPT
             self._logger.info("Using default DUAL_EXTRACTION_PROMPT")
 
-    async def initialize(self):
-        """Initialize agent."""
+    async def initialize(self, mcp_servers=None):
+        """Initialize agent.
+
+        Args:
+            mcp_servers: Ignored (not needed for post-processor).
+        """
+        del mcp_servers  # Unused, but required for BaseAgent interface
         if self._initialized:
             return
         self._initialized = True
 
     async def cleanup(self):
-        """Cleanup resources."""
-        pass
+        """Cleanup resources (no-op for post-processor)."""
 
     async def _execute(
         self,
@@ -244,7 +249,6 @@ class DualPostProcessAgent(BaseAgent):
         tool_output = input_data.get("tool_output", "")
         expected_info = input_data.get("expected_info", "")
 
-        from mcpuniverse.tracer import Tracer
         tracer = kwargs.get("tracer", Tracer())
 
         # Truncate tool output if needed (keep original for stats)
@@ -313,6 +317,85 @@ class DualPostProcessAgent(BaseAgent):
             trace_id=tracer.trace_id
         )
 
+    def _parse_llm_response(self, response: str) -> Optional[Dict[str, str]]:
+        """
+        Parse LLM response and extract extraction data.
+
+        Args:
+            response: Raw LLM response string.
+
+        Returns:
+            Dict with direct_extraction, code, thought keys, or None if parsing fails.
+        """
+        response_text = response.strip()
+        if response_text.startswith("```"):
+            lines = response_text.split("\n")
+            if lines[-1].strip() == "```":
+                lines = lines[1:-1]
+            else:
+                lines = lines[1:]
+            response_text = "\n".join(lines)
+
+        extraction_data = json.loads(response_text)
+        return {
+            "direct_extraction": extraction_data.get("direct_extraction", ""),
+            "code": extraction_data.get("code", ""),
+            "thought": extraction_data.get("thought", "")
+        }
+
+    def _execute_extraction_code(self, code: str, tool_output: str) -> tuple[str, Optional[str]]:
+        """
+        Execute extraction code safely.
+
+        Args:
+            code: Python code to execute.
+            tool_output: Tool output to process.
+
+        Returns:
+            Tuple of (result, error). If successful, error is None.
+        """
+        if not code:
+            return "", None
+        try:
+            result = str(self._safe_executor.execute(code, tool_output))
+            self._logger.info("Code executed successfully: %d chars", len(result))
+            return result, None
+        except Exception as e:  # pylint: disable=broad-exception-caught
+            error = str(e)
+            self._logger.error("Code execution exception: %s", error)
+            return "", error
+
+    def _validate_output_sizes(
+        self,
+        tool_output: str,
+        direct_extraction: str,
+        code_result: str
+    ) -> Dict[str, Any]:
+        """
+        Validate output sizes against token limits.
+
+        Args:
+            tool_output: Original tool output.
+            direct_extraction: Direct extraction result.
+            code_result: Code execution result.
+
+        Returns:
+            Dict with validation results including token counts and flags.
+        """
+        input_tokens = count_tokens(tool_output, model=self._model_name)
+        direct_tokens = count_tokens(direct_extraction, model=self._model_name)
+        code_tokens = count_tokens(code_result, model=self._model_name)
+        max_allowed = int(input_tokens * 0.5)
+
+        return {
+            "input_tokens": input_tokens,
+            "direct_tokens": direct_tokens,
+            "code_tokens": code_tokens,
+            "max_allowed": max_allowed,
+            "direct_too_large": direct_tokens > max_allowed,
+            "code_too_large": code_tokens > max_allowed
+        }
+
     async def _extract_with_iterations(
         self,
         tool_name: str,
@@ -335,15 +418,13 @@ class DualPostProcessAgent(BaseAgent):
             tool_output: Output from the tool.
             expected_info: What the agent expects to extract.
             stats: Statistics dict to update.
+            tracer: Tracer for logging.
 
         Returns:
             Formatted string with both extraction results.
         """
-        iteration_history = []
-
-        best_direct_extraction = ""
-        best_code_result = ""
-        best_code_error = None
+        iteration_history: List[Dict] = []
+        best_direct, best_code, best_code_error = "", "", None
 
         for iteration in range(self._config.max_iterations):
             stats["postprocessor_iterations"] = iteration + 1
@@ -351,97 +432,37 @@ class DualPostProcessAgent(BaseAgent):
             stats["code_attempts"] += 1
 
             self._logger.info(
-                "Dual extraction attempt %d/%d",
-                iteration + 1,
-                self._config.max_iterations
+                "Dual extraction attempt %d/%d", iteration + 1, self._config.max_iterations
             )
 
             prompt = self._build_prompt(
-                tool_name=tool_name,
-                tool_description=tool_description,
-                tool_output=tool_output,
-                expected_info=expected_info,
-                iteration_history=iteration_history,
-                iteration=iteration
+                tool_name, tool_description, tool_output, expected_info, iteration_history, iteration
             )
-
             self._logger.info("%s", prompt)
 
-            try:
-                response = await self._llm.generate_async(
-                    messages=[{"role": "user", "content": prompt}],
-                    tracer=tracer,
-                    timeout=self._config.execution_timeout
-                )
-
-                response_text = response.strip()
-                if response_text.startswith("```"):
-                    lines = response_text.split("\n")
-                    if lines[-1].strip() == "```":
-                        lines = lines[1:-1]
-                    else:
-                        lines = lines[1:]
-                    response_text = "\n".join(lines)
-
-                extraction_data = json.loads(response_text)
-                direct_extraction = extraction_data.get("direct_extraction", "")
-                code = extraction_data.get("code", "")
-                thought = extraction_data.get("thought", "")
-
-                if thought:
-                    self._logger.info("Postprocessor thought: %s", thought)
-                else:
-                    self._logger.info("LLM response: %s", response[:200])
-
-            except json.JSONDecodeError as e:
-                self._logger.error("Invalid JSON from LLM: %s", str(e))
-                iteration_history.append({
-                    "iteration": iteration + 1,
-                    "direct": "",
-                    "code": "",
-                    "code_result": "",
-                    "error": f"Invalid JSON response: {str(e)}"
-                })
-                continue
-            except Exception as e:
-                error_msg = str(e)
-                self._logger.error("LLM call failed: %s", error_msg)
-
-                is_timeout = "timeout" in error_msg.lower() or "timed out" in error_msg.lower()
-
-                if is_timeout:
-                    self._logger.warning("LLM timeout on iteration %d, retrying...", iteration + 1)
-                    continue
-
-                iteration_history.append({
-                    "iteration": iteration + 1,
-                    "direct": "",
-                    "code": "",
-                    "code_result": "",
-                    "error": f"LLM error: {error_msg}"
-                })
+            # Call LLM and parse response
+            extraction_data = await self._call_llm_for_extraction(
+                prompt, iteration, iteration_history, tracer
+            )
+            if extraction_data is None:
                 continue
 
-            code_result = ""
-            code_error = None
+            direct_extraction = extraction_data["direct_extraction"]
+            code = extraction_data["code"]
 
-            if code:
-                try:
-                    code_result = str(self._safe_executor.execute(code, tool_output))
-                    self._logger.info("Code executed successfully: %d chars", len(code_result))
-                except Exception as e:
-                    code_error = str(e)
-                    self._logger.error("Code execution exception: %s", code_error)
+            # Execute code
+            code_result, code_error = self._execute_extraction_code(code, tool_output)
 
+            # Track results
             has_direct = bool(direct_extraction and direct_extraction.strip())
             has_code = bool(code_result and code_result.strip())
 
             if has_direct:
-                best_direct_extraction = direct_extraction
+                best_direct = direct_extraction
             if has_code:
-                best_code_result = code_result
+                best_code = code_result
                 best_code_error = None
-            elif code_error and not best_code_result:
+            elif code_error and not best_code:
                 best_code_error = code_error
 
             iteration_history.append({
@@ -452,122 +473,217 @@ class DualPostProcessAgent(BaseAgent):
                 "error": code_error
             })
 
+            # Check if we have valid outputs
             if has_direct and has_code:
-                input_tokens = count_tokens(tool_output, model=self._model_name)
-                direct_tokens = count_tokens(direct_extraction, model=self._model_name)
-                code_output_tokens = count_tokens(code_result, model=self._model_name)
-                max_allowed_tokens = int(input_tokens * 0.5)
-
-                direct_too_large = direct_tokens > max_allowed_tokens
-                code_too_large = code_output_tokens > max_allowed_tokens
-
-                if direct_too_large and code_too_large:
-                    if iteration < self._config.max_iterations - 1:
-                        self._logger.warning(
-                            "Both outputs too large: direct=%d tokens, code=%d tokens "
-                            "(input: %d, max allowed: %d). Retrying...",
-                            direct_tokens, code_output_tokens, input_tokens, max_allowed_tokens
-                        )
-                        iteration_history[-1]["error"] = (
-                            f"Both direct extraction ({direct_tokens} tokens) and code output "
-                            f"({code_output_tokens} tokens) exceed max allowed ({max_allowed_tokens} tokens). "
-                            "Generate more concise extraction and code."
-                        )
-                        continue
-
-                    self._logger.warning(
-                        "Last iteration: both outputs too large (direct=%d, code=%d, max=%d). "
-                        "Comparing filtered vs original size...",
-                        direct_tokens, code_output_tokens, max_allowed_tokens
-                    )
-                    filtered_output = self._format_output(direct_extraction, code_result, None)
-                    filtered_total_tokens = count_tokens(filtered_output, model=self._model_name)
-
-                    if filtered_total_tokens < input_tokens:
-                        self._logger.info(
-                            "Filtered output (%d tokens) smaller than original (%d tokens), using filtered",
-                            filtered_total_tokens, input_tokens
-                        )
-                        return filtered_output
-
-                    self._logger.warning(
-                        "Filtered output (%d tokens) larger than original (%d tokens), returning original",
-                        filtered_total_tokens, input_tokens
-                    )
-                    return tool_output
-
-                use_direct = has_direct and not direct_too_large
-                use_code = has_code and not code_too_large
-
-                if direct_too_large:
-                    self._logger.warning(
-                        "Direct extraction too large (%d tokens > %d allowed), excluding from output",
-                        direct_tokens, max_allowed_tokens
-                    )
-                if code_too_large:
-                    self._logger.warning(
-                        "Code output too large (%d tokens > %d allowed), excluding from output",
-                        code_output_tokens, max_allowed_tokens
-                    )
-
-                if not use_direct and not use_code:
-                    self._logger.error("Both outputs excluded due to size, this shouldn't happen")
-                    if iteration < self._config.max_iterations - 1:
-                        continue
-                    return tool_output
-
-                if self._config.enable_reflection and iteration < self._config.max_iterations - 1:
-                    should_retry, reflection_feedback = await self._should_retry_with_reflection(
-                        tool_output=tool_output,
-                        expected_info=expected_info,
-                        direct_result=direct_extraction if use_direct else "",
-                        generated_code=code,
-                        code_result=code_result if use_code else "",
-                        tracer=tracer
-                    )
-                    if should_retry:
-                        if reflection_feedback:
-                            iteration_history[-1]["error"] = reflection_feedback
-                        self._logger.info("Reflection suggests retry")
-                        continue
-
-                final_direct = direct_extraction if use_direct else ""
-                final_code_result = code_result if use_code else ""
-
-                if use_direct and use_code:
-                    self._logger.info("Both extraction methods succeeded and passed size check")
-                elif use_direct:
-                    self._logger.info("Direct extraction succeeded (code output excluded due to size)")
-                else:
-                    self._logger.info("Code extraction succeeded (direct extraction excluded due to size)")
-
-                return self._format_output(
-                    direct_extraction=final_direct,
-                    code_result=final_code_result,
-                    code_error=None
+                result = await self._process_successful_extraction(
+                    tool_output, expected_info, direct_extraction, code, code_result,
+                    iteration, iteration_history, tracer
                 )
+                if result is not None:
+                    return result
+                continue
 
-            if not has_direct and not has_code:
-                self._logger.warning("Iteration %d: both outputs empty, retrying...", iteration + 1)
-            elif not has_direct:
-                self._logger.warning("Iteration %d: direct extraction empty, retrying...", iteration + 1)
-            elif not has_code:
-                self._logger.warning(
-                    "Iteration %d: code execution failed (%s), retrying...",
-                    iteration + 1, code_error or "empty result"
-                )
+            # Log why we're retrying
+            self._log_retry_reason(iteration, has_direct, has_code, code_error)
 
-        if best_direct_extraction or best_code_result:
+        # Return best partial results or original
+        return self._finalize_extraction(tool_output, best_direct, best_code, best_code_error)
+
+    async def _call_llm_for_extraction(
+        self,
+        prompt: str,
+        iteration: int,
+        iteration_history: List[Dict],
+        tracer
+    ) -> Optional[Dict[str, str]]:
+        """Call LLM and return parsed extraction data, or None on failure."""
+        try:
+            response = await self._llm.generate_async(
+                messages=[{"role": "user", "content": prompt}],
+                tracer=tracer,
+                timeout=self._config.execution_timeout
+            )
+            extraction_data = self._parse_llm_response(response)
+            thought = extraction_data.get("thought", "")
+            if thought:
+                self._logger.info("Postprocessor thought: %s", thought)
+            else:
+                self._logger.info("LLM response: %s", response[:200])
+            return extraction_data
+
+        except json.JSONDecodeError as e:
+            self._logger.error("Invalid JSON from LLM: %s", str(e))
+            iteration_history.append({
+                "iteration": iteration + 1,
+                "direct": "", "code": "", "code_result": "",
+                "error": f"Invalid JSON response: {str(e)}"
+            })
+            return None
+
+        except Exception as e:  # pylint: disable=broad-exception-caught
+            error_msg = str(e)
+            self._logger.error("LLM call failed: %s", error_msg)
+            if "timeout" in error_msg.lower() or "timed out" in error_msg.lower():
+                self._logger.warning("LLM timeout on iteration %d, retrying...", iteration + 1)
+            else:
+                iteration_history.append({
+                    "iteration": iteration + 1,
+                    "direct": "", "code": "", "code_result": "",
+                    "error": f"LLM error: {error_msg}"
+                })
+            return None
+
+    async def _process_successful_extraction(
+        self,
+        tool_output: str,
+        expected_info: str,
+        direct_extraction: str,
+        code: str,
+        code_result: str,
+        iteration: int,
+        iteration_history: List[Dict],
+        tracer
+    ) -> Optional[str]:
+        """
+        Process successful extraction results with size validation.
+
+        Returns formatted output if valid, None if should retry.
+        """
+        sizes = self._validate_output_sizes(tool_output, direct_extraction, code_result)
+
+        # Both too large
+        if sizes["direct_too_large"] and sizes["code_too_large"]:
+            return self._handle_both_too_large(
+                tool_output, direct_extraction, code_result, sizes, iteration, iteration_history
+            )
+
+        use_direct = not sizes["direct_too_large"]
+        use_code = not sizes["code_too_large"]
+
+        self._log_size_warnings(sizes, use_direct, use_code)
+
+        if not use_direct and not use_code:
+            self._logger.error("Both outputs excluded due to size, this shouldn't happen")
+            return None if iteration < self._config.max_iterations - 1 else tool_output
+
+        # Reflection check
+        if self._config.enable_reflection and iteration < self._config.max_iterations - 1:
+            should_retry, feedback = await self._should_retry_with_reflection(
+                tool_output, expected_info,
+                direct_extraction if use_direct else "",
+                code, code_result if use_code else "", tracer
+            )
+            if should_retry:
+                if feedback:
+                    iteration_history[-1]["error"] = feedback
+                self._logger.info("Reflection suggests retry")
+                return None
+
+        self._log_success(use_direct, use_code)
+        return self._format_output(
+            direct_extraction if use_direct else "",
+            code_result if use_code else "",
+            None
+        )
+
+    def _handle_both_too_large(
+        self,
+        tool_output: str,
+        direct_extraction: str,
+        code_result: str,
+        sizes: Dict[str, Any],
+        iteration: int,
+        iteration_history: List[Dict]
+    ) -> Optional[str]:
+        """Handle case where both outputs exceed size limits."""
+        if iteration < self._config.max_iterations - 1:
+            self._logger.warning(
+                "Both outputs too large: direct=%d tokens, code=%d tokens "
+                "(input: %d, max allowed: %d). Retrying...",
+                sizes["direct_tokens"], sizes["code_tokens"],
+                sizes["input_tokens"], sizes["max_allowed"]
+            )
+            iteration_history[-1]["error"] = (
+                f"Both direct extraction ({sizes['direct_tokens']} tokens) and code output "
+                f"({sizes['code_tokens']} tokens) exceed max allowed ({sizes['max_allowed']} tokens). "
+                "Generate more concise extraction and code."
+            )
+            return None
+
+        self._logger.warning(
+            "Last iteration: both outputs too large (direct=%d, code=%d, max=%d). "
+            "Comparing filtered vs original size...",
+            sizes["direct_tokens"], sizes["code_tokens"], sizes["max_allowed"]
+        )
+        filtered_output = self._format_output(direct_extraction, code_result, None)
+        filtered_tokens = count_tokens(filtered_output, model=self._model_name)
+
+        if filtered_tokens < sizes["input_tokens"]:
+            self._logger.info(
+                "Filtered output (%d tokens) smaller than original (%d tokens), using filtered",
+                filtered_tokens, sizes["input_tokens"]
+            )
+            return filtered_output
+
+        self._logger.warning(
+            "Filtered output (%d tokens) larger than original (%d tokens), returning original",
+            filtered_tokens, sizes["input_tokens"]
+        )
+        return tool_output
+
+    def _log_size_warnings(self, sizes: Dict[str, Any], use_direct: bool, use_code: bool) -> None:
+        """Log warnings about excluded outputs due to size."""
+        if not use_direct and sizes["direct_too_large"]:
+            self._logger.warning(
+                "Direct extraction too large (%d tokens > %d allowed), excluding from output",
+                sizes["direct_tokens"], sizes["max_allowed"]
+            )
+        if not use_code and sizes["code_too_large"]:
+            self._logger.warning(
+                "Code output too large (%d tokens > %d allowed), excluding from output",
+                sizes["code_tokens"], sizes["max_allowed"]
+            )
+
+    def _log_success(self, use_direct: bool, use_code: bool) -> None:
+        """Log success message based on which methods were used."""
+        if use_direct and use_code:
+            self._logger.info("Both extraction methods succeeded and passed size check")
+        elif use_direct:
+            self._logger.info("Direct extraction succeeded (code output excluded due to size)")
+        else:
+            self._logger.info("Code extraction succeeded (direct extraction excluded due to size)")
+
+    def _log_retry_reason(
+        self, iteration: int, has_direct: bool, has_code: bool, code_error: Optional[str]
+    ) -> None:
+        """Log reason for retrying extraction."""
+        if not has_direct and not has_code:
+            self._logger.warning("Iteration %d: both outputs empty, retrying...", iteration + 1)
+        elif not has_direct:
+            self._logger.warning("Iteration %d: direct extraction empty, retrying...", iteration + 1)
+        elif not has_code:
+            self._logger.warning(
+                "Iteration %d: code execution failed (%s), retrying...",
+                iteration + 1, code_error or "empty result"
+            )
+
+    def _finalize_extraction(
+        self,
+        tool_output: str,
+        best_direct: str,
+        best_code: str,
+        best_code_error: Optional[str]
+    ) -> str:
+        """Return final extraction result after all iterations."""
+        if best_direct or best_code:
             self._logger.warning(
                 "All %d iterations exhausted. Returning best partial results: direct=%s, code=%s",
                 self._config.max_iterations,
-                "yes" if best_direct_extraction else "no",
-                "yes" if best_code_result else "no"
+                "yes" if best_direct else "no",
+                "yes" if best_code else "no"
             )
             return self._format_output(
-                direct_extraction=best_direct_extraction,
-                code_result=best_code_result,
-                code_error=best_code_error if not best_code_result else None
+                best_direct, best_code, best_code_error if not best_code else None
             )
 
         self._logger.error(
@@ -677,7 +793,7 @@ class DualPostProcessAgent(BaseAgent):
 
             return not success, feedback_message
 
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-exception-caught
             self._logger.error("Reflection failed: %s", str(e))
             return False, None
 
