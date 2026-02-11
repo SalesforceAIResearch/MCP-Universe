@@ -1,6 +1,6 @@
 # W&D: Scaling Parallel Tool Calling for Efficient Deep Research Agents
 
-Reproduce results from the paper **W&D: Scaling Parallel Tool Calling for Efficient Deep Research Agents** using this benchmark and configuration suite.
+Reproduce results from the paper [**W&D: Scaling Parallel Tool Calling for Efficient Deep Research Agents**](https://arxiv.org/pdf/2602.07359) using this benchmark and configuration suite.
 
 ---
 
@@ -196,4 +196,22 @@ deepresearch/
     ├── browsecomp/   # BrowseComp agent configs
     ├── gaia/         # GAIA agent configs
     └── hle/          # HLE agent configs
+```
+
+---
+
+## Citation
+
+If you use our work, please cite:
+
+```bibtex
+@misc{lin2026wdscalingparalleltoolcalling,
+      title={W&D:Scaling Parallel Tool Calling for Efficient Deep Research Agents}, 
+      author={Xiaoqiang Lin and Jun Hao Liew and Silvio Savarese and Junnan Li},
+      year={2026},
+      eprint={2602.07359},
+      archivePrefix={arXiv},
+      primaryClass={cs.AI},
+      url={https://arxiv.org/abs/2602.07359}, 
+}
 ```

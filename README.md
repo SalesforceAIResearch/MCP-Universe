@@ -38,8 +38,14 @@ Even state-of-the-art models show significant limitations in real-world MCP inte
 
 *This highlights the challenging nature of real-world MCP server interactions and substantial room for improvement in current LLM agents.*
 
+<h2 style="color: red;">News</h2>
+
+- **Feb 11, 2026 — Wide & Deep (W&D) research agents** — We scale *width* by making more parallel tool calls per turn. This improves accuracy on BrowseComp, HLE, and GAIA while reducing turns, API cost, and wall-clock time. Our W&D agent with GPT-5-medium reaches **62.2%** on BrowseComp, outperforming GPT-5-high deep research (54.9%).  
+  [Paper](https://lnkd.in/gT5Vi_gz) · [Website](https://lnkd.in/ga9YzCHp) · [Code](https://lnkd.in/gejEP3Pk) · [Run W&D in this repo](mcpuniverse/benchmark/configs/deepresearch/README.md)
+
 ## Table of Contents
 
+- [News](#news)
 - [Architecture Overview](#architecture-overview)
 - [Getting Started](#getting-started)
     - [Prerequisites](#prerequisites)
