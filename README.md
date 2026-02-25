@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/salesforceairesearch-mcp-universe-badge.png)](https://mseep.ai/app/salesforceairesearch-mcp-universe)
+
 <div align="center">
 
 # <img src="assets/icon.png" alt="MCP-Universe" width="23" height="23"> MCP-Universe
