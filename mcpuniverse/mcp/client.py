@@ -38,7 +38,7 @@ improved support for SSE transport:
    - Handles cancel scope errors gracefully.
    - Manages cross-task cleanup error handling.
 """
-# pylint: disable=broad-exception-caught
+# pylint: disable=broad-exception-caught,too-many-lines
 import asyncio
 import logging
 import os
@@ -487,7 +487,7 @@ class MCPClient(metaclass=AutodocABCMeta):
                     await asyncio.sleep(wait_time)
 
                     # Check if server is reachable
-                    is_reachable = await _check_server_reachable(server_url, timeout=3.0)
+                    is_reachable = await _check_server_reachable(server_url, timeout=min(3.0, timeout))
                     if not is_reachable:
                         self._logger.warning(
                             "Server at %s is not reachable. "
@@ -695,7 +695,7 @@ class MCPClient(metaclass=AutodocABCMeta):
                     await asyncio.sleep(wait_time)
 
                     # Check if server is reachable
-                    is_reachable = await _check_server_reachable(server_url, timeout=3.0)
+                    is_reachable = await _check_server_reachable(server_url, timeout=min(3.0, timeout))
                     if not is_reachable:
                         self._logger.warning(
                             "Server at %s is not reachable. "

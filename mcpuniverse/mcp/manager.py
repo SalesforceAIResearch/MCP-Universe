@@ -199,7 +199,8 @@ class MCPManager(metaclass=AutodocABCMeta):
             timeout (int, optional): Connection timeout in seconds. Defaults to 60.
             mcp_gateway_address (str, optional): Server address - for SSE: gateway address, for HTTP: full server URL.
             permissions (List[dict], optional): A list of tool permissions.
-            headers (Dict[str, str], optional): HTTP headers for authentication (for HTTP and potentially SSE transports).
+            headers (Dict[str, str], optional): HTTP headers for authentication
+                (for HTTP and potentially SSE transports).
 
         Returns:
             MCPClient: An MCP client connected to the specified server.
