@@ -71,14 +71,14 @@ class ServerConfig(BaseConfig):
     Attributes:
         stdio (CommandConfig): Configuration for standard I/O command.
         sse (CommandConfig): Configuration for SSE command.
-        http_url (Optional[str]): URL for HTTP transport.
-        headers (Optional[Dict]): Headers for HTTP/SSE transport authentication.
+        http_url (str): URL for HTTP transport.
+        headers (Dict): Headers for HTTP/SSE transport authentication.
         env (Dict): Dictionary of environment variables.
     """
     stdio: CommandConfig = field(default_factory=CommandConfig)
     sse: CommandConfig = field(default_factory=CommandConfig)
-    http_url: Optional[str] = None
-    headers: Optional[Dict] = None
+    http_url: str = ""
+    headers: Dict = field(default_factory=dict)
     env: Dict = field(default_factory=dict)
 
     def render_template(self, params: Optional[Dict] = None):
@@ -156,3 +156,23 @@ class ServerConfig(BaseConfig):
                     env_args.append(value)
 
         return env_args + self.stdio.list_unspecified_params() + self.sse.list_unspecified_params()
+
+    def to_dict(self) -> Dict:
+        """
+        Converts the config object to a dict.
+
+        Overrides BaseConfig.to_dict() to exclude http_url and headers
+        when they have empty default values, maintaining backward compatibility
+        with existing configurations that don't use these fields.
+
+        Returns:
+            A dictionary representation of the configuration object.
+        """
+        data = super().to_dict()
+        # Remove http_url if it's empty (not provided)
+        if "http_url" in data and data["http_url"] == "":
+            del data["http_url"]
+        # Remove headers if it's empty (not provided)
+        if "headers" in data and data["headers"] == {}:
+            del data["headers"]
+        return data
