@@ -146,7 +146,7 @@ class WrappedMCPClient(MCPClient):
 
         return tools
 
-    async def execute_tool(  # pylint: disable=too-many-return-statements
+    async def execute_tool(  # pylint: disable=too-many-return-statements,arguments-renamed
         self,
         tool_name: str,
         arguments: dict[str, Any],
@@ -534,7 +534,8 @@ class MCPWrapperManager(MCPManager):
         transport: str = "stdio",
         timeout: int = 30,
         mcp_gateway_address: str = "",
-        permissions: Optional[List[Dict[str, str]]] = None
+        permissions: Optional[List[Dict[str, str]]] = None,
+        headers: Optional[Dict[str, str]] = None
     ) -> MCPClient:
         """
         Build an MCP client with optional wrapping.
@@ -544,10 +545,11 @@ class MCPWrapperManager(MCPManager):
 
         Args:
             server_name: Name of the MCP server to connect to.
-            transport: Transport type ("stdio" or "sse").
+            transport: Transport type ("stdio", "sse", or "http").
             timeout: Connection timeout in seconds.
-            mcp_gateway_address: MCP gateway server address (for SSE).
+            mcp_gateway_address: MCP gateway server address (for SSE) or HTTP server URL (for HTTP).
             permissions: Optional permissions for the client.
+            headers: Optional headers for HTTP/SSE authentication.
 
         Returns:
             MCPClient or WrappedMCPClient instance.
@@ -559,7 +561,8 @@ class MCPWrapperManager(MCPManager):
                 transport=transport,
                 timeout=timeout,
                 mcp_gateway_address=mcp_gateway_address,
-                permissions=permissions
+                permissions=permissions,
+                headers=headers
             )
 
         # Fall back to standard client
@@ -568,7 +571,8 @@ class MCPWrapperManager(MCPManager):
             transport=transport,
             timeout=timeout,
             mcp_gateway_address=mcp_gateway_address,
-            permissions=permissions
+            permissions=permissions,
+            headers=headers
         )
 
     async def _initialize_post_processor(self):
@@ -643,17 +647,19 @@ class MCPWrapperManager(MCPManager):
         transport: str = "stdio",
         timeout: int = 30,
         mcp_gateway_address: str = "",
-        permissions: Optional[List[Dict[str, str]]] = None
+        permissions: Optional[List[Dict[str, str]]] = None,
+        headers: Optional[Dict[str, str]] = None
     ) -> MCPClient:
         """
         Build a wrapped MCP client with post-processing capabilities.
 
         Args:
             server_name: Name of the MCP server to connect to.
-            transport: Transport type ("stdio" or "sse").
+            transport: Transport type ("stdio", "sse", or "http").
             timeout: Connection timeout in seconds.
-            mcp_gateway_address: MCP gateway server address (for SSE).
+            mcp_gateway_address: MCP gateway server address (for SSE) or HTTP server URL (for HTTP).
             permissions: Optional permissions for the client.
+            headers: Optional headers for HTTP/SSE authentication.
 
         Returns:
             WrappedMCPClient instance with post-processing enabled.
@@ -672,8 +678,13 @@ class MCPWrapperManager(MCPManager):
             self._logger.info("Initializing post-processor for wrapped client")
             await self._initialize_post_processor()
 
-        # For direct SSE URLs, connect directly without server registration
-        if transport == "sse" and mcp_gateway_address and mcp_gateway_address.startswith("http"):
+        # For direct SSE/HTTP URLs, connect directly without server registration
+        if transport == "http" and mcp_gateway_address and mcp_gateway_address.startswith("http"):
+            # Direct HTTP URL provided - connect directly
+            client = MCPClient(name=f"{server_name}_client", permissions=permissions)  # pylint: disable=unexpected-keyword-arg
+            await client.connect_to_http_server(mcp_gateway_address, headers=headers, timeout=timeout)
+            self._logger.info("Connected directly to HTTP server at %s", mcp_gateway_address)
+        elif transport == "sse" and mcp_gateway_address and mcp_gateway_address.startswith("http"):
             # Direct SSE URL provided - connect directly
             client = MCPClient(name=f"{server_name}_client", permissions=permissions)  # pylint: disable=unexpected-keyword-arg
             await client.connect_to_sse_server(mcp_gateway_address, timeout=timeout)
@@ -685,7 +696,8 @@ class MCPWrapperManager(MCPManager):
                 transport=transport,
                 timeout=timeout,
                 mcp_gateway_address=mcp_gateway_address,
-                permissions=permissions
+                permissions=permissions,
+                headers=headers
             )
 
         # Wrap the client

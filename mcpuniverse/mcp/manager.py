@@ -187,25 +187,28 @@ class MCPManager(metaclass=AutodocABCMeta):
             transport: str = "stdio",
             timeout: int = 60,
             mcp_gateway_address: str = "",
-            permissions: Optional[List[Dict[str, str]]] = None
+            permissions: Optional[List[Dict[str, str]]] = None,
+            headers: Optional[Dict[str, str]] = None
     ) -> MCPClient:
         """
         Builds and returns an MCP client for a specified server.
 
         Args:
             server_name (str): The name of the MCP server to connect to.
-            transport (str, optional): The transport type, either "stdio" or "sse". Defaults to "stdio".
-            timeout (int, optional): Connection timeout in seconds. Defaults to 30.
-            mcp_gateway_address (str, optional): A specified MCP gateway server address.
+            transport (str, optional): The transport type: "stdio", "sse", or "http". Defaults to "stdio".
+            timeout (int, optional): Connection timeout in seconds. Defaults to 60.
+            mcp_gateway_address (str, optional): Server address - for SSE: gateway address, for HTTP: full server URL.
             permissions (List[dict], optional): A list of tool permissions.
+            headers (Dict[str, str], optional): HTTP headers for authentication (for HTTP and potentially SSE transports).
 
         Returns:
             MCPClient: An MCP client connected to the specified server.
 
         Note:
-            For SSE transport, the MCP_GATEWAY_ADDRESS environment variable must be set.
+            For SSE transport, the MCP_GATEWAY_ADDRESS environment variable must be set if not provided.
+            For HTTP transport, mcp_gateway_address should be the full HTTP server URL.
         """
-        assert transport in ["stdio", "sse"], "Transport type should be `stdio` or `sse`"
+        assert transport in ["stdio", "sse", "http"], "Transport type should be `stdio`, `sse`, or `http`"
         assert server_name in self._server_configs, f"Unknown server: {server_name}"
 
         # Re-create config from raw config to ensure we always use the latest environment variables
@@ -237,7 +240,7 @@ class MCPManager(metaclass=AutodocABCMeta):
         client = MCPClient(name=f"{server_name}_client", permissions=permissions)
         if transport == "stdio":
             await client.connect_to_stdio_server(server_config, timeout=timeout)
-        else:
+        elif transport == "sse":
             if mcp_gateway_address:
                 gateway_address = mcp_gateway_address
             else:
@@ -245,6 +248,22 @@ class MCPManager(metaclass=AutodocABCMeta):
             if gateway_address == "":
                 raise ValueError("MCP_GATEWAY_ADDRESS is not set")
             await client.connect_to_sse_server(f"{gateway_address}/{server_name}/sse")
+            # Note: headers from server_config could be used here in the future if SSE supports it
+        elif transport == "http":
+            # Use http_url from server config, allow override with mcp_gateway_address for backward compat
+            http_url = mcp_gateway_address if mcp_gateway_address else server_config.http_url
+            if not http_url:
+                raise ValueError(f"HTTP URL not configured for server '{server_name}'. "
+                               "Set 'http_url' in server config or provide 'mcp_gateway_address' parameter")
+
+            # Merge headers: server config headers + parameter headers (parameter takes precedence)
+            final_headers = {}
+            if server_config.headers:
+                final_headers.update(server_config.headers)
+            if headers:
+                final_headers.update(headers)
+
+            await client.connect_to_http_server(http_url, headers=final_headers or None, timeout=timeout)
         return client
 
     async def execute(
