@@ -38,7 +38,7 @@ improved support for SSE transport:
    - Handles cancel scope errors gracefully.
    - Manages cross-task cleanup error handling.
 """
-# pylint: disable=broad-exception-caught
+# pylint: disable=broad-exception-caught,too-many-lines
 import asyncio
 import logging
 import os
@@ -56,6 +56,7 @@ from pydantic import BaseModel
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 from mcp.client.sse import sse_client
+from mcp.client.streamable_http import streamablehttp_client
 from mcp.types import CallToolResult, TextContent
 
 from mcpuniverse.common.misc import AutodocABCMeta
@@ -330,6 +331,7 @@ class MCPClient(metaclass=AutodocABCMeta):
         # Connection config for reconnection
         # For stdio: ServerConfig
         # For SSE: {"url": str, "transport": "sse"}
+        # For HTTP: {"url": str, "headers": dict, "transport": "http"}
         self._connection_config = None
         # Permissions
         self._permissions = None
@@ -485,7 +487,7 @@ class MCPClient(metaclass=AutodocABCMeta):
                     await asyncio.sleep(wait_time)
 
                     # Check if server is reachable
-                    is_reachable = await _check_server_reachable(server_url, timeout=3.0)
+                    is_reachable = await _check_server_reachable(server_url, timeout=min(3.0, timeout))
                     if not is_reachable:
                         self._logger.warning(
                             "Server at %s is not reachable. "
@@ -649,6 +651,143 @@ class MCPClient(metaclass=AutodocABCMeta):
         await self.cleanup()
         raise last_error
 
+    async def connect_to_http_server(
+        self,
+        server_url: str,
+        headers: Optional[Dict[str, str]] = None,
+        timeout: int = 20,
+        retries: int = 5,
+        retry_delay: float = 2.0
+    ):
+        """
+        Connects to an MCP server using HTTP Streamable transport.
+
+        Args:
+            server_url (str): The URL of the MCP HTTP server.
+            headers (dict, optional): HTTP headers to include (e.g., for authentication).
+            timeout (int, optional): Connection timeout in seconds. Defaults to 20.
+            retries (int, optional): Number of retry attempts. Defaults to 5.
+            retry_delay (float, optional): Delay between retries in seconds. Defaults to 2.0.
+
+        Raises:
+            Exception: If the connection fails after all retries.
+
+        Note:
+            This method sets up the HTTP connection and initializes the client session.
+            Headers can include authentication tokens, API keys, etc.
+        """
+        # Retry mechanism: support multiple retry attempts for connection failures
+        last_error = None
+        for attempt in range(retries):
+            try:
+                # Clean up previous failed attempts
+                if attempt > 0:
+                    await self._cleanup_failed_attempt()
+
+                # Check if server is reachable before connecting (especially after failures)
+                if attempt > 0:
+                    # Exponential backoff: wait time increases gradually
+                    wait_time = retry_delay * (1.5 ** attempt)  # Exponential backoff
+                    self._logger.info(
+                        "Waiting %.1f seconds before retry (attempt %d/%d)...",
+                        wait_time, attempt + 1, retries
+                    )
+                    await asyncio.sleep(wait_time)
+
+                    # Check if server is reachable
+                    is_reachable = await _check_server_reachable(server_url, timeout=min(3.0, timeout))
+                    if not is_reachable:
+                        self._logger.warning(
+                            "Server at %s is not reachable. "
+                            "This usually means the MCP server process is not running or not ready.",
+                            server_url
+                        )
+                        # Continue retry anyway - server might become available
+
+                # Use streamablehttp_client for HTTP transport
+                # Use exit_stack to manage the async context properly
+                read_stream, write_stream, _ = await self._exit_stack.enter_async_context(
+                    streamablehttp_client(
+                        url=server_url,
+                        headers=headers or {},
+                    )
+                )
+
+                session = await self._exit_stack.enter_async_context(
+                    ClientSession(read_stream, write_stream)
+                )
+                await session.initialize()
+
+                # Connection verification: verify connection by listing tools
+                await self._verify_connection(session, transport_type="http")
+
+                # Store the session and connection details
+                self._session = session
+                self._server_params = {"type": "http", "url": server_url, "headers": headers}
+                # Store connection config for reconnection
+                self._connection_config = {"url": server_url, "headers": headers, "transport": "http"}
+
+                return  # Success
+            except Exception as e:
+                last_error = e
+                error_msg = str(e)
+                error_tb = traceback.format_exc()
+
+                # Check if this is a safe cleanup error
+                is_cancel_scope_error = False
+                if hasattr(e, 'exceptions') and isinstance(e.exceptions, tuple):
+                    # ExceptionGroup-like object
+                    all_cancel_scope = all(
+                        "cancel scope" in str(exc).lower() or
+                        "Attempted to exit" in str(exc) or
+                        "different task" in str(exc).lower()
+                        for exc in e.exceptions
+                    )
+                    if all_cancel_scope:
+                        is_cancel_scope_error = True
+                elif ("cancel scope" in error_msg.lower() or
+                      "Attempted to exit" in error_msg or
+                      "different task" in error_msg.lower()):
+                    is_cancel_scope_error = True
+
+                # Ignore cancel scope errors - these are non-fatal warnings
+                if is_cancel_scope_error:
+                    self._logger.debug(
+                        "Cancel scope warning during HTTP connection (attempt %d/%d, safe to ignore): %s",
+                        attempt + 1, retries, error_msg
+                    )
+                    if attempt < retries - 1:
+                        await asyncio.sleep(retry_delay * 0.5)
+                        continue
+                    # Last attempt encountered cancel scope error - assume connection established
+                    self._logger.debug(
+                        "Cancel scope error on last attempt, assuming connection established: %s",
+                        error_msg
+                    )
+                    try:
+                        if self._session:
+                            await self._session.list_tools()
+                            return  # Success despite cancel scope error
+                    except Exception:
+                        pass  # Will fall through to raise error
+                else:
+                    # Log the error
+                    self._logger.warning(
+                        "Failed to initialize HTTP client %s (attempt %d/%d): %s\nTraceback:\n%s",
+                        self._name, attempt + 1, retries, error_msg, error_tb[:1000]
+                    )
+
+                    if attempt < retries - 1:
+                        self._logger.info("Retrying in %.1f seconds...", retry_delay)
+                        await asyncio.sleep(retry_delay)
+
+        # All retries failed: error handling
+        error_msg = str(last_error) if last_error else "Unknown error"
+        self._logger.error("Failed to initialize HTTP client %s after %d attempts: %s",
+                          self._name, retries, error_msg)
+        await self.cleanup()
+        raise last_error
+
     async def list_tools(self) -> list[Any]:
         """
         Retrieves a list of available tools from the connected MCP server.
@@ -669,6 +808,93 @@ class MCPClient(metaclass=AutodocABCMeta):
                 for tool in item[1]:
                     tools.append(tool)
         return tools
+
+    async def list_prompts(self) -> list[Any]:
+        """
+        Retrieves a list of available prompts from the connected MCP server.
+
+        Returns:
+            list[Any]: A list of available prompts.
+
+        Raises:
+            RuntimeError: If the client is not initialized.
+        """
+        if not self._session:
+            raise RuntimeError(f"Client {self._name} not initialized")
+
+        try:
+            prompts_response = await self._session.list_prompts()
+            prompts = []
+            for item in prompts_response:
+                if isinstance(item, tuple) and item[0] == "prompts":
+                    for prompt in item[1]:
+                        prompts.append(prompt)
+            return prompts
+        except Exception as e:
+            self._logger.warning("Failed to list prompts: %s", str(e))
+            return []
+
+    async def get_prompt(self, name: str, arguments: Optional[dict] = None) -> Any:
+        """
+        Gets a specific prompt from the connected MCP server.
+
+        Args:
+            name (str): The name of the prompt to retrieve.
+            arguments (dict, optional): Arguments for the prompt template.
+
+        Returns:
+            Any: The prompt result.
+
+        Raises:
+            RuntimeError: If the client is not initialized.
+        """
+        if not self._session:
+            raise RuntimeError(f"Client {self._name} not initialized")
+
+        return await self._session.get_prompt(name, arguments or {})
+
+    async def list_resources(self) -> list[Any]:
+        """
+        Retrieves a list of available resources from the connected MCP server.
+
+        Returns:
+            list[Any]: A list of available resources.
+
+        Raises:
+            RuntimeError: If the client is not initialized.
+        """
+        if not self._session:
+            raise RuntimeError(f"Client {self._name} not initialized")
+
+        try:
+            resources_response = await self._session.list_resources()
+            resources = []
+            for item in resources_response:
+                if isinstance(item, tuple) and item[0] == "resources":
+                    for resource in item[1]:
+                        resources.append(resource)
+            return resources
+        except Exception as e:
+            self._logger.warning("Failed to list resources: %s", str(e))
+            return []
+
+    async def read_resource(self, uri: str) -> Any:
+        """
+        Reads a specific resource from the connected MCP server.
+
+        Args:
+            uri (str): The URI of the resource to read.
+
+        Returns:
+            Any: The resource contents.
+
+        Raises:
+            RuntimeError: If the client is not initialized.
+        """
+        if not self._session:
+            raise RuntimeError(f"Client {self._name} not initialized")
+
+        return await self._session.read_resource(uri)
 
     async def execute_tool(
             self,
