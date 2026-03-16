@@ -31,11 +31,12 @@ class ProxyConfig:
 
     upstream_server: str
     server_name: str = "proxy"
-    transport: str = "stdio"  # transport to talk to upstream (stdio or sse)
-    upstream_address: str = ""  # used for sse
+    transport: str = "stdio"  # transport to talk to upstream (stdio, sse, or http)
+    upstream_address: str = ""  # used for sse/http
     timeout: int = 30
     wrapper: Optional[dict] = None  # WrapperConfig fields
     llm: Optional[dict] = None  # Optional LLM config for post-processing
+    headers: Optional[dict] = None  # HTTP headers for authentication (used for http/sse)
     # Direct upstream launch config (used when server not in server_list.json)
     upstream_command: Optional[str] = None
     upstream_args: Optional[list] = None
@@ -56,6 +57,7 @@ def _load_config(path: str) -> ProxyConfig:
         timeout=data.get("timeout", 30),
         wrapper=wrapper_dict,
         llm=data.get("llm"),
+        headers=data.get("headers"),
         upstream_command=data.get("upstream_command"),
         upstream_args=data.get("upstream_args"),
         upstream_env=data.get("upstream_env"),
@@ -73,7 +75,7 @@ class ProxyServer:
         self._client = None
         self._server = FastMCP(
             self._config.server_name,
-            instructions="Proxy MCP server with post-processing",
+            instructions=f"MCP+ enabled version of '{self._config.upstream_server}' with intelligent output post-processing to reduce token costs.",
         )
 
     async def _init_client(self):  # pylint: disable=too-many-statements
@@ -87,9 +89,27 @@ class ProxyServer:
         if config_file.exists():
             self._mcp_manager.load_configs(str(config_file))
 
-        # Register the server dynamically (stdio or SSE)
+        # Register the server dynamically (stdio, SSE, or HTTP)
         # This allows wrapping servers not in server_list.json
-        if self._config.transport == "sse" and self._config.upstream_address:
+        if self._config.transport == "http" and self._config.upstream_address:
+            # HTTP server with direct URL
+            server_config = {
+                "http_url": self._config.upstream_address,
+            }
+            # Add headers if provided
+            if self._config.headers:
+                server_config["headers"] = self._config.headers
+            try:
+                self._mcp_manager.add_server_config(self._config.upstream_server, server_config)
+            except ValueError:
+                # Server already exists, update it instead
+                self._mcp_manager.update_server_config(self._config.upstream_server, server_config)
+            self._logger.info(
+                "Registered HTTP server '%s' with URL: %s",
+                self._config.upstream_server,
+                self._config.upstream_address
+            )
+        elif self._config.transport == "sse" and self._config.upstream_address:
             # SSE server with direct URL
             # Register a minimal config so the server is known to the manager
             server_config = {
@@ -98,6 +118,9 @@ class ProxyServer:
                     "args": [],
                 }
             }
+            # Add headers if provided (for authenticated SSE)
+            if self._config.headers:
+                server_config["headers"] = self._config.headers
             try:
                 self._mcp_manager.add_server_config(self._config.upstream_server, server_config)
             except ValueError:
@@ -170,19 +193,100 @@ class ProxyServer:
                 "or post-processing will be disabled when use_agent_llm=True."
             )
 
-        self._client = await self._mcp_manager.build_wrapped_client(
-            server_name=self._config.upstream_server,
-            transport=self._config.transport,
-            timeout=self._config.timeout,
-            mcp_gateway_address=self._config.upstream_address,
-        )
+        # Try to build client with specified transport, with fallback if needed
+        transport_tried = self._config.transport
+        try:
+            self._client = await self._mcp_manager.build_client(
+                server_name=self._config.upstream_server,
+                transport=transport_tried,
+                timeout=self._config.timeout,
+                mcp_gateway_address=self._config.upstream_address,
+                headers=self._config.headers,
+            )
+            self._logger.info(
+                "Successfully connected to upstream '%s' via %s transport",
+                self._config.upstream_server,
+                transport_tried
+            )
+        except Exception as e:
+            # If HTTP fails and we have a URL, try SSE fallback
+            if transport_tried == "http" and self._config.upstream_address:
+                self._logger.warning(
+                    "Failed to connect via HTTP transport: %s. Trying SSE fallback...",
+                    str(e)
+                )
+                try:
+                    # Try SSE as fallback
+                    # Re-register the server with SSE config instead of HTTP
+                    sse_config = {
+                        "sse": {
+                            "command": self._config.upstream_address,
+                            "args": [],
+                        }
+                    }
+                    if self._config.headers:
+                        sse_config["headers"] = self._config.headers
 
-    async def start(self):  # pylint: disable=too-many-statements
+                    try:
+                        self._mcp_manager.update_server_config(self._config.upstream_server, sse_config)
+                    except Exception:
+                        # If update fails, try adding fresh
+                        self._mcp_manager.add_server_config(self._config.upstream_server, sse_config)
+
+                    self._client = await self._mcp_manager.build_client(
+                        server_name=self._config.upstream_server,
+                        transport="sse",
+                        timeout=self._config.timeout,
+                        mcp_gateway_address=self._config.upstream_address,
+                        headers=self._config.headers,
+                    )
+                    self._logger.info(
+                        "Successfully connected to upstream '%s' via SSE fallback",
+                        self._config.upstream_server
+                    )
+                except Exception as sse_error:
+                    self._logger.error(
+                        "Failed to connect to upstream '%s' via both HTTP and SSE: HTTP error: %s, SSE error: %s",
+                        self._config.upstream_server,
+                        str(e),
+                        str(sse_error)
+                    )
+                    raise RuntimeError(
+                        f"Could not connect to upstream server '{self._config.upstream_server}' "
+                        f"via HTTP or SSE transport"
+                    ) from sse_error
+            else:
+                self._logger.error(
+                    "Failed to connect to upstream '%s' via %s transport: %s",
+                    self._config.upstream_server,
+                    transport_tried,
+                    str(e)
+                )
+                raise
+
+    async def start(self):  # pylint: disable=too-many-statements,too-many-locals,too-many-branches
         """Start the proxy server by binding handlers and initializing the upstream client."""
-        await self._init_client()
+        try:
+            await self._init_client()
+        except Exception as e:
+            self._logger.error("Failed to initialize upstream client: %s", str(e))
+            self._logger.error(
+                "Proxy server '%s' will start but will not have any tools available.",
+                self._config.server_name
+            )
+            # Don't raise - allow proxy to start (it just won't have tools)
+            return
 
         # Mirror upstream tools as first-class FastMCP tools
-        tools = await self._client.list_tools()
+        try:
+            tools = await self._client.list_tools()
+        except Exception as e:
+            self._logger.error("Failed to list tools from upstream: %s", str(e))
+            self._logger.error(
+                "Proxy server '%s' will start but will not have any tools available.",
+                self._config.server_name
+            )
+            return
         # Pull expected_info description from wrapped client if available
         expected_info_desc = None
         if hasattr(self._client, "_get_expected_info_description"):
@@ -309,6 +413,245 @@ class ProxyServer:
                 description=tool_desc,
                 annotations=ToolAnnotations(input_schema=modified_schema),
             )
+
+        # Mirror upstream prompts (no post-processing needed - they're just templates)
+        try:
+            prompts = await self._client.list_prompts()
+            for prompt in prompts:
+                prompt_name = getattr(prompt, "name", None)
+                prompt_desc = getattr(prompt, "description", None)
+                if not prompt_name:
+                    continue
+
+                # Create a closure to capture the prompt_name correctly
+                def make_prompt_handler(pname: str):
+                    async def prompt_handler(arguments: dict = None):
+                        """Forward prompt request to upstream server."""
+                        return await self._client.get_prompt(pname, arguments or {})
+                    return prompt_handler
+
+                # Use the prompt decorator programmatically
+                handler = make_prompt_handler(prompt_name)
+                self._server.prompt(
+                    name=prompt_name,
+                    description=prompt_desc or f"Prompt from upstream: {prompt_name}"
+                )(handler)
+            self._logger.info("Mirrored %d prompts from upstream server", len(prompts))
+        except Exception as e:
+            self._logger.warning("Failed to mirror prompts from upstream: %s", str(e))
+
+        # Mirror upstream resources with URI rewriting
+        # Rewrite non-RFC-compliant URIs (e.g., "browser/screenshot") to valid URIs ("internal://browser/screenshot")
+        try:
+            from mcp import types as mcp_types  # pylint: disable=import-outside-toplevel
+
+            # Get resources from upstream - make raw request to bypass validation
+            resources_list = []
+            try:
+                # Make raw JSON-RPC request to get resources without validation
+                if hasattr(self._client, '_session') and self._client._session:
+                    # pylint: disable=import-outside-toplevel
+                    from mcp.shared.session import JSONRPCRequest, SessionMessage, JSONRPCMessage
+                    import anyio
+
+                    request_id = getattr(self._client._session, '_request_id', 1)
+                    jsonrpc_request = JSONRPCRequest(
+                        jsonrpc="2.0",
+                        id=request_id,
+                        method="resources/list",
+                        params=None
+                    )
+
+                    response_stream, response_stream_reader = anyio.create_memory_object_stream(1)
+                    if hasattr(self._client._session, '_response_streams'):
+                        self._client._session._response_streams[request_id] = response_stream
+                        if hasattr(self._client._session, '_request_id'):
+                            self._client._session._request_id = request_id + 1
+
+                    await self._client._session._write_stream.send(
+                        SessionMessage(message=JSONRPCMessage(jsonrpc_request), metadata=None)
+                    )
+
+                    try:
+                        with anyio.fail_after(30.0):
+                            response_or_error = await response_stream_reader.receive()
+                    finally:
+                        if hasattr(self._client._session, '_response_streams'):
+                            self._client._session._response_streams.pop(request_id, None)
+                        await response_stream.aclose()
+                        await response_stream_reader.aclose()
+
+                    # Parse raw response
+                    raw_result = response_or_error.result
+                    if isinstance(raw_result, dict) and 'resources' in raw_result:
+                        for res_dict in raw_result['resources']:
+                            uri = res_dict.get('uri', '')
+                            # If URI doesn't have a scheme, add "mcpplus-proxy://" prefix
+                            if '://' not in uri:
+                                uri = f"mcpplus-proxy://{uri}"
+
+                            resources_list.append({
+                                "uri": uri,
+                                "name": res_dict.get('name'),
+                                "description": res_dict.get('description'),
+                                "mimeType": res_dict.get('mimeType'),
+                            })
+                        self._logger.info("Retrieved %d resources from upstream (rewrote %d URIs)",
+                                         len(resources_list),
+                                         sum(1 for r in resources_list if r['uri'].startswith('mcpplus-proxy://')))
+                else:
+                    self._logger.warning("Client session not available for raw resource listing")
+            except Exception as list_error:
+                self._logger.warning("Failed to list resources from client: %s", str(list_error))
+
+            # Define handlers with URI rewriting
+            async def list_resources_handler(_request):
+                """Return resources with rewritten URIs."""
+                result_resources = [mcp_types.Resource(**res_dict) for res_dict in resources_list]
+                result = mcp_types.ListResourcesResult(resources=result_resources)
+                return mcp_types.ServerResult(result)
+
+            async def read_resource_handler(request):  # pylint: disable=too-many-return-statements
+                """Forward resource read to upstream using raw JSON-RPC (bypasses URI validation)."""
+                uri = str(request.params.uri)
+
+                # Strip "mcpplus-proxy://" prefix before forwarding to upstream
+                if uri.startswith('mcpplus-proxy://'):
+                    stripped = uri[len('mcpplus-proxy://'):]
+
+                    # Validation: check for nested schemes (suspicious)
+                    if '://' in stripped:
+                        error_msg = f"Suspicious nested URI scheme detected: {uri}"
+                        self._logger.error(error_msg)
+                        return mcp_types.ServerResult(
+                            mcp_types.ReadResourceResult(contents=[
+                                mcp_types.TextResourceContents(
+                                    uri=uri,
+                                    mimeType="text/plain",
+                                    text=f"Error: {error_msg}"
+                                )
+                            ])
+                        )
+
+                    uri = stripped
+                    self._logger.debug("Reading resource with rewritten URI: %s", uri)
+
+                # Basic validation
+                if not uri or not isinstance(uri, str):
+                    error_msg = "Invalid URI: must be a non-empty string"
+                    self._logger.error(error_msg)
+                    return mcp_types.ServerResult(
+                        mcp_types.ReadResourceResult(contents=[
+                            mcp_types.TextResourceContents(
+                                uri=uri,
+                                mimeType="text/plain",
+                                text=f"Error: {error_msg}"
+                            )
+                        ])
+                    )
+
+                # Make raw JSON-RPC request to bypass client-side validation
+                try:
+                    if hasattr(self._client, '_session') and self._client._session:
+                        # pylint: disable=import-outside-toplevel
+                        from mcp.shared.session import JSONRPCRequest, SessionMessage, JSONRPCMessage
+                        import anyio
+
+                        request_id = getattr(self._client._session, '_request_id', 1)
+                        jsonrpc_request = JSONRPCRequest(
+                            jsonrpc="2.0",
+                            id=request_id,
+                            method="resources/read",
+                            params={"uri": uri}
+                        )
+
+                        response_stream, response_stream_reader = anyio.create_memory_object_stream(1)
+                        if hasattr(self._client._session, '_response_streams'):
+                            self._client._session._response_streams[request_id] = response_stream
+                            if hasattr(self._client._session, '_request_id'):
+                                self._client._session._request_id = request_id + 1
+
+                        await self._client._session._write_stream.send(
+                            SessionMessage(message=JSONRPCMessage(jsonrpc_request), metadata=None)
+                        )
+
+                        try:
+                            with anyio.fail_after(30.0):
+                                response_or_error = await response_stream_reader.receive()
+                        finally:
+                            if hasattr(self._client._session, '_response_streams'):
+                                self._client._session._response_streams.pop(request_id, None)
+                            await response_stream.aclose()
+                            await response_stream_reader.aclose()
+
+                        # Check for error response
+                        from mcp.shared.session import JSONRPCError  # pylint: disable=import-outside-toplevel
+                        if isinstance(response_or_error, JSONRPCError):
+                            error_msg = f"Upstream error: {response_or_error.error}"
+                            self._logger.error(error_msg)
+                            return mcp_types.ServerResult(
+                                mcp_types.ReadResourceResult(contents=[
+                                    mcp_types.TextResourceContents(
+                                        uri=uri,
+                                        mimeType="text/plain",
+                                        text=error_msg
+                                    )
+                                ])
+                            )
+
+                        # Parse response and rewrite URIs
+                        raw_result = response_or_error.result
+                        if isinstance(raw_result, dict) and 'contents' in raw_result:
+                            # Rewrite URIs in response contents to add mcpplus-proxy:// prefix
+                            for content in raw_result.get('contents', []):
+                                if isinstance(content, dict) and 'uri' in content:
+                                    content_uri = content['uri']
+                                    # Add prefix if URI doesn't have a scheme
+                                    if isinstance(content_uri, str) and '://' not in content_uri:
+                                        content['uri'] = f"mcpplus-proxy://{content_uri}"
+                                        self._logger.debug("Rewrote response URI: %s → %s", content_uri, content['uri'])
+
+                            # Now parse with rewritten URIs (valid schemes)
+                            result = mcp_types.ReadResourceResult(**raw_result)
+                            return mcp_types.ServerResult(result)
+
+                        # Unexpected format
+                        return mcp_types.ServerResult(raw_result)
+
+                    error_msg = "Client session not available"
+                    self._logger.error(error_msg)
+                    return mcp_types.ServerResult(
+                        mcp_types.ReadResourceResult(contents=[
+                            mcp_types.TextResourceContents(
+                                uri=uri,
+                                mimeType="text/plain",
+                                text=f"Error: {error_msg}"
+                            )
+                        ])
+                    )
+                except Exception as e:
+                    error_msg = f"Failed to read resource: {str(e)}"
+                    self._logger.error(error_msg)
+                    import traceback  # pylint: disable=import-outside-toplevel
+                    self._logger.debug("Traceback: %s", traceback.format_exc())
+                    return mcp_types.ServerResult(
+                        mcp_types.ReadResourceResult(contents=[
+                            mcp_types.TextResourceContents(
+                                uri=uri,
+                                mimeType="text/plain",
+                                text=error_msg
+                            )
+                        ])
+                    )
+
+            # Override FastMCP's resource handlers
+            underlying_server = self._server._mcp_server
+            underlying_server.request_handlers[mcp_types.ListResourcesRequest] = list_resources_handler
+            underlying_server.request_handlers[mcp_types.ReadResourceRequest] = read_resource_handler
+
+            self._logger.info("Registered %d resources with URI rewriting", len(resources_list))
+        except Exception as e:
+            self._logger.warning("Failed to setup resource handlers: %s", str(e))
 
     async def run_async(self, transport: str = "stdio", port: int = 8000):
         """Run the FastMCP server with chosen transport (async)."""

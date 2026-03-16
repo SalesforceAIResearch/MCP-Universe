@@ -54,13 +54,16 @@ def _build_proxy_config(
     llm_model: str = "gpt-5-mini-2025-08-07",
     llm_api_key_env: str = "OPENAI_API_KEY",
     token_threshold: int = 2000,
+    transport: str = "stdio",
+    upstream_url: Optional[str] = None,
+    headers: Optional[Dict[str, str]] = None,
 ) -> Dict[str, Any]:
     """Build a proxy wrapper config for the given upstream server."""
-    return {
+    config = {
         "upstream_server": upstream,
         "server_name": server_name,
-        "transport": "stdio",
-        "upstream_address": "",
+        "transport": transport,
+        "upstream_address": upstream_url or "",
         "timeout": 500,
         "upstream_command": command,
         "upstream_args": args if args is not None else [],
@@ -82,14 +85,20 @@ def _build_proxy_config(
         },
     }
 
+    # Add headers if provided (for HTTP/SSE with auth)
+    if headers:
+        config["headers"] = headers
 
-def _build_cursor_entry(
+    return config
+
+
+def _build_mcp_entry(
     server_name: str,  # pylint: disable=unused-argument
     config_path: Path,
     llm_api_key_env: str = "OPENAI_API_KEY",
     llm_api_key_value: Optional[str] = None,
 ) -> Dict[str, Any]:
-    """Build an MCP server entry for Cursor/Claude config."""
+    """Build an MCP server entry for mcp.json config (Cursor, Claude Desktop, etc.)."""
     # Use actual key value if provided, otherwise fall back to env var reference
     env_value = llm_api_key_value if llm_api_key_value else f"${llm_api_key_env}"
     return {
@@ -119,8 +128,11 @@ def _parse_mcp_config(config_path: Path) -> Dict[str, Dict[str, Any]]:
         # Assume flat format where keys are server names
         servers = data
 
-    # Return servers that have either command (stdio) or url (SSE)
-    return {k: v for k, v in servers.items() if isinstance(v, dict) and ("command" in v or "url" in v)}
+    # Return servers that have either command (stdio), url (SSE), or http_url (HTTP)
+    return {
+        k: v for k, v in servers.items()
+        if isinstance(v, dict) and ("command" in v or "url" in v or "http_url" in v)
+    }
 
 
 def _prompt_confirmation(message: str = "Proceed?") -> bool:
@@ -190,45 +202,36 @@ def _prepare_wrap_changes(
     for name, server_cfg in servers_to_wrap.items():
         plus_name = f"{name}-plus"
 
-        # Check if this is an SSE server (has url) or stdio server (has command)
-        if "url" in server_cfg:
-            # Check server type - skip http-type and authenticated SSE servers
-            server_type = server_cfg.get("type", "sse")
-            has_headers = "headers" in server_cfg
+        # Check transport type: http_url (HTTP), url (HTTP/SSE), or command (stdio)
+        if "http_url" in server_cfg or "url" in server_cfg:
+            # HTTP or SSE server
+            # Prefer http_url if explicitly provided, otherwise use url
+            url = server_cfg.get("http_url") or server_cfg.get("url", "")
+            headers = server_cfg.get("headers", {})
 
-            if server_type == "http":
-                print(f"  ⚠️  Skipping '{name}': http-type servers not supported by wrapper")
-                print(f"      (Use the original '{name}' server instead)")
-                continue
-
-            if has_headers:
-                print(f"  ⚠️  Skipping '{name}': SSE servers with authentication not currently supported")
-                print(f"      (Use the original '{name}' server instead)")
-                continue
-
-            # SSE server without authentication
-            url = server_cfg.get("url", "")
             if not url:
                 continue
 
-            # Build proxy config for SSE
+            # Try HTTP first (modern servers typically support HTTP)
+            # The proxy/client will handle fallback to SSE if needed
+            transport = "http"
+
+            # Build proxy config for HTTP (with potential SSE fallback)
             proxy_config = _build_proxy_config(
                 upstream=name,
                 server_name=plus_name,
-                command=None,  # No command for SSE
+                command=None,  # No command for HTTP/SSE
                 args=None,
                 env=None,
                 llm_provider=llm_provider,
                 llm_model=llm_model,
                 llm_api_key_env=llm_api_key_env,
                 token_threshold=token_threshold,
+                transport=transport,
+                upstream_url=url,
+                headers=headers if headers else None,
             )
-            # Override transport and address for SSE
-            proxy_config["transport"] = "sse"
-            proxy_config["upstream_address"] = url
-            proxy_config["upstream_command"] = None
-            proxy_config["upstream_args"] = None
-            proxy_config["upstream_env"] = None
+
         else:
             # stdio server
             command = server_cfg.get("command", "")
@@ -249,19 +252,20 @@ def _prepare_wrap_changes(
                 llm_model=llm_model,
                 llm_api_key_env=llm_api_key_env,
                 token_threshold=token_threshold,
+                transport="stdio",
             )
 
         proxy_config_path = config_dir / f"proxy_{name}.json"
         proxy_configs[plus_name] = (proxy_config_path, proxy_config)
 
-        # Build cursor entry
-        cursor_entry = _build_cursor_entry(
+        # Build MCP entry
+        mcp_entry = _build_mcp_entry(
             server_name=plus_name,
             config_path=proxy_config_path,
             llm_api_key_env=llm_api_key_env,
             llm_api_key_value=api_key_value,
         )
-        new_entries[plus_name] = cursor_entry
+        new_entries[plus_name] = mcp_entry
 
     # Add new entries to config (in memory only)
     servers_section.update(new_entries)
