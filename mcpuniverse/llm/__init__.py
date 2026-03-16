@@ -10,7 +10,9 @@ from .grok import GrokModel
 from .openai_agent import OpenAIAgentModel
 from .openrouter import OpenRouterModel
 from .gemini import GeminiModel
-from .vllm_local import VLLMLocalModel
+from .local_llm import LocalLLMModel
+# Backward compatibility alias
+VLLMLocalModel = LocalLLMModel
 from .claude_wr import ClaudeWRModel
 # TITO (Token In Token Out) — vLLM engine, trajectory manager, agent wrapper
 from .tito import (
@@ -31,7 +33,8 @@ __all__ = [
     "OpenAIAgentModel",
     "OpenRouterModel",
     "GeminiModel",
-    "VLLMLocalModel",
+    "LocalLLMModel",
+    "VLLMLocalModel",  # backward compat alias
     # Direct vLLM engine (no HTTP serve)
     "AsyncVLLMEngine",
     "AsyncVLLMBackend",

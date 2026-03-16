@@ -212,11 +212,23 @@ mcpuniverse/benchmark/configs/deepresearch/browsecomp
 mcpuniverse/benchmark/configs/deepresearch/gaia_val_text_only
 mcpuniverse/benchmark/configs/deepresearch/hle_text_only
 
+# verl training artifacts
+mcpuniverse/rl/integrations/verl/outputs/
+mcpuniverse/rl/integrations/verl/logs/
+mcpuniverse/rl/integrations/verl/wandb/
+mcpuniverse/rl/integrations/verl/checkpoints/
+.nfs*
+
 # dev tmp files
 tests/mcp/logs
 tests/mcp/test_gateway_stress.sh
 tests/mcp/test_gateway_stress.py
-mcpuniverse/rl/integrations
-mcpuniverse/mcp/servers/yahoo_finance_new
-mcpuniverse/benchmark/scripts
-mcpuniverse/rl/data
+mcpuniverse/experiments
+todo
+mcpuniverse/rl/integrations/verl/fully_async
+mcpuniverse/rl/examples/sglang_harmony_react.ipynb
+mcpuniverse/rl/examples/sglang_tito_react_train.ipynb
+mcpuniverse/rl/examples/sglang_react_train.ipynb
+mcpuniverse/rl/data/yf_*.json
+mcpuniverse/rl/integrations/verl/scripts
+mcpuniverse/rl/integrations/verl/config/mcp_fully_async.yaml

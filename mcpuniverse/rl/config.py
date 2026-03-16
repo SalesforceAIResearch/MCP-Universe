@@ -195,7 +195,7 @@ class EnvPoolConfig:
     max_pool_size: int = 50
     startup_timeout: float = 120.0
     reuse_existing: bool = True
-    reset_on_release: bool = False
+    reset_on_release: bool = True
     gateway_mode: str = "sse"
     build: DockerBuildConfig = field(default_factory=DockerBuildConfig)
     resources: ContainerResourceConfig = field(default_factory=ContainerResourceConfig)
@@ -257,7 +257,7 @@ class RolloutConfig:
     Example YAML:
     ```yaml
     # LLM configuration (uses mcpuniverse.llm.manager.ModelManager)
-    llm_type: vllm_local
+    llm_type: vllm_local  # or sglang_local, local_llm
     llm_config:
       model_name: Qwen3-8B
 
@@ -315,6 +315,9 @@ class RolloutConfig:
 
     # Env Pool config (for docker_pool transport)
     env_pool: EnvPoolConfig = field(default_factory=EnvPoolConfig)
+
+    # Trajectory trace log directory (JSONL). None = disabled.
+    trace_log_dir: Optional[str] = None
 
     @classmethod
     def from_yaml(cls, yaml_path: str) -> "RolloutConfig":
@@ -380,7 +383,8 @@ class RolloutConfig:
             tasks=d.get("tasks", []),
             generator=generator,
             dispatcher=dispatcher,
-            env_pool=env_pool
+            env_pool=env_pool,
+            trace_log_dir=d.get("trace_log_dir"),
         )
 
 

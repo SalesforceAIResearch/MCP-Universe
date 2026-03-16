@@ -32,6 +32,7 @@ from mcpuniverse.tracer.types import TraceRecord
 
 from .config import TrajectoryConfig, AgentMode
 from .formatters import get_formatter
+from .trace_logger import TrajectoryTraceLogger
 
 
 # Constants
@@ -211,7 +212,7 @@ class TrajectoryResult:
         }
 
 
-class Trajectory:
+class Trajectory:  # pylint: disable=too-many-instance-attributes
     """Trajectory using MCP-Universe's native Agent and LLM components.
 
     This trajectory uses MCP-Universe's native Agent implementations (ReActTrain,
@@ -257,6 +258,7 @@ class Trajectory:
         llm: Optional[Any] = None,
         acquire_env: Optional[Callable[[], Awaitable[Optional[str]]]] = None,
         release_env: Optional[Callable[[], Awaitable[None]]] = None,
+        trace_logger: Optional[TrajectoryTraceLogger] = None,
     ) -> None:
         self.cfg = cfg
         self.data = data
@@ -269,6 +271,9 @@ class Trajectory:
         # Env pool callables (injected by runner when docker_pool is active)
         self._acquire_env = acquire_env
         self._release_env_fn = release_env
+
+        # Trace logger (logs trajectory data to JSONL on evaluate)
+        self._trace_logger = trace_logger
 
         # State
         self.response = ""
@@ -587,7 +592,26 @@ class Trajectory:
             await self._run_agent()
 
             # 2. Extract trace data
-            trajectory_data = self._extract_trajectory_from_trace()
+            try:
+                trajectory_data = self._extract_trajectory_from_trace()
+            except Exception as e:
+                logger.error(
+                    f"Trace extraction failed for {self.cfg.instance_id}-"
+                    f"{self.cfg.trajectory_id}: {e}"
+                )
+                trajectory_data = {
+                    "finish_reason": FINISH_REASON_ERROR_RUNTIME,
+                    "errors": [],
+                    "trace_records": [],
+                    "full_trace_text": "",
+                    "prompt_text": "",
+                    "output_text": "",
+                    "output_segments": [],
+                    "num_steps": 0,
+                    "num_tool_calls": 0,
+                    "running_time": 0.0,
+                }
+                self.error = self.error or str(e)
 
             # 3. Determine finish reason
             if self.error:
@@ -624,6 +648,27 @@ class Trajectory:
                 rollout_mode=self.cfg.rollout_mode,
                 tokens=token_data,
             )
+        except Exception as e:
+            # Ensure result is ALWAYS set, even if extraction/building failed
+            logger.error(
+                f"generate_trajectory failed for {self.cfg.instance_id}-"
+                f"{self.cfg.trajectory_id}: {e}"
+            )
+            if self.result is None:
+                self.result = TrajectoryResult(
+                    instance_id=self.cfg.instance_id,
+                    trajectory_id=self.cfg.trajectory_id,
+                    response=self.response or "",
+                    reward=0.0,
+                    finish_reason=FINISH_REASON_ERROR_RUNTIME,
+                    error=self.error or str(e),
+                    trace_id=self.tracer.trace_id if self.tracer else "",
+                    trace=TraceData(),
+                    num_steps=0,
+                    num_tool_calls=0,
+                    running_time=0.0,
+                    rollout_mode=self.cfg.rollout_mode,
+                )
         finally:
             # Cleanup agent's MCP clients to ensure proper resource release
             if self.agent and hasattr(self.agent, "cleanup"):
@@ -688,6 +733,10 @@ class Trajectory:
 
         self.result.reward = reward
 
+        # Log trace data to JSONL (if logger configured)
+        if self._trace_logger is not None:
+            self._trace_logger.log(self.result)
+
 
 # ============================================================================
 # Factory functions
@@ -706,6 +755,7 @@ def create_trajectory(
     tokenizer: Optional[Any] = None,
     acquire_env: Optional[Callable[[], Awaitable[Optional[str]]]] = None,
     release_env: Optional[Callable[[], Awaitable[None]]] = None,
+    trace_logger: Optional[TrajectoryTraceLogger] = None,
 ) -> "Trajectory":
     """Create a Trajectory using MCP-Universe's native Agent and LLM components.
 
@@ -725,6 +775,7 @@ def create_trajectory(
         tokenizer: Optional tokenizer for token count checking.
         acquire_env: Optional async callable returning a gateway address.
         release_env: Optional async callable to release the acquired environment.
+        trace_logger: Optional TrajectoryTraceLogger for JSONL trace logging.
 
     Returns:
         Trajectory wrapping the native agent.
@@ -775,6 +826,7 @@ def create_trajectory(
         llm=llm,  # Pass LLM for token mode trajectory extraction
         acquire_env=acquire_env,
         release_env=release_env,
+        trace_logger=trace_logger,
     )
 
 

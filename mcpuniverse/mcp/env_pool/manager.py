@@ -8,6 +8,7 @@ monitoring, auto-recovery, and usage statistics.
 
 import asyncio
 import time
+import traceback
 import uuid
 from collections import deque
 from dataclasses import dataclass, field
@@ -109,6 +110,14 @@ class EnvPoolManager:
         self._acquire_lock = asyncio.Lock()
         self._state_lock = asyncio.Lock()
 
+        # Track which event loop the async primitives are bound to.
+        # _ensure_loop_bound() recreates them when the loop changes.
+        self._bound_loop: Optional[asyncio.AbstractEventLoop] = None
+        try:
+            self._bound_loop = asyncio.get_running_loop()
+        except RuntimeError:
+            pass
+
         # Statistics
         self._stats = PoolStats()
         self._acquisition_times: deque = deque(maxlen=_MAX_TIMING_SAMPLES)
@@ -118,6 +127,50 @@ class EnvPoolManager:
         self._health_check_task: Optional[asyncio.Task] = None
         self._auto_scale_task: Optional[asyncio.Task] = None
         self._running = False
+
+    # ------------------------------------------------------------------
+    # Event-loop rebinding
+    # ------------------------------------------------------------------
+
+    def _ensure_loop_bound(self) -> None:
+        """Recreate asyncio primitives if the event loop has changed.
+
+        ``asyncio.Queue`` and ``asyncio.Lock`` are bound to the event loop
+        that was running when they were created.  When the pool is used from
+        a different loop (e.g. ``_run_async_safely`` creates a new one), all
+        async operations on the old objects raise
+        ``RuntimeError: ... bound to a different event loop``.
+
+        This method detects the mismatch and rebuilds the primitives in the
+        current loop, repopulating the ready-queue from authoritative state
+        (``self._envs`` / ``self._in_use``).
+        """
+        try:
+            current_loop = asyncio.get_running_loop()
+        except RuntimeError:
+            return  # no running loop — nothing to rebind
+
+        if current_loop is self._bound_loop:
+            return  # same loop — all good
+
+        # Rebuild async primitives in the new event loop
+        self._ready_queue = asyncio.Queue()
+        self._provision_lock = asyncio.Lock()
+        self._acquire_lock = asyncio.Lock()
+        self._state_lock = asyncio.Lock()
+
+        # Re-populate the ready queue from authoritative env state
+        ready_count = 0
+        for env_id, env_info in self._envs.items():
+            if env_info.status == EnvStatus.READY and env_id not in self._in_use:
+                self._ready_queue.put_nowait(env_id)
+                ready_count += 1
+
+        logger.info(
+            "EnvPoolManager: rebound async primitives to current event loop "
+            "({} ready environments re-queued)", ready_count,
+        )
+        self._bound_loop = current_loop
 
     # ------------------------------------------------------------------
     # Internal helpers
@@ -130,18 +183,27 @@ class EnvPoolManager:
     def _next_provisioner(self) -> BaseProvisioner:
         """Return the next provisioner to use for environment creation.
 
+        Skips provisioners marked as broken (``_build_broken=True``).
+
         When ``scheduling`` is ``"round-robin"`` (or there is only one
         provisioner), provisioners are cycled in order.  When ``scheduling``
         is ``"least-loaded"``, the provisioner currently managing the fewest
         environments is selected; ties are broken by index order.
         """
-        if self._scheduling == "round-robin" or len(self._provisioners) == 1:
-            p = self._provisioners[self._provisioner_idx % len(self._provisioners)]
+        healthy = [
+            p for p in self._provisioners
+            if not getattr(p, '_build_broken', False)
+        ]
+        if not healthy:
+            healthy = self._provisioners  # fall back to all
+
+        if self._scheduling == "round-robin" or len(healthy) == 1:
+            p = healthy[self._provisioner_idx % len(healthy)]
             self._provisioner_idx += 1
             return p
         # least-loaded: pick the provisioner with the fewest environments.
         # On ties, prefer the one with the lower index (stable ordering).
-        return min(self._provisioners, key=self._provisioner_load)
+        return min(healthy, key=self._provisioner_load)
 
     def _decrement_stat(self, attr: str, amount: int = 1) -> None:
         """Decrement a PoolStats counter, clamping at zero."""
@@ -258,6 +320,7 @@ class EnvPoolManager:
         Prefers reusing existing containers with matching config (by reset)
         over creating new ones.
         """
+        self._ensure_loop_bound()
         async with self._provision_lock:
             effective_config = config or getattr(
                 self.provisioner, 'default_config', EnvConfig()
@@ -288,15 +351,29 @@ class EnvPoolManager:
                     await self._register_env(env_id, env_info, provisioner)
                     return env_info
                 except Exception as e:
-                    logger.error("Failed to create environment {}: {}", env_id, e)
+                    err_msg = str(e) or repr(e)
+                    logger.error(
+                        "Failed to create environment {} ({}): {}\n{}",
+                        env_id, type(e).__name__, err_msg,
+                        traceback.format_exc(),
+                    )
                     return None
 
             if parallel:
                 # Pre-assign provisioners round-robin so parallel creates
                 # are evenly distributed (least-loaded doesn't work here
                 # because load counters update only after create completes).
+                # Skip provisioners marked as broken (e.g. image build
+                # succeeds but image doesn't persist on the Docker host).
+                healthy = [
+                    p for p in self._provisioners
+                    if not getattr(p, '_build_broken', False)
+                ]
+                if not healthy:
+                    logger.error("All provisioners are broken, using all anyway")
+                    healthy = self._provisioners
                 assignments = [
-                    self._provisioners[i % len(self._provisioners)]
+                    healthy[i % len(healthy)]
                     for i in range(can_create)
                 ]
                 results = await asyncio.gather(
@@ -342,7 +419,10 @@ class EnvPoolManager:
                     for ci in await p.find_existing_containers():
                         candidates.append((p, ci))
                 except Exception as e:
-                    logger.debug("Failed to find containers on a provisioner: {}", e)
+                    logger.warning(
+                        "Failed to find containers on provisioner ({}): {}",
+                        type(e).__name__, str(e) or repr(e),
+                    )
 
             if not candidates:
                 return []
@@ -350,9 +430,10 @@ class EnvPoolManager:
             logger.info("Found {} existing containers, checking for matches...",
                         len(candidates))
 
-            reused: List[EnvInfo] = []
+            # Filter matching candidates
+            matched = []
             for src_prov, ci in candidates:
-                if len(reused) >= num_needed:
+                if len(matched) >= num_needed:
                     break
                 if ci.env_id in self._envs:
                     continue
@@ -361,15 +442,37 @@ class EnvPoolManager:
                 if not src_prov.configs_match(config, ci.config,
                                               current_hash, ci.dockerfile_hash):
                     continue
+                matched.append((src_prov, ci))
 
+            if not matched:
+                return []
+
+            logger.info("Recovering {} containers in parallel...", len(matched))
+
+            # Recover all matched containers in parallel
+            async def _recover_one(src_prov, ci):
                 logger.info("Reusing container mcp-env-{} (status={}, port={})",
                             ci.env_id, ci.status, ci.host_port)
                 env_info = await src_prov.recover_container(
                     ci.env_id, config, ci.host_port,
                 )
-                if env_info:
-                    await self._register_env(ci.env_id, env_info, src_prov)
-                    reused.append(env_info)
+                return (ci.env_id, env_info, src_prov) if env_info else None
+
+            results = await asyncio.gather(
+                *[_recover_one(p, c) for p, c in matched],
+                return_exceptions=True,
+            )
+
+            reused: List[EnvInfo] = []
+            for result in results:
+                if isinstance(result, Exception):
+                    logger.warning("Container recovery failed: {}", result)
+                    continue
+                if result is None:
+                    continue
+                env_id, env_info, src_prov = result
+                await self._register_env(env_id, env_info, src_prov)
+                reused.append(env_info)
 
             return reused
         except Exception as e:
@@ -380,35 +483,68 @@ class EnvPoolManager:
     # Acquire / Release / Destroy
     # ------------------------------------------------------------------
 
+    @staticmethod
+    def _config_compatible(env_config: Optional[EnvConfig],
+                           requested: Optional[EnvConfig]) -> bool:
+        """Check whether *env_config* can serve *requested*.
+
+        Compares ``dockerfile_path`` (the main differentiator between
+        container images).  When either side is ``None`` or empty, the
+        check is skipped (any container is acceptable).
+        """
+        if not requested or not requested.dockerfile_path:
+            return True
+        if not env_config or not env_config.dockerfile_path:
+            return True
+        return env_config.dockerfile_path == requested.dockerfile_path
+
     async def acquire(self, agent_id: str, timeout: Optional[float] = None,
                       config: Optional[EnvConfig] = None) -> EnvInfo:
         """Acquire a ready environment for *agent_id*.
 
+        When *config* specifies a ``dockerfile_path``, only containers
+        built from the same Dockerfile are considered.  Non-matching
+        containers are put back into the ready queue.
+
         Raises ``TimeoutError`` if nothing is available within *timeout*.
         When ``auto_scale`` is enabled, provisions a new env on demand.
         """
+        self._ensure_loop_bound()
         timeout = timeout or self.acquisition_timeout
         start = time.time()
 
         async with self._acquire_lock:
-            # Drain stale entries until we find a valid one
-            while True:
-                remaining = timeout - (time.time() - start)
-                if remaining <= 0:
-                    break
-                try:
-                    env_id = await asyncio.wait_for(
-                        self._ready_queue.get(), timeout=remaining,
-                    )
-                except asyncio.TimeoutError:
-                    break
-                result = await self._assign_env(env_id, agent_id, start)
-                if result is not None:
-                    return result
+            skipped: List[str] = []
+            try:
+                # Drain entries until we find a compatible, valid one
+                while True:
+                    remaining = timeout - (time.time() - start)
+                    if remaining <= 0:
+                        break
+                    try:
+                        env_id = await asyncio.wait_for(
+                            self._ready_queue.get(), timeout=remaining,
+                        )
+                    except asyncio.TimeoutError:
+                        break
+
+                    # Check config compatibility (dockerfile match)
+                    env_info = self._envs.get(env_id)
+                    if env_info and not self._config_compatible(env_info.config, config):
+                        skipped.append(env_id)
+                        continue
+
+                    result = await self._assign_env(env_id, agent_id, start)
+                    if result is not None:
+                        return result
+            finally:
+                # Put back non-matching containers so others can use them
+                for eid in skipped:
+                    await self._ready_queue.put(eid)
 
             # Auto-provision if allowed
             if self.auto_scale and len(self._envs) < self.max_pool_size:
-                logger.info("No ready environment, auto-provisioning for {}", agent_id)
+                logger.info("No compatible environment, auto-provisioning for {}", agent_id)
                 envs = await self.provision(num_envs=1, config=config)
                 if envs and envs[0].status == EnvStatus.READY:
                     try:
@@ -435,6 +571,7 @@ class EnvPoolManager:
     async def release(self, env_id: str,
                       reset: Optional[bool] = None) -> bool:
         """Release an environment back to the pool."""
+        self._ensure_loop_bound()
         async with self._state_lock:
             if env_id not in self._envs:
                 logger.warning("Unknown environment {}", env_id)
@@ -483,6 +620,7 @@ class EnvPoolManager:
 
     async def destroy(self, env_id: str) -> bool:
         """Destroy an environment permanently."""
+        self._ensure_loop_bound()
         async with self._state_lock:
             if env_id not in self._envs:
                 return False
@@ -516,6 +654,7 @@ class EnvPoolManager:
 
     async def cleanup(self) -> int:
         """Destroy all environments and stop background tasks."""
+        self._ensure_loop_bound()
         logger.info("Cleaning up environment pool...")
         self._running = False
         await self._cancel_task(self._health_check_task)
@@ -530,6 +669,7 @@ class EnvPoolManager:
 
     def start_background_tasks(self) -> None:
         """Start health-check and (optionally) auto-scale loops."""
+        self._ensure_loop_bound()
         self._running = True
         self._health_check_task = asyncio.create_task(self._health_check_loop())
         if self.auto_scale:

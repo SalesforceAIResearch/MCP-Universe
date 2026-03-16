@@ -106,6 +106,13 @@ vllm = [
     "ray>=2.0.0",
     "flash-attn>=2.7.0",
     "torch>=2.6.0",
+    "nest_asyncio>=1.5.0",
+]
+sglang = [
+    "sglang>=0.4.0",
+    "ray>=2.0.0",
+    "flash-attn>=2.7.0",
+    "torch>=2.6.0",
 ]
 # System dependency: Node.js/npx is required for some MCP servers
 # (google-maps, slack, notion, postgres, etc.)

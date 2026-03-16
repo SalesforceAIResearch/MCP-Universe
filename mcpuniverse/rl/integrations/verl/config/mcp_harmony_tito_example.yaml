@@ -1,0 +1,189 @@
+# MCP Agent Training - Harmony Agent + TITO (Token In Token Out) + Hybrid Mode
+#
+# This is an example config. Copy and modify for your own setup.
+#
+# Harmony Agent:
+#   - HarmonyReAct agent mode
+#   - Uses gpt_oss formatter
+#
+# TITO mode: uses token IDs directly, avoids redundant tokenization
+# Hybrid mode: Actor and Rollout share the same GPUs
+#
+# Key settings:
+#   - mcp_agent.agent_mode: harmony
+#   - mcp_agent.formatter_type: gpt_oss
+#   - mcp_agent.rollout_mode: token (enables TITO)
+#   - actor_rollout_ref.hybrid_engine: true (Hybrid mode)
+#
+# Usage:
+#   python -m mcpuniverse.rl.integrations.verl.hybrid.mcp_main_ppo \
+#       --config-path=config \
+#       --config-name=mcp_harmony_tito_example \
+#       actor_rollout_ref.model.path=/path/to/your/model \
+#       data.train_files=/path/to/train.json \
+#       data.val_files=/path/to/val.json
+
+hydra:
+  searchpath:
+    - file://${oc.env:VERL_CONFIG_PATH,/path/to/verl/verl/trainer/config}
+
+defaults:
+  - ppo_trainer
+  - _self_
+
+# ============================================================================
+# Ray Configuration
+# ============================================================================
+ray_init:
+  num_cpus: 144
+  timeline_json_file: null
+
+# ============================================================================
+# MCP Agent Configuration - Harmony Agent + TITO Mode
+# ============================================================================
+mcp_agent:
+  # Agent mode: harmony (HarmonyReAct agent)
+  agent_mode: harmony
+
+  # Formatter: gpt_oss (GPT-OSS Harmony format)
+  formatter_type: gpt_oss
+
+  # Rollout mode:
+  #   "token" = TITO (token in -> token out, avoids redundant tokenization)
+  #   "text"  = standard (text in -> text out, via HTTP API)
+  rollout_mode: token
+
+  # MCP transport: "stdio", "sse", or "docker_pool"
+  #   stdio       - spawns a separate MCP server process per trajectory
+  #   sse         - uses a shared MCP Gateway (must be started manually)
+  #   docker_pool - uses a Docker container pool (isolated env per trajectory)
+  mcp_transport: "stdio"
+  mcp_gateway_address: ""  # only used for sse transport
+
+  # Trajectory trace logging: set a directory to enable JSONL trace logs (null = disabled)
+  trace_log_dir: null
+
+  # Docker Env Pool config (only used when mcp_transport == "docker_pool")
+  env_pool:
+    enabled: false
+    docker_host: null   # set via CPU_POD_DOCKER_HOST env var
+    host: null          # set via CPU_POD_HOST env var
+    base_port: 9000
+    max_pool_size: 25
+    startup_timeout: 180.0
+    dockerfile_path: ""
+    build_context: ""
+    auto_build: true
+    reuse_existing: true
+    reset_on_release: false
+    cpu_limit: "2"
+    memory_limit: "4g"
+    gateway_mode: "sse"
+
+  # LLM config (in TITO mode this only sets sampling params; actual generation uses the vLLM engine)
+  llm_type: vllm_local
+  llm_config:
+    model_name: ${actor_rollout_ref.model.path}
+    temperature: 0.7
+    top_p: 0.95
+    max_completion_tokens: 8192
+    reasoning: low  # HarmonyReAct requires a reasoning parameter
+
+  # Validation LLM config (optional; falls back to llm_config if not specified)
+  val_llm_config:
+    temperature: 0.0  # deterministic for validation
+
+  # Agent config (HarmonyReActConfig parameters)
+  agent_config:
+    system_prompt: null
+    context_examples: ""
+    max_iterations: 10
+    summarize_tool_response: false
+
+  # Trajectories per prompt
+  num_trajectories: 1
+  val_num_trajectories: 1
+
+  # Max iterations per trajectory
+  max_iterations: 12
+
+  # Parallel agents
+  max_parallel_agents: 16
+
+  # MCP servers (typically read from task data JSON)
+  mcp_servers: []
+  use_sample_servers: true
+
+# ============================================================================
+# Data Configuration
+# ============================================================================
+data:
+  # Override these on the command line:
+  #   data.train_files=/path/to/train.json
+  #   data.val_files=/path/to/val.json
+  shuffle: true
+  seed: 42
+  truncation: error
+  prompt_key: instruction
+  reward_fn_key: data_source
+  trust_remote_code: true
+  return_raw_chat: true
+  train_max_samples: -1
+  val_max_samples: -1
+  return_raw_input_ids: false
+  filter_overlong_prompts: true
+
+# ============================================================================
+# Actor/Rollout Configuration - Hybrid Mode + TITO
+# ============================================================================
+actor_rollout_ref:
+  # Hybrid mode: Actor and Rollout share GPUs
+  hybrid_engine: true
+
+  rollout:
+    mode: async          # async mode for better throughput
+    name: vllm           # inference backend: "vllm" or "sglang"
+    free_cache_engine: false
+    n: 2                 # GRPO: number of samples per prompt
+    max_model_len: 32768
+
+    # Validation settings
+    val_kwargs:
+      temperature: 0.0
+
+  model:
+    enable_gradient_checkpointing: true
+
+  actor:
+    use_kl_loss: false
+    entropy_coeff: 0.001
+
+# ============================================================================
+# Algorithm Configuration - GRPO
+# ============================================================================
+algorithm:
+  adv_estimator: grpo
+  use_kl_in_reward: false
+
+# ============================================================================
+# Reward Model (disabled, using MCP-Universe evaluators instead)
+# ============================================================================
+reward_model:
+  enable: false
+  use_reward_loop: false
+
+# ============================================================================
+# Critic (disabled for GRPO)
+# ============================================================================
+critic:
+  enable: false
+
+# ============================================================================
+# Trainer Configuration
+# ============================================================================
+trainer:
+  critic_warmup: 0
+  logger: ["console", "wandb"]
+  project_name: mcp_agent_training
+  experiment_name: harmony_tito_hybrid
+  val_before_train: true

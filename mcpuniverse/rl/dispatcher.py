@@ -49,6 +49,7 @@ DEFAULT_MAX_EVAL_PARALLEL = 64
 DEFAULT_INIT_RETRIES = 3
 DEFAULT_INIT_RETRY_DELAY = 5.0
 DEFAULT_INIT_TIMEOUT = 60.0
+DEFAULT_EXEC_TIMEOUT = 300.0  # 5 min per trajectory execution
 
 
 # ---------------------------------------------------------------------------
@@ -61,6 +62,7 @@ class _DispatcherParams(NamedTuple):
     max_retries: int
     retry_delay: float
     init_timeout: float
+    exec_timeout: float
 
 
 def _parse_dispatcher_params(cfg: Dict[str, Any], total: int) -> _DispatcherParams:
@@ -71,6 +73,7 @@ def _parse_dispatcher_params(cfg: Dict[str, Any], total: int) -> _DispatcherPara
         max_retries=cfg.get("max_init_retries", DEFAULT_INIT_RETRIES),
         retry_delay=cfg.get("init_retry_delay", DEFAULT_INIT_RETRY_DELAY),
         init_timeout=cfg.get("init_timeout", DEFAULT_INIT_TIMEOUT),
+        exec_timeout=cfg.get("exec_timeout", DEFAULT_EXEC_TIMEOUT),
     )
 
 
@@ -232,10 +235,24 @@ async def async_pipeline_dispatcher(
                     error = True
                     continue
 
-                await traj.generate_trajectory()
-                await eval_queue.put((iid, tid))
-                _eval_submitted[0] += 1
+                await asyncio.wait_for(
+                    traj.generate_trajectory(), timeout=p.exec_timeout,
+                )
+                if traj.result is None:
+                    logger.error("Run completed but result is None for {}", label)
+                    error = True
+                else:
+                    await eval_queue.put((iid, tid))
+                    _eval_submitted[0] += 1
+            except asyncio.TimeoutError:
+                logger.error(
+                    "Exec timeout for {} ({:.0f}s), skipping", label, p.exec_timeout,
+                )
+                await _safe_cleanup(traj)
+                error = True
             except asyncio.CancelledError:
+                logger.warning("Run cancelled for {}", label)
+                error = True
                 raise
             except Exception as exc:
                 logger.error("Run error for {}: {}", label, exc)
@@ -320,8 +337,16 @@ async def async_batch_dispatcher(
             if not ok:
                 error = True
                 return
-            await traj.generate_trajectory()
+            await asyncio.wait_for(
+                traj.generate_trajectory(), timeout=p.exec_timeout,
+            )
             await traj.evaluate_trajectory()
+        except asyncio.TimeoutError:
+            logger.error(
+                "Exec timeout for {} ({:.0f}s), skipping", label, p.exec_timeout,
+            )
+            await _safe_cleanup(traj)
+            error = True
         except Exception as exc:
             logger.error("Error for {}: {}", label, exc)
             await _safe_cleanup(traj)
@@ -367,8 +392,16 @@ async def sequential_dispatcher(
             if not ok:
                 error = True
                 continue
-            await traj.generate_trajectory()
+            await asyncio.wait_for(
+                traj.generate_trajectory(), timeout=p.exec_timeout,
+            )
             await traj.evaluate_trajectory()
+        except asyncio.TimeoutError:
+            logger.error(
+                "Exec timeout for {} ({:.0f}s), skipping", label, p.exec_timeout,
+            )
+            await _safe_cleanup(traj)
+            error = True
         except Exception as exc:
             logger.error("Error for {}: {}", label, exc)
             await _safe_cleanup(traj)

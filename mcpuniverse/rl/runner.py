@@ -27,6 +27,7 @@ from .config import (
     RolloutConfig, TrajectoryConfig,
     MCP_TRANSPORT_SSE, MCP_TRANSPORT_DOCKER_POOL
 )
+from .trace_logger import TrajectoryTraceLogger
 from .trajectory import create_trajectory, create_llm, Trajectory, TrajectoryResult
 from .dispatcher import get_dispatcher
 
@@ -170,7 +171,7 @@ class RolloutEngine:
                 )
                 self._llm_type = "async_vllm"
         # Note: Do NOT add rollout_mode to llm_config for text mode
-        # as VLLMLocalConfig and other configs don't accept this parameter
+        # as LocalLLMConfig and other configs don't accept this parameter
 
         self.llm = create_llm(self._llm_type, self._llm_config)
 
@@ -187,6 +188,9 @@ class RolloutEngine:
         # Tasks and evaluators (loaded from config)
         self._tasks: Dict[str, Task] = {}
         self._load_tasks()
+
+        # Trajectory trace logger
+        self._trace_logger = TrajectoryTraceLogger(cfg.trace_log_dir) if cfg.trace_log_dir else None
 
         # Env Pool (for docker_pool mode)
         self._env_pool = None
@@ -509,6 +513,7 @@ class RolloutEngine:
                     val_mode=val_mode,
                     acquire_env=acquire_env_fn,
                     release_env=release_env_fn,
+                    trace_logger=self._trace_logger,
                 )
 
                 self.trajectories[instance_id][traj_id] = traj
@@ -760,7 +765,7 @@ async def rollout(
     Args:
         prompts: List of prompts to execute.
         mcp_servers: List of MCP server names.
-        llm_type: LLM type (vllm_local, etc.).
+        llm_type: LLM type (vllm_local, sglang_local, local_llm, etc.).
         llm_config: LLM config dictionary.
         agent_mode: Agent mode (react_train, harmony).
         num_trajectories: Number of trajectories per prompt.

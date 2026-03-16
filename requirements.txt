@@ -59,8 +59,11 @@ datasets==4.5.0
 openpyxl==3.1.5
 vertexai==1.71.1
 
-# vLLM local inference (optional: pip install mcpuniverse[vllm])
+# Local inference backends (optional):
+#   pip install mcpuniverse[vllm]   — vLLM backend
+#   pip install mcpuniverse[sglang] — SGLang backend
 # vllm>=0.15.0
+# sglang>=0.4.0
 # ray>=2.0.0
 # flash-attn>=2.7.0
 # torch>=2.6.0

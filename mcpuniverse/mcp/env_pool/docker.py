@@ -5,7 +5,7 @@ Each environment is a Docker container running MCP Gateway + MCP servers.
 Supports per-task Dockerfiles: the system hashes the Dockerfile + source
 to decide whether to reuse an existing container (reset) or build a new image.
 """
-# pylint: disable=broad-exception-caught,too-many-instance-attributes
+# pylint: disable=broad-exception-caught,too-many-instance-attributes,too-many-lines
 import re
 import os
 import json
@@ -15,6 +15,7 @@ import socket
 import time
 import hashlib
 import tempfile
+import traceback
 from typing import Dict, List, Optional, Tuple
 from contextlib import closing
 
@@ -96,6 +97,7 @@ class DockerProvisioner(BaseProvisioner):
         self._built_images: set = set()
         self._dockerfile_hash_cache: Dict[str, str] = {}
         self._clean_docker_config_dir: Optional[str] = None
+        self._build_broken: bool = False  # set True if build succeeds but image missing
 
     # ------------------------------------------------------------------
     # Docker config helpers
@@ -118,27 +120,71 @@ class DockerProvisioner(BaseProvisioner):
     # Port allocation
     # ------------------------------------------------------------------
 
+    async def _inspect_container_port(self, cid: str) -> str:
+        """Inspect a container's HostConfig for its mapped host port."""
+        try:
+            port_result = await self._run_docker_cmd(
+                ["inspect", "--format",
+                 "{{range $p, $conf := .HostConfig.PortBindings}}"
+                 "{{if $conf}}{{(index $conf 0).HostPort}}{{end}}"
+                 "{{end}}",
+                 cid],
+                check=False,
+            )
+            if port_result.returncode == 0:
+                return port_result.stdout.strip()
+        except Exception:
+            pass
+        return ""
+
+    async def _scan_remote_used_ports(self) -> set:
+        """Query remote Docker host for all used ports."""
+        used = set()
+        try:
+            result = await self._run_docker_cmd(
+                ["ps", "-a", "--format",
+                 "{{.Ports}}\t{{.Names}}\t{{.Status}}"],
+                check=False,
+            )
+            if result.returncode == 0 and result.stdout.strip():
+                for line in result.stdout.strip().split('\n'):
+                    for m in re.findall(r':(\d+)->', line):
+                        used.add(int(m))
+
+            # Also query HostConfig port bindings for stopped/created containers
+            result2 = await self._run_docker_cmd(
+                ["ps", "-a", "-q", "--filter", "label=mcp.managed=true"],
+                check=False,
+            )
+            if result2.returncode == 0 and result2.stdout.strip():
+                for cid in result2.stdout.strip().split('\n'):
+                    cid = cid.strip()
+                    if not cid:
+                        continue
+                    port_str = await self._inspect_container_port(cid)
+                    if port_str:
+                        try:
+                            used.add(int(port_str))
+                        except ValueError:
+                            pass
+        except Exception as e:
+            logger.warning("Failed to query remote Docker ports: {}", e)
+        return used
+
     async def _find_available_port(self, start_port: int = 9000,
                                    env_id: Optional[str] = None) -> int:
         """Find an available port and optionally register it atomically.
 
-        Remote Docker: queries ``docker ps`` for used ports.
+        Remote Docker: queries ``docker ps`` for used ports, including
+        both running containers (``host:port->container/proto``) and
+        stopped containers that still hold port bindings.
         Local Docker:  probes with ``socket.bind``.
         """
         async with self._port_lock:
             used_ports = set(self._port_map.values())
 
             if self.docker_host:
-                try:
-                    result = await self._run_docker_cmd(
-                        ["ps", "-a", "--format", "{{.Ports}}"], check=False,
-                    )
-                    if result.returncode == 0 and result.stdout.strip():
-                        for line in result.stdout.strip().split('\n'):
-                            for m in re.findall(r':(\d+)->', line):
-                                used_ports.add(int(m))
-                except Exception as e:
-                    logger.warning("Failed to query remote Docker ports: {}", e)
+                used_ports.update(await self._scan_remote_used_ports())
 
             for port in range(start_port, 65535):
                 if port in used_ports:
@@ -266,11 +312,17 @@ class DockerProvisioner(BaseProvisioner):
         return bool(result.stdout.strip())
 
     async def _build_image(self, dockerfile_path: str, image_name: str) -> bool:
-        """Run ``docker build`` and return True on success."""
+        """Run ``docker build`` and return True on success.
+
+        After the build command returns, verifies the image actually exists
+        on the Docker host (some remote daemons report success but don't
+        persist the image).
+        """
         abs_path = self._resolve_dockerfile_path(dockerfile_path)
         abs_context = os.path.abspath(self.build_context)
 
-        logger.info("Building image {} from {}", image_name, abs_path)
+        host_label = self.docker_host or "local"
+        logger.info("Building image {} from {} on {}", image_name, abs_path, host_label)
         logger.info("Build context: {}", abs_context)
 
         if not self.docker_host and not os.path.exists(abs_context):
@@ -285,11 +337,23 @@ class DockerProvisioner(BaseProvisioner):
             await self._run_docker_cmd([
                 "build", "-f", abs_path, "-t", image_name, abs_context,
             ])
-            logger.info("Successfully built image {}", image_name)
-            return True
         except Exception as e:
-            logger.error("Failed to build image {}: {}", image_name, e)
+            logger.error("Failed to build image {} on {}: {}", image_name, host_label, e)
             return False
+
+        # Verify the image actually exists after build.
+        # Some remote Docker daemons return success but don't persist the image.
+        if not await self._image_exists(image_name):
+            logger.error(
+                "Build of {} on {} returned success but image NOT found! "
+                "Docker daemon may be broken. Marking host as unavailable.",
+                image_name, host_label,
+            )
+            self._build_broken = True
+            return False
+
+        logger.info("Successfully built and verified image {} on {}", image_name, host_label)
+        return True
 
     async def _ensure_image_for_config(self, config: EnvConfig) -> Tuple[str, str]:
         """Ensure the image for *config* exists, building if necessary.
@@ -366,7 +430,15 @@ class DockerProvisioner(BaseProvisioner):
 
     async def _run_docker_cmd(self, args: List[str],
                               check: bool = True) -> subprocess.CompletedProcess:
-        """Run a ``docker`` CLI command asynchronously."""
+        """Run a ``docker`` CLI command asynchronously.
+
+        Uses ``subprocess.run`` in a thread executor instead of
+        ``asyncio.create_subprocess_exec`` to avoid the child-watcher
+        dependency.  Ray sets the global event-loop policy to uvloop,
+        whose policy raises ``NotImplementedError`` on
+        ``get_child_watcher()``, breaking ``create_subprocess_exec``
+        on ``SelectorEventLoop``.
+        """
         cmd = ["docker"]
         if self.docker_host:
             cmd.extend(["-H", self.docker_host])
@@ -382,38 +454,44 @@ class DockerProvisioner(BaseProvisioner):
             # Override docker config to bypass broken credential helpers
             clean_cfg_dir = self._get_clean_docker_config()
             env["DOCKER_CONFIG"] = clean_cfg_dir
-        proc = await asyncio.create_subprocess_exec(
-            *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
-            env=env,
-        )
-        stdout, stderr = await proc.communicate()
 
-        if check and proc.returncode != 0:
-            msg = f"Docker command failed (exit code {proc.returncode})"
-            if stderr:
-                msg += f"\nSTDERR:\n{stderr.decode()}"
-            if stdout:
-                msg += f"\nSTDOUT:\n{stdout.decode()}"
+        loop = asyncio.get_running_loop()
+        result = await loop.run_in_executor(
+            None,
+            lambda: subprocess.run(
+                cmd, capture_output=True, env=env, check=False,
+            ),
+        )
+
+        if check and result.returncode != 0:
+            msg = f"Docker command failed (exit code {result.returncode})"
+            stderr_text = result.stderr.decode() if isinstance(result.stderr, bytes) else result.stderr
+            stdout_text = result.stdout.decode() if isinstance(result.stdout, bytes) else result.stdout
+            if stderr_text:
+                msg += f"\nSTDERR:\n{stderr_text}"
+            if stdout_text:
+                msg += f"\nSTDOUT:\n{stdout_text}"
             raise RuntimeError(msg)
 
         return subprocess.CompletedProcess(
-            cmd, proc.returncode, stdout.decode(), stderr.decode()
+            cmd, result.returncode,
+            result.stdout.decode() if isinstance(result.stdout, bytes) else result.stdout,
+            result.stderr.decode() if isinstance(result.stderr, bytes) else result.stderr,
         )
 
     # ------------------------------------------------------------------
     # Lifecycle: create / destroy / reset / health_check
     # ------------------------------------------------------------------
 
-    async def create(self, env_id: str, config: Optional[EnvConfig] = None) -> EnvInfo:
-        """Create a Docker container environment.
-
-        Builds the image automatically when *config.dockerfile_path* is set
-        and the image does not already exist.
-        """
-        config = config or self.default_config
-        image_name, dockerfile_hash = await self._ensure_image_for_config(config)
-        host_port = await self._find_available_port(self.base_port, env_id=env_id)
-
+    def _build_docker_run_cmd(
+        self,
+        env_id: str,
+        config: EnvConfig,
+        image_name: str,
+        dockerfile_hash: str,
+        host_port: int,
+    ) -> list:
+        """Build the ``docker run`` command list for *env_id*."""
         container_name = f"mcp-env-{env_id}"
         cmd = [
             "run", "-d", "--name", container_name,
@@ -462,29 +540,126 @@ class DockerProvisioner(BaseProvisioner):
                 gw.extend(["--config", config.mcp_config_path])
             cmd.extend(gw)
 
+        return cmd
+
+    async def create(self, env_id: str, config: Optional[EnvConfig] = None) -> EnvInfo:
+        """Create a Docker container environment.
+
+        Builds the image automatically when *config.dockerfile_path* is set
+        and the image does not already exist.
+
+        Handles two transient Docker errors with automatic retry:
+        - **Image not found / pull access denied**: invalidates the image
+          cache and rebuilds the image on this Docker host, then retries.
+        - **Port already allocated**: removes the failed container, finds
+          a new port, and retries.
+        """
+        if self._build_broken:
+            raise RuntimeError(
+                f"Docker host {self.docker_host or 'local'} is marked broken "
+                f"(image build succeeds but image not found). Skipping."
+            )
+
+        config = config or self.default_config
+        image_name, dockerfile_hash = await self._ensure_image_for_config(config)
+        host_port = await self._find_available_port(self.base_port, env_id=env_id)
+
         env_info = EnvInfo(
             env_id=env_id, status=EnvStatus.PENDING,
             gateway_address=f"http://{self.host}:{host_port}", config=config,
         )
         self._envs[env_id] = env_info
 
-        try:
-            result = await self._run_docker_cmd(cmd)
-            env_info.container_id = result.stdout.strip()[:12]
+        max_retries = 3
+        for attempt in range(max_retries):
+            cmd = self._build_docker_run_cmd(
+                env_id, config, image_name, dockerfile_hash, host_port,
+            )
+            try:
+                result = await self._run_docker_cmd(cmd)
+                env_info.container_id = result.stdout.strip()[:12]
+                env_info.gateway_address = f"http://{self.host}:{host_port}"
 
-            if await self._wait_for_ready(env_id, host_port):
-                env_info.status = EnvStatus.READY
-                logger.info("Environment {} ready at {}", env_id, env_info.gateway_address)
-            else:
+                if await self._wait_for_ready(env_id, host_port):
+                    env_info.status = EnvStatus.READY
+                    logger.info("Environment {} ready at {}", env_id, env_info.gateway_address)
+                else:
+                    env_info.status = EnvStatus.ERROR
+                    logger.error("Environment {} failed to become ready", env_id)
+                return env_info
+
+            except Exception as e:
+                err_msg = str(e) or repr(e)
+                container_name = f"mcp-env-{env_id}"
+
+                # --- Handle "image not found / pull access denied" ---
+                if ("pull access denied" in err_msg
+                        or "Unable to find image" in err_msg):
+                    if attempt < max_retries - 1:
+                        logger.warning(
+                            "Image {} not found on Docker host (attempt {}/{}), "
+                            "rebuilding...",
+                            image_name, attempt + 1, max_retries,
+                        )
+                        # Remove failed container (docker run may have created it)
+                        await self._run_docker_cmd(
+                            ["rm", "-f", container_name], check=False,
+                        )
+                        # Invalidate cache and force rebuild
+                        self._built_images.discard(image_name)
+                        if config.dockerfile_path:
+                            if await self._build_image(
+                                config.dockerfile_path, image_name
+                            ):
+                                self._built_images.add(image_name)
+                                continue  # retry docker run
+                            logger.error(
+                                "Rebuild of {} failed, giving up", image_name,
+                            )
+                        # Fall through to raise
+
+                # --- Handle "port already allocated" ---
+                elif "port is already allocated" in err_msg:
+                    if attempt < max_retries - 1:
+                        logger.warning(
+                            "Port {} conflict for {} (attempt {}/{}), "
+                            "trying different port...",
+                            host_port, env_id, attempt + 1, max_retries,
+                        )
+                        # Remove the failed container
+                        await self._run_docker_cmd(
+                            ["rm", "-f", container_name], check=False,
+                        )
+                        # Remove old port mapping and find a new one
+                        self._port_map.pop(env_id, None)
+                        host_port = await self._find_available_port(
+                            host_port + 1, env_id=env_id,
+                        )
+                        continue  # retry with new port
+
+                # --- Handle "container name already in use" ---
+                elif "is already in use" in err_msg:
+                    if attempt < max_retries - 1:
+                        logger.warning(
+                            "Container name {} conflict (attempt {}/{}), "
+                            "removing stale container and retrying...",
+                            container_name, attempt + 1, max_retries,
+                        )
+                        # Force remove the stale container holding the name
+                        await self._run_docker_cmd(
+                            ["rm", "-f", container_name], check=False,
+                        )
+                        continue  # retry with same port
+
+                # Non-retryable error or retries exhausted
                 env_info.status = EnvStatus.ERROR
-                logger.error("Environment {} failed to become ready", env_id)
-            return env_info
-        except Exception as e:
-            env_info.status = EnvStatus.ERROR
-            self._port_map.pop(env_id, None)
-            self._envs.pop(env_id, None)
-            logger.error("Failed to create environment {}: {}", env_id, e)
-            raise
+                self._port_map.pop(env_id, None)
+                self._envs.pop(env_id, None)
+                logger.error(
+                    "Failed to create environment {} ({}): {}\n{}",
+                    env_id, type(e).__name__, err_msg, traceback.format_exc(),
+                )
+                raise
 
     async def destroy(self, env_id: str) -> bool:
         """Stop and remove a container.  Idempotent."""
@@ -777,7 +952,10 @@ class DockerProvisioner(BaseProvisioner):
                 ))
             return containers
         except Exception as e:
-            logger.debug("Failed to find existing containers: {}", e)
+            logger.warning(
+                "Failed to find existing containers ({}): {}\n{}",
+                type(e).__name__, str(e) or repr(e), traceback.format_exc(),
+            )
             return []
 
     def configs_match(self, config1: EnvConfig, config2: EnvConfig,
