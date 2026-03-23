@@ -466,7 +466,7 @@ class MCPFullyAsyncTrainer(SeparateRayPPOTrainer):
         if hasattr(self.config.actor_rollout_ref.actor, "profiler"):
             super()._fit_torch_memory()
 
-    async def fit_step(self, batch_dict: dict = None):
+    async def fit_step(self, batch_dict: dict = None):  # pylint: disable=unused-argument
         """Single training step: get batch -> PPO pipeline -> weight sync."""
         logger.info("fit_step")
         self.metrics = {"training/global_step": self.global_steps, "training/epoch": self.epoch}

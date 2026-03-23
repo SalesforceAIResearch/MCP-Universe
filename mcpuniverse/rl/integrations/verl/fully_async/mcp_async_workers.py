@@ -167,6 +167,7 @@ class MCPDetachActorWorker(DetachActorWorker):
 
     @register(dispatch_mode=make_nd_compute_dataproto_dispatch_fn(mesh_name="actor"))
     def compute_log_prob(self, data):
+        """Compute log probabilities with entry/exit GPU memory diagnostics."""
         rank = torch.distributed.get_rank() if torch.distributed.is_initialized() else -1
         device = torch.cuda.current_device() if torch.cuda.is_available() else "N/A"
         alloc_gb = torch.cuda.memory_allocated() / (1024 ** 3) if torch.cuda.is_available() else 0
@@ -193,6 +194,7 @@ class MCPDetachActorWorker(DetachActorWorker):
 
     @register(dispatch_mode=make_nd_compute_dataproto_dispatch_fn(mesh_name="actor"))
     def update_actor(self, data):
+        """Update actor weights with entry/exit rank diagnostics."""
         rank = torch.distributed.get_rank() if torch.distributed.is_initialized() else -1
         device = torch.cuda.current_device() if torch.cuda.is_available() else "N/A"
         batch_size = len(data) if hasattr(data, '__len__') else "?"
