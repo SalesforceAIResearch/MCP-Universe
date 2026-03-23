@@ -44,6 +44,32 @@ def _get_config_dir() -> Path:
     return Path.home() / ".mcpplus" / "configs"
 
 
+def _get_gateway_llm_config_fields(llm_provider: str) -> Dict[str, str]:
+    """
+    Get additional config fields needed for gateway LLM providers.
+
+    Returns env var references (e.g., "$ENG_AI_MODEL_GW_URL") which will be
+    expanded by the proxy server at runtime.
+
+    Args:
+        llm_provider: The LLM provider name
+
+    Returns:
+        Dict of additional config fields with $VAR references
+    """
+    extra_config = {}
+
+    # Salesforce LLM Express Gateway
+    if llm_provider == "sf_llm_express_gateway":
+        extra_config["base_url"] = "$ENG_AI_MODEL_GW_URL"
+
+    # Salesforce Research Gateway
+    elif llm_provider == "sf_research_gateway":
+        extra_config["base_url"] = "$RESEARCH_GATEWAY_URL"
+
+    return extra_config
+
+
 def _build_proxy_config(
     upstream: str,
     server_name: str,
@@ -59,6 +85,16 @@ def _build_proxy_config(
     headers: Optional[Dict[str, str]] = None,
 ) -> Dict[str, Any]:
     """Build a proxy wrapper config for the given upstream server."""
+    # Build base LLM config
+    llm_config = {
+        "model_name": llm_model,
+        "api_key": f"${llm_api_key_env}",
+    }
+
+    # Add gateway-specific config fields (e.g., base_url)
+    gateway_config = _get_gateway_llm_config_fields(llm_provider)
+    llm_config.update(gateway_config)
+
     config = {
         "upstream_server": upstream,
         "server_name": server_name,
@@ -70,10 +106,7 @@ def _build_proxy_config(
         "upstream_env": env or {},
         "llm": {
             "name": llm_provider,
-            "config": {
-                "model_name": llm_model,
-                "api_key": f"${llm_api_key_env}",
-            },
+            "config": llm_config,
         },
         "wrapper": {
             "enabled": True,
@@ -92,17 +125,76 @@ def _build_proxy_config(
     return config
 
 
+def _get_gateway_env_vars(llm_provider: str) -> Dict[str, str]:
+    """
+    Get required environment variables for gateway LLM providers.
+
+    Args:
+        llm_provider: The LLM provider name
+
+    Returns:
+        Dict of environment variable names and their values
+    """
+    env_vars = {}
+
+    # Salesforce LLM Express Gateway
+    if llm_provider == "sf_llm_express_gateway":
+        if os.getenv("ENG_AI_MODEL_GW_URL"):
+            env_vars["ENG_AI_MODEL_GW_URL"] = os.getenv("ENG_AI_MODEL_GW_URL")
+        if os.getenv("ENG_AI_MODEL_GW_KEY"):
+            env_vars["ENG_AI_MODEL_GW_KEY"] = os.getenv("ENG_AI_MODEL_GW_KEY")
+
+    # Salesforce Research Gateway
+    elif llm_provider == "sf_research_gateway":
+        if os.getenv("RESEARCH_GATEWAY_URL"):
+            env_vars["RESEARCH_GATEWAY_URL"] = os.getenv("RESEARCH_GATEWAY_URL")
+        if os.getenv("SALESFORCE_GATEWAY_KEY"):
+            env_vars["SALESFORCE_GATEWAY_KEY"] = os.getenv("SALESFORCE_GATEWAY_KEY")
+
+    # Legacy Claude Gateway
+    elif llm_provider == "claude_gateway":
+        if os.getenv("SALESFORCE_GATEWAY_KEY"):
+            env_vars["SALESFORCE_GATEWAY_KEY"] = os.getenv("SALESFORCE_GATEWAY_KEY")
+
+    return env_vars
+
+
 def _build_mcp_entry(
     server_name: str,  # pylint: disable=unused-argument
     config_path: Path,
     llm_api_key_env: str = "OPENAI_API_KEY",
     llm_api_key_value: Optional[str] = None,
+    llm_provider: str = "openai",
 ) -> Dict[str, Any]:
-    """Build an MCP server entry for mcp.json config (Cursor, Claude Desktop, etc.)."""
+    """
+    Build an MCP server entry for mcp.json config (Cursor, Claude Desktop, etc.).
+
+    Uses sys.executable to get the absolute path to the current Python interpreter.
+    This ensures Cursor/Claude Desktop can find the right Python with mcpuniverse installed,
+    even if they don't load your shell environment.
+
+    Args:
+        server_name: Name of the server
+        config_path: Path to the proxy config file
+        llm_api_key_env: Environment variable name for the API key
+        llm_api_key_value: Optional actual API key value
+        llm_provider: The LLM provider being used
+
+    Returns:
+        MCP server configuration dict
+    """
     # Use actual key value if provided, otherwise fall back to env var reference
     env_value = llm_api_key_value if llm_api_key_value else f"${llm_api_key_env}"
+
+    # Build env vars dict
+    env_dict = {llm_api_key_env: env_value}
+
+    # Add gateway-specific environment variables
+    gateway_env_vars = _get_gateway_env_vars(llm_provider)
+    env_dict.update(gateway_env_vars)
+
     return {
-        "command": "python3",
+        "command": sys.executable,  # Absolute path to current Python interpreter
         "args": [
             "-m",
             "mcpuniverse.extensions.mcpplus.tools.proxy_server",
@@ -111,9 +203,7 @@ def _build_mcp_entry(
             "--transport",
             "stdio",
         ],
-        "env": {
-            llm_api_key_env: env_value,
-        },
+        "env": env_dict,
     }
 
 
@@ -146,6 +236,160 @@ def _prompt_confirmation(message: str = "Proceed?") -> bool:
         print("Please enter 'y' or 'n'")
 
 
+def _normalize_config_for_comparison(config: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Normalize config by removing fields that shouldn't trigger updates.
+
+    Args:
+        config: The config dict to normalize
+
+    Returns:
+        Normalized config with only comparison-relevant fields
+    """
+    # Create a deep copy and remove fields that don't matter for comparison
+    normalized = {
+        "llm": config.get("llm", {}),
+        "wrapper": config.get("wrapper", {}),
+    }
+    return normalized
+
+
+def _find_config_differences(old_config: Dict[str, Any], new_config: Dict[str, Any]) -> List[str]:
+    """
+    Find specific differences between two configs.
+
+    Args:
+        old_config: Existing config
+        new_config: New config to compare
+
+    Returns:
+        List of human-readable differences
+    """
+    differences = []
+
+    # Compare LLM settings
+    old_llm = old_config.get("llm", {})
+    new_llm = new_config.get("llm", {})
+
+    if old_llm.get("name") != new_llm.get("name"):
+        differences.append(f"provider: {old_llm.get('name', '?')} → {new_llm.get('name', '?')}")
+
+    old_llm_config = old_llm.get("config", {})
+    new_llm_config = new_llm.get("config", {})
+
+    if old_llm_config.get("model_name") != new_llm_config.get("model_name"):
+        differences.append(f"model: {old_llm_config.get('model_name', '?')} → {new_llm_config.get('model_name', '?')}")
+
+    if old_llm_config.get("api_key") != new_llm_config.get("api_key"):
+        old_key = old_llm_config.get("api_key", "?")
+        new_key = new_llm_config.get("api_key", "?")
+        # Only show env var name, not actual key
+        differences.append(f"api_key_env: {old_key} → {new_key}")
+
+    # Compare wrapper settings
+    old_wrapper = old_config.get("wrapper", {})
+    new_wrapper = new_config.get("wrapper", {})
+
+    if old_wrapper.get("token_threshold") != new_wrapper.get("token_threshold"):
+        differences.append(f"threshold: {old_wrapper.get('token_threshold', '?')} → {new_wrapper.get('token_threshold', '?')}")
+
+    if old_wrapper.get("max_iterations") != new_wrapper.get("max_iterations"):
+        differences.append(f"max_iterations: {old_wrapper.get('max_iterations', '?')} → {new_wrapper.get('max_iterations', '?')}")
+
+    if old_wrapper.get("llm_timeout") != new_wrapper.get("llm_timeout"):
+        differences.append(f"llm_timeout: {old_wrapper.get('llm_timeout', '?')} → {new_wrapper.get('llm_timeout', '?')}")
+
+    return differences
+
+
+def _should_update_plus_server(
+    base_name: str,
+    existing_servers: Dict[str, Dict[str, Any]],
+    config_dir: Path,
+    new_proxy_config: Dict[str, Any],
+    new_mcp_entry: Dict[str, Any],
+) -> Tuple[bool, Optional[str]]:
+    """
+    Check if a -plus server needs updating by comparing proxy config and mcp.json entry.
+
+    Args:
+        base_name: Name of the base server (without -plus suffix)
+        existing_servers: All servers from mcp.json
+        config_dir: Directory containing proxy configs
+        new_proxy_config: The new proxy config that would be written
+        new_mcp_entry: The new mcp.json entry that would be written
+
+    Returns:
+        Tuple of (should_update, reason):
+        - should_update: True if config differs or doesn't exist
+        - reason: Human-readable reason for update (or None if no update needed)
+    """
+    plus_name = f"{base_name}-plus"
+
+    # Check if -plus entry exists in mcp.json
+    if plus_name not in existing_servers:
+        return True, "new"
+
+    # Check if MCP entry changed (command, args, or env)
+    existing_mcp_entry = existing_servers[plus_name]
+
+    # Check command
+    if existing_mcp_entry.get("command") != new_mcp_entry.get("command"):
+        old_cmd = existing_mcp_entry.get("command", "?")
+        new_cmd = new_mcp_entry.get("command", "?")
+        # Show just the filename, not full path for readability
+        old_py = Path(old_cmd).name if old_cmd else "?"
+        new_py = Path(new_cmd).name if new_cmd else "?"
+        return True, f"python changed ({old_py} → {new_py})"
+
+    # Check env vars
+    old_env = existing_mcp_entry.get("env", {})
+    new_env = new_mcp_entry.get("env", {})
+    if old_env != new_env:
+        # Find what changed
+        old_keys = set(old_env.keys())
+        new_keys = set(new_env.keys())
+        added_keys = new_keys - old_keys
+        removed_keys = old_keys - new_keys
+
+        if added_keys:
+            return True, f"env vars added ({', '.join(sorted(added_keys)[:2])})"
+        elif removed_keys:
+            return True, f"env vars removed ({', '.join(sorted(removed_keys)[:2])})"
+        else:
+            return True, "env var values changed"
+
+    # Load existing proxy config file
+    proxy_config_path = config_dir / f"proxy_{base_name}.json"
+    if not proxy_config_path.exists():
+        return True, "proxy config missing"
+
+    try:
+        existing_proxy = _load_json(proxy_config_path)
+    except Exception:
+        return True, "proxy config corrupted"
+
+    # Normalize both configs for comparison (only relevant fields)
+    old_normalized = _normalize_config_for_comparison(existing_proxy)
+    new_normalized = _normalize_config_for_comparison(new_proxy_config)
+
+    # Deep comparison
+    if old_normalized == new_normalized:
+        return False, None
+
+    # Find specific differences for user-friendly message
+    differences = _find_config_differences(existing_proxy, new_proxy_config)
+
+    if differences:
+        reason = ", ".join(differences[:2])  # Show first 2 changes
+        if len(differences) > 2:
+            reason += f" (+{len(differences) - 2} more)"
+        return True, reason
+
+    # Generic fallback if we can't determine specific differences
+    return True, "config changed"
+
+
 def _prepare_wrap_changes(
     mcp_config_path: Path,
     servers: Optional[List[str]] = None,
@@ -153,16 +397,17 @@ def _prepare_wrap_changes(
     llm_model: str = "gpt-5-mini-2025-08-07",
     llm_api_key_env: str = "OPENAI_API_KEY",
     token_threshold: int = 2000,
-) -> Tuple[Dict[str, Any], Dict[str, Any], Dict[str, Tuple[Path, Dict[str, Any]]], Optional[str]]:
+) -> Tuple[Dict[str, Any], Dict[str, Any], Dict[str, Tuple[Path, Dict[str, Any]]], Optional[str], Dict[str, str]]:
     """
     Prepare the changes that will be made (without writing anything).
 
     Returns:
-        Tuple of (full_config, new_mcp_entries, proxy_configs, api_key_value)
+        Tuple of (full_config, new_mcp_entries, proxy_configs, api_key_value, update_reasons)
         - full_config: The full mcp.json config with new entries added
         - new_mcp_entries: Just the new server entries to be added
         - proxy_configs: Dict of {server_name: (config_path, config_data)}
         - api_key_value: The API key value from environment (or None)
+        - update_reasons: Dict of {base_server_name: reason_string} for tracking updates
     """
     config_dir = _get_config_dir()
     existing_servers = _parse_mcp_config(mcp_config_path)
@@ -180,13 +425,88 @@ def _prepare_wrap_changes(
         if missing:
             print(f"Servers not found in config: {missing}", file=sys.stderr)
             sys.exit(1)
-        servers_to_wrap = {k: v for k, v in existing_servers.items() if k in servers}
+        base_servers = {k: v for k, v in existing_servers.items() if k in servers}
     else:
-        # Skip servers that are already -plus versions
-        servers_to_wrap = {k: v for k, v in existing_servers.items() if not k.endswith("-plus")}
+        # Get base servers (exclude existing -plus versions from consideration)
+        base_servers = {k: v for k, v in existing_servers.items() if not k.endswith("-plus")}
+
+    # Build all proxy configs and MCP entries, then determine which need updating
+    all_proxy_configs = {}  # {base_name: proxy_config_dict}
+    all_mcp_entries = {}  # {base_name: mcp_entry_dict}
+    servers_to_wrap = {}
+    update_reasons = {}
+
+    for name, server_cfg in base_servers.items():
+        # Build the proxy config for this server
+        if "http_url" in server_cfg or "url" in server_cfg:
+            url = server_cfg.get("http_url") or server_cfg.get("url", "")
+            headers = server_cfg.get("headers", {})
+            if not url:
+                continue
+
+            proxy_config = _build_proxy_config(
+                upstream=name,
+                server_name=f"{name}-plus",
+                command=None,
+                args=None,
+                env=None,
+                llm_provider=llm_provider,
+                llm_model=llm_model,
+                llm_api_key_env=llm_api_key_env,
+                token_threshold=token_threshold,
+                transport="http",
+                upstream_url=url,
+                headers=headers if headers else None,
+            )
+        else:
+            command = server_cfg.get("command", "")
+            args = server_cfg.get("args", [])
+            env = server_cfg.get("env", {})
+            if not command:
+                continue
+
+            proxy_config = _build_proxy_config(
+                upstream=name,
+                server_name=f"{name}-plus",
+                command=command,
+                args=args,
+                env=env,
+                llm_provider=llm_provider,
+                llm_model=llm_model,
+                llm_api_key_env=llm_api_key_env,
+                token_threshold=token_threshold,
+                transport="stdio",
+            )
+
+        # Store the built configs
+        all_proxy_configs[name] = proxy_config
+
+        # Build the MCP entry to compare against existing
+        proxy_config_path = config_dir / f"proxy_{name}.json"
+        mcp_entry = _build_mcp_entry(
+            server_name=f"{name}-plus",
+            config_path=proxy_config_path,
+            llm_api_key_env=llm_api_key_env,
+            llm_api_key_value=api_key_value,
+            llm_provider=llm_provider,
+        )
+        all_mcp_entries[name] = mcp_entry
+
+        # Check if this server needs updating
+        should_update, reason = _should_update_plus_server(
+            base_name=name,
+            existing_servers=existing_servers,
+            config_dir=config_dir,
+            new_proxy_config=proxy_config,
+            new_mcp_entry=mcp_entry,
+        )
+
+        if should_update:
+            servers_to_wrap[name] = server_cfg
+            update_reasons[name] = reason
 
     if not servers_to_wrap:
-        print("No servers to wrap (all may already be wrapped)", file=sys.stderr)
+        print("No servers to wrap/update (all configurations are up-to-date)", file=sys.stderr)
         sys.exit(0)
 
     # Load full config to preserve structure
@@ -199,78 +519,24 @@ def _prepare_wrap_changes(
     new_entries = {}
     proxy_configs = {}
 
-    for name, server_cfg in servers_to_wrap.items():
+    # Use the already-built configs (built above during comparison phase)
+    # This avoids rebuilding configs twice and ensures what we compared is what we write
+    for name in servers_to_wrap.keys():
         plus_name = f"{name}-plus"
 
-        # Check transport type: http_url (HTTP), url (HTTP/SSE), or command (stdio)
-        if "http_url" in server_cfg or "url" in server_cfg:
-            # HTTP or SSE server
-            # Prefer http_url if explicitly provided, otherwise use url
-            url = server_cfg.get("http_url") or server_cfg.get("url", "")
-            headers = server_cfg.get("headers", {})
-
-            if not url:
-                continue
-
-            # Try HTTP first (modern servers typically support HTTP)
-            # The proxy/client will handle fallback to SSE if needed
-            transport = "http"
-
-            # Build proxy config for HTTP (with potential SSE fallback)
-            proxy_config = _build_proxy_config(
-                upstream=name,
-                server_name=plus_name,
-                command=None,  # No command for HTTP/SSE
-                args=None,
-                env=None,
-                llm_provider=llm_provider,
-                llm_model=llm_model,
-                llm_api_key_env=llm_api_key_env,
-                token_threshold=token_threshold,
-                transport=transport,
-                upstream_url=url,
-                headers=headers if headers else None,
-            )
-
-        else:
-            # stdio server
-            command = server_cfg.get("command", "")
-            args = server_cfg.get("args", [])
-            env = server_cfg.get("env", {})
-
-            if not command:
-                continue
-
-            # Build proxy config for stdio
-            proxy_config = _build_proxy_config(
-                upstream=name,
-                server_name=plus_name,
-                command=command,
-                args=args,
-                env=env,
-                llm_provider=llm_provider,
-                llm_model=llm_model,
-                llm_api_key_env=llm_api_key_env,
-                token_threshold=token_threshold,
-                transport="stdio",
-            )
-
+        # Get the pre-built proxy config and MCP entry (already built during comparison)
+        proxy_config = all_proxy_configs[name]
         proxy_config_path = config_dir / f"proxy_{name}.json"
         proxy_configs[plus_name] = (proxy_config_path, proxy_config)
 
-        # Build MCP entry
-        mcp_entry = _build_mcp_entry(
-            server_name=plus_name,
-            config_path=proxy_config_path,
-            llm_api_key_env=llm_api_key_env,
-            llm_api_key_value=api_key_value,
-        )
+        # Get the pre-built MCP entry (already has correct Python path from sys.executable)
+        mcp_entry = all_mcp_entries[name]
         new_entries[plus_name] = mcp_entry
 
     # Add new entries to config (in memory only)
     servers_section.update(new_entries)
 
-    return full_config, new_entries, proxy_configs, api_key_value
+    return full_config, new_entries, proxy_configs, api_key_value, update_reasons
 
 
 def wrap_servers(
@@ -302,7 +568,7 @@ def wrap_servers(
         The updated config dict
     """
     # Prepare all changes first (no writes yet)
-    full_config, new_entries, proxy_configs, api_key_value = _prepare_wrap_changes(
+    full_config, new_entries, proxy_configs, api_key_value, update_reasons = _prepare_wrap_changes(
         mcp_config_path=mcp_config_path,
         servers=servers,
         llm_provider=llm_provider,
@@ -322,6 +588,10 @@ def wrap_servers(
     print("MCP+ Wrapper Configuration Preview")
     print("=" * 60)
 
+    # Python interpreter info
+    print(f"\n[Python] Using: {sys.executable}")
+    print("         This Python will be used to run proxy servers.")
+
     # API key status
     if api_key_value:
         print(f"\n[API Key] Found {llm_api_key_env} in environment.")
@@ -330,13 +600,29 @@ def wrap_servers(
         print(f"\n[API Key] Warning: {llm_api_key_env} not found in environment.")
         print(f"          Will use ${llm_api_key_env} reference.")
 
-    # Show proxy configs that will be created
-    print(f"\n[Proxy Configs] Will create {len(proxy_configs)} file(s) in ~/.mcpplus/configs/:")
-    for _, (config_path, _) in proxy_configs.items():
-        print(f"  - {config_path}")
+    # Show proxy configs that will be created/updated
+    print(f"\n[Proxy Configs] Will create/update {len(proxy_configs)} file(s) in ~/.mcpplus/configs/:")
+    for server_name, (config_path, _) in proxy_configs.items():
+        base_name = server_name.replace("-plus", "")
+        reason = update_reasons.get(base_name, "unknown")
 
-    # Show entries that will be added to mcp.json
-    print(f"\n[MCP Config] Will add {len(new_entries)} server(s) to {output}:")
+        if reason == "new":
+            print(f"  ✨ {config_path.name} (new)")
+        else:
+            print(f"  🔄 {config_path.name} (update: {reason})")
+
+    # Show entries that will be added/updated in mcp.json
+    new_count = sum(1 for r in update_reasons.values() if r == "new")
+    update_count = len(update_reasons) - new_count
+
+    if new_count > 0 and update_count > 0:
+        action_desc = f"add {new_count} new and update {update_count} existing"
+    elif new_count > 0:
+        action_desc = f"add {new_count}"
+    else:
+        action_desc = f"update {update_count}"
+
+    print(f"\n[MCP Config] Will {action_desc} server(s) in {output}:")
     print("-" * 60)
     print(json.dumps(new_entries, indent=2))
     print("-" * 60)
@@ -364,15 +650,29 @@ def wrap_servers(
     print("\nApplying changes...")
 
     # Write proxy configs
-    for _, (config_path, proxy_config) in proxy_configs.items():
+    for server_name, (config_path, proxy_config) in proxy_configs.items():
         _write_json(config_path, proxy_config)
-        print(f"  Created: {config_path}")
+        base_name = server_name.replace("-plus", "")
+        reason = update_reasons.get(base_name, "unknown")
+
+        if reason == "new":
+            print(f"  ✨ Created: {config_path}")
+        else:
+            print(f"  🔄 Updated: {config_path}")
 
     # Write updated mcp.json
     _write_json(output, full_config)
     print(f"  Updated: {output}")
 
-    print(f"\nSuccess! Added {len(new_entries)} wrapped server(s).")
+    new_count = sum(1 for r in update_reasons.values() if r == "new")
+    update_count = len(update_reasons) - new_count
+
+    if new_count > 0 and update_count > 0:
+        print(f"\nSuccess! Created {new_count} and updated {update_count} wrapped server(s).")
+    elif new_count > 0:
+        print(f"\nSuccess! Created {new_count} wrapped server(s).")
+    else:
+        print(f"\nSuccess! Updated {update_count} wrapped server(s).")
     print("\nNext steps:")
     print("  1. Restart your MCP client (Cursor, Claude Desktop, etc.)")
     print("  2. Use the '-plus' servers (e.g., 'finance-plus' instead of 'finance')")

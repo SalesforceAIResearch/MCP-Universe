@@ -176,14 +176,28 @@ class ProxyServer:
         # Resolve post-processing LLM if provided
         if self._config.llm:
             llm_manager = ModelManager()
-            # Expand env vars in api_key (e.g., "$OPENAI_API_KEY" -> actual value)
+            # Expand env vars in config (e.g., "$OPENAI_API_KEY" -> actual value)
             llm_config = self._config.llm.copy()
             if "config" in llm_config and isinstance(llm_config["config"], dict):
                 llm_config["config"] = llm_config["config"].copy()
+
+                # Expand api_key
                 api_key = llm_config["config"].get("api_key", "")
                 if isinstance(api_key, str) and api_key.startswith("$"):
                     env_var = api_key[1:]  # Remove leading $
-                    llm_config["config"]["api_key"] = os.environ.get(env_var, "")
+                    expanded_key = os.environ.get(env_var, "")
+                    llm_config["config"]["api_key"] = expanded_key
+                    self._logger.debug(f"Expanded ${env_var} for api_key (length: {len(expanded_key)})")
+
+                # Expand base_url (needed for gateway providers)
+                base_url = llm_config["config"].get("base_url", "")
+                if isinstance(base_url, str) and base_url.startswith("$"):
+                    env_var = base_url[1:]  # Remove leading $
+                    expanded_url = os.environ.get(env_var, "")
+                    llm_config["config"]["base_url"] = expanded_url
+                    self._logger.debug(f"Expanded ${env_var} for base_url: {expanded_url}")
+
+                self._logger.debug(f"Final LLM config - provider: {llm_config['name']}, base_url: {llm_config['config'].get('base_url', 'NOT SET')}")
             llm = llm_manager.build_model(**llm_config)
             llm.set_context(Context(env=dict(os.environ)))
             self._mcp_manager.set_llm(llm)
@@ -481,9 +495,15 @@ class ProxyServer:
                         await response_stream.aclose()
                         await response_stream_reader.aclose()
 
-                    # Parse raw response
-                    raw_result = response_or_error.result
-                    if isinstance(raw_result, dict) and 'resources' in raw_result:
+                    # Parse raw response - check if it's an error first
+                    if hasattr(response_or_error, 'error'):
+                        # This is a JSONRPCError
+                        self._logger.warning("Upstream returned error for resources/list: %s", response_or_error.error)
+                        raw_result = None
+                    else:
+                        raw_result = response_or_error.result
+
+                    if raw_result and isinstance(raw_result, dict) and 'resources' in raw_result:
                         for res_dict in raw_result['resources']:
                             uri = res_dict.get('uri', '')
                             # If URI doesn't have a scheme, add "mcpplus-proxy://" prefix
