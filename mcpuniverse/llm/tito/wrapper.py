@@ -1,9 +1,12 @@
 """
 TITO LLM Wrapper — agent-compatible LLM that avoids retokenization.
 
-Wraps an inference engine (AsyncVLLMEngine or VERL Ray actor) and exposes
-the standard ``generate_async(messages)`` interface while internally
-maintaining a token sequence via TokenTrajectoryManager.
+Wraps an inference engine (vLLM/SGLang async engine or VERL Ray actor)
+and exposes the standard ``generate_async(messages)`` interface while
+internally maintaining a token sequence via TokenTrajectoryManager.
+
+Supports both vLLM and SGLang backends — both return
+``TokenOutput(token_ids, log_probs)`` via the same generate() API.
 
 Workflow per agent turn:
   1. Agent calls generate_async(messages=[{"role": "raw", "content": prompt}])
@@ -31,7 +34,7 @@ from .manager import TokenTrajectoryManager, TokenTrajectory
 @dataclass
 class TITOLLMConfig(BaseConfig):
     """Sampling configuration for TITO LLM."""
-    model_name: str = "tito_vllm"
+    model_name: str = "tito"
     temperature: float = 1.0
     top_p: float = 1.0
     max_completion_tokens: int = 4096
@@ -42,13 +45,13 @@ class TITOLLMWrapper:
     """
     Agent-compatible LLM wrapper with TITO (Token In Token Out) support.
 
-    Accepts either a local ``AsyncVLLMEngine`` or a VERL Ray actor as the
+    Accepts a local async engine (vLLM or SGLang) or a VERL Ray actor as the
     backing engine.  The agent sees text in / text out; internally the
     wrapper keeps an ever-growing token sequence and only tokenizes new
     external content (tool results).
 
     Args:
-        engine: AsyncVLLMEngine instance (local) or Ray actor reference (VERL).
+        engine: Async inference engine instance or Ray actor reference (VERL).
         tokenizer: HuggingFace tokenizer.
         sampling_params: Default sampling parameters dict.  Standard keys
             (``temperature``, ``top_p``, ``max_tokens``) populate
@@ -191,7 +194,7 @@ class TITOLLMWrapper:
         return await self._call_ray(token_ids, sampling_params, request_id)
 
     async def _call_local(self, token_ids, sampling_params, request_id):
-        """Call a local AsyncVLLMEngine directly."""
+        """Call a local async inference engine directly."""
         sampling_params = self._filter_sampling_params(sampling_params)
         text, meta = await self._engine.generate(
             prompt_ids=token_ids,
@@ -200,25 +203,30 @@ class TITOLLMWrapper:
         )
         return text, meta.get("output_tokens", [])
 
-    # vLLM SamplingParams accepted keys (whitelist)
-    _VLLM_SAMPLING_KEYS = frozenset({
+    # Sampling params accepted by both vLLM and SGLang (union of both)
+    _ENGINE_SAMPLING_KEYS = frozenset({
+        # Common keys (both vLLM and SGLang)
         "temperature", "top_p", "top_k", "min_p",
         "frequency_penalty", "presence_penalty", "repetition_penalty",
         "stop", "stop_token_ids", "seed", "skip_special_tokens",
-        "spaces_between_special_tokens", "logprobs", "top_logprobs",
-        "min_tokens", "max_tokens", "best_of", "use_beam_search",
-        "length_penalty", "n",
+        "logprobs", "top_logprobs", "max_tokens", "n",
+        # vLLM-specific (ignored by SGLang)
+        "spaces_between_special_tokens",
+        "min_tokens", "best_of", "use_beam_search", "length_penalty",
+        # SGLang-specific (ignored by vLLM)
+        "max_new_tokens", "return_logprob",
     })
 
     def _filter_sampling_params(self, sp: Dict[str, Any]) -> Dict[str, Any]:
-        """Keep only keys that vLLM SamplingParams accepts."""
-        return {k: v for k, v in sp.items() if k in self._VLLM_SAMPLING_KEYS}
+        """Keep only keys that the inference engine accepts."""
+        return {k: v for k, v in sp.items() if k in self._ENGINE_SAMPLING_KEYS}
 
     async def _call_ray(self, token_ids, sampling_params, request_id):
-        """Call a VERL Ray actor."""
+        """Call a VERL Ray actor (works with both vLLM and SGLang servers)."""
         sampling_params = self._filter_sampling_params(sampling_params)
         # VERL sets max_tokens internally
         sampling_params.pop("max_tokens", None)
+        sampling_params.pop("max_new_tokens", None)
 
         future = self._engine.generate.remote(
             prompt_ids=token_ids,

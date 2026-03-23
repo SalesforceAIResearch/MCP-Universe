@@ -197,6 +197,7 @@ class EnvPoolConfig:
     reuse_existing: bool = True
     reset_on_release: bool = True
     gateway_mode: str = "sse"
+    network: str = "bridge"
     build: DockerBuildConfig = field(default_factory=DockerBuildConfig)
     resources: ContainerResourceConfig = field(default_factory=ContainerResourceConfig)
 

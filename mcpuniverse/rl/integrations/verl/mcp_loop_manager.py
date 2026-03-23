@@ -226,6 +226,7 @@ class MCPLoopManager(AgentLoopManager):  # pylint: disable=too-many-instance-att
                 "cpu_limit": safe_get(env_pool_cfg, "cpu_limit", "2"),
                 "memory_limit": safe_get(env_pool_cfg, "memory_limit", "4g"),
                 "gateway_mode": safe_get(env_pool_cfg, "gateway_mode", "sse"),
+                "network": safe_get(env_pool_cfg, "network", "bridge"),
             },
         })
 
@@ -428,6 +429,7 @@ class MCPLoopManager(AgentLoopManager):  # pylint: disable=too-many-instance-att
                 cpu_limit=safe_get(env_pool_cfg, 'cpu_limit', '2'),
                 memory_limit=safe_get(env_pool_cfg, 'memory_limit', '4g'),
                 gateway_mode=safe_get(env_pool_cfg, 'gateway_mode', 'sse'),
+                network=safe_get(env_pool_cfg, 'network', 'bridge'),
                 use_dockerfile_cmd=safe_get(env_pool_cfg, 'use_dockerfile_cmd', False),
             ))
         return configs
@@ -759,6 +761,7 @@ class MCPLoopManager(AgentLoopManager):  # pylint: disable=too-many-instance-att
             cpu_limit=safe_get(env_pool_cfg, 'cpu_limit', '2'),
             memory_limit=safe_get(env_pool_cfg, 'memory_limit', '4g'),
             gateway_mode=safe_get(env_pool_cfg, 'gateway_mode', 'sse'),
+            network=safe_get(env_pool_cfg, 'network', 'bridge'),
             use_dockerfile_cmd=safe_get(env_pool_cfg, 'use_dockerfile_cmd', False),
         )
 

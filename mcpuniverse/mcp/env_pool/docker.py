@@ -236,12 +236,9 @@ class DockerProvisioner(BaseProvisioner):
         with open(abs_path, 'rb') as f:
             hasher = hashlib.sha256(f.read())
 
-        # Include build-context state so source changes invalidate the image.
-        # Strategy: try git first (fast, precise); fall back to file metadata scan.
-        ctx = self.build_context
-        if ctx:
-            if not self._hash_build_context_git(hasher, ctx):
-                self._hash_build_context_walk(hasher, ctx)
+        # Hash is based solely on Dockerfile content.  Source-code changes
+        # (new commits, dirty files) do NOT invalidate the cached image.
+        # Rebuild manually when the container's runtime code changes.
 
         hash_value = hasher.hexdigest()[:16]
         self._dockerfile_hash_cache[dockerfile_path] = hash_value
@@ -266,20 +263,6 @@ class DockerProvisioner(BaseProvisioner):
             if head.returncode != 0:
                 return False
             hasher.update(head.stdout.strip().encode())
-
-            diff = subprocess.run(
-                ["git", "diff", "HEAD", "--name-only"],
-                cwd=ctx, capture_output=True, text=True, timeout=5, check=False,
-            )
-            if diff.returncode == 0 and diff.stdout.strip():
-                for changed_file in diff.stdout.strip().split('\n'):
-                    fpath = os.path.join(ctx, changed_file)
-                    if os.path.isfile(fpath):
-                        try:
-                            with open(fpath, 'rb') as f:
-                                hasher.update(f.read())
-                        except OSError:
-                            pass
             return True
         except (OSError, subprocess.TimeoutExpired):
             return False
@@ -393,10 +376,10 @@ class DockerProvisioner(BaseProvisioner):
         # Wait for another task's build to finish
         if build_event is not None:
             try:
-                await asyncio.wait_for(build_event.wait(), timeout=600.0)
+                await asyncio.wait_for(build_event.wait(), timeout=3600.0)
             except asyncio.TimeoutError as exc:
                 raise RuntimeError(
-                    f"Timed out waiting for another task to build image {image_name} (600s)"
+                    f"Timed out waiting for another task to build image {image_name} (3600s)"
                 ) from exc
             if image_name in self._built_images:
                 return (image_name, dockerfile_hash)
@@ -493,11 +476,17 @@ class DockerProvisioner(BaseProvisioner):
     ) -> list:
         """Build the ``docker run`` command list for *env_id*."""
         container_name = f"mcp-env-{env_id}"
+        use_host_network = config.network == "host"
+        # With host networking the container shares the node's network
+        # namespace, so port mapping is unnecessary – the gateway listens
+        # directly on *host_port*.
+        actual_gw_port = host_port if use_host_network else config.gateway_port
         cmd = [
             "run", "-d", "--name", container_name,
-            "-p", f"{host_port}:{config.gateway_port}",
             "--cpus", config.cpu_limit, "--memory", config.memory_limit,
         ]
+        if not use_host_network:
+            cmd.extend(["-p", f"{host_port}:{config.gateway_port}"])
 
         if config.shm_size:
             cmd.extend(["--shm-size", config.shm_size])
@@ -512,7 +501,7 @@ class DockerProvisioner(BaseProvisioner):
 
         # Environment variables
         env_vars = {
-            "MCP_GATEWAY_PORT": str(config.gateway_port),
+            "MCP_GATEWAY_PORT": str(actual_gw_port),
             "MCP_GATEWAY_MODE": config.gateway_mode,
             "MCP_SERVERS": ",".join(config.servers),
             **config.env_vars,
@@ -534,7 +523,7 @@ class DockerProvisioner(BaseProvisioner):
         # Append gateway startup command unless the Dockerfile handles it
         if not config.use_dockerfile_cmd:
             gw = ["python", "-m", "mcpuniverse.mcp.gateway",
-                  "--port", str(config.gateway_port), "--mode", config.gateway_mode,
+                  "--port", str(actual_gw_port), "--mode", config.gateway_mode,
                   "--servers", ",".join(config.servers)]
             if config.mcp_config_path:
                 gw.extend(["--config", config.mcp_config_path])
@@ -745,7 +734,12 @@ class DockerProvisioner(BaseProvisioner):
         """Poll until the gateway inside the container is healthy."""
         container_name = f"mcp-env-{env_id}"
         env_info = self._envs.get(env_id)
-        container_port = env_info.config.gateway_port if env_info else 8000
+        # With host networking the gateway listens on *port* (the host port)
+        # directly, so docker-exec health checks must use that port too.
+        use_host_net = env_info and env_info.config.network == "host"
+        container_port = port if use_host_net else (
+            env_info.config.gateway_port if env_info else 8000
+        )
         start = time.time()
         ready = False
 
@@ -891,7 +885,9 @@ class DockerProvisioner(BaseProvisioner):
         """Get the host port mapping for a container.
 
         Tries ``NetworkSettings.Ports`` first (works while running), then
-        ``HostConfig.PortBindings`` (works even when stopped).
+        ``HostConfig.PortBindings`` (works even when stopped).  For host-
+        network containers (no port mapping) falls back to reading the
+        ``MCP_GATEWAY_PORT`` environment variable.
         """
         inspect_network_ports = ("{{range $p, $conf := .NetworkSettings.Ports}}"
                                  "{{if $conf}}{{(index $conf 0).HostPort}}{{end}}{{end}}")
@@ -904,6 +900,16 @@ class DockerProvisioner(BaseProvisioner):
                 )
                 if r.returncode == 0 and r.stdout.strip():
                     return int(r.stdout.strip())
+            # Host-network containers have no port mapping; read from env var.
+            r = await self._run_docker_cmd(
+                ["inspect", "--format",
+                 '{{range .Config.Env}}{{println .}}{{end}}', name],
+                check=False,
+            )
+            if r.returncode == 0:
+                for line in r.stdout.strip().split('\n'):
+                    if line.startswith('MCP_GATEWAY_PORT='):
+                        return int(line.split('=', 1)[1])
         except Exception as e:
             logger.debug("Failed to get container port for {}: {}", name, e)
         return None

@@ -1,3 +1,5 @@
+> **Contributor: Ziyang Luo**
+
 # VERL Integration for MCP-Universe
 
 Integrates MCP-Universe agent training with the [VERL](https://github.com/volcengine/verl) framework for distributed PPO training of LLM agents that interact with tools via MCP (Model Context Protocol).

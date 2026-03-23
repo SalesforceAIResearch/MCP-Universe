@@ -1,3 +1,5 @@
+> **Contributor: Ziyang Luo**
+
 # MCP Hybrid Training Mode
 
 In Hybrid mode, Actor, Rollout (vLLM), and Critic all share the same set of GPUs. Training alternates synchronously between rollout and parameter updates.
