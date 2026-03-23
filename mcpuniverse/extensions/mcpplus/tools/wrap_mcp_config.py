@@ -291,18 +291,24 @@ def _find_config_differences(old_config: Dict[str, Any], new_config: Dict[str, A
     new_wrapper = new_config.get("wrapper", {})
 
     if old_wrapper.get("token_threshold") != new_wrapper.get("token_threshold"):
-        differences.append(f"threshold: {old_wrapper.get('token_threshold', '?')} → {new_wrapper.get('token_threshold', '?')}")
+        old_val = old_wrapper.get('token_threshold', '?')
+        new_val = new_wrapper.get('token_threshold', '?')
+        differences.append(f"threshold: {old_val} → {new_val}")
 
     if old_wrapper.get("max_iterations") != new_wrapper.get("max_iterations"):
-        differences.append(f"max_iterations: {old_wrapper.get('max_iterations', '?')} → {new_wrapper.get('max_iterations', '?')}")
+        old_val = old_wrapper.get('max_iterations', '?')
+        new_val = new_wrapper.get('max_iterations', '?')
+        differences.append(f"max_iterations: {old_val} → {new_val}")
 
     if old_wrapper.get("llm_timeout") != new_wrapper.get("llm_timeout"):
-        differences.append(f"llm_timeout: {old_wrapper.get('llm_timeout', '?')} → {new_wrapper.get('llm_timeout', '?')}")
+        old_val = old_wrapper.get('llm_timeout', '?')
+        new_val = new_wrapper.get('llm_timeout', '?')
+        differences.append(f"llm_timeout: {old_val} → {new_val}")
 
     return differences
 
 
-def _should_update_plus_server(
+def _should_update_plus_server(  # pylint: disable=too-many-return-statements
     base_name: str,
     existing_servers: Dict[str, Dict[str, Any]],
     config_dir: Path,
@@ -354,10 +360,9 @@ def _should_update_plus_server(
 
         if added_keys:
             return True, f"env vars added ({', '.join(sorted(added_keys)[:2])})"
-        elif removed_keys:
+        if removed_keys:
             return True, f"env vars removed ({', '.join(sorted(removed_keys)[:2])})"
-        else:
-            return True, "env var values changed"
+        return True, "env var values changed"
 
     # Load existing proxy config file
     proxy_config_path = config_dir / f"proxy_{base_name}.json"
@@ -366,7 +371,8 @@ def _should_update_plus_server(
 
     try:
         existing_proxy = _load_json(proxy_config_path)
-    except Exception:
+    except Exception:  # pylint: disable=broad-exception-caught
+        # Catch any JSON parsing or file reading errors
         return True, "proxy config corrupted"
 
     # Normalize both configs for comparison (only relevant fields)
@@ -521,7 +527,7 @@ def _prepare_wrap_changes(
 
     # Use the already-built configs (built above during comparison phase)
     # This avoids rebuilding configs twice and ensures what we compared is what we write
-    for name in servers_to_wrap.keys():
+    for name in servers_to_wrap:
         plus_name = f"{name}-plus"
 
         # Get the pre-built proxy config and MCP entry (already built during comparison)

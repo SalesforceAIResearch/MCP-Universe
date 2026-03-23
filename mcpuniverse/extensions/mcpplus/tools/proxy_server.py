@@ -187,7 +187,7 @@ class ProxyServer:
                     env_var = api_key[1:]  # Remove leading $
                     expanded_key = os.environ.get(env_var, "")
                     llm_config["config"]["api_key"] = expanded_key
-                    self._logger.debug(f"Expanded ${env_var} for api_key (length: {len(expanded_key)})")
+                    self._logger.debug("Expanded $%s for api_key (length: %d)", env_var, len(expanded_key))
 
                 # Expand base_url (needed for gateway providers)
                 base_url = llm_config["config"].get("base_url", "")
@@ -195,9 +195,10 @@ class ProxyServer:
                     env_var = base_url[1:]  # Remove leading $
                     expanded_url = os.environ.get(env_var, "")
                     llm_config["config"]["base_url"] = expanded_url
-                    self._logger.debug(f"Expanded ${env_var} for base_url: {expanded_url}")
+                    self._logger.debug("Expanded $%s for base_url: %s", env_var, expanded_url)
 
-                self._logger.debug(f"Final LLM config - provider: {llm_config['name']}, base_url: {llm_config['config'].get('base_url', 'NOT SET')}")
+                self._logger.debug("Final LLM config - provider: %s, base_url: %s",
+                                   llm_config['name'], llm_config['config'].get('base_url', 'NOT SET'))
             llm = llm_manager.build_model(**llm_config)
             llm.set_context(Context(env=dict(os.environ)))
             self._mcp_manager.set_llm(llm)

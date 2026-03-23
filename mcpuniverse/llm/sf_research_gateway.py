@@ -31,9 +31,11 @@ import time
 import logging
 import json
 import uuid
-import requests
 from typing import Dict, Union, Optional, List, Type, Any
 from dataclasses import dataclass
+
+import requests
+from openai import OpenAI
 from pydantic import BaseModel as PydanticBaseModel
 
 from mcpuniverse.common.config import BaseConfig
@@ -137,7 +139,6 @@ class SFResearchGatewayModel(BaseLLM):
     def _get_openai_client(self):
         """Get or create OpenAI client for OpenAI models."""
         if self.client is None:
-            from openai import OpenAI
             openai_url = f"{self.config.base_url.rstrip('/')}/openai/process/v1/"
             self.client = OpenAI(
                 api_key="dummy",  # Required by OpenAI client but not used
@@ -168,13 +169,12 @@ class SFResearchGatewayModel(BaseLLM):
         # Route based on model type
         if self._is_claude_model(model_name):
             return self._generate_claude(messages, response_format, **kwargs)
-        elif self._is_openai_model(model_name):
+        if self._is_openai_model(model_name):
             return self._generate_openai(messages, response_format, **kwargs)
-        else:
-            raise ValueError(
-                f"Unsupported model type: {model_name}. "
-                f"Must be a Claude model (contains 'claude') or OpenAI model (contains 'gpt'/'openai')."
-            )
+        raise ValueError(
+            f"Unsupported model type: {model_name}. "
+            f"Must be a Claude model (contains 'claude') or OpenAI model (contains 'gpt'/'openai')."
+        )
 
     def _generate_openai(
             self,
@@ -310,7 +310,8 @@ class SFResearchGatewayModel(BaseLLM):
                            attempt + 1, e, delay)
                 time.sleep(delay)
 
-            except Exception as e:
+            except Exception as e:  # pylint: disable=broad-exception-caught
+                # Catch any non-retryable errors (e.g., authentication, SSL, etc.)
                 logging.error("Non-retryable error occurred: %s", e)
                 return None
 

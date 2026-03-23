@@ -24,7 +24,11 @@ Configuration:
             --llm-api-key-env ENG_AI_MODEL_GW_KEY
 """
 import os
-from typing import Dict, Union, Optional
+import time
+import logging
+
+from openai import OpenAI, RateLimitError, APIError, APITimeoutError
+
 from mcpuniverse.common.context import Context
 from .openai import OpenAIModel, OpenAIConfig
 
@@ -78,18 +82,6 @@ class SFLLMExpressGatewayModel(OpenAIModel):
     alias = "sf_llm_express_gateway"
     env_vars = ["ENG_AI_MODEL_GW_URL", "ENG_AI_MODEL_GW_KEY"]
 
-    def __init__(self, config: Optional[Union[Dict, str]] = None):
-        """
-        Initialize the SFLLMExpressGatewayModel instance.
-
-        Args:
-            config: Configuration for the model. Can be a dictionary or a string.
-                If None, default configuration will be used.
-        """
-        super().__init__(config)
-        # Config is already loaded by parent OpenAIModel.__init__
-        # OpenAI client will be created automatically in _generate() using self.config
-
     def _generate(self, messages, response_format=None, **kwargs):
         """
         Override parent _generate for gateway-specific behavior.
@@ -109,10 +101,6 @@ class SFLLMExpressGatewayModel(OpenAIModel):
         Raises:
             Exception: Re-raises non-retryable errors for visibility.
         """
-        from openai import OpenAI, RateLimitError, APIError, APITimeoutError
-        import time
-        import logging
-
         max_retries = kwargs.get("max_retries", 5)
         base_delay = kwargs.get("base_delay", 10.0)
 
