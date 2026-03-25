@@ -14,6 +14,8 @@ from .local_llm import LocalLLMModel
 # Backward compatibility alias
 VLLMLocalModel = LocalLLMModel
 from .claude_wr import ClaudeWRModel
+from .sf_llm_express_gateway import SFLLMExpressGatewayModel
+from .sf_research_gateway import SFResearchGatewayModel
 # TITO (Token In Token Out) — vLLM engine, trajectory manager, agent wrapper
 from .tito import (
     AsyncVLLMEngine, AsyncVLLMBackend, VLLMEngineConfig,
@@ -35,6 +37,8 @@ __all__ = [
     "GeminiModel",
     "LocalLLMModel",
     "VLLMLocalModel",  # backward compat alias
+    "SFLLMExpressGatewayModel",
+    "SFResearchGatewayModel",
     # Direct vLLM engine (no HTTP serve)
     "AsyncVLLMEngine",
     "AsyncVLLMBackend",
