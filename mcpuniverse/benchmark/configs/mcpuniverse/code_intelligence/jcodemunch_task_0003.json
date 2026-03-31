@@ -1,0 +1,23 @@
+{
+    "category": "code-intelligence",
+    "question": "Using jcodemunch, index the GitHub repository jgravelle/jcodemunch-mcp. Then get the high-level repository outline. Report how many top-level directories are listed under the 'src' directory.",
+    "output_format": {
+        "directory_count": "[number of top-level directories under src]"
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "jcodemunch"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "jcodemunch.llm_as_a_judge",
+            "op_args": {
+                "question": "In jgravelle/jcodemunch-mcp, how many top-level directories are there under the src/jcodemunch_mcp directory? Count only directories, not files.",
+                "correct_answer": "5 directories: parser, storage, summarizer, tools, and the root jcodemunch_mcp package itself contains server.py, security.py, config.py"
+            }
+        }
+    ]
+}

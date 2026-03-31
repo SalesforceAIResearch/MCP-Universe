@@ -1,0 +1,24 @@
+{
+    "category": "code-intelligence",
+    "question": "Using jcodemunch, index the GitHub repository jgravelle/jcodemunch-mcp. Then use get_blast_radius to determine what files would be impacted if 'src/jcodemunch_mcp/config.py' were changed. Report whether server.py appears in the blast radius.",
+    "output_format": {
+        "server_py_in_blast_radius": "[yes or no]",
+        "total_impacted_files": "[approximate count of impacted files]"
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "jcodemunch"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "jcodemunch.llm_as_a_judge",
+            "op_args": {
+                "question": "If config.py changes in jgravelle/jcodemunch-mcp, does server.py appear in the blast radius (i.e., would server.py be impacted)?",
+                "correct_answer": "Yes, server.py imports from config.py and would be in the blast radius of any config.py change."
+            }
+        }
+    ]
+}

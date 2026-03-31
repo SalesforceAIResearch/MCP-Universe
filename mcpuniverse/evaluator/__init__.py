@@ -14,6 +14,7 @@ from .google_search.functions import *
 from .deepresearch.functions import *
 from .notion.functions import *
 from .weather.functions import *
+from .jcodemunch.functions import *
 # from .mcpmark.functions import *  # Temporarily disabled due to psycopg2 dependency
 from .mcpmark.github_functions import *
 from .mcpmark.notion_functions import *

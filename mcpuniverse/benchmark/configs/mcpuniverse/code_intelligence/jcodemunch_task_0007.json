@@ -1,0 +1,24 @@
+{
+    "category": "code-intelligence",
+    "question": "Using jcodemunch, index the GitHub repository jgravelle/jcodemunch-mcp. Then use get_symbol_source to retrieve the source code of the symbol 'validate_path' from 'src/jcodemunch_mcp/security.py'. Report whether the function raises an exception for paths outside allowed directories.",
+    "output_format": {
+        "raises_on_unsafe_path": "[yes or no]",
+        "exception_type": "[name of the exception raised, or 'none']"
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "jcodemunch"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "jcodemunch.llm_as_a_judge",
+            "op_args": {
+                "question": "Does the validate_path function in src/jcodemunch_mcp/security.py raise an exception when a path is outside allowed directories?",
+                "correct_answer": "Yes, validate_path raises an exception (ValueError or a custom security error) when the path is outside trusted/allowed directories."
+            }
+        }
+    ]
+}

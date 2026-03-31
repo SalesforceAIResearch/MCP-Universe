@@ -1,0 +1,23 @@
+{
+    "category": "code-intelligence",
+    "question": "Using jcodemunch, index the GitHub repository jgravelle/jcodemunch-mcp. Then use find_references to find all files that reference the identifier 'CodeIndex'. Report how many distinct files reference it (count only .py files).",
+    "output_format": {
+        "file_count": "[number of Python files referencing CodeIndex]"
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "jcodemunch"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "jcodemunch.llm_as_a_judge",
+            "op_args": {
+                "question": "In jgravelle/jcodemunch-mcp, does the identifier 'CodeIndex' appear in more than one Python file?",
+                "correct_answer": "Yes, CodeIndex is referenced in multiple Python files including sqlite_store.py where it is defined, server.py, and various tool files and tests."
+            }
+        }
+    ]
+}

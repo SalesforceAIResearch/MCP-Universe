@@ -1,0 +1,23 @@
+{
+    "category": "code-intelligence",
+    "question": "Using jcodemunch, index the GitHub repository jgravelle/jcodemunch-mcp. Then use get_ranked_context to retrieve the most relevant code for the query 'how does AI summarization work'. Report the name of at least one file or function that appears in the ranked results.",
+    "output_format": {
+        "relevant_file_or_function": "[name of a file or function from the ranked context]"
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "jcodemunch"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "jcodemunch.llm_as_a_judge",
+            "op_args": {
+                "question": "When querying jgravelle/jcodemunch-mcp for 'how does AI summarization work', does the ranked context include anything from the summarizer directory or batch_summarize.py?",
+                "correct_answer": "Yes, the ranked context should surface batch_summarize.py or files in the summarizer/ directory, as that is where AI summarization is implemented."
+            }
+        }
+    ]
+}
