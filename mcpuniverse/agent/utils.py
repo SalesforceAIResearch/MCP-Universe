@@ -8,7 +8,7 @@ import json
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 import re
 import yaml
-from jinja2 import Environment
+from jinja2.sandbox import SandboxedEnvironment
 from mcp.types import Tool
 
 
@@ -168,12 +168,12 @@ def build_system_prompt(
     tools_description = get_tools_description(tools) if tools else ""
 
     if include_tool_description and tool_prompt_template and tools_description:
-        env = Environment(trim_blocks=True, lstrip_blocks=True)
+        env = SandboxedEnvironment(trim_blocks=True, lstrip_blocks=True)
         template = env.from_string(tool_prompt_template)
         kwargs.update({"TOOLS_DESCRIPTION": tools_description})
         tools_prompt = template.render(**kwargs)
 
-    env = Environment(trim_blocks=True, lstrip_blocks=True)
+    env = SandboxedEnvironment(trim_blocks=True, lstrip_blocks=True)
     template = env.from_string(system_prompt_template)
     if tools_prompt:
         kwargs.update({"TOOLS_PROMPT": tools_prompt})
@@ -200,7 +200,7 @@ def render_prompt_template(prompt_template: str, **kwargs):
     if prompt_template.endswith(".j2"):
         with open(prompt_template, "r", encoding="utf-8") as f:
             prompt_template = f.read()
-    env = Environment(trim_blocks=True, lstrip_blocks=True)
+    env = SandboxedEnvironment(trim_blocks=True, lstrip_blocks=True)
     template = env.from_string(prompt_template)
     return template.render(**kwargs).strip()
 
