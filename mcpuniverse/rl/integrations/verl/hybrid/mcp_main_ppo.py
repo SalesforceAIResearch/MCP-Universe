@@ -63,7 +63,14 @@ def run_ppo(config) -> None:
         ray.cancel(task)
         raise
 
-    timeline_json_file = config.ray_init.get("timeline_json_file", None)
+    # veRL 0.7+ moved ray_init under ray_kwargs; support both layouts
+    if hasattr(config, "ray_init"):
+        ray_cfg = config.ray_init
+    elif hasattr(config, "ray_kwargs") and hasattr(config.ray_kwargs, "ray_init"):
+        ray_cfg = config.ray_kwargs.ray_init
+    else:
+        ray_cfg = {}
+    timeline_json_file = ray_cfg.get("timeline_json_file", None) if hasattr(ray_cfg, "get") else None
     if timeline_json_file:
         ray.timeline(filename=timeline_json_file)
 
