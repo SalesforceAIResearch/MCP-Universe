@@ -135,15 +135,21 @@ async def create_benchmark_job(
 )
 async def get_benchmark_job(
         job_id: str,
-        conn: AsyncConnection = Depends(get_connection)
+        conn: AsyncConnection = Depends(get_connection),
+        user_id: Optional[str] = Header(None, alias="x-user-id")
 ):
     """
-    Query released project information.
+    Query benchmark job information.
     """
+    if not user_id:
+        raise HTTPException(status_code=400, detail="Missing user ID")
     querier = AsyncQuerier(conn)
     job = await querier.get_benchmark_job_by_id(job_id=job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Benchmark job not found")
+
+    if job.owner_id != int(user_id):
+        raise HTTPException(status_code=403, detail="Not authorized to access this job")
 
     project_id = job.project_id
     querier = ReleasedProjectQuerier(conn)
