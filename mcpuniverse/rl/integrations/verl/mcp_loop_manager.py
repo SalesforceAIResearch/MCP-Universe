@@ -1337,8 +1337,18 @@ class MCPLoopManager(AgentLoopManager):  # pylint: disable=too-many-instance-att
             if cls._fallback_loop is None or cls._fallback_loop.is_closed():
                 loop = asyncio.SelectorEventLoop()
                 loop.set_exception_handler(_quiet_handler)
+
+                def _run_loop(lp):
+                    # Use the default policy so SelectorEventLoop can spawn
+                    # subprocesses (uvloop's policy raises NotImplementedError
+                    # for get_child_watcher, breaking MCP stdio transport).
+                    asyncio.set_event_loop_policy(asyncio.DefaultEventLoopPolicy())
+                    asyncio.set_event_loop(lp)
+                    lp.run_forever()
+
                 thread = threading.Thread(
-                    target=loop.run_forever,
+                    target=_run_loop,
+                    args=(loop,),
                     daemon=True,
                     name="mcp-fallback-loop",
                 )

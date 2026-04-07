@@ -1,0 +1,179 @@
+# MCP Agent Training - Gemma4 26B-A4B (MoE) - Financial Analysis (yfinance)
+#
+# Model: google/gemma-4-26B-A4B-it (MoE, 128 experts, 8 active) on 8x H200
+# Agent: ReActTrain (model-agnostic, works with Gemma4 chat template)
+# Rollout: TITO token mode
+# Algorithm: GRPO (no critic needed)
+# Transport: stdio (each agent spawns its own MCP server)
+# Data: 54 train / 6 val from yf_synth_tasks
+#
+# Usage:
+#   source env_init_gemma4.sh
+#   python -m mcpuniverse.rl.integrations.verl.hybrid.mcp_main_ppo \
+#       --config-name=mcp_gemma4_26b_financial
+
+hydra:
+  searchpath:
+    - file://${oc.env:VERL_CONFIG_PATH}
+
+defaults:
+  - ppo_trainer
+  - _self_
+
+# ============================================================================
+# Ray Configuration
+# ============================================================================
+ray_kwargs:
+  ray_init:
+    num_cpus: 64
+
+# ============================================================================
+# MCP Agent Configuration
+# ============================================================================
+mcp_agent:
+  agent_mode: react_train
+  formatter_type: chatml
+  rollout_mode: token
+
+  mcp_transport: "stdio"
+  mcp_gateway_address: ""
+
+  llm_type: openai
+  llm_config:
+    model_name: ${actor_rollout_ref.model.path}
+    temperature: 0.7
+    top_p: 0.95
+    max_completion_tokens: 4096
+    timeout: 300
+    reasoning: "low"
+
+  val_llm_config:
+    temperature: 0.0
+
+  agent_config:
+    system_prompt: "You are an agent for financial analysis. If you need to calculate the result, you can use the calculator tool."
+    max_iterations: 20
+
+  num_trajectories: 1
+  val_num_trajectories: 1
+  max_iterations: 20
+  max_parallel_agents: 8
+
+  mcp_servers: []
+  use_sample_servers: true
+
+  trace_log_dir: /tmp/mcp_rl_traces
+
+# ============================================================================
+# Data Configuration
+# ============================================================================
+data:
+  train_files: /export/share/zijishi/MCP-Universe/mcpuniverse/benchmark/configs/rl-training/train.json
+  val_files: /export/share/zijishi/MCP-Universe/mcpuniverse/benchmark/configs/rl-training/val.json
+  shuffle: true
+  seed: 42
+  truncation: error
+  prompt_key: instruction
+  reward_fn_key: data_source
+  trust_remote_code: true
+  return_raw_chat: true
+  return_raw_input_ids: false
+  filter_overlong_prompts: false
+  max_prompt_length: 4096
+  max_response_length: 4096
+  train_batch_size: 8
+  val_batch_size: 4
+  dataloader_num_workers: 0
+
+# ============================================================================
+# Actor/Rollout Configuration - Hybrid Mode
+# ============================================================================
+actor_rollout_ref:
+  hybrid_engine: true
+
+  model:
+    path: /root/model_weights/gemma-4-26B-A4B-it
+    enable_gradient_checkpointing: true
+    trust_remote_code: true
+
+  rollout:
+    name: vllm
+    mode: async
+    n: 2
+    temperature: 0.7
+    max_model_len: 8192
+    gpu_memory_utilization: 0.4
+    tensor_model_parallel_size: 2
+    free_cache_engine: false
+    enforce_eager: true
+    dtype: bfloat16
+    enable_chunked_prefill: true
+    log_prob_micro_batch_size_per_gpu: 1
+    enable_sleep_mode: false
+    skip_tokenizer_init: false
+
+    val_kwargs:
+      temperature: 0.0
+      do_sample: false
+
+    checkpoint_engine:
+      backend: naive
+      update_weights_bucket_megabytes: 4096
+
+  actor:
+    strategy: fsdp
+    use_kl_loss: false
+    entropy_coeff: 0.001
+    ppo_mini_batch_size: 8
+    ppo_micro_batch_size_per_gpu: 1
+    ppo_epochs: 1
+    grad_clip: 1.0
+    optim:
+      lr: 1e-6
+      weight_decay: 0.01
+      lr_warmup_steps_ratio: 0.1
+
+  ref:
+    strategy: fsdp
+
+# ============================================================================
+# Algorithm - GRPO
+# ============================================================================
+algorithm:
+  adv_estimator: grpo
+  use_kl_in_reward: false
+  gamma: 1.0
+  lam: 1.0
+
+# ============================================================================
+# Reward Model (disabled — using MCP-Universe evaluators)
+# ============================================================================
+reward_model:
+  enable: false
+
+# ============================================================================
+# Critic (disabled for GRPO)
+# ============================================================================
+critic:
+  strategy: fsdp
+  enable: false
+
+# ============================================================================
+# Trainer Configuration
+# ============================================================================
+trainer:
+  total_epochs: 1
+  total_training_steps: 4
+  nnodes: 1
+  n_gpus_per_node: 8
+  save_freq: -1
+  test_freq: 2
+  val_before_train: true
+  val_only: false
+  critic_warmup: 0
+  balance_batch: true
+  logger: ["console", "wandb"]
+  project_name: mcp-u-rl
+  experiment_name: gemma4-26b-react-tito-test
+  device: cuda
+  default_local_dir: /tmp/mcp_rl_checkpoints

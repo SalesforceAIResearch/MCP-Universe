@@ -50,7 +50,7 @@ class OpenAIConfig(BaseConfig):
     reasoning: str = "low"
     reasoning_effort: str = "medium"
     seed: int = 12345
-    timeout: int = 60
+    timeout: int = 300
     parallel_tool_calls: bool = True
 
 

@@ -219,6 +219,9 @@ mcpuniverse/rl/integrations/verl/wandb/
 mcpuniverse/rl/integrations/verl/checkpoints/
 .nfs*
 
+# outputs
+outputs/
+
 # dev tmp files
 tests/mcp/logs
 tests/mcp/test_gateway_stress.sh

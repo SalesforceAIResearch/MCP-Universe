@@ -432,9 +432,10 @@ class MCPClient(metaclass=AutodocABCMeta):
                 return  # Success
             except Exception as e:
                 last_error = e
+                import traceback as _tb
                 self._logger.warning(
-                    "Failed to initialize client %s (attempt %d/%d): %s",
-                    self._name, attempt + 1, retries, str(e)
+                    "Failed to initialize client %s (attempt %d/%d): %s\n%s",
+                    self._name, attempt + 1, retries, repr(e), _tb.format_exc()
                 )
                 if attempt < retries - 1:
                     self._logger.info("Retrying in %.1f seconds...", retry_delay)
