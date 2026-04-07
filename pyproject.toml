@@ -114,6 +114,20 @@ sglang = [
     "flash-attn>=2.7.0",
     "torch>=2.6.0",
 ]
+rl = [
+    "verl @ git+https://github.com/verl-project/verl.git@9433f8a8f2771256ea4f8f94e4401bcfe9703228",
+    "torch>=2.6.0",
+    "ray>=2.0.0",
+    "tensordict>=0.6.0",
+    "hydra-core>=1.3.0",
+    "tqdm>=4.60.0",
+    "transformers>=4.40.0",
+    "numpy>=1.24.0",
+    "accelerate>=1.0.0",
+    "peft>=0.10.0",
+    "wandb>=0.15.0",
+    "datasets>=4.0.0",
+]
 # System dependency: Node.js/npx is required for some MCP servers
 # (google-maps, slack, notion, postgres, etc.)
 # Install via: conda install -c conda-forge nodejs

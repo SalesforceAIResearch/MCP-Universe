@@ -17,15 +17,6 @@ from .hybrid.mcp_trainer import MCPPPOTrainer
 from .mcp_reward_manager import MCPRewardManager
 from .mcp_dataset import MCPDataset, create_mcp_dataset, mcp_collate_fn
 
-# Fully async mode
-from .fully_async import (
-    MCPFullyAsyncRollouter,
-    MCPFullyAsyncTrainer,
-    MCPAsyncTaskRunner,
-    MCPRolloutSample,
-    assemble_mcp_training_batch,
-)
-
 __all__ = [
     # Core components
     "MCPGeneratorInput",
@@ -38,11 +29,23 @@ __all__ = [
 
     # Hybrid mode trainer
     "MCPPPOTrainer",
-
-    # Fully async mode
-    "MCPFullyAsyncRollouter",
-    "MCPFullyAsyncTrainer",
-    "MCPAsyncTaskRunner",
-    "MCPRolloutSample",
-    "assemble_mcp_training_batch",
 ]
+
+# Fully async mode (optional — module may not exist yet)
+try:
+    from .fully_async import (
+        MCPFullyAsyncRollouter,
+        MCPFullyAsyncTrainer,
+        MCPAsyncTaskRunner,
+        MCPRolloutSample,
+        assemble_mcp_training_batch,
+    )
+    __all__ += [
+        "MCPFullyAsyncRollouter",
+        "MCPFullyAsyncTrainer",
+        "MCPAsyncTaskRunner",
+        "MCPRolloutSample",
+        "assemble_mcp_training_batch",
+    ]
+except ImportError:
+    pass

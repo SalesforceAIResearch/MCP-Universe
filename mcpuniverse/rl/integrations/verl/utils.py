@@ -122,7 +122,7 @@ def init_ray(config, *, clean_tiktoken_cache: bool = False) -> None:
         return
 
     # -- env vars ----------------------------------------------------------
-    vllm_v1 = os.environ.get("VLLM_USE_V1", "0")
+    vllm_v1 = os.environ.get("VLLM_USE_V1", "1")
     PPO_RAY_RUNTIME_ENV["env_vars"].update({"VLLM_USE_V1": vllm_v1})
 
     tiktoken_cache_dir = os.environ.get("TIKTOKEN_CACHE_DIR", "/tmp/tiktoken-rs-cache")
@@ -134,6 +134,16 @@ def init_ray(config, *, clean_tiktoken_cache: bool = False) -> None:
     if os.environ.get("LD_LIBRARY_PATH"):
         PPO_RAY_RUNTIME_ENV["env_vars"]["LD_LIBRARY_PATH"] = os.environ["LD_LIBRARY_PATH"]
 
+    # Propagate NCCL env vars to Ray workers (e.g. NCCL_SHM_DISABLE for small /dev/shm)
+    nccl_keys = (
+        "NCCL_SHM_DISABLE", "NCCL_P2P_LEVEL", "NCCL_DEBUG",
+        "NCCL_NVLS_ENABLE", "NCCL_CUMEM_ENABLE",
+    )
+    for nccl_key in nccl_keys:
+        nccl_val = os.environ.get(nccl_key)
+        if nccl_val:
+            PPO_RAY_RUNTIME_ENV["env_vars"][nccl_key] = nccl_val
+
     wandb_api_key = os.environ.get("WANDB_API_KEY")
     if wandb_api_key:
         PPO_RAY_RUNTIME_ENV["env_vars"]["WANDB_API_KEY"] = wandb_api_key
@@ -143,7 +153,14 @@ def init_ray(config, *, clean_tiktoken_cache: bool = False) -> None:
 
     # -- connect / start ---------------------------------------------------
     ray_address = os.environ.get("RAY_ADDRESS")
-    num_cpus = config.ray_init.get("num_cpus", None)
+    # veRL 0.7+ moved ray_init under ray_kwargs; support both layouts
+    if hasattr(config, "ray_init"):
+        ray_cfg = config.ray_init
+    elif hasattr(config, "ray_kwargs") and hasattr(config.ray_kwargs, "ray_init"):
+        ray_cfg = config.ray_kwargs.ray_init
+    else:
+        ray_cfg = {}
+    num_cpus = ray_cfg.get("num_cpus", None) if hasattr(ray_cfg, "get") else None
 
     if ray_address:
         logger.info(f"Connecting to existing Ray cluster at {ray_address}")
