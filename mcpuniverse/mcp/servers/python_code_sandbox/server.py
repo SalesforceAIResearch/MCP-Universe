@@ -43,6 +43,11 @@ def build_server(port: int) -> FastMCP:
         container_url = f"http://{address}:{host_port}"
         timeout = 300
 
+        api_key = os.environ.get("SANDBOX_API_KEY", "")
+        headers = {}
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
+
         try:
             # Use requests.post instead of aiohttp
             # Run in thread pool to avoid blocking the event loop
@@ -50,6 +55,7 @@ def build_server(port: int) -> FastMCP:
                 requests.post,
                 f"{container_url}/execute",
                 json={"code": code, "timeout": timeout},
+                headers=headers,
                 timeout=timeout + 10
             )
 

@@ -5,7 +5,9 @@ This server creates temporary directories for each execution and cleans them up.
 """
 
 import asyncio
+import hmac
 import os
+import secrets
 import subprocess
 import tempfile
 import shutil
@@ -23,6 +25,37 @@ BASE_TEMP_DIR = os.environ.get("SANDBOX_TEMP_DIR", "/tmp/sandbox_executions")
 
 # Thread pool executor for running subprocess operations
 _executor = ThreadPoolExecutor(max_workers=10)
+
+# API key for authenticating requests.
+# MUST be set via environment variable; server refuses to start without it.
+SANDBOX_API_KEY = os.environ.get("SANDBOX_API_KEY", "")
+
+# Paths that do NOT require authentication
+_PUBLIC_PATHS = frozenset({"/health"})
+
+
+@web.middleware
+async def auth_middleware(request: web.Request, handler):
+    """Verify Bearer token on every request except health checks."""
+    if request.path in _PUBLIC_PATHS:
+        return await handler(request)
+
+    if not SANDBOX_API_KEY:
+        logger.error("SANDBOX_API_KEY is not configured – rejecting request")
+        return web.json_response(
+            {"error": "Server misconfigured: API key not set"},
+            status=403,
+        )
+
+    auth_header = request.headers.get("Authorization", "")
+    if not auth_header.startswith("Bearer "):
+        return web.json_response({"error": "Missing or malformed Authorization header"}, status=401)
+
+    token = auth_header[len("Bearer "):]
+    if not hmac.compare_digest(token, SANDBOX_API_KEY):
+        return web.json_response({"error": "Invalid API key"}, status=401)
+
+    return await handler(request)
 
 
 def _run_subprocess_sync(_code_file: str, temp_dir: str, timeout: int) -> Dict[str, Any]:
@@ -162,7 +195,7 @@ async def handle_health(_request: web.Request) -> web.Response:
 
 def create_app():
     """Create the aiohttp application"""
-    app = web.Application()
+    app = web.Application(middlewares=[auth_middleware])
     app.router.add_post("/execute", handle_execute)
     app.router.add_get("/health", handle_health)
     return app
@@ -170,17 +203,30 @@ def create_app():
 
 async def main():
     """Main entry point"""
+    global SANDBOX_API_KEY  # pylint: disable=global-statement
+    # Re-read at startup so env changes are picked up
+    SANDBOX_API_KEY = os.environ.get("SANDBOX_API_KEY", "")
+
+    if not SANDBOX_API_KEY:
+        logger.warning(
+            "SANDBOX_API_KEY is not set. Generating a random key – "
+            "set the env var for production use."
+        )
+        SANDBOX_API_KEY = secrets.token_urlsafe(32)
+        logger.info("Generated SANDBOX_API_KEY: %s", SANDBOX_API_KEY)
+
     port = int(os.environ.get("SANDBOX_PORT", "8080"))
-    logger.info("Starting sandbox HTTP server on port %s", port)
+    bind_address = os.environ.get("SANDBOX_BIND_ADDRESS", "127.0.0.1")
+    logger.info("Starting sandbox HTTP server on %s:%s", bind_address, port)
 
     app = create_app()
     runner = web.AppRunner(app)
     await runner.setup()
 
-    site = web.TCPSite(runner, "0.0.0.0", port)
+    site = web.TCPSite(runner, bind_address, port)
     await site.start()
 
-    logger.info("Sandbox server ready on port %s", port)
+    logger.info("Sandbox server ready on %s:%s", bind_address, port)
 
     # Keep running
     try:
