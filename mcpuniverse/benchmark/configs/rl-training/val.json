@@ -1,0 +1,349 @@
+[
+  {
+    "instance_id": "yf_synth_0055",
+    "category": "financial_analysis",
+    "instruction": "As a professional investor, I need you to analyze a portfolio I managed between July 21st, 2021, and August 26th, 2022. The portfolio consisted of AAPL, ABBV, and MRK, with an initial investment of $20,000 allocated equally between the three. What was the total portfolio value and percentage return at the end of the period?",
+    "output_format": {
+      "total value": "[NUMBER]",
+      "total percentage return": "[NUMBER]"
+    },
+    "mcp_servers": [
+      {
+        "name": "yfinance"
+      },
+      {
+        "name": "calculator"
+      }
+    ],
+    "evaluators": [
+      {
+        "func": "json",
+        "op": "yfinance.check_portfolio_task_output",
+        "op_args": {
+          "tickers": [
+            "AAPL",
+            "ABBV",
+            "MRK"
+          ],
+          "start_date": "2021-07-21",
+          "end_date": "2022-08-26",
+          "initial_investment": 20000.0,
+          "split": [
+            0.333333,
+            0.333333,
+            0.333334
+          ]
+        },
+        "desc": "Whether the final value and total percentage return are correct."
+      }
+    ],
+    "_solution_code": "async def solution(mcp_client):\n    \"\"\"\n    Calculate portfolio return for ['AAPL', 'ABBV', 'MRK'].\n    Investment: $20,000\n    Period: 2021-07-21 to 2022-08-26\n    \"\"\"\n    import json\n    \n    tickers = ['AAPL', 'ABBV', 'MRK']\n    start_date = \"2021-07-21\"\n    end_date = \"2022-08-26\"\n    initial_investment = 20000.0\n    split = [0.333333, 0.333333, 0.333334]\n    \n    total_value = 0.0\n    \n    for i, ticker in enumerate(tickers):\n        # Get historical prices\n        result = await mcp_client.call_tool(\n            \"get_historical_stock_prices\",\n            {\n                \"ticker\": ticker,\n                \"start_date\": start_date,\n                \"end_date\": end_date,\n                \"interval\": \"1d\"\n            }\n        )\n        prices = json.loads(result)\n        \n        if prices:\n            start_price = prices[0][\"Close\"]\n            end_price = prices[-1][\"Close\"]\n            \n            # Calculate value for this ticker\n            investment_for_ticker = initial_investment * split[i]\n            shares = investment_for_ticker / start_price\n            final_value = shares * end_price\n            total_value += final_value\n    \n    total_return = ((total_value - initial_investment) / initial_investment) * 100\n    \n    return {\n        \"total value\": round(total_value, 2),\n        \"total percentage return\": round(total_return, 2)\n    }\n",
+    "_solution_output": {
+      "total value": 23713.9,
+      "total percentage return": 18.57
+    },
+    "_params": {
+      "tickers": [
+        "AAPL",
+        "ABBV",
+        "MRK"
+      ],
+      "start_date": "2021-07-21",
+      "end_date": "2022-08-26",
+      "initial_investment": 20000.0,
+      "split": [
+        0.333333,
+        0.333333,
+        0.333334
+      ]
+    },
+    "_task_type": "portfolio_return",
+    "_validated": true,
+    "dockerfile_path": "/export/share/zluo/forpublic/MCP-Universe/mcpuniverse/benchmark/scripts/dockerfiles/Dockerfile.base"
+  },
+  {
+    "instance_id": "yf_synth_0056",
+    "category": "financial_analysis",
+    "instruction": "Okay, I'm trying to understand moving average crossovers. Based on a 10-day and 50-day moving average crossover strategy, what signal\u2014buy, sell, or hold\u2014would have been generated for TGT on July 18, 2024? Pretend I'm a student learning about trading, so explain your reasoning if possible.",
+    "output_format": {
+      "check_buy_sell_hold_signal": "buy/sell/hold"
+    },
+    "mcp_servers": [
+      {
+        "name": "yfinance"
+      },
+      {
+        "name": "calculator"
+      }
+    ],
+    "evaluators": [
+      {
+        "func": "json",
+        "op": "yfinance.check_buy_sell_hold_signal",
+        "op_args": {
+          "ticker": "TGT",
+          "date": "2024-07-18",
+          "quant_strategy": {
+            "name": "moving_average_crossover",
+            "params": {
+              "short_window": 10,
+              "long_window": 50
+            }
+          }
+        }
+      }
+    ],
+    "_solution_code": "import statistics\n\ndef calculate_signal(strategy, closes):\n    \"\"\"Calculate trading signal based on strategy.\"\"\"\n    name = strategy[\"name\"]\n    params = strategy.get(\"params\", {})\n    \n    if len(closes) < 60:\n        return \"hold\"\n    \n    if name == \"moving_average_crossover\":\n        short_window = params.get(\"short_window\", 10)\n        long_window = params.get(\"long_window\", 50)\n        \n        if len(closes) < long_window + 1:\n            return \"hold\"\n        \n        short_ma = sum(closes[-short_window:]) / short_window\n        long_ma = sum(closes[-long_window:]) / long_window\n        prev_short_ma = sum(closes[-short_window-1:-1]) / short_window\n        prev_long_ma = sum(closes[-long_window-1:-1]) / long_window\n        \n        if prev_short_ma <= prev_long_ma and short_ma > long_ma:\n            return \"buy\"\n        elif prev_short_ma >= prev_long_ma and short_ma < long_ma:\n            return \"sell\"\n        return \"hold\"\n    \n    elif name == \"mean_reversion_bollinger\":\n        window = params.get(\"window\", 20)\n        std_dev = params.get(\"std_dev\", 2)\n        \n        if len(closes) < window:\n            return \"hold\"\n        \n        ma = sum(closes[-window:]) / window\n        std = statistics.stdev(closes[-window:])\n        \n        upper_band = ma + std_dev * std\n        lower_band = ma - std_dev * std\n        \n        if closes[-1] < lower_band:\n            return \"buy\"\n        elif closes[-1] > upper_band:\n            return \"sell\"\n        return \"hold\"\n    \n    elif name == \"roc_reversal\":\n        roc_period = params.get(\"roc_period\", 12)\n        overbought = params.get(\"overbought_threshold\", 20)\n        oversold = params.get(\"oversold_threshold\", -20)\n        \n        if len(closes) < roc_period + 1:\n            return \"hold\"\n        \n        roc = ((closes[-1] - closes[-roc_period-1]) / closes[-roc_period-1]) * 100\n        \n        if roc < oversold:\n            return \"buy\"\n        elif roc > overbought:\n            return \"sell\"\n        return \"hold\"\n    \n    elif name == \"price_breakout\":\n        period = params.get(\"breakout_period\", 20)\n        sell_threshold = params.get(\"sell_threshold\", 0.97)\n        \n        if len(closes) < period + 1:\n            return \"hold\"\n        \n        recent_high = max(closes[-period-1:-1])\n        \n        if closes[-1] > recent_high:\n            return \"buy\"\n        elif closes[-1] < recent_high * sell_threshold:\n            return \"sell\"\n        return \"hold\"\n    \n    elif name == \"ma_distance_reversion\":\n        ma_period = params.get(\"ma_period\", 20)\n        threshold = params.get(\"threshold\", 0.05)\n        \n        if len(closes) < ma_period:\n            return \"hold\"\n        \n        ma = sum(closes[-ma_period:]) / ma_period\n        distance = (closes[-1] - ma) / ma\n        \n        if distance < -threshold:\n            return \"buy\"\n        elif distance > threshold:\n            return \"sell\"\n        return \"hold\"\n    \n    # Combined strategies\n    elif name.startswith(\"mean_reversion_bollinger_plus_\"):\n        bollinger_params = params.get(\"mean_reversion_bollinger_params\", {\"window\": 20, \"std_dev\": 2})\n        signal1 = calculate_signal({\"name\": \"mean_reversion_bollinger\", \"params\": bollinger_params}, closes)\n        \n        if \"moving_average_crossover\" in name:\n            ma_params = params.get(\"moving_average_crossover_params\", {\"short_window\": 10, \"long_window\": 50})\n            signal2 = calculate_signal({\"name\": \"moving_average_crossover\", \"params\": ma_params}, closes)\n        elif \"roc_reversal\" in name:\n            roc_params = params.get(\"roc_reversal_params\", {\"roc_period\": 12, \"overbought_threshold\": 20, \"oversold_threshold\": -20})\n            signal2 = calculate_signal({\"name\": \"roc_reversal\", \"params\": roc_params}, closes)\n        elif \"ma_distance_reversion\" in name:\n            ma_dist_params = params.get(\"ma_distance_reversion_params\", {\"ma_period\": 20, \"threshold\": 0.05})\n            signal2 = calculate_signal({\"name\": \"ma_distance_reversion\", \"params\": ma_dist_params}, closes)\n        else:\n            signal2 = \"hold\"\n        \n        if (signal1 == \"buy\" and signal2 in [\"buy\", \"hold\"]) or (signal1 == \"hold\" and signal2 == \"buy\"):\n            return \"buy\"\n        elif (signal1 == \"sell\" and signal2 in [\"sell\", \"hold\"]) or (signal1 == \"hold\" and signal2 == \"sell\"):\n            return \"sell\"\n        return \"hold\"\n    \n    return \"hold\"\n\n\nasync def solution(mcp_client):\n    \"\"\"Calculate moving_average_crossover signal for TGT on 2024-07-18.\"\"\"\n    import json\n    \n    # Get historical prices\n    result = await mcp_client.call_tool(\n        \"get_historical_stock_prices\",\n        {\n            \"ticker\": \"TGT\",\n            \"start_date\": \"2020-01-01\",\n            \"end_date\": \"2024-07-18\",\n            \"interval\": \"1d\"\n        }\n    )\n    prices = json.loads(result)\n    closes = [p[\"Close\"] for p in prices]\n    \n    strategy = {\"name\": \"moving_average_crossover\", \"params\": {\"short_window\": 10, \"long_window\": 50}}\n    signal = calculate_signal(strategy, closes)\n    \n    return {\"check_buy_sell_hold_signal\": signal}\n",
+    "_solution_output": {
+      "check_buy_sell_hold_signal": "buy"
+    },
+    "_params": {
+      "ticker": "TGT",
+      "date": "2024-07-18",
+      "quant_strategy": {
+        "name": "moving_average_crossover",
+        "params": {
+          "short_window": 10,
+          "long_window": 50
+        }
+      }
+    },
+    "_task_type": "moving_average_crossover",
+    "_validated": true,
+    "dockerfile_path": "/export/share/zluo/forpublic/MCP-Universe/mcpuniverse/benchmark/scripts/dockerfiles/Dockerfile.base"
+  },
+  {
+    "instance_id": "yf_synth_0057",
+    "category": "financial_analysis",
+    "instruction": "As a busy parent, I need help calculating my investment performance. I put $15,000 into Morgan Stanley (MS) on July 17, 2020, and want to know how it performed through March 12, 2021. What is the total portfolio value and percentage return over that period?",
+    "output_format": {
+      "total value": "[NUMBER]",
+      "total percentage return": "[NUMBER]"
+    },
+    "mcp_servers": [
+      {
+        "name": "yfinance"
+      },
+      {
+        "name": "calculator"
+      }
+    ],
+    "evaluators": [
+      {
+        "func": "json",
+        "op": "yfinance.check_portfolio_task_output",
+        "op_args": {
+          "tickers": [
+            "MS"
+          ],
+          "start_date": "2020-07-17",
+          "end_date": "2021-03-12",
+          "initial_investment": 15000.0,
+          "split": [
+            1.0
+          ]
+        },
+        "desc": "Whether the final value and total percentage return are correct."
+      }
+    ],
+    "_solution_code": "async def solution(mcp_client):\n    \"\"\"\n    Calculate portfolio return for ['MS'].\n    Investment: $15,000\n    Period: 2020-07-17 to 2021-03-12\n    \"\"\"\n    import json\n    \n    tickers = ['MS']\n    start_date = \"2020-07-17\"\n    end_date = \"2021-03-12\"\n    initial_investment = 15000.0\n    split = [1.0]\n    \n    total_value = 0.0\n    \n    for i, ticker in enumerate(tickers):\n        # Get historical prices\n        result = await mcp_client.call_tool(\n            \"get_historical_stock_prices\",\n            {\n                \"ticker\": ticker,\n                \"start_date\": start_date,\n                \"end_date\": end_date,\n                \"interval\": \"1d\"\n            }\n        )\n        prices = json.loads(result)\n        \n        if prices:\n            start_price = prices[0][\"Close\"]\n            end_price = prices[-1][\"Close\"]\n            \n            # Calculate value for this ticker\n            investment_for_ticker = initial_investment * split[i]\n            shares = investment_for_ticker / start_price\n            final_value = shares * end_price\n            total_value += final_value\n    \n    total_return = ((total_value - initial_investment) / initial_investment) * 100\n    \n    return {\n        \"total value\": round(total_value, 2),\n        \"total percentage return\": round(total_return, 2)\n    }\n",
+    "_solution_output": {
+      "total value": 24612.75,
+      "total percentage return": 64.09
+    },
+    "_params": {
+      "tickers": [
+        "MS"
+      ],
+      "start_date": "2020-07-17",
+      "end_date": "2021-03-12",
+      "initial_investment": 15000.0,
+      "split": [
+        1.0
+      ]
+    },
+    "_task_type": "portfolio_return",
+    "_validated": true,
+    "dockerfile_path": "/export/share/zluo/forpublic/MCP-Universe/mcpuniverse/benchmark/scripts/dockerfiles/Dockerfile.base"
+  },
+  {
+    "instance_id": "yf_synth_0058",
+    "category": "financial_analysis",
+    "instruction": "Okay, I'm trying to understand quantitative trading strategies. For SBUX on 2024-08-15, analyze the ROC-Reversal strategy, which looks for reversals when the Rate of Change (ROC) crosses specific thresholds. Using a 12-day ROC period, with overbought at 20 and oversold at -20, should I buy, sell, or hold?",
+    "output_format": {
+      "check_buy_sell_hold_signal": "buy/sell/hold"
+    },
+    "mcp_servers": [
+      {
+        "name": "yfinance"
+      },
+      {
+        "name": "calculator"
+      }
+    ],
+    "evaluators": [
+      {
+        "func": "json",
+        "op": "yfinance.check_buy_sell_hold_signal",
+        "op_args": {
+          "ticker": "SBUX",
+          "date": "2024-08-15",
+          "quant_strategy": {
+            "name": "roc_reversal",
+            "params": {
+              "roc_period": 12,
+              "overbought_threshold": 20,
+              "oversold_threshold": -20
+            }
+          }
+        }
+      }
+    ],
+    "_solution_code": "import statistics\n\ndef calculate_signal(strategy, closes):\n    \"\"\"Calculate trading signal based on strategy.\"\"\"\n    name = strategy[\"name\"]\n    params = strategy.get(\"params\", {})\n    \n    if len(closes) < 60:\n        return \"hold\"\n    \n    if name == \"moving_average_crossover\":\n        short_window = params.get(\"short_window\", 10)\n        long_window = params.get(\"long_window\", 50)\n        \n        if len(closes) < long_window + 1:\n            return \"hold\"\n        \n        short_ma = sum(closes[-short_window:]) / short_window\n        long_ma = sum(closes[-long_window:]) / long_window\n        prev_short_ma = sum(closes[-short_window-1:-1]) / short_window\n        prev_long_ma = sum(closes[-long_window-1:-1]) / long_window\n        \n        if prev_short_ma <= prev_long_ma and short_ma > long_ma:\n            return \"buy\"\n        elif prev_short_ma >= prev_long_ma and short_ma < long_ma:\n            return \"sell\"\n        return \"hold\"\n    \n    elif name == \"mean_reversion_bollinger\":\n        window = params.get(\"window\", 20)\n        std_dev = params.get(\"std_dev\", 2)\n        \n        if len(closes) < window:\n            return \"hold\"\n        \n        ma = sum(closes[-window:]) / window\n        std = statistics.stdev(closes[-window:])\n        \n        upper_band = ma + std_dev * std\n        lower_band = ma - std_dev * std\n        \n        if closes[-1] < lower_band:\n            return \"buy\"\n        elif closes[-1] > upper_band:\n            return \"sell\"\n        return \"hold\"\n    \n    elif name == \"roc_reversal\":\n        roc_period = params.get(\"roc_period\", 12)\n        overbought = params.get(\"overbought_threshold\", 20)\n        oversold = params.get(\"oversold_threshold\", -20)\n        \n        if len(closes) < roc_period + 1:\n            return \"hold\"\n        \n        roc = ((closes[-1] - closes[-roc_period-1]) / closes[-roc_period-1]) * 100\n        \n        if roc < oversold:\n            return \"buy\"\n        elif roc > overbought:\n            return \"sell\"\n        return \"hold\"\n    \n    elif name == \"price_breakout\":\n        period = params.get(\"breakout_period\", 20)\n        sell_threshold = params.get(\"sell_threshold\", 0.97)\n        \n        if len(closes) < period + 1:\n            return \"hold\"\n        \n        recent_high = max(closes[-period-1:-1])\n        \n        if closes[-1] > recent_high:\n            return \"buy\"\n        elif closes[-1] < recent_high * sell_threshold:\n            return \"sell\"\n        return \"hold\"\n    \n    elif name == \"ma_distance_reversion\":\n        ma_period = params.get(\"ma_period\", 20)\n        threshold = params.get(\"threshold\", 0.05)\n        \n        if len(closes) < ma_period:\n            return \"hold\"\n        \n        ma = sum(closes[-ma_period:]) / ma_period\n        distance = (closes[-1] - ma) / ma\n        \n        if distance < -threshold:\n            return \"buy\"\n        elif distance > threshold:\n            return \"sell\"\n        return \"hold\"\n    \n    # Combined strategies\n    elif name.startswith(\"mean_reversion_bollinger_plus_\"):\n        bollinger_params = params.get(\"mean_reversion_bollinger_params\", {\"window\": 20, \"std_dev\": 2})\n        signal1 = calculate_signal({\"name\": \"mean_reversion_bollinger\", \"params\": bollinger_params}, closes)\n        \n        if \"moving_average_crossover\" in name:\n            ma_params = params.get(\"moving_average_crossover_params\", {\"short_window\": 10, \"long_window\": 50})\n            signal2 = calculate_signal({\"name\": \"moving_average_crossover\", \"params\": ma_params}, closes)\n        elif \"roc_reversal\" in name:\n            roc_params = params.get(\"roc_reversal_params\", {\"roc_period\": 12, \"overbought_threshold\": 20, \"oversold_threshold\": -20})\n            signal2 = calculate_signal({\"name\": \"roc_reversal\", \"params\": roc_params}, closes)\n        elif \"ma_distance_reversion\" in name:\n            ma_dist_params = params.get(\"ma_distance_reversion_params\", {\"ma_period\": 20, \"threshold\": 0.05})\n            signal2 = calculate_signal({\"name\": \"ma_distance_reversion\", \"params\": ma_dist_params}, closes)\n        else:\n            signal2 = \"hold\"\n        \n        if (signal1 == \"buy\" and signal2 in [\"buy\", \"hold\"]) or (signal1 == \"hold\" and signal2 == \"buy\"):\n            return \"buy\"\n        elif (signal1 == \"sell\" and signal2 in [\"sell\", \"hold\"]) or (signal1 == \"hold\" and signal2 == \"sell\"):\n            return \"sell\"\n        return \"hold\"\n    \n    return \"hold\"\n\n\nasync def solution(mcp_client):\n    \"\"\"Calculate roc_reversal signal for SBUX on 2024-08-15.\"\"\"\n    import json\n    \n    # Get historical prices\n    result = await mcp_client.call_tool(\n        \"get_historical_stock_prices\",\n        {\n            \"ticker\": \"SBUX\",\n            \"start_date\": \"2020-01-01\",\n            \"end_date\": \"2024-08-15\",\n            \"interval\": \"1d\"\n        }\n    )\n    prices = json.loads(result)\n    closes = [p[\"Close\"] for p in prices]\n    \n    strategy = {\"name\": \"roc_reversal\", \"params\": {\"roc_period\": 12, \"overbought_threshold\": 20, \"oversold_threshold\": -20}}\n    signal = calculate_signal(strategy, closes)\n    \n    return {\"check_buy_sell_hold_signal\": signal}\n",
+    "_solution_output": {
+      "check_buy_sell_hold_signal": "sell"
+    },
+    "_params": {
+      "ticker": "SBUX",
+      "date": "2024-08-15",
+      "quant_strategy": {
+        "name": "roc_reversal",
+        "params": {
+          "roc_period": 12,
+          "overbought_threshold": 20,
+          "oversold_threshold": -20
+        }
+      }
+    },
+    "_task_type": "roc_reversal",
+    "_validated": true,
+    "dockerfile_path": "/export/share/zluo/forpublic/MCP-Universe/mcpuniverse/benchmark/scripts/dockerfiles/Dockerfile.base"
+  },
+  {
+    "instance_id": "yf_synth_0059",
+    "category": "financial_analysis",
+    "instruction": "Okay, I'm using a mean reversion strategy that combines Bollinger Bands (20-day window, 2 standard deviations) with a 12-day Rate of Change (ROC) reversal. The ROC thresholds are +20 for overbought and -20 for oversold. As a new investor, based on this combined signal, should I buy, sell, or hold Disney (DIS) on January 10th, 2025?",
+    "output_format": {
+      "check_buy_sell_hold_signal": "buy/sell/hold"
+    },
+    "mcp_servers": [
+      {
+        "name": "yfinance"
+      },
+      {
+        "name": "calculator"
+      }
+    ],
+    "evaluators": [
+      {
+        "func": "json",
+        "op": "yfinance.check_buy_sell_hold_signal",
+        "op_args": {
+          "ticker": "DIS",
+          "date": "2025-01-10",
+          "quant_strategy": {
+            "name": "mean_reversion_bollinger_plus_roc_reversal",
+            "params": {
+              "roc_reversal_params": {
+                "roc_period": 12,
+                "overbought_threshold": 20,
+                "oversold_threshold": -20
+              },
+              "mean_reversion_bollinger_params": {
+                "window": 20,
+                "std_dev": 2
+              }
+            }
+          }
+        }
+      }
+    ],
+    "_solution_code": "import statistics\n\ndef calculate_signal(strategy, closes):\n    \"\"\"Calculate trading signal based on strategy.\"\"\"\n    name = strategy[\"name\"]\n    params = strategy.get(\"params\", {})\n    \n    if len(closes) < 60:\n        return \"hold\"\n    \n    if name == \"moving_average_crossover\":\n        short_window = params.get(\"short_window\", 10)\n        long_window = params.get(\"long_window\", 50)\n        \n        if len(closes) < long_window + 1:\n            return \"hold\"\n        \n        short_ma = sum(closes[-short_window:]) / short_window\n        long_ma = sum(closes[-long_window:]) / long_window\n        prev_short_ma = sum(closes[-short_window-1:-1]) / short_window\n        prev_long_ma = sum(closes[-long_window-1:-1]) / long_window\n        \n        if prev_short_ma <= prev_long_ma and short_ma > long_ma:\n            return \"buy\"\n        elif prev_short_ma >= prev_long_ma and short_ma < long_ma:\n            return \"sell\"\n        return \"hold\"\n    \n    elif name == \"mean_reversion_bollinger\":\n        window = params.get(\"window\", 20)\n        std_dev = params.get(\"std_dev\", 2)\n        \n        if len(closes) < window:\n            return \"hold\"\n        \n        ma = sum(closes[-window:]) / window\n        std = statistics.stdev(closes[-window:])\n        \n        upper_band = ma + std_dev * std\n        lower_band = ma - std_dev * std\n        \n        if closes[-1] < lower_band:\n            return \"buy\"\n        elif closes[-1] > upper_band:\n            return \"sell\"\n        return \"hold\"\n    \n    elif name == \"roc_reversal\":\n        roc_period = params.get(\"roc_period\", 12)\n        overbought = params.get(\"overbought_threshold\", 20)\n        oversold = params.get(\"oversold_threshold\", -20)\n        \n        if len(closes) < roc_period + 1:\n            return \"hold\"\n        \n        roc = ((closes[-1] - closes[-roc_period-1]) / closes[-roc_period-1]) * 100\n        \n        if roc < oversold:\n            return \"buy\"\n        elif roc > overbought:\n            return \"sell\"\n        return \"hold\"\n    \n    elif name == \"price_breakout\":\n        period = params.get(\"breakout_period\", 20)\n        sell_threshold = params.get(\"sell_threshold\", 0.97)\n        \n        if len(closes) < period + 1:\n            return \"hold\"\n        \n        recent_high = max(closes[-period-1:-1])\n        \n        if closes[-1] > recent_high:\n            return \"buy\"\n        elif closes[-1] < recent_high * sell_threshold:\n            return \"sell\"\n        return \"hold\"\n    \n    elif name == \"ma_distance_reversion\":\n        ma_period = params.get(\"ma_period\", 20)\n        threshold = params.get(\"threshold\", 0.05)\n        \n        if len(closes) < ma_period:\n            return \"hold\"\n        \n        ma = sum(closes[-ma_period:]) / ma_period\n        distance = (closes[-1] - ma) / ma\n        \n        if distance < -threshold:\n            return \"buy\"\n        elif distance > threshold:\n            return \"sell\"\n        return \"hold\"\n    \n    # Combined strategies\n    elif name.startswith(\"mean_reversion_bollinger_plus_\"):\n        bollinger_params = params.get(\"mean_reversion_bollinger_params\", {\"window\": 20, \"std_dev\": 2})\n        signal1 = calculate_signal({\"name\": \"mean_reversion_bollinger\", \"params\": bollinger_params}, closes)\n        \n        if \"moving_average_crossover\" in name:\n            ma_params = params.get(\"moving_average_crossover_params\", {\"short_window\": 10, \"long_window\": 50})\n            signal2 = calculate_signal({\"name\": \"moving_average_crossover\", \"params\": ma_params}, closes)\n        elif \"roc_reversal\" in name:\n            roc_params = params.get(\"roc_reversal_params\", {\"roc_period\": 12, \"overbought_threshold\": 20, \"oversold_threshold\": -20})\n            signal2 = calculate_signal({\"name\": \"roc_reversal\", \"params\": roc_params}, closes)\n        elif \"ma_distance_reversion\" in name:\n            ma_dist_params = params.get(\"ma_distance_reversion_params\", {\"ma_period\": 20, \"threshold\": 0.05})\n            signal2 = calculate_signal({\"name\": \"ma_distance_reversion\", \"params\": ma_dist_params}, closes)\n        else:\n            signal2 = \"hold\"\n        \n        if (signal1 == \"buy\" and signal2 in [\"buy\", \"hold\"]) or (signal1 == \"hold\" and signal2 == \"buy\"):\n            return \"buy\"\n        elif (signal1 == \"sell\" and signal2 in [\"sell\", \"hold\"]) or (signal1 == \"hold\" and signal2 == \"sell\"):\n            return \"sell\"\n        return \"hold\"\n    \n    return \"hold\"\n\n\nasync def solution(mcp_client):\n    \"\"\"Calculate mean_reversion_bollinger_plus_roc_reversal signal for DIS on 2025-01-10.\"\"\"\n    import json\n    \n    # Get historical prices\n    result = await mcp_client.call_tool(\n        \"get_historical_stock_prices\",\n        {\n            \"ticker\": \"DIS\",\n            \"start_date\": \"2020-01-01\",\n            \"end_date\": \"2025-01-10\",\n            \"interval\": \"1d\"\n        }\n    )\n    prices = json.loads(result)\n    closes = [p[\"Close\"] for p in prices]\n    \n    strategy = {\"name\": \"mean_reversion_bollinger_plus_roc_reversal\", \"params\": {\"roc_reversal_params\": {\"roc_period\": 12, \"overbought_threshold\": 20, \"oversold_threshold\": -20}, \"mean_reversion_bollinger_params\": {\"window\": 20, \"std_dev\": 2}}}\n    signal = calculate_signal(strategy, closes)\n    \n    return {\"check_buy_sell_hold_signal\": signal}\n",
+    "_solution_output": {
+      "check_buy_sell_hold_signal": "buy"
+    },
+    "_params": {
+      "ticker": "DIS",
+      "date": "2025-01-10",
+      "quant_strategy": {
+        "name": "mean_reversion_bollinger_plus_roc_reversal",
+        "params": {
+          "roc_reversal_params": {
+            "roc_period": 12,
+            "overbought_threshold": 20,
+            "oversold_threshold": -20
+          },
+          "mean_reversion_bollinger_params": {
+            "window": 20,
+            "std_dev": 2
+          }
+        }
+      }
+    },
+    "_task_type": "combined_bollinger_roc",
+    "_validated": true,
+    "dockerfile_path": "/export/share/zluo/forpublic/MCP-Universe/mcpuniverse/benchmark/scripts/dockerfiles/Dockerfile.base"
+  },
+  {
+    "instance_id": "yf_synth_0060",
+    "category": "financial_analysis",
+    "instruction": "As a professional investor, can you please calculate the total value and percentage return of a portfolio I held from January 5th, 2022 to December 16th, 2022? The portfolio was initially worth $15,000 split between IBM, LLY, and UNH.  Please assume an equal split of funds between the three stocks.",
+    "output_format": {
+      "total value": "[NUMBER]",
+      "total percentage return": "[NUMBER]"
+    },
+    "mcp_servers": [
+      {
+        "name": "yfinance"
+      },
+      {
+        "name": "calculator"
+      }
+    ],
+    "evaluators": [
+      {
+        "func": "json",
+        "op": "yfinance.check_portfolio_task_output",
+        "op_args": {
+          "tickers": [
+            "IBM",
+            "LLY",
+            "UNH"
+          ],
+          "start_date": "2022-01-05",
+          "end_date": "2022-12-16",
+          "initial_investment": 15000.0,
+          "split": [
+            0.333333,
+            0.333333,
+            0.333334
+          ]
+        },
+        "desc": "Whether the final value and total percentage return are correct."
+      }
+    ],
+    "_solution_code": "async def solution(mcp_client):\n    \"\"\"\n    Calculate portfolio return for ['IBM', 'LLY', 'UNH'].\n    Investment: $15,000\n    Period: 2022-01-05 to 2022-12-16\n    \"\"\"\n    import json\n    \n    tickers = ['IBM', 'LLY', 'UNH']\n    start_date = \"2022-01-05\"\n    end_date = \"2022-12-16\"\n    initial_investment = 15000.0\n    split = [0.333333, 0.333333, 0.333334]\n    \n    total_value = 0.0\n    \n    for i, ticker in enumerate(tickers):\n        # Get historical prices\n        result = await mcp_client.call_tool(\n            \"get_historical_stock_prices\",\n            {\n                \"ticker\": ticker,\n                \"start_date\": start_date,\n                \"end_date\": end_date,\n                \"interval\": \"1d\"\n            }\n        )\n        prices = json.loads(result)\n        \n        if prices:\n            start_price = prices[0][\"Close\"]\n            end_price = prices[-1][\"Close\"]\n            \n            # Calculate value for this ticker\n            investment_for_ticker = initial_investment * split[i]\n            shares = investment_for_ticker / start_price\n            final_value = shares * end_price\n            total_value += final_value\n    \n    total_return = ((total_value - initial_investment) / initial_investment) * 100\n    \n    return {\n        \"total value\": round(total_value, 2),\n        \"total percentage return\": round(total_return, 2)\n    }\n",
+    "_solution_output": {
+      "total value": 17735.04,
+      "total percentage return": 18.23
+    },
+    "_params": {
+      "tickers": [
+        "IBM",
+        "LLY",
+        "UNH"
+      ],
+      "start_date": "2022-01-05",
+      "end_date": "2022-12-16",
+      "initial_investment": 15000.0,
+      "split": [
+        0.333333,
+        0.333333,
+        0.333334
+      ]
+    },
+    "_task_type": "portfolio_return",
+    "_validated": true,
+    "dockerfile_path": "/export/share/zluo/forpublic/MCP-Universe/mcpuniverse/benchmark/scripts/dockerfiles/Dockerfile.base"
+  }
+]
