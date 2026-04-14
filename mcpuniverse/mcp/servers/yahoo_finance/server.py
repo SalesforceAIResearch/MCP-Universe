@@ -12,6 +12,15 @@ from typing import Deque
 
 import click
 import pandas as pd
+# Patch peewee before yfinance import to avoid race condition where peewee 4.x
+# sets sqlite3=None under concurrent subprocess spawning.
+try:
+    import peewee as _peewee  # noqa: F401
+    if _peewee.sqlite3 is None:
+        import sqlite3 as _sqlite3
+        _peewee.sqlite3 = _sqlite3
+except ImportError:
+    pass
 import yfinance as yf
 from mcp.server.fastmcp import FastMCP
 from mcpuniverse.common.logger import get_logger
