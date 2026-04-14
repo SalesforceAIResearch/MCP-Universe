@@ -1214,6 +1214,10 @@ class MCPLoopManager(AgentLoopManager):  # pylint: disable=too-many-instance-att
                            manage_pool: bool = True) -> DataProto:
         """Generate trajectories for a batch of prompts.
 
+        When verl's native multi_turn is enabled, delegates to the parent
+        AgentLoopManager.generate_sequences() which uses AgentLoopWorker +
+        ToolAgentLoop for proper vLLM lifecycle management.
+
         Args:
             prompts: DataProto containing instances to rollout.
             manage_pool: Whether to manage Docker env pool lifecycle

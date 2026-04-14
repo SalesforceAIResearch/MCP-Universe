@@ -1,0 +1,209 @@
+# MCP-Universe yfinance + calculator tools for verl ToolAgentLoop.
+# Each tool is a native wrapper around MCP-Universe's stdio-based MCP servers.
+
+tools:
+  # --- yfinance MCP server tools ---
+  - class_name: mcpuniverse.rl.integrations.verl.tools.mcp_stdio_tool.MCPStdioTool
+    config:
+      type: native
+      command: python3
+      args: ["-m", "mcpuniverse.mcp.servers.yahoo_finance"]
+      timeout: 30
+    tool_schema:
+      type: function
+      function:
+        name: get_historical_stock_prices
+        description: "Get historical stock prices for a given ticker symbol from yahoo finance."
+        parameters:
+          type: object
+          properties:
+            ticker: {type: string}
+            start_date: {type: string}
+            end_date: {type: string}
+            interval: {type: string, default: "1d"}
+          required: [ticker, start_date, end_date]
+
+  - class_name: mcpuniverse.rl.integrations.verl.tools.mcp_stdio_tool.MCPStdioTool
+    config:
+      type: native
+      command: python3
+      args: ["-m", "mcpuniverse.mcp.servers.yahoo_finance"]
+      timeout: 30
+    tool_schema:
+      type: function
+      function:
+        name: get_stock_info
+        description: "Get stock information for a given ticker symbol from yahoo finance."
+        parameters:
+          type: object
+          properties:
+            ticker: {type: string}
+            fields: {type: string, default: ""}
+          required: [ticker]
+
+  - class_name: mcpuniverse.rl.integrations.verl.tools.mcp_stdio_tool.MCPStdioTool
+    config:
+      type: native
+      command: python3
+      args: ["-m", "mcpuniverse.mcp.servers.yahoo_finance"]
+      timeout: 30
+    tool_schema:
+      type: function
+      function:
+        name: get_yahoo_finance_news
+        description: "Get news for a given ticker symbol from yahoo finance."
+        parameters:
+          type: object
+          properties:
+            ticker: {type: string}
+            max_news: {type: integer, default: 10}
+          required: [ticker]
+
+  - class_name: mcpuniverse.rl.integrations.verl.tools.mcp_stdio_tool.MCPStdioTool
+    config:
+      type: native
+      command: python3
+      args: ["-m", "mcpuniverse.mcp.servers.yahoo_finance"]
+      timeout: 30
+    tool_schema:
+      type: function
+      function:
+        name: get_stock_actions
+        description: "Get stock dividends and stock splits for a given ticker symbol."
+        parameters:
+          type: object
+          properties:
+            ticker: {type: string}
+          required: [ticker]
+
+  - class_name: mcpuniverse.rl.integrations.verl.tools.mcp_stdio_tool.MCPStdioTool
+    config:
+      type: native
+      command: python3
+      args: ["-m", "mcpuniverse.mcp.servers.yahoo_finance"]
+      timeout: 30
+    tool_schema:
+      type: function
+      function:
+        name: get_financial_statement
+        description: "Get financial statement for a given ticker symbol from yahoo finance."
+        parameters:
+          type: object
+          properties:
+            ticker: {type: string}
+            financial_type: {type: string}
+            num_periods: {type: integer, default: 0}
+          required: [ticker, financial_type]
+
+  - class_name: mcpuniverse.rl.integrations.verl.tools.mcp_stdio_tool.MCPStdioTool
+    config:
+      type: native
+      command: python3
+      args: ["-m", "mcpuniverse.mcp.servers.yahoo_finance"]
+      timeout: 30
+    tool_schema:
+      type: function
+      function:
+        name: get_holder_info
+        description: "Get holder information for a given ticker symbol from yahoo finance."
+        parameters:
+          type: object
+          properties:
+            ticker: {type: string}
+            holder_type: {type: string}
+            top_n: {type: integer, default: 0}
+          required: [ticker, holder_type]
+
+  - class_name: mcpuniverse.rl.integrations.verl.tools.mcp_stdio_tool.MCPStdioTool
+    config:
+      type: native
+      command: python3
+      args: ["-m", "mcpuniverse.mcp.servers.yahoo_finance"]
+      timeout: 30
+    tool_schema:
+      type: function
+      function:
+        name: get_option_expiration_dates
+        description: "Fetch the available options expiration dates for a given ticker symbol."
+        parameters:
+          type: object
+          properties:
+            ticker: {type: string}
+          required: [ticker]
+
+  - class_name: mcpuniverse.rl.integrations.verl.tools.mcp_stdio_tool.MCPStdioTool
+    config:
+      type: native
+      command: python3
+      args: ["-m", "mcpuniverse.mcp.servers.yahoo_finance"]
+      timeout: 30
+    tool_schema:
+      type: function
+      function:
+        name: get_option_chain
+        description: "Fetch the option chain for a given ticker symbol, expiration date, and option type."
+        parameters:
+          type: object
+          properties:
+            ticker: {type: string}
+            expiration_date: {type: string}
+            option_type: {type: string}
+            strike_min: {type: number, default: 0}
+            strike_max: {type: number, default: 0}
+            top_n: {type: integer, default: 0}
+          required: [ticker, expiration_date, option_type]
+
+  - class_name: mcpuniverse.rl.integrations.verl.tools.mcp_stdio_tool.MCPStdioTool
+    config:
+      type: native
+      command: python3
+      args: ["-m", "mcpuniverse.mcp.servers.yahoo_finance"]
+      timeout: 30
+    tool_schema:
+      type: function
+      function:
+        name: get_recommendations
+        description: "Get recommendations or upgrades/downgrades for a given ticker symbol."
+        parameters:
+          type: object
+          properties:
+            ticker: {type: string}
+            recommendation_type: {type: string}
+            months_back: {type: integer, default: 12}
+          required: [ticker, recommendation_type]
+
+  - class_name: mcpuniverse.rl.integrations.verl.tools.mcp_stdio_tool.MCPStdioTool
+    config:
+      type: native
+      command: python3
+      args: ["-m", "mcpuniverse.mcp.servers.yahoo_finance"]
+      timeout: 30
+    tool_schema:
+      type: function
+      function:
+        name: get_stock_price_on_date
+        description: "Get the stock price for a given ticker symbol on a specific date."
+        parameters:
+          type: object
+          properties:
+            ticker: {type: string}
+            date: {type: string}
+          required: [ticker, date]
+
+  # --- calculator MCP server tool ---
+  - class_name: mcpuniverse.rl.integrations.verl.tools.mcp_stdio_tool.MCPStdioTool
+    config:
+      type: native
+      command: python3
+      args: ["-m", "mcp_server_calculator"]
+      timeout: 10
+    tool_schema:
+      type: function
+      function:
+        name: calculate
+        description: "Calculates/evaluates the given expression."
+        parameters:
+          type: object
+          properties:
+            expression: {type: string}
+          required: [expression]
