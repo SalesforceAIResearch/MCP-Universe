@@ -151,6 +151,10 @@ def init_ray(config, *, clean_tiktoken_cache: bool = False) -> None:
     else:
         logger.warning("WANDB_API_KEY not found in environment variables")
 
+    wandb_base_url = os.environ.get("WANDB_BASE_URL")
+    if wandb_base_url:
+        PPO_RAY_RUNTIME_ENV["env_vars"]["WANDB_BASE_URL"] = wandb_base_url
+
     # -- connect / start ---------------------------------------------------
     ray_address = os.environ.get("RAY_ADDRESS")
     # veRL 0.7+ moved ray_init under ray_kwargs; support both layouts
