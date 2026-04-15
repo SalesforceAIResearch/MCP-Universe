@@ -235,3 +235,6 @@ mcpuniverse/rl/data/yf_*.json
 mcpuniverse/rl/integrations/verl/scripts
 mcpuniverse/rl/integrations/verl/config/mcp_fully_async.yaml
 mcpuniverse/rl/integrations/verl/config/mcp_gptoss_harmony_tito.yaml
+# Local artifacts
+wandb/
+src/

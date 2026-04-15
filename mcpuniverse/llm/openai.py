@@ -33,6 +33,7 @@ class OpenAIConfig(BaseConfig):
         frequency_penalty (float): Penalizes frequent token use (default: 0.0).
         presence_penalty (float): Penalizes repeated topics (default: 0.0).
         max_completion_tokens (int): Maximum number of tokens in the completion (default: 2048).
+        reasoning (str): Reasoning level for prompt rendering (default: "low").
         reasoning_effort (str): The reasoning effort to use (default: "medium").
         seed (int): Random seed for reproducibility (default: 12345).
         timeout (int): Request timeout in seconds (default: 60).
@@ -46,6 +47,7 @@ class OpenAIConfig(BaseConfig):
     frequency_penalty: float = 0.0
     presence_penalty: float = 0.0
     max_completion_tokens: int = 10000
+    reasoning: str = "low"
     reasoning_effort: str = "medium"
     seed: int = 12345
     timeout: int = 60

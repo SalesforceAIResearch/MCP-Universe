@@ -239,7 +239,7 @@ class BaseLLM(ExportConfigMixin, metaclass=ComponentABCMeta):
         """
         retries = kwargs.pop("retries", 3)
         retry_delay = kwargs.pop("retry_delay", 5)
-        timeout = kwargs.pop("timeout", 60)
+        timeout = kwargs.pop("timeout", getattr(self.config, "timeout", 60))
 
         for attempt in range(retries + 1):
             try:
@@ -254,17 +254,21 @@ class BaseLLM(ExportConfigMixin, metaclass=ComponentABCMeta):
                 )
             except asyncio.TimeoutError as e:
                 if attempt < retries:
-                    self.logger.warning("Timeout on attempt %d/%d. Retrying...", attempt + 1, retries + 1)
+                    self.logger.warning("Timeout on attempt %d/%d (%.0fs). Retrying...",
+                                        attempt + 1, retries + 1, timeout)
                     await asyncio.sleep(retry_delay)
                 else:
-                    self.logger.error("All %d attempts failed with timeout", retries + 1)
+                    self.logger.error("All %d attempts failed with timeout (%.0fs each)",
+                                      retries + 1, timeout)
                     raise e
             except Exception as e:
                 if attempt < retries:
-                    self.logger.warning("Error on attempt %d/%d: %s. Retrying...", attempt + 1, retries + 1, str(e))
+                    self.logger.warning("Error on attempt %d/%d: %s: %s. Retrying...",
+                                        attempt + 1, retries + 1, type(e).__name__, str(e)[:200])
                     await asyncio.sleep(retry_delay)
                 else:
-                    self.logger.error("All %d attempts failed with error: %s", retries + 1, str(e))
+                    self.logger.error("All %d attempts failed with %s: %s",
+                                      retries + 1, type(e).__name__, str(e)[:500])
                     raise e
 
     def get_response(
