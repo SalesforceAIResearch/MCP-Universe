@@ -590,6 +590,14 @@ class MCPPPOTrainer(RayPPOTrainer):
         batch_size = len(batch.batch) if batch.batch is not None else 0
         logger.info(f"Batch size after rollout: {batch_size}")
 
+        # Pad batch to be divisible by n_gpus (missing trajectories can cause odd sizes)
+        n_gpus = self.config.trainer.n_gpus_per_node * self.config.trainer.nnodes
+        mini_batch = self.config.actor_rollout_ref.actor.ppo_mini_batch_size
+        divisor = max(n_gpus, mini_batch)
+        if batch_size > 0 and batch_size % divisor != 0:
+            logger.warning(f"Batch size {batch_size} not divisible by {divisor}, padding")
+            batch, _ = pad_dataproto_to_divisor(batch, divisor)
+
         if "response_mask" not in batch.batch.keys():
             batch.batch["response_mask"] = compute_response_mask(batch)
 

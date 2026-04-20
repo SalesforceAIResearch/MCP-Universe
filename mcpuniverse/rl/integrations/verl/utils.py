@@ -134,6 +134,13 @@ def init_ray(config, *, clean_tiktoken_cache: bool = False) -> None:
     if os.environ.get("LD_LIBRARY_PATH"):
         PPO_RAY_RUNTIME_ENV["env_vars"]["LD_LIBRARY_PATH"] = os.environ["LD_LIBRARY_PATH"]
 
+    # Ensure conda env's bin is on PATH so subprocess('python3') resolves correctly
+    import sys
+    conda_bin = os.path.dirname(sys.executable)
+    current_path = os.environ.get("PATH", "")
+    if conda_bin not in current_path:
+        PPO_RAY_RUNTIME_ENV["env_vars"]["PATH"] = f"{conda_bin}:{current_path}"
+
     # Propagate NCCL env vars to Ray workers (e.g. NCCL_SHM_DISABLE for small /dev/shm)
     nccl_keys = (
         "NCCL_SHM_DISABLE", "NCCL_P2P_LEVEL", "NCCL_DEBUG",

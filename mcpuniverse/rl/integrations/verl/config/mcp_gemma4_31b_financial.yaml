@@ -1,11 +1,11 @@
-# MCP Agent Training - Gemma4 26B-A4B (MoE) - Financial Analysis (yfinance)
+# MCP Agent Training - Gemma4 31B (Dense) - Financial Analysis (yfinance)
 #
-# Model: google/gemma-4-26B-A4B-it (MoE, 128 experts, 8 active) on 8x H200
+# Model: google/gemma-4-31B-it (Dense, 31B) on 8x H200
 # Agent: ReActTrain (model-agnostic, works with Gemma4 chat template)
 # Rollout: TITO token mode
 # Algorithm: GRPO (no critic needed)
 # Transport: stdio (each agent spawns its own MCP server)
-# Data: 60 samples (54 train / 6 val), n=12 → 720 trajectories/step
+# Data: 54 train / 6 val from yf_synth_tasks
 #
 # Usage:
 #   source env_init_gemma4.sh
@@ -79,10 +79,10 @@ data:
   return_raw_chat: true
   return_raw_input_ids: false
   filter_overlong_prompts: false
-  max_prompt_length: 65536
-  max_response_length: 65536
-  train_batch_size: 54
-  val_batch_size: 40
+  max_prompt_length: 4096
+  max_response_length: 4096
+  train_batch_size: 8
+  val_batch_size: 4
   dataloader_num_workers: 0
 
 # ============================================================================
@@ -92,30 +92,25 @@ actor_rollout_ref:
   hybrid_engine: true
 
   model:
-    path: /root/model_weights/gemma-4-26B-A4B-it
+    path: /root/model_weights/gemma-4-31B-it
     enable_gradient_checkpointing: true
     trust_remote_code: true
-    use_remove_padding: true
     override_config:
       attn_implementation: sdpa
 
   rollout:
     name: vllm
     mode: async
-    n: 12
+    n: 2
     temperature: 0.7
-    prompt_length: 65536
-    response_length: 65536
-    max_model_len: 128768
-    gpu_memory_utilization: 0.6
-    tensor_model_parallel_size: 2
+    max_model_len: 8192
+    gpu_memory_utilization: 0.3
+    tensor_model_parallel_size: 4
     free_cache_engine: false
     enforce_eager: true
     dtype: bfloat16
     enable_chunked_prefill: true
-    log_prob_micro_batch_size_per_gpu: 15
-    log_prob_max_token_len_per_gpu: 65536
-    log_prob_use_dynamic_bsz: true
+    log_prob_micro_batch_size_per_gpu: 1
     enable_sleep_mode: false
     skip_tokenizer_init: false
 
@@ -125,34 +120,23 @@ actor_rollout_ref:
 
     checkpoint_engine:
       backend: naive
-      update_weights_bucket_megabytes: 4096
+      update_weights_bucket_megabytes: 8192
 
   actor:
     strategy: fsdp
     use_kl_loss: false
     entropy_coeff: 0.001
-    ppo_mini_batch_size: 648
-    ppo_micro_batch_size_per_gpu: 9
-    use_dynamic_bsz: true
-    shuffle: true
+    ppo_mini_batch_size: 8
+    ppo_micro_batch_size_per_gpu: 1
     ppo_epochs: 1
     grad_clip: 1.0
-    fsdp_config:
-      param_offload: true
-      optimizer_offload: true
-      model_dtype: bfloat16
-    ulysses_sequence_parallel_size: 1
     optim:
-      lr: 1e-5
+      lr: 1e-6
       weight_decay: 0.01
       lr_warmup_steps_ratio: 0.1
 
   ref:
     strategy: fsdp
-    log_prob_micro_batch_size_per_gpu: 15
-    log_prob_use_dynamic_bsz: true
-    fsdp_config:
-      param_offload: true
 
 # ============================================================================
 # Algorithm - GRPO
@@ -180,8 +164,8 @@ critic:
 # Trainer Configuration
 # ============================================================================
 trainer:
-  total_epochs: 200
-  total_training_steps: 200
+  total_epochs: 1
+  total_training_steps: 4
   nnodes: 1
   n_gpus_per_node: 8
   save_freq: -1
@@ -192,6 +176,6 @@ trainer:
   balance_batch: true
   logger: ["console", "wandb"]
   project_name: mcp-u-rl
-  experiment_name: gemma4-26b-moe-bs54-n12-lr1e5-200step
+  experiment_name: gemma4-31b-react-tito-test
   device: cuda
   default_local_dir: /tmp/mcp_rl_checkpoints
