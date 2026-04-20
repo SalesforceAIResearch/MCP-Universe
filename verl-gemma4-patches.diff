@@ -1,0 +1,136 @@
+diff --git a/verl/model_merger/base_model_merger.py b/verl/model_merger/base_model_merger.py
+index 1dc64042..0880ccf2 100644
+--- a/verl/model_merger/base_model_merger.py
++++ b/verl/model_merger/base_model_merger.py
+@@ -212,7 +212,10 @@ class BaseModelMerger(ABC):
+                         return AutoModelForImageTextToText
+                     else:
+                         # transformers < 4.54.0 uses AutoModelForVision2Seq
+-                        from transformers import AutoModelForVision2Seq
++                        try:
++                            from transformers import AutoModelForVision2Seq
++                        except ImportError:
++                            from transformers import AutoModelForImageTextToText as AutoModelForVision2Seq
+ 
+                         return AutoModelForVision2Seq
+                 case _:
+diff --git a/verl/models/transformers/monkey_patch.py b/verl/models/transformers/monkey_patch.py
+index bb26dac2..05aa9563 100644
+--- a/verl/models/transformers/monkey_patch.py
++++ b/verl/models/transformers/monkey_patch.py
+@@ -265,6 +265,11 @@ def patch_forward_with_backends(
+     elif model.config.model_type == "glm4v":
+         from verl.models.transformers.glm4v import forward_with_torch_backend, forward_with_triton_backend
+ 
++        forward_with_torch_backend_function = forward_with_torch_backend
++        forward_with_triton_backend_function = forward_with_triton_backend
++    elif model.config.model_type == "gemma4":
++        from verl.models.transformers.gemma4 import forward_with_torch_backend, forward_with_triton_backend
++
+         forward_with_torch_backend_function = forward_with_torch_backend
+         forward_with_triton_backend_function = forward_with_triton_backend
+     else:
+diff --git a/verl/utils/checkpoint/fsdp_checkpoint_manager.py b/verl/utils/checkpoint/fsdp_checkpoint_manager.py
+index 1730bd84..b8a2b0cc 100644
+--- a/verl/utils/checkpoint/fsdp_checkpoint_manager.py
++++ b/verl/utils/checkpoint/fsdp_checkpoint_manager.py
+@@ -329,7 +329,10 @@ class FSDPCheckpointManager(BaseCheckpointManager):
+                         auto_model_cls = AutoModelForImageTextToText
+                     else:
+                         # transformers < 4.54.0 uses AutoModelForVision2Seq
+-                        from transformers import AutoModelForVision2Seq
++                        try:
++                            from transformers import AutoModelForVision2Seq
++                        except ImportError:
++                            from transformers import AutoModelForImageTextToText as AutoModelForVision2Seq
+ 
+                         auto_model_cls = AutoModelForVision2Seq
+                 else:
+diff --git a/verl/utils/fsdp_utils.py b/verl/utils/fsdp_utils.py
+index 8f7f8bef..57f8c0e5 100644
+--- a/verl/utils/fsdp_utils.py
++++ b/verl/utils/fsdp_utils.py
+@@ -125,6 +125,13 @@ def get_fsdp_wrap_policy(module, config=None, is_lora=False):
+         transformer_cls_to_wrap = set()
+         for layer_class in fsdp_transformer_layer_cls_to_wrap:
+             transformer_cls = get_module_class_from_name(module, layer_class)
++            if transformer_cls is None:
++                # Fallback: try importing the class from the model's module directly
++                # (needed for multimodal models like Gemma4 where nested submodules
++                # may not be enumerated by module.modules())
++                import importlib
++                model_module = importlib.import_module(type(module).__module__)
++                transformer_cls = getattr(model_module, layer_class, None)
+             if transformer_cls is None:
+                 raise Exception("Could not find the transformer layer class to wrap in the model.")
+             else:
+diff --git a/verl/utils/model.py b/verl/utils/model.py
+index a59c4c32..4309fa80 100644
+--- a/verl/utils/model.py
++++ b/verl/utils/model.py
+@@ -33,12 +33,17 @@ from transformers import (
+     AutoModelForImageTextToText,
+     AutoModelForSequenceClassification,
+     AutoModelForTokenClassification,
+-    AutoModelForVision2Seq,
+     GenerationConfig,
+     MistralForSequenceClassification,
+     PretrainedConfig,
+     PreTrainedModel,
+ )
++# Compat shim: transformers >=5.5 renamed AutoModelForVision2Seq to AutoModelForImageTextToText
++try:
++    from transformers import AutoModelForVision2Seq
++except ImportError:
++    AutoModelForVision2Seq = AutoModelForImageTextToText
++
+ from transformers.modeling_outputs import CausalLMOutputWithPast
+ 
+ from verl.models.registry import ModelRegistry
+diff --git a/verl/workers/actor/dp_actor.py b/verl/workers/actor/dp_actor.py
+index c13ffa09..4938e01f 100644
+--- a/verl/workers/actor/dp_actor.py
++++ b/verl/workers/actor/dp_actor.py
+@@ -241,6 +241,12 @@ class DataParallelPPOActor(BasePPOActor):
+                     extra_args["temperature"] = temperature
+                     extra_args["return_dict"] = True
+ 
++                # Gemma4 requires mm_token_type_ids even for text-only training
++                if "mm_token_type_ids" not in multi_modal_inputs:
++                    model_type = getattr(getattr(self.actor_module, "config", None), "model_type", "")
++                    if "gemma4" in str(model_type):
++                        multi_modal_inputs["mm_token_type_ids"] = torch.zeros_like(input_ids_rmpad)
++
+                 output = self.actor_module(
+                     input_ids=input_ids_rmpad,
+                     attention_mask=None,
+@@ -349,6 +355,12 @@ class DataParallelPPOActor(BasePPOActor):
+                     extra_args["temperature"] = temperature
+                     extra_args["return_dict"] = True
+ 
++                # Gemma4 requires mm_token_type_ids even for text-only training
++                if "mm_token_type_ids" not in multi_modal_inputs:
++                    model_type = getattr(getattr(self.actor_module, "config", None), "model_type", "")
++                    if "gemma4" in str(model_type):
++                        multi_modal_inputs["mm_token_type_ids"] = torch.zeros_like(input_ids)
++
+                 output = self.actor_module(
+                     input_ids=input_ids,
+                     attention_mask=attention_mask,
+diff --git a/verl/workers/fsdp_workers.py b/verl/workers/fsdp_workers.py
+index 24b46e13..15b8f897 100644
+--- a/verl/workers/fsdp_workers.py
++++ b/verl/workers/fsdp_workers.py
+@@ -348,8 +348,11 @@ class ActorRolloutRefWorker(Worker, DistProfilerExtension):
+             AutoModel,
+             AutoModelForCausalLM,
+             AutoModelForImageTextToText,
+-            AutoModelForVision2Seq,
+         )
++        try:
++            from transformers import AutoModelForVision2Seq
++        except ImportError:
++            AutoModelForVision2Seq = AutoModelForImageTextToText
+ 
+         from verl.utils.model import get_generation_config, print_model_size, update_model_config
+         from verl.utils.torch_dtypes import PrecisionType
