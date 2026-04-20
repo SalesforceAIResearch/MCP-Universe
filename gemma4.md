@@ -154,7 +154,29 @@ Recommend: test vLLM 0.19.0 in a **separate env** without touching the working g
 - Gemma4 uses its own tool format, not Harmony — `<|tool_call>call:name{args}<tool_call|>`
 
 **Remaining:**
-- [ ] Add Gemma4 formatter for TITO tokenization
-- [ ] Create training YAML config
-- [ ] Test verl hybrid mode training (FSDP + vLLM weight sync)
-- [ ] Run 4-step test training on yfinance tasks
+- [x] Add Gemma4 formatter for TITO tokenization → used `react_train` / `chatml` (Qwen3Formatter), works for Gemma4
+- [x] Create training YAML config → `mcp_gemma4_26b_financial.yaml`
+- [x] Test verl hybrid mode training (FSDP + vLLM weight sync) → WORKING
+- [x] Run 4-step test training on yfinance tasks → IN PROGRESS
+
+### 2026-04-15: Training integration (continued)
+
+**Additional verl patches needed:**
+- `verl/utils/fsdp_utils.py`: Added fallback for `get_module_class_from_name` — Gemma4's multimodal arch nests decoder layers deeper than verl's search traverses
+- `verl/utils/model.py`, `verl/workers/fsdp_workers.py`, `verl/utils/checkpoint/fsdp_checkpoint_manager.py`, `verl/model_merger/base_model_merger.py`: `AutoModelForVision2Seq` → `AutoModelForImageTextToText` compat shim
+- `mcpuniverse/rl/integrations/verl/utils.py`: Added conda env bin to PATH in Ray runtime env (subprocess `python3` was resolving to base env)
+
+**Attention backend:**
+- `flash_attention_2` (flash-attn 2.8.3) **FAILS** — Gemma4 has `global_head_dim=512`, FA2 max is 256
+- `sdpa` (torch SDPA) **WORKS** — set via `model.override_config.attn_implementation: sdpa`
+- vLLM 0.19.0 uses FlashInfer (flashinfer-python 0.6.6) + Triton attention for inference — unaffected
+
+**First rollout result:**
+- Gemma4-26B-A4B: 12.5% success rate (2/16 trajectories correct) on step 1
+- Same baseline as gpt-oss-20b on yfinance tasks
+
+**LD_LIBRARY_PATH for mcp-u-gemma4:**
+```
+/opt/conda/envs/mcp-u-gemma4/lib:/usr/local/nvidia/lib64
+```
+(conda libs for ICU/libstdc++, nvidia libs for libcuda)
