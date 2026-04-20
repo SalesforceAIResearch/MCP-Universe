@@ -350,6 +350,26 @@
       "SERPER_BASE_URL": "{{SERPER_BASE_URL}}"
     }
   },
+
+  "exa-search": {
+    "stdio": {
+      "command": "python3",
+      "args": [
+        "-m", "mcpuniverse.mcp.servers.exa_search"
+      ]
+    },
+    "sse": {
+      "command": "python3",
+      "args": [
+        "-m", "mcpuniverse.mcp.servers.exa_search",
+        "--transport", "sse",
+        "--port", "{{PORT}}"
+      ]
+    },
+    "env": {
+      "EXA_API_KEY": "{{EXA_API_KEY}}"
+    }
+  },
   
   "jina-scrape-llm-summary": {
     "stdio": {
