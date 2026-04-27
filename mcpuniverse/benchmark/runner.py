@@ -17,10 +17,7 @@ from mcpuniverse.mcp.manager import MCPManager
 from mcpuniverse.workflows.builder import WorkflowBuilder
 from mcpuniverse.benchmark.task import Task
 from mcpuniverse.benchmark.bundle import (
-    benchmark_package_dir,
     resolve_runner_config_file,
-    infer_benchmark_bundle,
-    load_benchmark_package,
 )
 from mcpuniverse.tracer.collectors.base import BaseCollector
 from mcpuniverse.tracer import Tracer
@@ -180,12 +177,6 @@ class BenchmarkRunner(metaclass=AutodocABCMeta):
 
         abs_config = resolve_runner_config_file(config)
         self._resolved_config_path = abs_config
-        self._bundle = infer_benchmark_bundle(abs_config)
-        self._default_folder = os.path.join(benchmark_package_dir(), "configs")
-        self._task_search_roots: List[str] = []
-        if self._bundle:
-            self._task_search_roots = [self._bundle.task_config_root]
-            load_benchmark_package(self._bundle.bundle_id)
 
         # Load configs
         self._agent_configs = []
@@ -205,8 +196,14 @@ class BenchmarkRunner(metaclass=AutodocABCMeta):
         # store the outputs
         self._benchmark_results = None
 
-    def _resolve_task_filepath(self, task_path: str) -> str:
-        """Resolve a task path for isolated bundles (``task_configs/``) or legacy ``configs/``."""
+    def _resolve_task_filepath(self, task_path: str, benchmark_id: str) -> str:
+        """
+        Resolve a task path to an existing file.
+
+        Accepts an absolute path, a cwd-relative path to an existing file, or a path
+        under ``mcpuniverse/benchmark/<benchmark_id>/task_configs/`` when that
+        directory exists.
+        """
         if os.path.isabs(task_path) and os.path.isfile(task_path):
             return os.path.abspath(task_path)
         if os.path.isfile(task_path):
@@ -215,7 +212,125 @@ class BenchmarkRunner(metaclass=AutodocABCMeta):
             candidate = os.path.join(root, task_path)
             if os.path.isfile(candidate):
                 return os.path.abspath(candidate)
-        return os.path.abspath(os.path.join(self._default_folder, task_path))
+        hint = (
+            f"benchmark_id={benchmark_id!r}: use an absolute path, a path relative to the "
+            f"current working directory that exists, or a file under "
+            f"benchmark/{benchmark_id}/task_configs/."
+        )
+        if root:
+            raise FileNotFoundError(
+                f"Task config not found: {task_path!r} (looked under {root!r}). {hint}"
+            )
+        raise FileNotFoundError(
+            f"Task config not found: {task_path!r} "
+            f"(no task_configs directory for this benchmark_id). {hint}"
+        )
+
+    async def _execute_benchmark(
+            self,
+            benchmark: BenchmarkConfig,
+            agent: Executor,
+            *,
+            mcp_manager: MCPManager,
+            store: BenchmarkResultStore,
+            trace_collector: Optional[BaseCollector],
+            overwrite: bool,
+            callbacks: Optional[List[BaseCallback]],
+    ) -> BenchmarkResult:
+        """Run all tasks for one benchmark block (agent already initialized)."""
+        await send_message_async(callbacks, message=CallbackMessage(
+            source=__file__,
+            type=MessageType.LOG,
+            metadata={"event": "list_tools", "data": agent}
+        ))
+
+        task_results, task_trace_ids = {}, {}
+        for idx, task_path in enumerate(benchmark.tasks):
+            async with AsyncExitStack():
+                send_message(callbacks, message=CallbackMessage(
+                    source="benchmark_runner",
+                    type=MessageType.PROGRESS,
+                    data=f"Running task: {task_path} ({idx + 1}/{len(benchmark.tasks)})"
+                ))
+                send_message(callbacks, message=CallbackMessage(
+                    source="benchmark_runner",
+                    type=MessageType.LOG,
+                    data=f"Running task: {task_path}"
+                ))
+                self._logger.info("Running task: %s", task_path)
+                task_filepath = self._resolve_task_filepath(task_path, benchmark.benchmark_id)
+
+                stored_result = store.load_task_result(
+                    benchmark=benchmark, task_config_path=task_filepath)
+                if not overwrite and stored_result is not None:
+                    task_results[task_path] = {"evaluation_results": stored_result["results"]}
+                    task_trace_ids[task_path] = stored_result["trace_id"]
+                    self._logger.info("Loaded stored results for task: %s", task_path)
+                    continue
+
+                task = Task(
+                    task_filepath,
+                    context=self._context,
+                    mcp_manager=mcp_manager,
+                    benchmark_id=benchmark.benchmark_id,
+                )
+
+                filesystem_test_dir = os.environ.get("FILESYSTEM_TEST_DIR", "NOT SET")
+                self._logger.info("FILESYSTEM_TEST_DIR before prepare: %s", filesystem_test_dir)
+
+                try:
+                    self._logger.info("Preparing task environment for: %s", task_path)
+                    await task.prepare()
+                except Exception as e:
+                    self._logger.error("Failed to prepare task environment: %s", str(e))
+
+                if task.use_specified_server() and isinstance(agent, BaseAgent):
+                    await agent.change_servers(task.get_mcp_servers())
+                agent.reset()
+                tracer = Tracer(collector=trace_collector)
+                question = task.get_question()
+                output_format = task.get_output_format()
+
+                await send_message_async(callbacks, message=CallbackMessage(
+                    source=__file__,
+                    type=MessageType.LOG,
+                    metadata={"event": "task_description", "data": task}
+                ))
+                try:
+                    response = await agent.execute(
+                        question,
+                        output_format=output_format,
+                        tracer=tracer,
+                        callbacks=callbacks
+                    )
+                    result = response.get_response_str()
+                except Exception as e:
+                    result = str(e)
+                evaluation_results = await task.evaluate(result)
+
+                task_results[task_path] = {
+                    "evaluation_results": evaluation_results
+                }
+                task_trace_ids[task_path] = tracer.trace_id
+                trace_records = trace_collector.get(tracer.trace_id) if trace_collector else None
+                store.dump_task_result(
+                    benchmark=benchmark,
+                    task_config_path=task_filepath,
+                    evaluation_results=evaluation_results,
+                    trace_id=tracer.trace_id,
+                    overwrite=True
+                )
+
+                self._logger.info("Resetting task %s", task_path)
+                await task.reset(trace_records or [])
+                await task.cleanup()
+                self._logger.info("Finished resetting task %s", task_path)
+                if task.use_specified_server() and isinstance(agent, BaseAgent):
+                    await agent.cleanup()
+
+        self._logger.info("Finished benchmark: %s", benchmark.description)
+        return BenchmarkResult(
+            benchmark=benchmark, task_results=task_results, task_trace_ids=task_trace_ids)
 
     async def run(
             self,

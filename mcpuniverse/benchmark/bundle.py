@@ -18,17 +18,12 @@ def resolve_runner_config_file(config: str) -> str:
     """
     Resolve a user-supplied config path to an absolute path of an existing file.
 
-    Search order: as given, then ``mcpuniverse/benchmark/<relpath>``, then
-    ``mcpuniverse/benchmark/configs/<relpath>`` (legacy).
+    Search order: path as given if it exists, else ``mcpuniverse/benchmark/<relpath>``.
     """
     benchmark_pkg = benchmark_package_dir()
-    configs_dir = os.path.join(benchmark_pkg, "configs")
     if os.path.isfile(config):
         return os.path.abspath(config)
     candidate = os.path.join(benchmark_pkg, config)
-    if os.path.isfile(candidate):
-        return os.path.abspath(candidate)
-    candidate = os.path.join(configs_dir, config)
     if os.path.isfile(candidate):
         return os.path.abspath(candidate)
     raise ValueError(f"Cannot find config file: {config}")
