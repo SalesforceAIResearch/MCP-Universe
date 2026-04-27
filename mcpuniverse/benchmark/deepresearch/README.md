@@ -18,9 +18,9 @@ Reproduce results from the paper [**W&D: Scaling Parallel Tool Calling for Effic
 ## Quick Start
 
 1. **Prepare data** for your target dataset (see [Data Preparation](#data-preparation)).
-2. **Run the benchmark** with a config from `mcpuniverse/benchmark/configs/deepresearch/configs/<dataset>/` (see [Running the Benchmark](#running-the-benchmark)).
+2. **Run the benchmark** with a config from `mcpuniverse/benchmark/deepresearch/configs/<dataset>/` (see [Running the Benchmark](#running-the-benchmark)).
 
-Pre-built configs are available under `mcpuniverse/benchmark/configs/deepresearch/configs/` for:
+Pre-built configs are available under `mcpuniverse/benchmark/deepresearch/configs/` for:
 
 | Dataset     | Directory    | Example configs                                      |
 |------------|--------------|------------------------------------------------------|
@@ -36,19 +36,19 @@ From the **repository root**, run:
 
 ```bash
 # BrowseComp
-python3 mcpuniverse/benchmark/configs/deepresearch/prepare_deep_research_data.py \
+python3 mcpuniverse/benchmark/deepresearch/prepare_deep_research_data.py \
   --dataset browse_comp \
   --tools serper-search,jina-scrape-llm-summary \
   --exclude_output_format
 
 # GAIA
-python3 mcpuniverse/benchmark/configs/deepresearch/prepare_deep_research_data.py \
+python3 mcpuniverse/benchmark/deepresearch/prepare_deep_research_data.py \
   --dataset gaia \
   --tools serper-search,jina-scrape-llm-summary \
   --exclude_output_format
 
 # HLE (includes code sandbox)
-python3 mcpuniverse/benchmark/configs/deepresearch/prepare_deep_research_data.py \
+python3 mcpuniverse/benchmark/deepresearch/prepare_deep_research_data.py \
   --dataset hle \
   --tools serper-search,jina-scrape-llm-summary,python-code-sandbox \
   --exclude_output_format
@@ -88,10 +88,10 @@ From the **repository root**:
 
 ```bash
 python3 tests/benchmark/deep_research/test_benchmark_deepresearch.py \
-  mcpuniverse/benchmark/configs/deepresearch/configs/browsecomp/agent_wide_research_bc_gpt5.yaml
+  mcpuniverse/benchmark/deepresearch/configs/browsecomp/agent_wide_research_bc_gpt5.yaml
 ```
 
-Use any YAML under `mcpuniverse/benchmark/configs/deepresearch/configs/<dataset>/` for that dataset and model (e.g. `agent_wide_research_bc_gemini3pro.yaml`, `agent_wide_research_gaia_claude45sonnet.yaml`).
+Use any YAML under `mcpuniverse/benchmark/deepresearch/configs/<dataset>/` for that dataset and model (e.g. `agent_wide_research_bc_gemini3pro.yaml`, `agent_wide_research_gaia_claude45sonnet.yaml`).
 
 ---
 
@@ -188,7 +188,7 @@ scheduler_mode:
 ## File layout
 
 ```
-deepresearch/
+mcpuniverse/benchmark/deepresearch/
 ├── README.md
 ├── prepare_deep_research_data.py
 ├── data_utils.py

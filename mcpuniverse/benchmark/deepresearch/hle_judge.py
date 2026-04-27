@@ -1,12 +1,16 @@
 """
-Evaluation functions for Yahoo finance tasks
+HLE / deep-research LLM-as-a-judge evaluator (structured parse + OpenAI).
+
+Registered as ``deepresearch.hle_llm_as_a_judge`` for task JSON ``evaluators[].op``.
 """
 # pylint: disable=broad-exception-caught,unused-argument
 import os
 from typing import Any, Literal
+
 from openai import OpenAI
 from dotenv import load_dotenv
 from pydantic import BaseModel
+
 from mcpuniverse.evaluator.functions import compare_func
 
 load_dotenv()
@@ -18,11 +22,10 @@ load_dotenv()
 ##################################################################################
 
 
-
 def deepresearch__get_hle_judge_prompt(
-        question: str,
-        response: str,
-        correct_answer: str
+    question: str,
+    response: str,
+    correct_answer: str,
 ) -> str:
     """
     Get a prompt for a judge.
@@ -62,11 +65,10 @@ class HLEExtractedAnswer(BaseModel):
     strict: Literal[True] = True  # 100% reliability
 
 
-
 def deepresearch__call_gpt_hle(
-        prompt: str,
-        model="o3-mini-2025-01-31",
-        **kwargs
+    prompt: str,
+    model="o3-mini-2025-01-31",
+    **kwargs,
 ) -> str:
     """
     Call GPT to get a response to a prompt.
@@ -80,7 +82,7 @@ def deepresearch__call_gpt_hle(
                 model=model,
                 max_completion_tokens=4096,
                 messages=[{"role": "user", "content": prompt}],
-                response_format=HLEExtractedAnswer
+                response_format=HLEExtractedAnswer,
             )
             return response.choices[0].message.parsed
         except Exception as e:
@@ -90,24 +92,34 @@ def deepresearch__call_gpt_hle(
 
 
 @compare_func(name="deepresearch.hle_llm_as_a_judge")
-async def deepresearch__hle_llm_as_a_judge(llm_response: Any, *args, **kwargs) -> (bool, str):
+async def deepresearch__hle_llm_as_a_judge(
+    llm_response: Any, *args, **kwargs
+) -> tuple[bool, str]:
     """Equal"""
     _, values = args
-    question = values['question']
-    correct_answer = values['correct_answer']
+    question = values["question"]
+    correct_answer = values["correct_answer"]
     error_message = ""
     max_tries = 3
     for _ in range(max_tries):
         try:
             response = llm_response.result
-            prompt = deepresearch__get_hle_judge_prompt(question, response, correct_answer)
+            prompt = deepresearch__get_hle_judge_prompt(
+                question, response, correct_answer
+            )
             response = deepresearch__call_gpt_hle(prompt, **kwargs)
             if response.extracted_final_answer is None:
-                return False, f"output is not equal to ground-truth, extracted_final_answer is None, {prompt}"
+                return (
+                    False,
+                    f"output is not equal to ground-truth, extracted_final_answer is None, {prompt}",
+                )
             if response.correct == "yes":
                 return True, ""
             if response.correct == "no":
-                return False, f"output is not equal to ground-truth, correct is no, {prompt}"
+                return (
+                    False,
+                    f"output is not equal to ground-truth, correct is no, {prompt}",
+                )
             return False, f"HLE LLM evaluation failed: {response}"
         except Exception as e:
             error_message += str(e) + "\n" + str(llm_response) + "\n" + "-" * 33 + "\n"

@@ -3,12 +3,12 @@
 CLI to download Deep Research benchmarks and transform them to the benchmark
 task JSON format. Supports gaia-benchmark/GAIA, cais/hle, and smolagents/browse_comp.
 
-Run with: python -m mcpuniverse.benchmark.configs.deepresearch.prepare_deep_research_data
+Run with: python -m mcpuniverse.benchmark.deepresearch.prepare_deep_research_data
 """
 
 import argparse
 
-from mcpuniverse.benchmark.configs.deepresearch.data_utils import (
+from mcpuniverse.benchmark.deepresearch.data_utils import (
     process_browse_comp_dataset,
     process_gaia_dataset,
     process_hle_dataset,

@@ -81,7 +81,7 @@ def get_output_dir(base_name, special_name=None, use_date=False):
         today_str = datetime.now().strftime("%Y_%m_%d")
         dir_name = f"{dir_name}_{today_str}"
 
-    output_dir = Path(f"mcpuniverse/benchmark/configs/deepresearch/{dir_name}")
+    output_dir = Path(f"mcpuniverse/benchmark/deepresearch/{dir_name}")
     output_dir.mkdir(parents=True, exist_ok=True)
     return output_dir
 

@@ -165,6 +165,9 @@ mcpuniverse = [
     "benchmark/mcpuniverse/README.md",
     "benchmark/mcpuniverse/task_configs/**/*",
     "benchmark/mcpuniverse/evaluators/**/*",
+    "benchmark/deepresearch/**/*.yaml",
+    "benchmark/deepresearch/**/*.md",
+    "benchmark/deepresearch/**/*.json",
     "dashboard/static/*",
     "dashboard/templates/*",
     "mcp/configs/*"

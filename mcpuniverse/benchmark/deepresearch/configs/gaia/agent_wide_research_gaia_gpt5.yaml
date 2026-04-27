@@ -1,0 +1,132 @@
+kind: llm
+spec:
+  name: llm-1
+  type: openai
+  config:
+    model_name: gpt-5
+    reasoning_effort: medium
+    timeout: 300
+
+---
+kind: agent
+spec:
+  name: function-call-agent 
+  type: function_call_wide_research
+  config:
+    llm: llm-1
+    instruction: Your task is to comprehensively address the question by actively collecting detailed information from the web, and generating a thorough, transparent report. Your goal is NOT to rush a single definitive answer or conclusion, but rather to gather complete information and present ALL plausible candidate answers you find, accompanied by clearly documented supporting evidence, reasoning steps, uncertainties, and explicit intermediate findings.\n\nUser does not intend to set traps or create confusion on purpose. Handle the task using the most common, reasonable, and straightforward interpretation, and do not overthink or focus on rare or far-fetched interpretations.\n\nImportant considerations:\n- Collect comprehensive information from reliable sources to understand all aspects of the question.\n- Present every possible candidate answer identified during your information gathering, regardless of uncertainty, ambiguity, or incomplete verification. Avoid premature conclusions or omission of any discovered possibility.\n- Explicitly document detailed facts, evidence, and reasoning steps supporting each candidate answer, carefully preserving intermediate analysis results.\n- Clearly flag and retain any uncertainties, conflicting interpretations, or alternative understandings identified during information gathering. Do not arbitrarily discard or resolve these issues on your own.\n- If the question's explicit instructions (e.g., numeric precision, formatting, specific requirements) appear inconsistent, unclear, erroneous, or potentially mismatched with general guidelines or provided examples, explicitly record and clearly present all plausible interpretations and corresponding candidate answers.\nRecognize that the original task description might itself contain mistakes, imprecision, inaccuracies, or conflicts introduced unintentionally by the user due to carelessness, misunderstanding, or limited expertise. Do NOT try to second-guess or "correct" these instructions internally; instead, transparently present findings according to every plausible interpretation. Your objective is maximum completeness, transparency, and detailed documentation to empower the user to judge and select their preferred answer independently. Even if uncertain, explicitly documenting the existence of possible answers significantly enhances the user's experience, ensuring no plausible solution is irreversibly omitted due to early misunderstanding or premature filtering.
+    max_iterations: 100
+    summarize_tool_response: false
+    system_prompt: mcpuniverse/agent/configs/function_call_prompt_scheduler.j2
+    scheduler_mode:
+      100: 3
+---
+kind: benchmark
+spec:
+  description: Test agent for deep research tasks.
+  benchmark_id: deepresearch
+  agent: function-call-agent
+  tasks:
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0001.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0002.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0003.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0004.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0005.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0006.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0007.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0008.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0009.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0010.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0011.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0012.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0013.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0014.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0015.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0016.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0017.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0018.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0019.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0020.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0021.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0022.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0023.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0024.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0025.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0026.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0027.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0028.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0029.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0030.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0031.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0032.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0033.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0034.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0035.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0036.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0037.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0038.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0039.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0040.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0041.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0042.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0043.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0044.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0045.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0046.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0047.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0048.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0049.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0050.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0051.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0052.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0053.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0054.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0055.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0056.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0057.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0058.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0059.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0060.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0061.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0062.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0063.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0064.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0065.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0066.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0067.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0068.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0069.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0070.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0071.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0072.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0073.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0074.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0075.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0076.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0077.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0078.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0079.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0080.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0081.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0082.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0083.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0084.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0085.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0086.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0087.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0088.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0089.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0090.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0091.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0092.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0093.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0094.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0095.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0096.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0097.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0098.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0099.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0100.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0101.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0102.json
+    - mcpuniverse/benchmark/deepresearch/gaia_val_text_only/gaia_validation_0103.json

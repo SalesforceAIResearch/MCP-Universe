@@ -5,7 +5,7 @@ from .evaluator import (
 )
 
 from .functions import *
-from .deepresearch.functions import *
+from mcpuniverse.benchmark.deepresearch.hle_judge import *
 
 __all__ = [
     "Evaluator",
