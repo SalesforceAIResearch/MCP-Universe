@@ -150,7 +150,7 @@ More information can be found [here](https://github.com/SalesforceAIResearch/MCP
 =======
 | Benchmark | Reference | MCP-Universe Implementation |
 |-----------|------|------------|
-| MCP-Universe | [Paper](https://arxiv.org/abs/2508.14704) |[Runbook](mcpuniverse/benchmark/configs/mcpuniverse/README.md) |
+| MCP-Universe | [Paper](https://arxiv.org/abs/2508.14704) |[Runbook](mcpuniverse/benchmark/mcpuniverse/README.md) |
 | MCPMark | [Paper](https://arxiv.org/abs/2509.24002) | [Runbook](mcpuniverse/benchmark/mcpmark/README.md) |
 | BrowseComp | [Paper](https://arxiv.org/abs/2602.07359) | [Runbook](mcpuniverse/benchmark/configs/deepresearch/README.md) |
 | HLE | [Paper](https://arxiv.org/abs/2602.07359) | [Runbook](mcpuniverse/benchmark/configs/deepresearch/README.md) |

@@ -12,13 +12,13 @@ class TestTask(unittest.IsolatedAsyncioTestCase):
 
     async def test_init(self):
         config_file = os.path.join(self.folder, "../../data/task/google-map_task_0001.json")
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id="mcpuniverse")
         self.assertEqual(len(task.get_mcp_servers()), 1)
         self.assertEqual(len(task.get_evaluators()), 3)
 
     async def test_evaluate(self):
         config_file = os.path.join(self.folder, "../../data/task/google-map_task_0001.json")
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id="mcpuniverse")
         data = {
             "starting_city": "Johor Bahru",
             "destination_city": "Kuala Lumpur",
@@ -77,7 +77,7 @@ class TestTask(unittest.IsolatedAsyncioTestCase):
 
     async def test_cleanup_1(self):
         config_file = os.path.join(self.folder, "../../data/task/google-map_task_0001.json")
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id="mcpuniverse")
         trace_records = [
             TraceRecord(
                 id="123",
@@ -114,7 +114,7 @@ class TestTask(unittest.IsolatedAsyncioTestCase):
 
     async def test_cleanup_2(self):
         config_file = os.path.join(self.folder, "../../data/task/weather_task.json")
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id="mcpuniverse")
         trace_records = [
             TraceRecord(
                 id="123",
@@ -141,7 +141,7 @@ class TestTask(unittest.IsolatedAsyncioTestCase):
 
     async def test_execute_reset(self):
         config_file = os.path.join(self.folder, "../../data/task/google-map_task_0001.json")
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id="mcpuniverse")
         cleanup_config = TaskCleanupConfig(
             server="google-maps",
             tool="maps_reverse_geocode",

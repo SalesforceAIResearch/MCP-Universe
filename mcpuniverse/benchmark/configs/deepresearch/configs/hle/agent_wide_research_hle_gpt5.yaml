@@ -24,6 +24,7 @@ spec:
 kind: benchmark
 spec:
   description: Test agent for deep research tasks.
+  benchmark_id: deepresearch
   agent: function-call-agent
   tasks:
     - mcpuniverse/benchmark/configs/deepresearch/hle_text_only/hle_test_0001.json

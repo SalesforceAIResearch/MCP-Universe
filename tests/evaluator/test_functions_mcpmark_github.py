@@ -23,7 +23,7 @@ class TestFunctionsMCPMarkGitHub(unittest.IsolatedAsyncioTestCase):
         config_file = os.path.join(
             self.config_folder, "build_your_own_x/find_commit_date.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -43,7 +43,7 @@ class TestFunctionsMCPMarkGitHub(unittest.IsolatedAsyncioTestCase):
         config_file = os.path.join(
             self.config_folder, "build_your_own_x/find_rag_commit.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -65,7 +65,7 @@ class TestFunctionsMCPMarkGitHub(unittest.IsolatedAsyncioTestCase):
             self.config_folder,
             "claude_code/automated_changelog_generation.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -86,7 +86,7 @@ class TestFunctionsMCPMarkGitHub(unittest.IsolatedAsyncioTestCase):
             self.config_folder,
             "claude_code/claude_collaboration_analysis.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -107,7 +107,7 @@ class TestFunctionsMCPMarkGitHub(unittest.IsolatedAsyncioTestCase):
             self.config_folder,
             "claude_code/critical_issue_hotfix_workflow.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -127,7 +127,7 @@ class TestFunctionsMCPMarkGitHub(unittest.IsolatedAsyncioTestCase):
         config_file = os.path.join(
             self.config_folder, "claude_code/feature_commit_tracking.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -148,7 +148,7 @@ class TestFunctionsMCPMarkGitHub(unittest.IsolatedAsyncioTestCase):
             self.config_folder,
             "claude_code/label_color_standardization.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -169,7 +169,7 @@ class TestFunctionsMCPMarkGitHub(unittest.IsolatedAsyncioTestCase):
         config_file = os.path.join(
             self.config_folder, "easyr1/advanced_branch_strategy.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -189,7 +189,7 @@ class TestFunctionsMCPMarkGitHub(unittest.IsolatedAsyncioTestCase):
         config_file = os.path.join(
             self.config_folder, "easyr1/config_parameter_audit.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -210,7 +210,7 @@ class TestFunctionsMCPMarkGitHub(unittest.IsolatedAsyncioTestCase):
             self.config_folder,
             "easyr1/performance_regression_investigation.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -230,7 +230,7 @@ class TestFunctionsMCPMarkGitHub(unittest.IsolatedAsyncioTestCase):
         config_file = os.path.join(
             self.config_folder, "easyr1/qwen3_issue_management.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -251,7 +251,7 @@ class TestFunctionsMCPMarkGitHub(unittest.IsolatedAsyncioTestCase):
         config_file = os.path.join(
             self.config_folder, "harmony/fix_conflict.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -271,7 +271,7 @@ class TestFunctionsMCPMarkGitHub(unittest.IsolatedAsyncioTestCase):
         config_file = os.path.join(
             self.config_folder, "harmony/issue_pr_commit_workflow.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -291,7 +291,7 @@ class TestFunctionsMCPMarkGitHub(unittest.IsolatedAsyncioTestCase):
         config_file = os.path.join(
             self.config_folder, "harmony/issue_tagging_pr_closure.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -312,7 +312,7 @@ class TestFunctionsMCPMarkGitHub(unittest.IsolatedAsyncioTestCase):
             self.config_folder,
             "harmony/multi_branch_commit_aggregation.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -332,7 +332,7 @@ class TestFunctionsMCPMarkGitHub(unittest.IsolatedAsyncioTestCase):
         config_file = os.path.join(
             self.config_folder, "harmony/release_management_workflow.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -354,7 +354,7 @@ class TestFunctionsMCPMarkGitHub(unittest.IsolatedAsyncioTestCase):
             self.config_folder,
             "mcpmark_cicd/deployment_status_workflow.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -375,7 +375,7 @@ class TestFunctionsMCPMarkGitHub(unittest.IsolatedAsyncioTestCase):
             self.config_folder,
             "mcpmark_cicd/issue_management_workflow.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -395,7 +395,7 @@ class TestFunctionsMCPMarkGitHub(unittest.IsolatedAsyncioTestCase):
         config_file = os.path.join(
             self.config_folder, "mcpmark_cicd/linting_ci_workflow.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -415,7 +415,7 @@ class TestFunctionsMCPMarkGitHub(unittest.IsolatedAsyncioTestCase):
         config_file = os.path.join(
             self.config_folder, "mcpmark_cicd/pr_automation_workflow.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -437,7 +437,7 @@ class TestFunctionsMCPMarkGitHub(unittest.IsolatedAsyncioTestCase):
             self.config_folder,
             "missing_semester/assign_contributor_labels.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -457,7 +457,7 @@ class TestFunctionsMCPMarkGitHub(unittest.IsolatedAsyncioTestCase):
         config_file = os.path.join(
             self.config_folder, "missing_semester/find_legacy_name.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -477,7 +477,7 @@ class TestFunctionsMCPMarkGitHub(unittest.IsolatedAsyncioTestCase):
         config_file = os.path.join(
             self.config_folder, "missing_semester/find_salient_file.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")

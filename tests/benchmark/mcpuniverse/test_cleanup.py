@@ -1,6 +1,6 @@
 import pytest
 import unittest
-from mcpuniverse.benchmark.cleanups import github_delete_repository
+from mcpuniverse.benchmark.mcpuniverse.cleanups import github_delete_repository
 
 
 class TestTaskCleanup(unittest.IsolatedAsyncioTestCase):

@@ -148,7 +148,11 @@ class BenchmarkRunnerWithWrapper(BaseBenchmarkRunner):
                         continue
 
                     # Execute the task and the corresponding evaluations
-                    task = Task(task_filepath, context=self._context)
+                    task = Task(
+                        task_filepath,
+                        context=self._context,
+                        benchmark_id=benchmark.benchmark_id,
+                    )
                     if task.use_specified_server() and isinstance(agent, BaseAgent):
                         await agent.change_servers(task.get_mcp_servers())
                     agent.reset()

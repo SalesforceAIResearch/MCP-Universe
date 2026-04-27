@@ -24,6 +24,7 @@ spec:
 kind: benchmark
 spec:
   description: Test agent for deep research tasks.
+  benchmark_id: deepresearch
   agent: function-call-agent
   tasks:
     - mcpuniverse/benchmark/configs/deepresearch/browsecomp/browse_comp_test_0001.json

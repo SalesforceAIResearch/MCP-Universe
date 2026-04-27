@@ -10,17 +10,20 @@ import shutil
 import time
 import asyncio
 from pathlib import Path
-from typing import Callable
 
 from dotenv import load_dotenv
 from mcpuniverse.common.context import Context
+from mcpuniverse.benchmark.prepare_registry import prepare_func as _register_prepare
 
 # Ensure .env (project root) is loaded so POSTGRES_* etc. are available
 load_dotenv()
 
-PREPARE_FUNCTIONS = {}
-
 logger = logging.getLogger(__name__)
+
+
+def mcpmark_prepare(prepare_func_name: str):
+    """Register a prepare handler for the ``mcpmark`` benchmark suite."""
+    return _register_prepare("mcpmark", prepare_func_name)
 
 
 def _add_mcpmark_to_path():
@@ -38,23 +41,7 @@ def _add_mcpmark_to_path():
     return mcpmark_deps_path
 
 
-def prepare_func(prepare_func_name: str):
-    """A decorator for preparation functions"""
-
-    def _decorator(func: Callable):
-        assert prepare_func_name not in PREPARE_FUNCTIONS, \
-            f"Duplicated prepare function: {prepare_func_name}"
-        PREPARE_FUNCTIONS[prepare_func_name] = func
-
-        async def _wrapper(*args, **kwargs):
-            return await func(*args, **kwargs)
-
-        return _wrapper
-
-    return _decorator
-
-
-@prepare_func("set_postgres_database")
+@mcpmark_prepare("set_postgres_database")
 async def set_postgres_database(
     context: Context = None,
     database: str = None,
@@ -112,7 +99,7 @@ async def set_postgres_database(
     return f"PostgreSQL database set to: {db_name}"
 
 
-@prepare_func("prepare_vector_database")
+@mcpmark_prepare("prepare_vector_database")
 async def prepare_vector_database(context: Context = None, **_kwargs):  # pylint: disable=unused-argument
     """
     Prepare vector database environment by running the prepare_environment.py script.
@@ -149,7 +136,7 @@ async def prepare_vector_database(context: Context = None, **_kwargs):  # pylint
         raise
 
 
-@prepare_func("prepare_rls_business_access")
+@mcpmark_prepare("prepare_rls_business_access")
 async def prepare_rls_business_access(context: Context = None, **_kwargs):  # pylint: disable=unused-argument
     """
     Prepare RLS business access environment by running the prepare_environment.py script.
@@ -178,7 +165,7 @@ async def prepare_rls_business_access(context: Context = None, **_kwargs):  # py
         raise
 
 
-@prepare_func("prepare_user_permission_audit")
+@mcpmark_prepare("prepare_user_permission_audit")
 async def prepare_user_permission_audit(context: Context = None, **_kwargs):  # pylint: disable=unused-argument
     """
     Prepare user permission audit environment by running the prepare_environment.py script.
@@ -207,7 +194,7 @@ async def prepare_user_permission_audit(context: Context = None, **_kwargs):  # 
         raise
 
 
-@prepare_func("download_filesystem_environment")
+@mcpmark_prepare("download_filesystem_environment")
 async def download_filesystem_environment(  # pylint: disable=too-many-statements, too-many-branches
     context: Context = None,
     category: str = None,
@@ -368,7 +355,7 @@ async def download_filesystem_environment(  # pylint: disable=too-many-statement
 # MCPMark State Manager Integration Functions
 # =============================================================================
 
-@prepare_func("mcpmark_github_setup")
+@mcpmark_prepare("mcpmark_github_setup")
 async def mcpmark_github_setup(
     context: Context = None,
     category: str = None,
@@ -456,7 +443,7 @@ async def mcpmark_github_setup(
         raise
 
 
-@prepare_func("mcpmark_notion_setup")
+@mcpmark_prepare("mcpmark_notion_setup")
 async def mcpmark_notion_setup(
     context: Context = None,
     category: str = None,
@@ -553,7 +540,7 @@ async def mcpmark_notion_setup(
         raise
 
 
-@prepare_func("mcpmark_filesystem_setup")
+@mcpmark_prepare("mcpmark_filesystem_setup")
 async def mcpmark_filesystem_setup(
     context: Context = None,
     category: str = None,
@@ -658,7 +645,7 @@ async def mcpmark_filesystem_setup(
         raise
 
 
-@prepare_func("mcpmark_playwright_setup")
+@mcpmark_prepare("mcpmark_playwright_setup")
 async def mcpmark_playwright_setup(
     context: Context = None,
     category: str = None,
@@ -746,7 +733,7 @@ async def mcpmark_playwright_setup(
         raise
 
 
-@prepare_func("mcpmark_playwright_webarena_setup")
+@mcpmark_prepare("mcpmark_playwright_webarena_setup")
 async def mcpmark_playwright_webarena_setup(
     context: Context = None,
     category: str = None,
@@ -835,7 +822,7 @@ async def mcpmark_playwright_webarena_setup(
         raise
 
 
-@prepare_func("mcpmark_postgres_setup")
+@mcpmark_prepare("mcpmark_postgres_setup")
 async def mcpmark_postgres_setup(
     context: Context = None,
     category: str = None,

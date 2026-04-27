@@ -43,4 +43,4 @@ spec:
   benchmark_id: dummy
   agent: orchestrator-workflow
   tasks:
-    - dummy/tasks/weather_1.json
+    - tasks/weather_1.json

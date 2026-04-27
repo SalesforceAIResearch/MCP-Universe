@@ -9,13 +9,19 @@ from typing import List, Dict, Optional, Any
 from contextlib import AsyncExitStack
 
 import yaml
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator, model_validator
 from mcpuniverse.common.misc import AutodocABCMeta
 from mcpuniverse.llm.base import BaseLLM
 from mcpuniverse.agent.base import Executor, BaseAgent
 from mcpuniverse.mcp.manager import MCPManager
 from mcpuniverse.workflows.builder import WorkflowBuilder
 from mcpuniverse.benchmark.task import Task
+from mcpuniverse.benchmark.bundle import (
+    benchmark_package_dir,
+    resolve_runner_config_file,
+    infer_benchmark_bundle,
+    load_benchmark_package,
+)
 from mcpuniverse.tracer.collectors.base import BaseCollector
 from mcpuniverse.tracer import Tracer
 from mcpuniverse.evaluator import EvaluationResult
@@ -32,12 +38,43 @@ from mcpuniverse.callbacks.base import (
 class BenchmarkConfig(BaseModel):
     """Benchmark configuration."""
     description: str = ""
+    benchmark_id: str = Field(
+        ...,
+        description=(
+            "Suite id for scoped prepare/evaluator lookup (e.g. mcpmark, mcpuniverse). "
+            "Required in benchmark YAML; passed through to each Task."
+        ),
+    )
     agent: str = ""
     tasks: List[str] = Field(default_factory=list)
 
+    @model_validator(mode="before")
+    @classmethod
+    def reject_benchamrk_typo(cls, data: Any) -> Any:
+        if isinstance(data, dict) and "benchamrk_id" in data:
+            raise ValueError(
+                "Invalid field 'benchamrk_id' in benchmark spec; use 'benchmark_id'."
+            )
+        return data
+
+    @field_validator("benchmark_id", mode="before")
+    @classmethod
+    def strip_benchmark_id(cls, v: Any) -> Any:
+        if isinstance(v, str):
+            return v.strip()
+        return v
+
+    @field_validator("benchmark_id")
+    @classmethod
+    def benchmark_id_nonempty(cls, v: str) -> str:
+        if not v:
+            raise ValueError("benchmark_id must not be empty or whitespace-only")
+        return v
+
     def md5(self) -> str:
         """Return the MD5 hash of the benchmark config."""
-        text = (f"Description: {self.description}, "
+        text = (f"BenchmarkId: {self.benchmark_id}, "
+                f"Description: {self.description}, "
                 f"Agent: {self.agent}, "
                 f"Tasks: {', '.join(self.tasks)}")
         return hashlib.md5(text.encode()).hexdigest()
@@ -138,18 +175,22 @@ class BenchmarkRunner(metaclass=AutodocABCMeta):
             config (str): The config file path.
             context (Context, optional): The context information.
         """
-        self._default_folder = os.path.join(os.path.dirname(os.path.realpath(__file__)), "configs")
-        if not os.path.exists(config):
-            config = os.path.join(self._default_folder, config)
-        if not os.path.exists(config):
-            raise ValueError(f"Cannot find config file: {config}")
         self._logger = get_logger("Benchmark")
         self._context = context if context else Context()
+
+        abs_config = resolve_runner_config_file(config)
+        self._resolved_config_path = abs_config
+        self._bundle = infer_benchmark_bundle(abs_config)
+        self._default_folder = os.path.join(benchmark_package_dir(), "configs")
+        self._task_search_roots: List[str] = []
+        if self._bundle:
+            self._task_search_roots = [self._bundle.task_config_root]
+            load_benchmark_package(self._bundle.bundle_id)
 
         # Load configs
         self._agent_configs = []
         self._benchmark_configs = []
-        with open(config, "r", encoding="utf-8") as f:
+        with open(abs_config, "r", encoding="utf-8") as f:
             objects = yaml.safe_load_all(f)
             if isinstance(objects, dict):
                 objects = [objects]
@@ -163,6 +204,18 @@ class BenchmarkRunner(metaclass=AutodocABCMeta):
 
         # store the outputs
         self._benchmark_results = None
+
+    def _resolve_task_filepath(self, task_path: str) -> str:
+        """Resolve a task path for isolated bundles (``task_configs/``) or legacy ``configs/``."""
+        if os.path.isabs(task_path) and os.path.isfile(task_path):
+            return os.path.abspath(task_path)
+        if os.path.isfile(task_path):
+            return os.path.abspath(task_path)
+        for root in self._task_search_roots:
+            candidate = os.path.join(root, task_path)
+            if os.path.isfile(candidate):
+                return os.path.abspath(candidate)
+        return os.path.abspath(os.path.join(self._default_folder, task_path))
 
     async def run(
             self,
@@ -185,7 +238,10 @@ class BenchmarkRunner(metaclass=AutodocABCMeta):
             callbacks (List[BaseCallback], optional): Callback functions.
         """
         if mcp_manager is None:
-            mcp_manager = MCPManager(context=self._context)
+            if self._bundle and self._bundle.has_server_list:
+                mcp_manager = MCPManager(config=self._bundle.server_list_path, context=self._context)
+            else:
+                mcp_manager = MCPManager(context=self._context)
         workflow = WorkflowBuilder(mcp_manager=mcp_manager, config=self._agent_configs)
         workflow.build(components)
         store = BenchmarkResultStore(folder=store_folder)
@@ -216,10 +272,9 @@ class BenchmarkRunner(metaclass=AutodocABCMeta):
                         data=f"Running task: {task_path}"
                     ))
                     self._logger.info("Running task: %s", task_path)
-                    if not os.path.exists(task_path):
-                        task_filepath = os.path.join(self._default_folder, task_path)
-                    else:
-                        task_filepath = task_path
+                    task_filepath = self._resolve_task_filepath(task_path)
+                    if not os.path.isfile(task_filepath):
+                        raise FileNotFoundError(f"Task config not found: {task_path} (resolved: {task_filepath})")
 
                     stored_result = store.load_task_result(
                         benchmark=benchmark, task_config_path=task_filepath)
@@ -230,7 +285,12 @@ class BenchmarkRunner(metaclass=AutodocABCMeta):
                         continue
 
                     # Execute the task and the corresponding evaluations
-                    task = Task(task_filepath, context=self._context)
+                    task = Task(
+                        task_filepath,
+                        context=self._context,
+                        mcp_manager=mcp_manager,
+                        benchmark_id=benchmark.benchmark_id,
+                    )
 
                     # Log FILESYSTEM_TEST_DIR before prepare (after previous task cleanup)
                     filesystem_test_dir = os.environ.get("FILESYSTEM_TEST_DIR", "NOT SET")

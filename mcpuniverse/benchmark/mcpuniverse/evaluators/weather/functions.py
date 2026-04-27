@@ -5,7 +5,9 @@ Evaluation functions for Google-maps tasks
 from typing import Any
 import httpx
 from mcpuniverse.evaluator.functions import compare_func
-from mcpuniverse.evaluator.google_maps.functions import google_maps__search_place_by_place_id
+from mcpuniverse.benchmark.mcpuniverse.evaluators.google_maps.functions import (
+    google_maps__search_place_by_place_id,
+)
 
 ##################################################################################
 # Utils Function for Weather

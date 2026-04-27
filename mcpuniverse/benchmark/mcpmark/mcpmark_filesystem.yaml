@@ -20,6 +20,7 @@ spec:
 kind: benchmark
 spec:
   description: Benchmark for mcpmark Filesystem tasks with Desktop, Desktop Template, File Context, File Property, Folder Structure, Legal Document, Papers, Student Database, ThreeStudio, and VoteNet categories (30 tasks).
+  benchmark_id: mcpmark
   agent: ReAct-agent
   tasks:
     # Desktop tasks (3)

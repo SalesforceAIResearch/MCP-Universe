@@ -89,7 +89,11 @@ async def create_benchmark_job(
     querier = ReleasedTaskQuerier(conn)
     async for task_config in querier.get_released_task_configs(benchmark_id=benchmark.id):
         try:
-            Task(config=json.loads(task_config), context=request.context)
+            Task(
+                config=json.loads(task_config),
+                context=request.context,
+                benchmark_id="mcpuniverse",
+            )
             tasks.append(task_config)
         except Exception as e:
             raise HTTPException(status_code=404, detail="Failed to parse task configuration") from e
@@ -111,6 +115,7 @@ async def create_benchmark_job(
             "config": project.configuration,
             "agent_name": "",
             "tasks": tasks,
+            "benchmark_id": "mcpuniverse",
             "context": request.context.model_dump(mode="json")
         }
         task = send_task(task=TASK_BENCHMARK, kwargs=param)

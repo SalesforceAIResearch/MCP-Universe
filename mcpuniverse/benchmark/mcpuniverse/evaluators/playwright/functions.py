@@ -8,7 +8,9 @@ import asyncio
 from typing import Literal
 from bs4 import BeautifulSoup
 from playwright.async_api import async_playwright
-from mcpuniverse.evaluator.notion.functions import notion__get_content_by_page_title
+from mcpuniverse.benchmark.mcpuniverse.evaluators.notion.functions import (
+    notion__get_content_by_page_title,
+)
 from mcpuniverse.evaluator.functions import compare_func
 
 

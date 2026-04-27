@@ -20,6 +20,7 @@ spec:
 kind: benchmark
 spec:
   description: Benchmark for mcpmark GitHub tasks (Build Your Own X, Claude Code, EasyR1, MCPMark-CICD, Missing Semester, Harmony).
+  benchmark_id: mcpmark
   agent: ReAct-agent
   tasks:
     # Build Your Own X tasks (2)

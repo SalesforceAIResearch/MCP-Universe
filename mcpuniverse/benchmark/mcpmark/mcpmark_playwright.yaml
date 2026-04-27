@@ -20,6 +20,7 @@ spec:
 kind: benchmark
 spec:
   description: MCPMark Playwright tasks benchmark
+  benchmark_id: mcpmark
   agent: ReAct-agent
   tasks:
     - playwright/eval_web-cloudflare_turnstile_challenge.json

@@ -24,7 +24,7 @@ class TestFunctionsMCPMarkNotion(unittest.IsolatedAsyncioTestCase):
             self.config_folder,
             "company_in_a_box/employee_onboarding.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -45,7 +45,7 @@ class TestFunctionsMCPMarkNotion(unittest.IsolatedAsyncioTestCase):
             self.config_folder,
             "company_in_a_box/goals_restructure.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -66,7 +66,7 @@ class TestFunctionsMCPMarkNotion(unittest.IsolatedAsyncioTestCase):
             self.config_folder,
             "company_in_a_box/quarterly_review_dashboard.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -88,7 +88,7 @@ class TestFunctionsMCPMarkNotion(unittest.IsolatedAsyncioTestCase):
             self.config_folder,
             "computer_science_student_dashboard/code_snippets_go.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -111,7 +111,7 @@ class TestFunctionsMCPMarkNotion(unittest.IsolatedAsyncioTestCase):
             "computer_science_student_dashboard/"
             "courses_internships_relation.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -132,7 +132,7 @@ class TestFunctionsMCPMarkNotion(unittest.IsolatedAsyncioTestCase):
             self.config_folder,
             "computer_science_student_dashboard/study_session_tracker.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -154,7 +154,7 @@ class TestFunctionsMCPMarkNotion(unittest.IsolatedAsyncioTestCase):
             self.config_folder,
             "it_trouble_shooting_hub/asset_retirement_migration.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -175,7 +175,7 @@ class TestFunctionsMCPMarkNotion(unittest.IsolatedAsyncioTestCase):
             self.config_folder,
             "it_trouble_shooting_hub/security_audit_ticket.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -196,7 +196,7 @@ class TestFunctionsMCPMarkNotion(unittest.IsolatedAsyncioTestCase):
             self.config_folder,
             "it_trouble_shooting_hub/verification_expired_update.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -218,7 +218,7 @@ class TestFunctionsMCPMarkNotion(unittest.IsolatedAsyncioTestCase):
             self.config_folder,
             "japan_travel_planner/daily_itinerary_overview.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -239,7 +239,7 @@ class TestFunctionsMCPMarkNotion(unittest.IsolatedAsyncioTestCase):
             self.config_folder,
             "japan_travel_planner/packing_progress_summary.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -260,7 +260,7 @@ class TestFunctionsMCPMarkNotion(unittest.IsolatedAsyncioTestCase):
             self.config_folder,
             "japan_travel_planner/remove_osaka_itinerary.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -281,7 +281,7 @@ class TestFunctionsMCPMarkNotion(unittest.IsolatedAsyncioTestCase):
             self.config_folder,
             "japan_travel_planner/restaurant_expenses_sync.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -302,7 +302,7 @@ class TestFunctionsMCPMarkNotion(unittest.IsolatedAsyncioTestCase):
         config_file = os.path.join(
             self.config_folder, "online_resume/layout_adjustment.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -322,7 +322,7 @@ class TestFunctionsMCPMarkNotion(unittest.IsolatedAsyncioTestCase):
         config_file = os.path.join(
             self.config_folder, "online_resume/projects_section_update.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -343,7 +343,7 @@ class TestFunctionsMCPMarkNotion(unittest.IsolatedAsyncioTestCase):
             self.config_folder,
             "online_resume/skills_development_tracker.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -363,7 +363,7 @@ class TestFunctionsMCPMarkNotion(unittest.IsolatedAsyncioTestCase):
         config_file = os.path.join(
             self.config_folder, "online_resume/work_history_addition.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -384,7 +384,7 @@ class TestFunctionsMCPMarkNotion(unittest.IsolatedAsyncioTestCase):
         config_file = os.path.join(
             self.config_folder, "python_roadmap/expert_level_lessons.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -405,7 +405,7 @@ class TestFunctionsMCPMarkNotion(unittest.IsolatedAsyncioTestCase):
             self.config_folder,
             "python_roadmap/learning_metrics_dashboard.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -426,7 +426,7 @@ class TestFunctionsMCPMarkNotion(unittest.IsolatedAsyncioTestCase):
         config_file = os.path.join(
             self.config_folder, "self_assessment/faq_column_layout.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -447,7 +447,7 @@ class TestFunctionsMCPMarkNotion(unittest.IsolatedAsyncioTestCase):
             self.config_folder,
             "self_assessment/hyperfocus_analysis_report.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -467,7 +467,7 @@ class TestFunctionsMCPMarkNotion(unittest.IsolatedAsyncioTestCase):
         config_file = os.path.join(
             self.config_folder, "self_assessment/numbered_list_emojis.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -489,7 +489,7 @@ class TestFunctionsMCPMarkNotion(unittest.IsolatedAsyncioTestCase):
             self.config_folder,
             "standard_operating_procedure/deployment_process_sop.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -510,7 +510,7 @@ class TestFunctionsMCPMarkNotion(unittest.IsolatedAsyncioTestCase):
             self.config_folder,
             "standard_operating_procedure/section_organization.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -531,7 +531,7 @@ class TestFunctionsMCPMarkNotion(unittest.IsolatedAsyncioTestCase):
         config_file = os.path.join(
             self.config_folder, "team_projects/priority_tasks_table.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -551,7 +551,7 @@ class TestFunctionsMCPMarkNotion(unittest.IsolatedAsyncioTestCase):
         config_file = os.path.join(
             self.config_folder, "team_projects/swap_tasks.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -572,7 +572,7 @@ class TestFunctionsMCPMarkNotion(unittest.IsolatedAsyncioTestCase):
         config_file = os.path.join(
             self.config_folder, "toronto_guide/change_color.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -593,7 +593,7 @@ class TestFunctionsMCPMarkNotion(unittest.IsolatedAsyncioTestCase):
             self.config_folder,
             "toronto_guide/weekend_adventure_planner.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")

@@ -32,6 +32,7 @@ class TestBenchmarkRunner(unittest.IsolatedAsyncioTestCase):
         store = BenchmarkResultStore(folder=os.path.join(folder, "tmp"))
         benchmark = BenchmarkConfig(
             description="test test",
+            benchmark_id="mcpuniverse",
             agent="test_agent",
             tasks=["google-map"]
         )

@@ -20,6 +20,7 @@ spec:
 kind: benchmark
 spec:
   description: Benchmark for mcpmark Notion tasks across 10 projects with 28 verification functions.
+  benchmark_id: mcpmark
   agent: ReAct-agent
   tasks:
     # Company In A Box tasks (3)

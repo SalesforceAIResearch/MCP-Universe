@@ -2,14 +2,14 @@ import unittest
 import os
 import pytest
 import json
-from mcpuniverse.evaluator.playwright.functions import *
+from mcpuniverse.benchmark.mcpuniverse.evaluators.playwright.functions import *
 from mcpuniverse.benchmark.task import Task
 
 
 class TestFunctionsExtra(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         self.folder = os.path.dirname(os.path.realpath(__file__))
-        self.config_folder = os.path.join(self.folder, "../../mcpuniverse/benchmark/configs/mcpuniverse/multi_server")
+        self.config_folder = os.path.join(self.folder, "../../mcpuniverse/benchmark/mcpuniverse/task_configs/multi_server")
 
     @unittest.skip("skip")
     async def test_func3(self):
@@ -31,10 +31,10 @@ class TestFunctionsExtra(unittest.IsolatedAsyncioTestCase):
         """
         test_func5 to test playwright.check_flight_price function
         """
-        config_folder = os.path.join(self.folder, "../../mcpuniverse/benchmark/configs/mcpuniverse/browser_automation")
+        config_folder = os.path.join(self.folder, "../../mcpuniverse/benchmark/mcpuniverse/task_configs/browser_automation")
         config_file = os.path.join(config_folder, "playwright_booking_task_0001.json")
 
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpuniverse')
         print(task.get_evaluators())
 
         llm_response = {"price": "SGD85.00"}
@@ -54,10 +54,10 @@ class TestFunctionsExtra(unittest.IsolatedAsyncioTestCase):
         """
         test_func6 to test playwright.check_flight_price function
         """
-        config_folder = os.path.join(self.folder, "../../mcpuniverse/benchmark/configs/mcpuniverse/browser_automation")
+        config_folder = os.path.join(self.folder, "../../mcpuniverse/benchmark/mcpuniverse/task_configs/browser_automation")
         config_file = os.path.join(config_folder, "playwright_booking_task_0003.json")
 
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpuniverse')
         print(task.get_evaluators())
 
         llm_response = {"price": "SGD85.00"}

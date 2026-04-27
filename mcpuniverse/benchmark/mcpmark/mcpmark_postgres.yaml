@@ -20,6 +20,7 @@ spec:
 kind: benchmark
 spec:
   description: Benchmark for mcpmark PostgreSQL tasks.
+  benchmark_id: mcpmark
   agent: ReAct-agent
   tasks:
     # Chinook tasks (3)
