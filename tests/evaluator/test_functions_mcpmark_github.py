@@ -3,7 +3,7 @@ import os
 import unittest
 import pytest
 from mcpuniverse.benchmark.task import Task
-from mcpuniverse.evaluator.mcpmark.github_functions import *
+from mcpuniverse.benchmark.mcpmark.evaluators.github_functions import *
 
 
 class TestFunctionsMCPMarkGitHub(unittest.IsolatedAsyncioTestCase):
@@ -13,7 +13,7 @@ class TestFunctionsMCPMarkGitHub(unittest.IsolatedAsyncioTestCase):
         self.folder = os.path.dirname(os.path.realpath(__file__))
         self.config_folder = os.path.join(
             self.folder,
-            "../../mcpuniverse/benchmark/configs/mcpmark/configs/github"
+            "../../mcpuniverse/benchmark/mcpmark/task_configs/github"
         )
 
     # Build Your Own X category tests

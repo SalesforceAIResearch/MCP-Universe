@@ -14,19 +14,11 @@ from .google_search.functions import *
 from .deepresearch.functions import *
 from .notion.functions import *
 from .weather.functions import *
-# from .mcpmark.functions import *  # Temporarily disabled due to psycopg2 dependency
-from .mcpmark.github_functions import *
-from .mcpmark.notion_functions import *
-from .mcpmark.filesystem_functions import *
-from .mcpmark.playwright_functions import *
-from .mcpmark.postgres_functions import *
 
-# from .mcpmark.functions import *  # Temporarily disabled due to psycopg2 dependency
-from .mcpmark.github_functions import *
-from .mcpmark.notion_functions import *
-from .mcpmark.filesystem_functions import *
-from .mcpmark.playwright_functions import *
-from .mcpmark.postgres_functions import *
+from .enterpriseops.sql_evaluators import *
+
+# MCPMark evaluators live under ``mcpuniverse.benchmark.mcpmark.evaluators`` and are
+# imported from ``mcpuniverse.benchmark.hooks`` (see ``benchmark/mcpmark/evaluators``).
 
 
 __all__ = [

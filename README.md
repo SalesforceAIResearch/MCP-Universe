@@ -60,6 +60,7 @@ MCP-Universe is a comprehensive ecosystem for building, optimizing, and evaluati
 
 ### MCPMark Benchmark
 
+<<<<<<< HEAD
 **📊 Evaluate MCP Agents with MCPMark**
 
 MCP-Universe now supports evaluating the **MCPMark** benchmark, enabling comprehensive testing and benchmarking of MCP agents. You can run MCPMark evaluations directly within the MCP-Universe framework to assess agent performance on MCP tasks.
@@ -146,6 +147,15 @@ The diagram below illustrates the high-level view:
 ```
 
 More information can be found [here](https://github.com/SalesforceAIResearch/MCP-Universe/blob/main/docs).
+=======
+| Benchmark | Reference | MCP-Universe Implementation |
+|-----------|------|------------|
+| MCP-Universe | [Paper](https://arxiv.org/abs/2508.14704) |[Runbook](mcpuniverse/benchmark/configs/mcpuniverse/README.md) |
+| MCPMark | [Paper](https://arxiv.org/abs/2509.24002) | [Runbook](mcpuniverse/benchmark/mcpmark/README.md) |
+| BrowseComp | [Paper](https://arxiv.org/abs/2602.07359) | [Runbook](mcpuniverse/benchmark/configs/deepresearch/README.md) |
+| HLE | [Paper](https://arxiv.org/abs/2602.07359) | [Runbook](mcpuniverse/benchmark/configs/deepresearch/README.md) |
+| GAIA | [Paper](https://arxiv.org/abs/2602.07359) | [Runbook](mcpuniverse/benchmark/configs/deepresearch/README.md) |
+>>>>>>> 68de2fd (refactor(benchmark): isolate MCPMark bundle under mcpuniverse/benchmark/mcpmark)
 
 ## Getting Started
 

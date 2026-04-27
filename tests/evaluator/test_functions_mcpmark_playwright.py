@@ -3,7 +3,7 @@ import os
 import unittest
 import pytest
 from mcpuniverse.benchmark.task import Task
-from mcpuniverse.evaluator.mcpmark.playwright_functions import *
+from mcpuniverse.benchmark.mcpmark.evaluators.playwright_functions import *
 
 
 class TestFunctionsMCPMarkPlaywright(unittest.IsolatedAsyncioTestCase):
@@ -13,11 +13,11 @@ class TestFunctionsMCPMarkPlaywright(unittest.IsolatedAsyncioTestCase):
         self.folder = os.path.dirname(os.path.realpath(__file__))
         self.config_folder_playwright = os.path.join(
             self.folder,
-            "../../mcpuniverse/benchmark/configs/mcpmark/configs/playwright"
+            "../../mcpuniverse/benchmark/mcpmark/task_configs/playwright"
         )
         self.config_folder_webarena = os.path.join(
             self.folder,
-            "../../mcpuniverse/benchmark/configs/mcpmark/configs/playwright_webarena"
+            "../../mcpuniverse/benchmark/mcpmark/task_configs/playwright_webarena"
         )
 
     # Playwright category tests

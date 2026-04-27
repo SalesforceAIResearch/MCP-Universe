@@ -1,0 +1,436 @@
+{
+  "date": {
+    "stdio": {
+      "command": "python3",
+      "args": [
+        "-m", "mcpuniverse.mcp.servers.date"
+      ]
+    },
+    "sse": {
+      "command": "python3",
+      "args": [
+        "-m", "mcpuniverse.mcp.servers.date",
+        "--transport", "sse",
+        "--port", "{{PORT}}"
+      ]
+    }
+  },
+
+  "weather": {
+    "stdio": {
+      "command": "python3",
+      "args": [
+        "-m", "mcpuniverse.mcp.servers.weather"
+      ]
+    },
+    "sse": {
+      "command": "python3",
+      "args": [
+        "-m", "mcpuniverse.mcp.servers.weather",
+        "--transport", "sse",
+        "--port", "{{PORT}}"
+      ]
+    }
+  },
+
+  "echo": {
+    "stdio": {
+      "command": "python3",
+      "args": [
+        "-m", "mcpuniverse.mcp.servers.echo"
+      ]
+    },
+    "sse": {
+      "command": "python3",
+      "args": [
+        "-m", "mcpuniverse.mcp.servers.echo",
+        "--transport", "sse",
+        "--port", "{{PORT}}"
+      ]
+    }
+  },
+
+  "google-search": {
+    "stdio": {
+      "command": "python3",
+      "args": [
+        "-m", "mcpuniverse.mcp.servers.google_search"
+      ]
+    },
+    "sse": {
+      "command": "python3",
+      "args": [
+        "-m", "mcpuniverse.mcp.servers.google_search",
+        "--transport", "sse",
+        "--port", "{{PORT}}"
+      ]
+    },
+    "env": {
+      "SERP_API_KEY": "{{SERP_API_KEY}}"
+    }
+  },
+
+  "wikipedia": {
+    "stdio": {
+      "command": "python3",
+      "args": [
+        "-m", "mcpuniverse.mcp.servers.wikipedia"
+      ]
+    },
+    "sse": {
+      "command": "python3",
+      "args": [
+        "-m", "mcpuniverse.mcp.servers.wikipedia",
+        "--transport", "sse",
+        "--port", "{{PORT}}"
+      ]
+    }
+  },
+
+  "google-maps": {
+    "stdio": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-google-maps"
+      ]
+    },
+    "env": {
+      "GOOGLE_MAPS_API_KEY": "{{GOOGLE_MAPS_API_KEY}}"
+    }
+  },
+
+  "fetch": {
+    "stdio": {
+      "command": "python3",
+      "args": [
+        "-m", "mcp_server_fetch",
+        "--ignore-robots-txt"
+      ]
+    }
+  },
+
+  "no_hub": {
+    "stdio": {
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "-e",
+        "GITHUB_PERSONAL_ACCESS_TOKEN",
+        "ghcr.io/github/github-mcp-server"
+      ]
+    },
+    "env": {
+      "GITHUB_PERSONAL_ACCESS_TOKEN": "{{GITHUB_PERSONAL_ACCESS_TOKEN}}"
+    }
+  },
+
+  "github": {
+    "stdio": {
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "-e",
+        "GITHUB_PERSONAL_ACCESS_TOKEN",
+        "ghcr.io/github/github-mcp-server:0.5.0"
+      ]
+    },
+    "env": {
+      "GITHUB_PERSONAL_ACCESS_TOKEN": "{{GITHUB_PERSONAL_ACCESS_TOKEN}}"
+    }
+  },
+
+  "github_mcpmark": {
+    "stdio": {
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "-e",
+        "GITHUB_PERSONAL_ACCESS_TOKEN",
+        "ghcr.io/github/github-mcp-server"
+      ]
+    },
+    "env": {
+      "GITHUB_PERSONAL_ACCESS_TOKEN": "{{GITHUB_TOKENS}}"
+    }
+  },
+
+  "google-sheets": {
+    "stdio": {
+      "command": "python3",
+      "args": [
+        "-m", "mcpuniverse.mcp.servers.google_sheets"
+      ]
+    },
+    "sse": {
+      "command": "python3",
+      "args": [
+        "-m", "mcpuniverse.mcp.servers.google_sheets",
+        "--transport", "sse",
+        "--port", "{{PORT}}"
+      ]
+    },
+    "env": {
+      "SERVICE_ACCOUNT_PATH": "{{GOOGLE_SERVICE_ACCOUNT_PATH}}",
+      "DRIVE_FOLDER_ID": "{{GOOGLE_DRIVE_FOLDER_ID}}"
+    }
+  },
+
+  "filesystem": {
+    "stdio": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "{{FILESYSTEM_DIRECTORY}}"
+      ]
+    }
+  },
+
+  "filesystem_mcpmark": {
+    "stdio": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "{{FILESYSTEM_TEST_DIR}}"
+      ]
+    }
+  },
+
+  "slack": {
+    "stdio": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-slack"
+      ]
+    },
+    "env": {
+      "SLACK_BOT_TOKEN": "{{SLACK_BOT_TOKEN}}",
+      "SLACK_TEAM_ID": "{{SLACK_TEAM_ID}}"
+    }
+  },
+
+  "postgres": {
+    "stdio": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-postgres",
+        "{{POSTGRES_ADDRESS}}"
+      ]
+    }
+  },
+
+  "postgres-pro": {
+    "stdio": {
+      "command": "uvx",
+      "args": [
+        "postgres-mcp",
+        "{{POSTGRES_ADDRESS}}",
+        "--access-mode",
+        "unrestricted"
+      ]
+    }
+  },
+
+  "calculator": {
+    "stdio": {
+      "command": "python3",
+      "args": [
+        "-m", "mcp_server_calculator"
+      ]
+    }
+  },
+
+  "yfinance": {
+    "stdio": {
+      "command": "python3",
+      "args": [
+        "-m", "mcpuniverse.mcp.servers.yahoo_finance"
+      ]
+    },
+    "sse": {
+      "command": "python3",
+      "args": [
+        "-m", "mcpuniverse.mcp.servers.yahoo_finance",
+        "--transport", "sse",
+        "--port", "{{PORT}}"
+      ]
+    }
+  },
+
+  "blender": {
+    "stdio": {
+      "command": "python3",
+      "args": [
+        "-m", "mcpuniverse.mcp.servers.blender"
+      ]
+    }
+  },
+
+  "notion": {
+    "stdio": {
+      "command": "npx",
+      "args": [
+        "-y", "@notionhq/notion-mcp-server"
+      ]
+    },
+    "env": {
+      "OPENAPI_MCP_HEADERS": "{\"Authorization\": \"Bearer {{NOTION_API_KEY}}\", \"Notion-Version\": \"2022-06-28\" }"
+    }
+  },
+
+  "notion_mcpmark": {
+    "stdio": {
+      "command": "npx",
+      "args": [
+        "-y", "@notionhq/notion-mcp-server"
+      ]
+    },
+    "env": {
+      "OPENAPI_MCP_HEADERS": "{\"Authorization\": \"Bearer {{EVAL_NOTION_API_KEY}}\", \"Notion-Version\": \"2022-06-28\" }"
+    }
+  },
+
+  "chrome": {
+    "stdio": {
+      "command": "npx",
+      "args": [
+        "-y", "chrome-devtools-mcp@latest",
+        "--headless=true",
+        "--isolated=true"            
+      ]
+    }
+  },
+
+  "playwright": {
+    "stdio": {
+      "command": "npx",
+      "args": [
+        "@playwright/mcp@latest",
+        "--headless",
+        "--isolated"
+      ]
+    }
+  },
+
+  "markitdown": {
+    "stdio": {
+      "command": "markitdown-mcp"
+    } 
+  },
+
+  "paypal": {
+    "stdio": {
+      "command": "npx",
+      "args": [
+        "mcp-remote",
+        "https://mcp.paypal.com/sse"
+      ]
+    }
+  },
+
+  "serper-search": {
+    "stdio": {
+      "command": "python3",
+      "args": [
+        "-m", "mcpuniverse.mcp.servers.serper_search"
+      ]
+    },
+    "env": {
+      "SERPER_API_KEY": "{{SERPER_API_KEY}}",
+      "SERPER_BASE_URL": "{{SERPER_BASE_URL}}"
+    }
+  },
+  
+  "jina-scrape-llm-summary": {
+    "stdio": {
+      "command": "python3",
+      "args": [
+        "-m", "mcpuniverse.mcp.servers.jina_scrape_llm_summary"
+      ]
+    },
+    "env": {
+      "JINA_API_KEY": "{{JINA_API_KEY}}",
+      "JINA_BASE_URL": "{{JINA_BASE_URL}}",
+      "SUMMARY_LLM_BASE_URL": "{{SUMMARY_LLM_BASE_URL}}",
+      "SUMMARY_LLM_MODEL_NAME": "{{SUMMARY_LLM_MODEL_NAME}}",
+      "SUMMARY_LLM_API_KEY": "{{SUMMARY_LLM_API_KEY}}"
+    }
+  },
+
+  "python-code-sandbox": {
+    "stdio": {
+      "command": "python3",
+      "args": [
+        "-m", "mcpuniverse.mcp.servers.python_code_sandbox"
+      ]
+    }
+  },
+
+  "enterpriseops-teams": {
+    "http_url": "http://127.0.0.1:8002/mcp",
+    "headers": {
+      "x-database-id": "{{ENTERPRISEOPS_TEAMS_DATABASE_ID}}",
+      "x-teams-access-token": "{{ENTERPRISEOPS_CONTEXT_X_TEAMS_ACCESS_TOKEN}}"
+    }
+  },
+
+  "enterpriseops-csm": {
+    "http_url": "http://127.0.0.1:8001/mcp",
+    "headers": {
+      "x-database-id": "{{ENTERPRISEOPS_CSM_DATABASE_ID}}",
+      "x-user-email": "{{ENTERPRISEOPS_CONTEXT_X_USER_EMAIL}}"
+    }
+  },
+
+  "enterpriseops-email": {
+    "http_url": "http://127.0.0.1:8004/mcp",
+    "headers": {
+      "x-database-id": "{{ENTERPRISEOPS_EMAIL_DATABASE_ID}}",
+      "x-email-user-token": "{{ENTERPRISEOPS_CONTEXT_X_EMAIL_USER_TOKEN}}",
+      "user_id": "{{ENTERPRISEOPS_CONTEXT_USER_ID}}",
+      "primary_email": "{{ENTERPRISEOPS_CONTEXT_PRIMARY_EMAIL}}"
+    }
+  },
+
+  "enterpriseops-itsm": {
+    "http_url": "http://127.0.0.1:8006/mcp",
+    "headers": {
+      "x-database-id": "{{ENTERPRISEOPS_ITSM_DATABASE_ID}}",
+      "x-itsm-user-token": "{{ENTERPRISEOPS_CONTEXT_X_ITSM_USER_TOKEN}}"
+    }
+  },
+
+  "enterpriseops-calendar": {
+    "http_url": "http://127.0.0.1:8003/mcp",
+    "headers": {
+      "x-database-id": "{{ENTERPRISEOPS_CALENDAR_DATABASE_ID}}",
+      "x-access-token": "{{ENTERPRISEOPS_CONTEXT_X_ACCESS_TOKEN}}"
+    }
+  },
+
+  "enterpriseops-hr": {
+    "http_url": "http://127.0.0.1:8008/mcp",
+    "headers": {
+      "x-database-id": "{{ENTERPRISEOPS_HR_DATABASE_ID}}",
+      "x-hr-user-token": "{{ENTERPRISEOPS_CONTEXT_X_HR_USER_TOKEN}}"
+    }
+  },
+
+  "enterpriseops-drive": {
+    "http_url": "http://127.0.0.1:8009/mcp",
+    "headers": {
+      "x-database-id": "{{ENTERPRISEOPS_DRIVE_DATABASE_ID}}",
+      "x-auth-token": "{{ENTERPRISEOPS_CONTEXT_X_AUTH_TOKEN}}"
+    }
+  }
+}

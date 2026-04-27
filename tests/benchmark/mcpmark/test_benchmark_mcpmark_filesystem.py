@@ -13,7 +13,7 @@ class TestBenchmarkRunnerMCPMarkFilesystem(unittest.IsolatedAsyncioTestCase):
         
         print("Running Filesystem tasks...")
         trace_collector = FileCollector(log_file="log/mcpmark/mcpmark_filesystem.log")
-        benchmark = BenchmarkRunner("mcpmark/configs/mcpmark_filesystem.yaml")
+        benchmark = BenchmarkRunner("mcpmark/mcpmark_filesystem.yaml")
         benchmark_results = await benchmark.run(trace_collector=trace_collector, callbacks=get_vprint_callbacks())
         report = BenchmarkReport(benchmark, trace_collector=trace_collector)
         report.dump()

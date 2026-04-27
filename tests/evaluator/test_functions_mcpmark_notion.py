@@ -3,7 +3,7 @@ import os
 import unittest
 import pytest
 from mcpuniverse.benchmark.task import Task
-# from mcpuniverse.evaluator.mcpmark.notion_functions import *
+# from mcpuniverse.benchmark.mcpmark.evaluators.notion_functions import *
 
 
 class TestFunctionsMCPMarkNotion(unittest.IsolatedAsyncioTestCase):
@@ -13,7 +13,7 @@ class TestFunctionsMCPMarkNotion(unittest.IsolatedAsyncioTestCase):
         self.folder = os.path.dirname(os.path.realpath(__file__))
         self.config_folder = os.path.join(
             self.folder,
-            "../../mcpuniverse/benchmark/configs/mcpmark/configs/notion"
+            "../../mcpuniverse/benchmark/mcpmark/task_configs/notion"
         )
 
     # Company In A Box category tests

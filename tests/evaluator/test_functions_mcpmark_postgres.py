@@ -3,7 +3,7 @@ import os
 import unittest
 import pytest
 from mcpuniverse.benchmark.task import Task
-from mcpuniverse.evaluator.mcpmark.postgres_functions import *
+from mcpuniverse.benchmark.mcpmark.evaluators.postgres_functions import *
 
 
 class TestFunctionsMCPMarkPostgres(unittest.IsolatedAsyncioTestCase):
@@ -13,7 +13,7 @@ class TestFunctionsMCPMarkPostgres(unittest.IsolatedAsyncioTestCase):
         self.folder = os.path.dirname(os.path.realpath(__file__))
         self.config_folder = os.path.join(
             self.folder,
-            "../../mcpuniverse/benchmark/configs/mcpmark/configs/postgres"
+            "../../mcpuniverse/benchmark/mcpmark/task_configs/postgres"
         )
 
     # Chinook category tests

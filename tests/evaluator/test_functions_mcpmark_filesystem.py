@@ -3,7 +3,7 @@ import os
 import unittest
 import pytest
 from mcpuniverse.benchmark.task import Task
-from mcpuniverse.evaluator.mcpmark.filesystem_functions import *
+from mcpuniverse.benchmark.mcpmark.evaluators.filesystem_functions import *
 
 
 class TestFunctionsMCPMarkFilesystem(unittest.IsolatedAsyncioTestCase):
@@ -13,7 +13,7 @@ class TestFunctionsMCPMarkFilesystem(unittest.IsolatedAsyncioTestCase):
         self.folder = os.path.dirname(os.path.realpath(__file__))
         self.config_folder = os.path.join(
             self.folder,
-            "../../mcpuniverse/benchmark/configs/mcpmark/configs/filesystem"
+            "../../mcpuniverse/benchmark/mcpmark/task_configs/filesystem"
         )
 
     # Desktop category tests

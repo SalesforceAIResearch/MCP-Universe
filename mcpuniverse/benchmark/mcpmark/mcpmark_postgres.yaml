@@ -1,0 +1,58 @@
+kind: llm
+spec:
+  name: llm-2
+  type: openai
+  config:
+    model_name: z-ai/glm-4.5
+
+---
+kind: agent
+spec:
+  name: ReAct-agent
+  type: react
+  config:
+    llm: llm-2
+    instruction: You are an agent for PostgreSQL database operations.
+    max_iterations: 20
+    summarize_tool_response: false
+
+---
+kind: benchmark
+spec:
+  description: Benchmark for mcpmark PostgreSQL tasks.
+  agent: ReAct-agent
+  tasks:
+    # Chinook tasks (3)
+    - postgres/chinook/customer_data_migration.json
+    - postgres/chinook/employee_hierarchy_management.json
+    - postgres/chinook/sales_and_music_charts.json
+    
+    # DVD Rental tasks (3)
+    - postgres/dvdrental/customer_analysis_fix.json
+    - postgres/dvdrental/customer_analytics_optimization.json
+    - postgres/dvdrental/film_inventory_management.json
+    
+    # Employees tasks (6)
+    - postgres/employees/employee_demographics_report.json
+    - postgres/employees/employee_performance_analysis.json
+    - postgres/employees/employee_project_tracking.json
+    - postgres/employees/employee_retention_analysis.json
+    - postgres/employees/executive_dashboard_automation.json
+    - postgres/employees/management_structure_analysis.json
+    
+    # Lego tasks (3)
+    - postgres/lego/consistency_enforcement.json
+    - postgres/lego/database_security_policies.json
+    - postgres/lego/transactional_inventory_transfer.json
+    
+    # Security tasks (2)
+    - postgres/security/rls_business_access.json
+    - postgres/security/user_permission_audit.json
+    
+    # Sports tasks (3)
+    - postgres/sports/baseball_player_analysis.json
+    - postgres/sports/participant_report_optimization.json
+    - postgres/sports/team_roster_management.json
+    
+    # Vectors tasks (1)
+    - postgres/vectors/dba_vector_analysis.json
