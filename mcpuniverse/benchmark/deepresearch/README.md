@@ -190,12 +190,18 @@ scheduler_mode:
 ```
 mcpuniverse/benchmark/deepresearch/
 ├── README.md
+├── __init__.py
 ├── prepare_deep_research_data.py
 ├── data_utils.py
-└── configs/
-    ├── browsecomp/   # BrowseComp agent configs
-    ├── gaia/         # GAIA agent configs
-    └── hle/          # HLE agent configs
+├── hle_judge.py
+├── configs/
+│   ├── browsecomp/   # BrowseComp agent configs
+│   ├── gaia/         # GAIA agent configs
+│   └── hle/          # HLE agent configs
+└── task_configs/     # Generated task JSON files
+    ├── browsecomp/
+    ├── gaia/
+    └── hle/
 ```
 
 ---
