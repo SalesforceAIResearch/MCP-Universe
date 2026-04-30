@@ -178,9 +178,15 @@ class BenchmarkRunner(metaclass=AutodocABCMeta):
         abs_config = resolve_runner_config_file(config)
         self._resolved_config_path = abs_config
 
+        # Initialize missing attributes to avoid AttributeError
+        self._bundle = None
+        self._task_search_roots = []
+
         # Load configs
         self._agent_configs = []
         self._benchmark_configs = []
+        self._loaded_bundles = set()  # Track which bundles we've loaded
+
         with open(abs_config, "r", encoding="utf-8") as f:
             objects = yaml.safe_load_all(f)
             if isinstance(objects, dict):
@@ -189,7 +195,20 @@ class BenchmarkRunner(metaclass=AutodocABCMeta):
                 obj = dict(obj)
                 assert "kind" in obj and "spec" in obj, "Wrong config format: Missing `kind`"
                 if obj["kind"].lower() == "benchmark":
-                    self._benchmark_configs.append(BenchmarkConfig.model_validate(obj["spec"]))
+                    benchmark_config = BenchmarkConfig.model_validate(obj["spec"])
+                    self._benchmark_configs.append(benchmark_config)
+
+                    # Load bundle package to register prepare/cleanup/evaluator functions
+                    from mcpuniverse.benchmark.bundle import load_benchmark_package, suite_task_config_root
+                    if benchmark_config.benchmark_id not in self._loaded_bundles:
+                        self._logger.info("Loading benchmark bundle: %s", benchmark_config.benchmark_id)
+                        load_benchmark_package(benchmark_config.benchmark_id)
+                        self._loaded_bundles.add(benchmark_config.benchmark_id)
+
+                    # Build task search roots based on benchmark_id
+                    task_root = suite_task_config_root(benchmark_config.benchmark_id)
+                    if task_root and task_root not in self._task_search_roots:
+                        self._task_search_roots.append(task_root)
                 else:
                     self._agent_configs.append(obj)
 
@@ -387,7 +406,7 @@ class BenchmarkRunner(metaclass=AutodocABCMeta):
                         data=f"Running task: {task_path}"
                     ))
                     self._logger.info("Running task: %s", task_path)
-                    task_filepath = self._resolve_task_filepath(task_path)
+                    task_filepath = self._resolve_task_filepath(task_path, benchmark.benchmark_id)
                     if not os.path.isfile(task_filepath):
                         raise FileNotFoundError(f"Task config not found: {task_path} (resolved: {task_filepath})")
 

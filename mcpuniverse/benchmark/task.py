@@ -19,7 +19,7 @@ from mcpuniverse.mcp.manager import MCPManager
 from mcpuniverse.common.context import Context
 from .cleanup_registry import CLEANUP_FUNCTIONS
 from .prepare_registry import PREPARE_FUNCTIONS
-from . import hooks as _benchmark_hooks  # noqa: F401  # load bundle registrations
+# Note: Bundle registration now happens via load_benchmark_package() in BenchmarkRunner
 
 
 class TaskPrepareConfig(BaseModel):

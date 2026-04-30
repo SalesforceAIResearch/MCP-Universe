@@ -3,7 +3,7 @@ Shared cleanup registry for benchmark tasks.
 
 Handlers register into :data:`CLEANUP_FUNCTIONS` via :func:`cleanup_func`.
 Concrete handlers live in bundle modules (e.g. :mod:`mcpuniverse.benchmark.mcpmark.cleanups`,
-:mod:`mcpuniverse.benchmark.mcpuniverse.cleanups`) and load from :mod:`mcpuniverse.benchmark.hooks`
+:mod:`mcpuniverse.benchmark.mcpuniverse.cleanups`).
 or suite-specific ``register_*`` entry points.
 """
 from typing import Callable
