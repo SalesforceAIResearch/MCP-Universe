@@ -326,6 +326,22 @@ class MCPFullyAsyncTrainer(SeparateRayPPOTrainer):
             rollout_samples, self.tokenizer, self.config,
         )
 
+        # The async queue collects samples until total_trajectories >= required_samples,
+        # but each queue item may contain a variable number of trajectories, so the
+        # final batch can overshoot (e.g. 287 instead of 256).  FSDP's compute_log_prob
+        # chunks the batch across n_gpus and requires len(batch) % n_gpus == 0.
+        # Truncate to the nearest lower multiple of n_gpus to avoid the assertion
+        # "only support equal chunk" in DataProto.chunk().
+        n_gpus = self.config.trainer.n_gpus_per_node * self.config.trainer.nnodes
+        batch_len = len(batch)
+        usable = batch_len - (batch_len % n_gpus)
+        if usable < batch_len:
+            logger.info(
+                "Truncating batch from {} to {} trajectories (divisible by {} GPUs)",
+                batch_len, usable, n_gpus,
+            )
+            batch = batch[:usable]
+
         batch.meta_info["fully_async/total_wait_time"] = total_wait_time
         return 0, batch
 

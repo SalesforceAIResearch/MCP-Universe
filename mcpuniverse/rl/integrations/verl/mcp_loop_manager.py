@@ -227,6 +227,8 @@ class MCPLoopManager(AgentLoopManager):  # pylint: disable=too-many-instance-att
                 "memory_limit": safe_get(env_pool_cfg, "memory_limit", "4g"),
                 "gateway_mode": safe_get(env_pool_cfg, "gateway_mode", "sse"),
                 "network": safe_get(env_pool_cfg, "network", "bridge"),
+                "env_vars": safe_get(env_pool_cfg, "env_vars", {}),
+                "volumes": safe_get(env_pool_cfg, "volumes", []),
             },
         })
 
@@ -755,6 +757,27 @@ class MCPLoopManager(AgentLoopManager):  # pylint: disable=too-many-instance-att
         agent_id = f"agent-{traj_key}"
 
         env_pool_cfg = getattr(self.mcp_config, 'env_pool', {})
+        # env_vars lives at env_pool.resources.env_vars in EnvPoolConfig (see
+        # mcpuniverse/rl/config.py — _env_pool_from_dict promotes the YAML's flat
+        # `env_vars:` into the ContainerResourceConfig sub-object). Reading it as a
+        # top-level attr returns nothing and silently drops API keys from the
+        # container. Pull from the nested location and force to plain dict.
+        resources_cfg = getattr(env_pool_cfg, 'resources', None)
+        raw_env_vars = safe_get(resources_cfg, 'env_vars', {}) if resources_cfg is not None \
+            else safe_get(env_pool_cfg, 'env_vars', {})
+        if 'DictConfig' in type(raw_env_vars).__name__:
+            from omegaconf import OmegaConf
+            env_vars_dict = OmegaConf.to_container(raw_env_vars, resolve=True) or {}
+        else:
+            env_vars_dict = dict(raw_env_vars) if raw_env_vars else {}
+        # Drop empty values so we don't set blank env vars in the container
+        env_vars_dict = {k: str(v) for k, v in env_vars_dict.items() if v}
+
+        # volumes live under resources (same as env_vars)
+        raw_volumes = safe_get(resources_cfg, 'volumes', []) if resources_cfg is not None \
+            else safe_get(env_pool_cfg, 'volumes', [])
+        volumes_list = list(raw_volumes) if raw_volumes else []
+
         config = EnvConfig(
             servers=server_names or [],
             dockerfile_path=dockerfile_path,
@@ -763,6 +786,8 @@ class MCPLoopManager(AgentLoopManager):  # pylint: disable=too-many-instance-att
             gateway_mode=safe_get(env_pool_cfg, 'gateway_mode', 'sse'),
             network=safe_get(env_pool_cfg, 'network', 'bridge'),
             use_dockerfile_cmd=safe_get(env_pool_cfg, 'use_dockerfile_cmd', False),
+            env_vars=env_vars_dict,
+            volumes=volumes_list,
         )
 
         env = await self._env_pool.acquire(agent_id=agent_id, config=config)

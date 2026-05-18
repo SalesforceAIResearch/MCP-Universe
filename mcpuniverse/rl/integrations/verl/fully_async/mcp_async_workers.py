@@ -214,3 +214,84 @@ class MCPDetachActorWorker(DetachActorWorker):
             flush=True,
         )
         return result
+
+    @register(dispatch_mode=Dispatch.ONE_TO_ALL, blocking=False)
+    def sync_rollout_weights(self, sync_group_name="actor_rollout"):
+        """Override to fix the NCCL deadlock in upstream _sync_vllm_weights().
+
+        Upstream interleaves full_tensor() (FSDP NCCL all-gather) with
+        collective.broadcast() (Ray collective NCCL) per weight tensor.
+        With two NCCL communicators in play, NCCL stream scheduling forms
+        a circular dependency and the kernels deadlock (GPU spin-wait).
+
+        Fix: split into two strict phases.
+          Phase 1: gather every weight to CPU on rank 0 (only FSDP NCCL active).
+          Phase 2: broadcast each weight via Ray collective (only Ray NCCL active).
+        No interleaving = no cross-communicator deadlock.
+
+        The rollout side (MCPAsyncRolloutWorker._weight_receiver) already does
+        plain per-weight broadcasts in the same _weights_info order, so it
+        matches without modification.
+        """
+        from verl.utils.fsdp_utils import load_fsdp_model_to_gpu, offload_fsdp_model_to_cpu
+
+        assert self._is_actor and not self.config.hybrid_engine
+        assert hasattr(self, "_weights_info") and self._weights_info is not None
+
+        rank = torch.distributed.get_rank()
+        n_weights = len(self._weights_info)
+        start_time = time.time()
+        print(
+            f"[MCPDetachActorWorker] rank={rank} sync start: "
+            f"gather {n_weights} weights -> CPU",
+            flush=True,
+        )
+
+        if self._is_offload_param:
+            load_fsdp_model_to_gpu(self.actor_module_fsdp)
+
+        # Phase 1: FSDP all-gather per weight, cache on rank 0 only.
+        # Every actor rank must call full_tensor() (it's an FSDP collective).
+        # Only rank 0 keeps the gathered tensor on CPU.
+        params = self._get_actor_params()
+        cpu_weights = {}
+        for key, _, _ in self._weights_info:
+            origin = params[key]
+            if hasattr(origin, "full_tensor"):
+                origin = origin.full_tensor()
+            if rank == 0:
+                cpu_weights[key] = origin.to("cpu", non_blocking=True)
+        get_torch_device().synchronize()
+        gather_time = time.time() - start_time
+
+        if self._is_offload_param:
+            offload_fsdp_model_to_cpu(self.actor_module_fsdp)
+        get_torch_device().empty_cache()
+
+        print(
+            f"[MCPDetachActorWorker] rank={rank} gather done in "
+            f"{gather_time:.1f}s; broadcasting...",
+            flush=True,
+        )
+        bcast_start = time.time()
+
+        # Phase 2: per-weight broadcast via Ray collective. No FSDP active here.
+        # Loop matches MCPAsyncRolloutWorker._weight_receiver() on rollout side.
+        for key, shape, dtype in self._weights_info:
+            tensor = torch.empty(
+                shape, dtype=dtype, device=get_torch_device().current_device(),
+            )
+            if rank == 0:
+                tensor.copy_(cpu_weights[key])
+            collective.broadcast(tensor, src_rank=0, group_name=sync_group_name)
+
+        cpu_weights.clear()
+        get_torch_device().empty_cache()
+
+        bcast_time = time.time() - bcast_start
+        total_time = time.time() - start_time
+        print(
+            f"[MCPDetachActorWorker] rank={rank} sync done: "
+            f"gather={gather_time:.1f}s, bcast={bcast_time:.1f}s, total={total_time:.1f}s",
+            flush=True,
+        )
