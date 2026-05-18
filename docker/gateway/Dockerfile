@@ -1,9 +1,10 @@
 # Dockerfile for MCPUniverse MCP Gateway
-FROM python:3.11-slim
+FROM python:3.10-slim
 
 # Set environment variables
-ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1 \
+# Note: do NOT set PYTHONUNBUFFERED=1. MCP stdio servers contain stray print()
+# calls that corrupt the JSON-RPC stream when stdout is unbuffered.
+ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 
@@ -12,7 +13,15 @@ RUN apt-get update && apt-get install -y \
     curl \
     git \
     build-essential \
+    gnupg \
+    apt-transport-https \
     && rm -rf /var/lib/apt/lists/*
+
+# Install gcloud CLI (needed by jina-scrape-llm-summary for Vertex AI auth)
+RUN curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg && \
+    echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" > /etc/apt/sources.list.d/google-cloud-sdk.list && \
+    apt-get update && apt-get install -y google-cloud-cli && \
+    rm -rf /var/lib/apt/lists/*
 
 # Set work directory
 WORKDIR /app
@@ -26,7 +35,8 @@ RUN pip install --upgrade pip && \
 COPY . .
 
 # Install MCPUniverse package
-RUN pip install -e .
+RUN pip install -e . && \
+    pip install "starlette==0.52.1" "pydantic==2.13.3"
 
 # Create non-root user for security
 RUN groupadd -r mcpgateway && useradd -r -g mcpgateway mcpgateway && \
