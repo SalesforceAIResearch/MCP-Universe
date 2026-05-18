@@ -1,0 +1,245 @@
+# Openseeker Deep Research - Fully Async Training
+#
+# 3 MCP tools: serper-search, jina-scrape-llm-summary, python-code-sandbox
+# Transport: SSE (shared MCP Gateway, better for many concurrent rollouts)
+# Mode: Fully Async (4 rollout GPUs + 4 training GPUs)
+#
+# Based on the benchmark config agent_gpt_oss_sft_code.yaml, adapted for
+# VERL RL training with the fully async architecture.
+#
+# Architecture:
+#   MCPFullyAsyncRollouter (4 GPUs) --[MessageQueue]--> MCPFullyAsyncTrainer (4 GPUs)
+#                      ^                                             |
+#                      |_________ ParameterSynchronizer (NCCL) _____|
+#
+# Usage:
+#   python -m mcpuniverse.rl.integrations.verl.fully_async.mcp_async_main \
+#       --config-path=config \
+#       --config-name=openseeker_deepresearch_async \
+#       actor_rollout_ref.model.path=/path/to/your/model \
+#       data.train_files=/path/to/train.json \
+#       data.val_files=/path/to/val.json
+
+hydra:
+  searchpath:
+    # Path to verl's trainer/config directory (needed to resolve `defaults: ppo_trainer`).
+    # The launch script (scripts/run_openseeker_training.sh) auto-computes this from
+    # `import verl`; override it from the command line if you launch hydra directly.
+    - file://${oc.env:VERL_CONFIG_PATH}
+
+defaults:
+  - ppo_trainer
+  - _self_
+
+# ============================================================================
+# Ray Configuration
+# ============================================================================
+ray_init:
+  num_cpus: 64
+  timeline_json_file: null
+
+# ============================================================================
+# Async Training Configuration
+# ============================================================================
+async_training:
+  staleness_threshold: 1
+  trigger_parameter_sync_step: 1
+  require_batches: 1
+  total_train_steps: null
+  partial_rollout: true
+  use_trainer_do_validate: false
+  parallel_validate_and_rollout: false
+  checkpoint_engine:
+    enable: false
+
+# ============================================================================
+# MCP Agent Configuration - Harmony Agent + TITO + 3 Tools
+# ============================================================================
+mcp_agent:
+  # HarmonyReAct agent (matches agent_gpt_oss_sft_code.yaml)
+  agent_mode: harmony
+  formatter_type: gpt_oss
+  rollout_mode: token
+
+  # Docker Env Pool: each trajectory gets its own isolated Docker container
+  # running an MCP Gateway + MCP servers. Managed by EnvPoolManager.
+  mcp_transport: "docker_pool"
+  mcp_gateway_address: ""
+
+  trace_log_dir: outputs/traces
+
+  env_pool:
+    enabled: true
+    docker_host: null
+    host: null
+    base_port: 9000
+    max_pool_size: 35
+    startup_timeout: 180.0
+    dockerfile_path: "docker/gateway/Dockerfile"
+    build_context: "."
+    auto_build: true
+    reuse_existing: true
+    reset_on_release: false
+    cpu_limit: "2"
+    memory_limit: "4g"
+    gateway_mode: "stdio"
+    network: "host"
+    env_vars:
+      SERPER_API_KEY: "${oc.env:SERPER_API_KEY,}"
+      SERPER_BASE_URL: "${oc.env:SERPER_BASE_URL,}"
+      JINA_API_KEY: "${oc.env:JINA_API_KEY,}"
+      JINA_BASE_URL: "${oc.env:JINA_BASE_URL,}"
+      SUMMARY_LLM_BASE_URL: "${oc.env:SUMMARY_LLM_BASE_URL,}"
+      SUMMARY_LLM_MODEL_NAME: "${oc.env:SUMMARY_LLM_MODEL_NAME,}"
+      SUMMARY_LLM_API_KEY: "${oc.env:SUMMARY_LLM_API_KEY,}"
+      SANDBOX_ADDRESS: "${oc.env:SANDBOX_ADDRESS,}"
+      SANDBOX_HOST_PORT: "${oc.env:SANDBOX_HOST_PORT,}"
+      GOOGLE_APPLICATION_CREDENTIALS: "/tmp/gcloud_adc.json"
+    volumes:
+      - "/tmp/gcloud_adc.json:/tmp/gcloud_adc.json:ro"
+
+  # LLM sampling params (in TITO mode, actual generation uses the vLLM engine)
+  llm_type: vllm_local
+  llm_config:
+    model_name: ${actor_rollout_ref.model.path}
+    temperature: 0.7
+    top_p: 0.95
+    max_completion_tokens: 8192
+    reasoning: high
+
+  val_llm_config:
+    temperature: 0.0
+
+  # Agent config matching agent_gpt_oss_sft_code.yaml instruction
+  agent_config:
+    system_prompt: null
+    context_examples: ""
+    max_iterations: 100
+    summarize_tool_response: false
+    instruction: |
+      Your task is to comprehensively address the question by actively collecting detailed information from the web, and generating a thorough, transparent report. Your goal is NOT to rush a single definitive answer or conclusion, but rather to gather complete information and present ALL plausible candidate answers you find, accompanied by clearly documented supporting evidence, reasoning steps, uncertainties, and explicit intermediate findings.
+
+      User does not intend to set traps or create confusion on purpose. Handle the task using the most common, reasonable, and straightforward interpretation, and do not overthink or focus on rare or far-fetched interpretations.
+
+      Important considerations:
+      - Collect comprehensive information from reliable sources to understand all aspects of the question.
+      - Present every possible candidate answer identified during your information gathering, regardless of uncertainty, ambiguity, or incomplete verification. Avoid premature conclusions or omission of any discovered possibility.
+      - Explicitly document detailed facts, evidence, and reasoning steps supporting each candidate answer, carefully preserving intermediate analysis results.
+      - Clearly flag and retain any uncertainties, conflicting interpretations, or alternative understandings identified during information gathering. Do not arbitrarily discard or resolve these issues on your own.
+      - You have access to a Python code sandbox for computation, data processing, or analysis when needed.
+
+  # GRPO: 2 trajectories per prompt for advantage estimation
+  num_trajectories: 1
+  val_num_trajectories: 1
+
+  max_iterations: 100
+  max_parallel_agents: 32
+
+  # MCP servers come from task data JSON (use_sample_servers: true)
+  mcp_servers: []
+  use_sample_servers: true
+
+# ============================================================================
+# Data Configuration
+# ============================================================================
+data:
+  train_files: null
+  val_files: null
+  shuffle: true
+  seed: 42
+  truncation: error
+  prompt_key: instruction
+  reward_fn_key: data_source
+  trust_remote_code: true
+  return_raw_chat: true
+  train_batch_size: 1
+  gen_batch_size: null
+  train_max_samples: -1
+  val_max_samples: -1
+  return_raw_input_ids: false
+  filter_overlong_prompts: true
+  # Override verl base default of 512. Without this, _postprocess truncates
+  # all 111K-token trajectories to 1024 tokens, discarding 99% of agent output.
+  max_prompt_length: 111072
+  max_response_length: 20000
+
+# ============================================================================
+# Actor/Rollout Configuration — Separate GPUs (fully async)
+# ============================================================================
+actor_rollout_ref:
+  hybrid_engine: false
+
+  rollout:
+    mode: async
+    name: vllm
+    free_cache_engine: false
+    n: 8
+    max_model_len: 111072
+    # CRITICAL: TITO wrapper strips max_tokens; verl computes it as
+    #   max_tokens = response_length + prompt_length - len(prompt_ids).
+    # If response_length+prompt_length is too small (default 512+512=1024),
+    # max_tokens becomes 0 and every vLLM call fails with "max_tokens must be at least 1".
+    # Set both to fill max_model_len so max_tokens = max_model_len - len(prompt_ids).
+    response_length: 20000
+    prompt_length: 111072
+    calculate_log_probs: true
+    checkpoint_engine:
+      update_weights_bucket_megabytes: 3072
+    val_kwargs:
+      do_sample: false
+      temperature: 0.0
+
+  model:
+    enable_gradient_checkpointing: true
+    path: null
+    trust_remote_code: true
+
+  actor:
+    use_kl_loss: false
+    entropy_coeff: 0.001
+    strategy: fsdp2
+    use_rollout_log_probs: true
+    use_dynamic_bsz: true
+    ppo_micro_batch_size_per_gpu: 2
+    ppo_mini_batch_size: 256
+    ppo_max_token_len_per_gpu: 131072
+
+# ============================================================================
+# Algorithm Configuration - GRPO
+# ============================================================================
+algorithm:
+  adv_estimator: grpo
+  use_kl_in_reward: false
+  gamma: 1.0
+  lam: 1.0
+
+# ============================================================================
+# Trainer Configuration - 4 training GPUs
+# ============================================================================
+trainer:
+  critic_warmup: 0
+  logger: ["console", "wandb"]
+  project_name: openseeker_deepresearch
+  experiment_name: harmony_3tools_async
+  val_before_train: true
+  total_epochs: 10
+  save_freq: 2
+  device: cuda
+  balance_batch: false
+  default_local_dir: checkpoints/openseeker_async
+  default_hdfs_dir: null
+  resume_mode: auto
+  del_local_ckpt_after_load: false
+  esi_redundant_time: 0
+  n_gpus_per_node: 4
+  nnodes: 1
+
+# ============================================================================
+# Rollout Resource Configuration - 4 rollout GPUs
+# ============================================================================
+rollout:
+  n_gpus_per_node: 4
+  nnodes: 1
+  test_freq: 1
+  total_epochs: 1000000
+  total_rollout_steps: null
