@@ -1,6 +1,7 @@
 """LLM module containing various language model implementations."""
 
 from .openai import OpenAIModel
+from .azure import AzureOpenAIModel
 from .mistral import MistralModel
 from .claude import ClaudeModel
 from .ollama import OllamaModel
@@ -25,6 +26,7 @@ from .tito import (
 
 __all__ = [
     "OpenAIModel",
+    "AzureOpenAIModel",
     "MistralModel",
     "ClaudeModel",
     "OllamaModel",
