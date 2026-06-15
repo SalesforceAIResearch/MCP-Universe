@@ -1,9 +1,9 @@
 kind: llm
 spec:
   name: llm-1
-  type: openai
+  type: azure
   config:
-    model_name: gpt-4.1
+    model_name: gpt-5.4-mini
 
 ---
 kind: agent

@@ -7,9 +7,10 @@ from mcpuniverse.benchmark.runner import (
     BenchmarkRunner,
     BenchmarkResultStore,
     BenchmarkConfig,
-    EvaluationResult
+    EvaluationResult,
 )
 from mcpuniverse.evaluator.evaluator import EvaluatorConfig
+
 
 class TestBenchmarkRunner(unittest.IsolatedAsyncioTestCase):
 
@@ -19,8 +20,7 @@ class TestBenchmarkRunner(unittest.IsolatedAsyncioTestCase):
         trace_collector = MemoryCollector()
         benchmark = BenchmarkRunner("dummy/benchmark_1.yaml")
         results = await benchmark.run(
-            trace_collector=trace_collector,
-            store_folder=os.path.join(folder, "tmp")
+            trace_collector=trace_collector, store_folder=os.path.join(folder, "tmp")
         )
         print(results)
         trace_id = results[0].task_trace_ids["dummy/tasks/weather_1.json"]
@@ -31,34 +31,32 @@ class TestBenchmarkRunner(unittest.IsolatedAsyncioTestCase):
         folder = os.path.dirname(os.path.realpath(__file__))
         store = BenchmarkResultStore(folder=os.path.join(folder, "tmp"))
         benchmark = BenchmarkConfig(
-            description="test test",
-            agent="test_agent",
-            tasks=["google-map"]
+            description="test test", agent="test_agent", tasks=["google-map"]
         )
         store.dump_task_result(
             benchmark=benchmark,
             task_config_path=os.path.join(folder, "../data/task/weather_task.json"),
             evaluation_results=[
                 EvaluationResult(
-                    config=EvaluatorConfig(
-                        func="get(key1) -> foreach -> get(key2)"
-                    ),
+                    config=EvaluatorConfig(func="get(key1) -> foreach -> get(key2)"),
                     response="response",
                     passed=True,
                     reason="testing",
-                    error=""
+                    error="",
                 )
             ],
             trace_id="12345",
-            overwrite=True
+            overwrite=True,
         )
         r = store.load_task_result(
             benchmark=benchmark,
-            task_config_path=os.path.join(folder, "../data/task/weather_task.json")
+            task_config_path=os.path.join(folder, "../data/task/weather_task.json"),
         )
         self.assertIsNotNone(r)
         self.assertEqual(r["trace_id"], "12345")
-        self.assertEqual(r["results"][0].config.func, "get(key1) -> foreach -> get(key2)")
+        self.assertEqual(
+            r["results"][0].config.func, "get(key1) -> foreach -> get(key2)"
+        )
         self.assertEqual(r["results"][0].reason, "testing")
 
 

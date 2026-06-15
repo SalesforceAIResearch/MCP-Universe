@@ -9,7 +9,7 @@
 
 > **📊 [MCPMark Evaluation](#mcpmark-benchmark)** - MCP-Universe now supports evaluating the MCPMark tasks
 >
-> **🚀 [MCP+](#mcp-precision-context-management-for-mcp-agents)** - Agentic wrapper on MCP clients which reduce token costs by up to 75% 
+> **🚀 [MCP+](#mcp-precision-context-management-for-mcp-agents)** - Agentic wrapper on MCP clients which reduce token costs by up to 75%
 >
 > **🔬 [Deep Research Agent](#deep-research-agent-wide--deep-wd-research)** - Scale the Width of Deep Research Agents with parallel tool calling, improving performance and efficiency
 
@@ -34,26 +34,25 @@ MCP-Universe is a comprehensive ecosystem for building, optimizing, and evaluati
 - 🌍 **Real-world data sources** and live environments
 - ⚡ **Dynamic evaluation** with time-sensitive ground truth
 
-
 ## Table of Contents
 
 - [What's New](#whats-new)
 - [Architecture Overview](#architecture-overview)
 - [Getting Started](#getting-started)
-    - [Prerequisites](#prerequisites)
-    - [Installation](#installation)
-    - [Quick Test](#quick-test)
+  - [Prerequisites](#prerequisites)
+  - [Installation](#installation)
+  - [Quick Test](#quick-test)
 - [Evaluating LLMs and Agents](#evaluating-llms-and-agents)
-    - [Prerequisites](#prerequisites-1)
-    - [Environment Configuration](#environment-configuration)
-    - [Benchmark Configuration](#benchmark-configuration)
-    - [Execution](#execution)
-    - [Save the running log](#save-the-running-log)
-    - [Save the benchmark result to a report](#save-the-benchmark-result-to-a-report)
-    - [Visualize the agent running information](#visualize-the-agent-running-information)
+  - [Prerequisites](#prerequisites-1)
+  - [Environment Configuration](#environment-configuration)
+  - [Benchmark Configuration](#benchmark-configuration)
+  - [Execution](#execution)
+  - [Save the running log](#save-the-running-log)
+  - [Save the benchmark result to a report](#save-the-benchmark-result-to-a-report)
+  - [Visualize the agent running information](#visualize-the-agent-running-information)
 - [Creating Custom Benchmarks](#creating-custom-benchmarks)
-    - [Task definition](#task-definition)
-    - [Benchmark definition](#benchmark-definition)
+  - [Task definition](#task-definition)
+  - [Benchmark definition](#benchmark-definition)
 - [Citation](#citation)
 
 ## What's New
@@ -65,6 +64,7 @@ MCP-Universe is a comprehensive ecosystem for building, optimizing, and evaluati
 MCP-Universe now supports evaluating the **MCPMark** benchmark, enabling comprehensive testing and benchmarking of MCP agents. You can run MCPMark evaluations directly within the MCP-Universe framework to assess agent performance on MCP tasks.
 
 **📚 Resources:**
+
 - [How to run MCPMark](mcpuniverse/benchmark/configs/mcpmark/README.md#running-mcpmark-tasks)
 - [Evaluation Scores](mcpuniverse/benchmark/configs/mcpmark/README.md#benchmark-results-alignment)
 
@@ -81,7 +81,6 @@ MCP tools often return large, verbose outputs that waste your LLM's context wind
 - **💰 Massive Cost Reduction**: 50-75% token savings on tool outputs
 - **⚡ Zero Code Changes**: Drop-in replacement for standard MCP clients
 
-
 **📚 [Learn More at mcp-plus.github.io →](https://mcp-plus.github.io)**
 
 </div>
@@ -92,9 +91,10 @@ MCP tools often return large, verbose outputs that waste your LLM's context wind
 
 **🔬 Scale Research Width with Parallel Tool Calls**
 
-**Feb 11, 2026** — We introduce **Wide & Deep (W&D) research agents** that scale *width* by making more parallel tool calls per turn. This approach improves accuracy on BrowseComp, HLE, and GAIA benchmarks while reducing turns, API cost, and wall-clock time. Our W&D agent with GPT-5-medium reaches **62.2%** on BrowseComp, outperforming GPT-5-high deep research (54.9%).
+**Feb 11, 2026** — We introduce **Wide & Deep (W&D) research agents** that scale _width_ by making more parallel tool calls per turn. This approach improves accuracy on BrowseComp, HLE, and GAIA benchmarks while reducing turns, API cost, and wall-clock time. Our W&D agent with GPT-5-medium reaches **62.2%** on BrowseComp, outperforming GPT-5-high deep research (54.9%).
 
 **📚 Resources:**
+
 - [Paper](https://arxiv.org/pdf/2602.07359)
 - [Website](https://xqlin98.github.io/wide-deep-research-agent/)
 - [Code](mcpuniverse/benchmark/configs/deepresearch/README.md)
@@ -156,44 +156,62 @@ is integrated into our CI to enforce Python coding standards.
 
 ### Prerequisites
 
-* **Python**: Requires version 3.10 or higher.
-* **Docker**: Used for running Dockerized MCP servers.
-* **PostgreSQL** (optional): Used for database storage and persistence.
-* **Redis** (optional): Used for caching and memory management.
+- **Python**: Requires version 3.10 or higher.
+- **Docker**: Used for running Dockerized MCP servers.
+- **PostgreSQL** (optional): Used for database storage and persistence.
+- **Redis** (optional): Used for caching and memory management.
 
 ### Installation
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/SalesforceAIResearch/MCP-Universe.git
    cd MCP-Universe
    ```
 
 2. **Create and activate virtual environment**
+
+   **Linux / macOS / Git Bash:**
+
    ```bash
    python3 -m venv venv
    source venv/bin/activate
    ```
 
+   **Windows (PowerShell)** — use your system Python (Anaconda or python.org), not Git Bash `python3` (MSYS):
+
+   ```powershell
+   python -m venv venv
+   .\venv\Scripts\Activate.ps1
+   ```
+
 3. **Install dependencies**
+
    ```bash
+   pip install -e .
    pip install -r requirements.txt
    pip install -r dev-requirements.txt
    ```
 
+   `pip install -e .` registers the local `mcpuniverse` package so imports work when running benchmark scripts.
+
 4. **Platform-specific requirements**
 
    **Linux:**
+
    ```bash
    sudo apt-get install libpq-dev
    ```
 
    **macOS:**
+
    ```bash
    brew install postgresql
    ```
 
 5. **Configure pre-commit hooks**
+
    ```bash
    pre-commit install
    ```
@@ -259,44 +277,47 @@ Configure the following environment variables in your `.env` file. The required 
 
 ##### Core LLM Providers
 
-| Environment Variable | Provider | Description | Required For |
-|---------------------|----------|-------------|--------------|
-| `OPENAI_API_KEY` | OpenAI | API key for GPT models (gpt-5, etc.) | All domains |
-| `ANTHROPIC_API_KEY` | Anthropic | API key for Claude models | All domains |
-| `GEMINI_API_KEY` | Google | API key for Gemini models | All domains |
-| `AZURE_API_KEY`, `AZURE_API_BASE` | Azure OpenAI | API key and resource endpoint for Azure deployments (`type: azure` in YAML; set `model_name` to your deployment name) | All domains |
-| `AZURE_API_VERSION` | Azure OpenAI | API version (optional; defaults to `2024-12-01-preview`) | All domains |
+| Environment Variable              | Provider     | Description                                                                                                           | Required For |
+| --------------------------------- | ------------ | --------------------------------------------------------------------------------------------------------------------- | ------------ |
+| `OPENAI_API_KEY`                  | OpenAI       | API key for GPT models (gpt-5, etc.)                                                                                  | All domains  |
+| `ANTHROPIC_API_KEY`               | Anthropic    | API key for Claude models                                                                                             | All domains  |
+| `GEMINI_API_KEY`                  | Google       | API key for Gemini models                                                                                             | All domains  |
+| `AZURE_API_KEY`, `AZURE_API_BASE` | Azure OpenAI | API key and resource endpoint for Azure deployments (`type: azure` in YAML; set `model_name` to your deployment name) | All domains  |
+| `AZURE_API_VERSION`               | Azure OpenAI | API version (optional; defaults to `2024-12-01-preview`)                                                              | All domains  |
 
 > **Note**: You only need to configure the API key for the LLM provider you intend to use in your evaluation.
 
 ##### Domain-Specific Services
 
-| Environment Variable | Service | Description | Setup Instructions |
-|---------------------|---------|-------------|-------------------|
-| `SERP_API_KEY` | SerpAPI | Web search API for search benchmark evaluation | [Get API key](https://serpapi.com/) |
-| `GOOGLE_MAPS_API_KEY` | Google Maps | Geolocation and mapping services | [Setup Guide](https://console.cloud.google.com/google/maps-apis/credentials) |
-| `GITHUB_PERSONAL_ACCESS_TOKEN` | GitHub | Personal access token for repository operations | [Token Setup](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens) |
-| `GITHUB_PERSONAL_ACCOUNT_NAME` | GitHub | Your GitHub username | N/A |
-| `NOTION_API_KEY` | Notion | Integration token for Notion workspace access | [Integration Setup](https://developers.notion.com/docs/authorization#obtaining-a-token) |
-| `NOTION_ROOT_PAGE` | Notion | Root page ID for your Notion workspace | See configuration example below |
+| Environment Variable           | Service     | Description                                     | Setup Instructions                                                                                                                 |
+| ------------------------------ | ----------- | ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `SERP_API_KEY`                 | SerpAPI     | Web search API for search benchmark evaluation  | [Get API key](https://serpapi.com/)                                                                                                |
+| `GOOGLE_MAPS_API_KEY`          | Google Maps | Geolocation and mapping services                | [Setup Guide](https://console.cloud.google.com/google/maps-apis/credentials)                                                       |
+| `GITHUB_PERSONAL_ACCESS_TOKEN` | GitHub      | Personal access token for repository operations | [Token Setup](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens) |
+| `GITHUB_PERSONAL_ACCOUNT_NAME` | GitHub      | Your GitHub username                            | N/A                                                                                                                                |
+| `NOTION_API_KEY`               | Notion      | Integration token for Notion workspace access   | [Integration Setup](https://developers.notion.com/docs/authorization#obtaining-a-token)                                            |
+| `NOTION_ROOT_PAGE`             | Notion      | Root page ID for your Notion workspace          | See configuration example below                                                                                                    |
 
 ##### System Paths
 
-| Environment Variable | Description | Example |
-|---------------------|-------------|---------|
-| `BLENDER_APP_PATH` | Full path to Blender executable (we used v4.4.0) | `/Applications/Blender.app/Contents/MacOS/Blender` |
-| `MCPUniverse_DIR` | Absolute path to your MCP-Universe repository | `/Users/username/MCP-Universe` |
+| Environment Variable | Description                                      | Example                                            |
+| -------------------- | ------------------------------------------------ | -------------------------------------------------- |
+| `BLENDER_APP_PATH`   | Full path to Blender executable (we used v4.4.0) | `/Applications/Blender.app/Contents/MacOS/Blender` |
+| `MCPUniverse_DIR`    | Absolute path to your MCP-Universe repository    | `/Users/username/MCP-Universe`                     |
 
 ##### Configuration Examples
 
 **Notion Root Page ID:**
 If your Notion page URL is:
+
 ```
 https://www.notion.so/your_workspace/MCP-Evaluation-1dd6d96e12345678901234567eaf9eff
 ```
+
 Set `NOTION_ROOT_PAGE=MCP-Evaluation-1dd6d96e12345678901234567eaf9eff`
 
 **Blender Installation:**
+
 1. Download Blender v4.4.0 from [blender.org](https://www.blender.org/)
 2. Install our modified Blender MCP server following the [installation guide](docs/blender-setup.md)
 3. Set the path to the Blender executable
@@ -304,17 +325,17 @@ Set `NOTION_ROOT_PAGE=MCP-Evaluation-1dd6d96e12345678901234567eaf9eff`
 ##### ⚠️ Security Recommendations
 
 > **🔒 IMPORTANT SECURITY NOTICE**
-> 
+>
 > Please read and follow these security guidelines carefully before running benchmarks:
 
 - **🚨 GitHub Integration**: **CRITICAL** - We strongly recommend using a dedicated test GitHub account for benchmark evaluation. The AI agent will perform real operations on GitHub repositories, which could potentially modify or damage your personal repositories.
 
-- **🔐 API Key Management**: 
+- **🔐 API Key Management**:
   - Store API keys securely and never commit them to version control
   - Use environment variables or secure key management systems
   - Regularly rotate your API keys for enhanced security
 
-- **🛡️ Access Permissions**: 
+- **🛡️ Access Permissions**:
   - Grant minimal necessary permissions for each service integration
   - Review and limit API key scopes to only required operations
   - Monitor API usage and set appropriate rate limits
@@ -327,14 +348,14 @@ Set `NOTION_ROOT_PAGE=MCP-Evaluation-1dd6d96e12345678901234567eaf9eff`
 
 Each benchmark domain has a dedicated YAML configuration file located in `mcpuniverse/benchmark/configs/test/`. To evaluate your LLM/agent, modify the appropriate configuration file:
 
-| Domain | Configuration File | Description |
-|--------|-------------------|-------------|
-| Web Search | `web_search.yaml` | Search engine and information retrieval tasks |
-| Location Navigation | `location_navigation.yaml` | Geographic and mapping-related queries |
-| Browser Automation | `browser_automation.yaml` | Web interaction and automation scenarios |
-| Financial Analysis | `financial_analysis.yaml` | Market data analysis and financial computations |
-| Repository Management | `repository_management.yaml` | Git operations and code repository tasks |
-| 3D Design | `3d_design.yaml` | Blender-based 3D modeling and design tasks |
+| Domain                | Configuration File           | Description                                     |
+| --------------------- | ---------------------------- | ----------------------------------------------- |
+| Web Search            | `web_search.yaml`            | Search engine and information retrieval tasks   |
+| Location Navigation   | `location_navigation.yaml`   | Geographic and mapping-related queries          |
+| Browser Automation    | `browser_automation.yaml`    | Web interaction and automation scenarios        |
+| Financial Analysis    | `financial_analysis.yaml`    | Market data analysis and financial computations |
+| Repository Management | `repository_management.yaml` | Git operations and code repository tasks        |
+| 3D Design             | `3d_design.yaml`             | Blender-based 3D modeling and design tasks      |
 
 #### LLM Model Configuration
 
@@ -344,9 +365,9 @@ In each configuration file, update the LLM specification to match your target mo
 kind: llm
 spec:
   name: llm-1
-  type: openai  # or anthropic, google, azure, etc.
+  type: openai # or anthropic, google, azure, etc.
   config:
-    model_name: gpt-4o  # Replace with your target model
+    model_name: gpt-4o # Replace with your target model
 ```
 
 For Azure OpenAI, use `type: azure` and set `model_name` to your **deployment name** (not the underlying model ID):
@@ -357,7 +378,7 @@ spec:
   name: llm-1
   type: azure
   config:
-    model_name: gpt-5.4-mini  # Your Azure deployment name
+    model_name: gpt-5.4-mini # Your Azure deployment name
 ```
 
 ### Execution
@@ -366,6 +387,29 @@ spec:
 
 Execute specific domain benchmarks using the following commands:
 
+**Linux / macOS / Git Bash:**
+
+```bash
+export PYTHONPATH=.
+python tests/benchmark/mcpuniverse/test_benchmark_financial_analysis.py
+```
+
+**Windows (PowerShell)** — from repo root, with venv activated:
+
+```powershell
+.\venv\Scripts\Activate.ps1
+$env:Path = "$PWD\venv\Scripts;" + $env:Path
+python tests\benchmark\mcpuniverse\test_benchmark_financial_analysis.py
+```
+
+Or use the helper script:
+
+```powershell
+.\scripts\run_financial_analysis.ps1
+```
+
+**All platforms (individual benchmarks):**
+
 ```bash
 # Set Python path and run individual benchmarks
 export PYTHONPATH=.
@@ -373,7 +417,7 @@ export PYTHONPATH=.
 # Location Navigation
 python tests/benchmark/mcpuniverse/test_benchmark_location_navigation.py
 
-# Browser Automation  
+# Browser Automation
 python tests/benchmark/mcpuniverse/test_benchmark_browser_automation.py
 
 # Financial Analysis
@@ -397,7 +441,7 @@ For comprehensive evaluation across all domains:
 #!/bin/bash
 export PYTHONPATH=.
 
-domains=("location_navigation" "browser_automation" "financial_analysis" 
+domains=("location_navigation" "browser_automation" "financial_analysis"
          "repository_management" "web_search" "3d_design")
 
 for domain in "${domains[@]}"; do
@@ -418,7 +462,7 @@ trace_collector = FileCollector(log_file="log/location_navigation.log")
 benchmark_results = await benchmark.run(trace_collector=trace_collector)
 ```
 
-### Save the benchmark result to a report 
+### Save the benchmark result to a report
 
 If you want to save a report of the benchmark result, you can use `BenchmarkReport` to dump a report:
 
@@ -437,13 +481,12 @@ To run the benchmark with intermediate results and see real-time progress, pass 
 from mcpuniverse.callbacks.handlers.vprint import get_vprint_callbacks
 
 benchmark_results = await benchmark.run(
-    trace_collector=trace_collector, 
+    trace_collector=trace_collector,
     callbacks=get_vprint_callbacks()
 )
 ```
 
 This will print out the intermediate results as the benchmark runs.
-
 
 For further details, refer to the in-code documentation or existing configuration samples in the repository.
 
@@ -630,6 +673,6 @@ If you use MCP-Universe in your research, please cite our paper:
   eprint={2508.14704},
   archivePrefix={arXiv},
   primaryClass={cs.AI},
-  url={https://arxiv.org/abs/2508.14704}, 
+  url={https://arxiv.org/abs/2508.14704},
 }
 ```

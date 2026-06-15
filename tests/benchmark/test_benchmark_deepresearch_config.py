@@ -21,20 +21,24 @@ BENCHMARK_YAML = None
 SPECIAL_NAME = None
 TASK_PATH = None
 
+
 class TestBenchmarkRunner(unittest.IsolatedAsyncioTestCase):
 
     @pytest.mark.skip
     async def test(self):
         if BENCHMARK_YAML is None:
             raise ValueError(
-                "Benchmark yaml must be provided as a command-line argument")
+                "Benchmark yaml must be provided as a command-line argument"
+            )
 
         # Extract a general benchmark name by removing the trailing underscore and number sequence
-        benchmark_name = os.path.basename(TASK_PATH).replace('.json', '')
-        benchmark_name_folder = re.sub(r'_\d+$', '', benchmark_name)
+        benchmark_name = os.path.basename(TASK_PATH).replace(".json", "")
+        benchmark_name_folder = re.sub(r"_\d+$", "", benchmark_name)
         if SPECIAL_NAME is not None:
             benchmark_name_folder = f"{benchmark_name_folder}_{SPECIAL_NAME}"
-        trace_collector = FileCollector(log_file=f"log/{benchmark_name_folder}/{benchmark_name}.log")
+        trace_collector = FileCollector(
+            log_file=f"log/{benchmark_name_folder}/{benchmark_name}.log"
+        )
 
         # Read template yaml as a list of YAML sections
         with open(BENCHMARK_YAML, "r") as f:
@@ -57,19 +61,14 @@ class TestBenchmarkRunner(unittest.IsolatedAsyncioTestCase):
                 if "servers" in config:
                     del config["servers"]
                 break
-            
-        with open(TASK_PATH, 'r') as f:
+
+        with open(TASK_PATH, "r") as f:
             task = json.load(f)
-        task['mcp_servers'] = [
-            {
-                "name": tool
-            }
-            for tool in all_tools
-        ]
+        task["mcp_servers"] = [{"name": tool} for tool in all_tools]
         task["use_specified_server"] = True
         # generate a new task path with the new tools with a random unique name under /tmp/
         new_task_path = f"/tmp/{uuid.uuid4()}.json"
-        with open(new_task_path, 'w') as f:
+        with open(new_task_path, "w") as f:
             json.dump(task, f, indent=4)
         task_path = new_task_path
 
@@ -88,21 +87,28 @@ class TestBenchmarkRunner(unittest.IsolatedAsyncioTestCase):
         new_benchmark_yaml = f"/tmp/{uuid.uuid4()}.yaml"
         with open(new_benchmark_yaml, "w") as f:
             yaml.dump_all(yaml_objs, f, indent=4)
-        
+
         print(new_benchmark_yaml)
         benchmark = BenchmarkRunner(new_benchmark_yaml)
-        results = await benchmark.run(trace_collector=trace_collector, callbacks=get_vprint_callbacks())
+        results = await benchmark.run(
+            trace_collector=trace_collector, callbacks=get_vprint_callbacks()
+        )
         print(results)
 
-        report = BenchmarkReport(benchmark, trace_collector=trace_collector, log_dir=f"{benchmark_name_folder}_report", log_name=benchmark_name)
+        report = BenchmarkReport(
+            benchmark,
+            trace_collector=trace_collector,
+            log_dir=f"{benchmark_name_folder}_report",
+            log_name=benchmark_name,
+        )
         report.dump()
 
-        print('=' * 66)
-        print('Evaluation Result')
-        print('-' * 66)
+        print("=" * 66)
+        print("Evaluation Result")
+        print("-" * 66)
         for task_name in results[0].task_results.keys():
             print(task_name)
-            print('-' * 66)
+            print("-" * 66)
             eval_results = results[0].task_results[task_name]["evaluation_results"]
             for eval_result in eval_results:
                 print("func:", eval_result.config.func)
@@ -110,27 +116,32 @@ class TestBenchmarkRunner(unittest.IsolatedAsyncioTestCase):
                 print("op_args:", eval_result.config.op_args)
                 print("value:", eval_result.config.value)
                 print(
-                    'Passed?:',
-                    "\033[32mTrue\033[0m" if eval_result.passed else "\033[31mFalse\033[0m")
-                print('-' * 66)
+                    "Passed?:",
+                    (
+                        "\033[32mTrue\033[0m"
+                        if eval_result.passed
+                        else "\033[31mFalse\033[0m"
+                    ),
+                )
+                print("-" * 66)
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Run benchmark tests')
+    parser = argparse.ArgumentParser(description="Run benchmark tests")
     parser.add_argument(
-        'benchmark_yaml',
+        "benchmark_yaml",
         type=str,
-        help='YAML file of the benchmark to run (e.g., test/deepresearch/seal_0_test_fc_v3.yaml)')
+        help="YAML file of the benchmark to run (e.g., test/deepresearch/seal_0_test_fc_v3.yaml)",
+    )
     parser.add_argument(
-        'task_path',
-        type=str,
-        help='Task path of the benchmark to run',
-        default=None)
+        "task_path", type=str, help="Task path of the benchmark to run", default=None
+    )
     parser.add_argument(
-        'special_name',
+        "special_name",
         type=str,
-        help='Special name of the benchmark to run',
-        default=None)
+        help="Special name of the benchmark to run",
+        default=None,
+    )
 
     args, remaining_args = parser.parse_known_args()
 
