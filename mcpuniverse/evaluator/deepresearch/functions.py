@@ -2,12 +2,12 @@
 Evaluation functions for Yahoo finance tasks
 """
 # pylint: disable=broad-exception-caught,unused-argument
-import os
 from typing import Any, Literal
-from openai import OpenAI
 from dotenv import load_dotenv
 from pydantic import BaseModel
 from mcpuniverse.evaluator.functions import compare_func
+from mcpuniverse.evaluator.llm_judge import call_judge_structured
+from mcpuniverse.common.context import Context
 
 load_dotenv()
 
@@ -67,26 +67,17 @@ def deepresearch__call_gpt_hle(
         prompt: str,
         model="o3-mini-2025-01-31",
         **kwargs
-) -> str:
+) -> HLEExtractedAnswer | None:
     """
-    Call GPT to get a response to a prompt.
+    Call the configured judge LLM and return a structured HLE judgement.
     """
-    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-    response = None
-    attempt = 5
-    while attempt > 0:
-        try:
-            response = client.beta.chat.completions.parse(
-                model=model,
-                max_completion_tokens=4096,
-                messages=[{"role": "user", "content": prompt}],
-                response_format=HLEExtractedAnswer
-            )
-            return response.choices[0].message.parsed
-        except Exception as e:
-            attempt -= 1
-            print(f"Error: {e}")
-    return response
+    context: Context = kwargs.get("context", Context())
+    return call_judge_structured(
+        prompt,
+        response_format=HLEExtractedAnswer,
+        context=context,
+        default_model_name=model,
+    )
 
 
 @compare_func(name="deepresearch.hle_llm_as_a_judge")

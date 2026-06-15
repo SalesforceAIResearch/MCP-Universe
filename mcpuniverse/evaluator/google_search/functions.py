@@ -3,9 +3,9 @@ Evaluation functions for Yahoo finance tasks
 """
 # pylint: disable=broad-exception-caught,unused-argument
 from typing import Any
-from openai import OpenAI
 from dotenv import load_dotenv
 from mcpuniverse.evaluator.functions import compare_func
+from mcpuniverse.evaluator.llm_judge import call_judge_text
 from mcpuniverse.common.context import Context
 
 load_dotenv()
@@ -49,27 +49,15 @@ def google_search__call_gpt(
         **kwargs
 ) -> str:
     """
-    Call GPT to get a response to a prompt.
+    Call the configured judge LLM to get a response to a prompt.
     """
     context: Context = kwargs.get("context", Context())
-    client = OpenAI(api_key=context.get_env("OPENAI_API_KEY"))
-    response = None
-    attempt = 5
-    while attempt > 0:
-        try:
-            response = client.chat.completions.create(
-                model=model,
-                messages=[
-                    {"role": "system", "content": "You are a helpful assistant."},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=temperature
-            )
-            return response.choices[0].message.content
-        except Exception as e:
-            attempt -= 1
-            print(f"Error: {e}")
-    return response
+    return call_judge_text(
+        prompt,
+        context=context,
+        temperature=temperature,
+        default_model_name=model,
+    )
 
 
 ##################################################################################
