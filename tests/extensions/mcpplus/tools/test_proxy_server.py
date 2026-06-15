@@ -465,6 +465,52 @@ class TestProxyServerLLMConfig:
         del os.environ["TEST_API_KEY"]
 
     @pytest.mark.asyncio
+    async def test_azure_llm_config_env_var_expansion(self):
+        """Test Azure LLM config fields expand from environment variables."""
+        import os
+        os.environ["AZURE_API_KEY"] = "azure-key-123"
+        os.environ["AZURE_API_BASE"] = "https://example.openai.azure.com/"
+        os.environ["AZURE_API_VERSION"] = "2024-12-01-preview"
+
+        config = ProxyConfig(
+            upstream_server="test-server",
+            llm={
+                "name": "azure",
+                "config": {
+                    "model_name": "gpt-5.4-mini",
+                    "api_key": "$AZURE_API_KEY",
+                    "azure_endpoint": "$AZURE_API_BASE",
+                    "api_version": "$AZURE_API_VERSION",
+                },
+            },
+        )
+        server = ProxyServer(config)
+
+        with patch("mcpuniverse.extensions.mcpplus.tools.proxy_server.MCPWrapperManager") as MockManager:
+            mock_manager = Mock()
+            mock_client = Mock()
+            mock_manager.build_client = AsyncMock(return_value=mock_client)
+            MockManager.return_value = mock_manager
+
+            with patch("mcpuniverse.extensions.mcpplus.tools.proxy_server.ModelManager") as MockModelManager:
+                mock_llm_manager = Mock()
+                mock_llm = Mock()
+                mock_llm.set_context = Mock()
+                mock_llm_manager.build_model = Mock(return_value=mock_llm)
+                MockModelManager.return_value = mock_llm_manager
+
+                await server._init_client()
+
+                llm_config = mock_llm_manager.build_model.call_args[1]["config"]
+                assert llm_config["api_key"] == "azure-key-123"
+                assert llm_config["azure_endpoint"] == "https://example.openai.azure.com/"
+                assert llm_config["api_version"] == "2024-12-01-preview"
+
+        del os.environ["AZURE_API_KEY"]
+        del os.environ["AZURE_API_BASE"]
+        del os.environ["AZURE_API_VERSION"]
+
+    @pytest.mark.asyncio
     async def test_no_llm_config_warning(self):
         """Test that warning is logged when no LLM config is provided."""
         config = ProxyConfig(upstream_server="test-server")

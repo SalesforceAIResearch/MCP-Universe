@@ -264,6 +264,8 @@ Configure the following environment variables in your `.env` file. The required 
 | `OPENAI_API_KEY` | OpenAI | API key for GPT models (gpt-5, etc.) | All domains |
 | `ANTHROPIC_API_KEY` | Anthropic | API key for Claude models | All domains |
 | `GEMINI_API_KEY` | Google | API key for Gemini models | All domains |
+| `AZURE_API_KEY`, `AZURE_API_BASE` | Azure OpenAI | API key and resource endpoint for Azure deployments (`type: azure` in YAML; set `model_name` to your deployment name) | All domains |
+| `AZURE_API_VERSION` | Azure OpenAI | API version (optional; defaults to `2024-12-01-preview`) | All domains |
 
 > **Note**: You only need to configure the API key for the LLM provider you intend to use in your evaluation.
 
@@ -342,9 +344,20 @@ In each configuration file, update the LLM specification to match your target mo
 kind: llm
 spec:
   name: llm-1
-  type: openai  # or anthropic, google, etc.
+  type: openai  # or anthropic, google, azure, etc.
   config:
     model_name: gpt-4o  # Replace with your target model
+```
+
+For Azure OpenAI, use `type: azure` and set `model_name` to your **deployment name** (not the underlying model ID):
+
+```yaml
+kind: llm
+spec:
+  name: llm-1
+  type: azure
+  config:
+    model_name: gpt-5.4-mini  # Your Azure deployment name
 ```
 
 ### Execution

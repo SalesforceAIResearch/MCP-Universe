@@ -67,6 +67,10 @@ def _get_gateway_llm_config_fields(llm_provider: str) -> Dict[str, str]:
     elif llm_provider == "sf_research_gateway":
         extra_config["base_url"] = "$RESEARCH_GATEWAY_URL"
 
+    elif llm_provider == "azure":
+        extra_config["azure_endpoint"] = "$AZURE_API_BASE"
+        extra_config["api_version"] = "$AZURE_API_VERSION"
+
     return extra_config
 
 
@@ -155,6 +159,14 @@ def _get_gateway_env_vars(llm_provider: str) -> Dict[str, str]:
     elif llm_provider == "claude_gateway":
         if os.getenv("SALESFORCE_GATEWAY_KEY"):
             env_vars["SALESFORCE_GATEWAY_KEY"] = os.getenv("SALESFORCE_GATEWAY_KEY")
+
+    elif llm_provider == "azure":
+        if os.getenv("AZURE_API_KEY"):
+            env_vars["AZURE_API_KEY"] = os.getenv("AZURE_API_KEY")
+        if os.getenv("AZURE_API_BASE"):
+            env_vars["AZURE_API_BASE"] = os.getenv("AZURE_API_BASE")
+        if os.getenv("AZURE_API_VERSION"):
+            env_vars["AZURE_API_VERSION"] = os.getenv("AZURE_API_VERSION")
 
     return env_vars
 
