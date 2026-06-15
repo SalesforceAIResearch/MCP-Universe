@@ -27,6 +27,8 @@ load_dotenv()
 
 DEFAULT_AZURE_API_VERSION = "2024-12-01-preview"
 
+_RETRYABLE_API_STATUS_CODES = {429, 500, 502, 503, 504}
+
 
 def _normalize_azure_endpoint(endpoint: str) -> str:
     """Strip trailing slashes from the Azure endpoint URL."""
@@ -71,8 +73,8 @@ class AzureOpenAIModel(OpenAIModel):
             response_format: Type[PydanticBaseModel] = None,
             **kwargs
     ):
-        max_retries = kwargs.get("max_retries", 5)
-        base_delay = kwargs.get("base_delay", 10.0)
+        max_retries = kwargs.pop("max_retries", 5)
+        base_delay = kwargs.pop("base_delay", 10.0)
 
         for attempt in range(max_retries + 1):
             try:
@@ -124,6 +126,11 @@ class AzureOpenAIModel(OpenAIModel):
                 return chat.choices[0].message.parsed
 
             except (RateLimitError, APIError, APITimeoutError) as e:
+                status_code = getattr(e, "status_code", None)
+                if isinstance(e, APIError) and status_code not in _RETRYABLE_API_STATUS_CODES:
+                    logging.error("Non-retryable API error occurred: %s", e)
+                    return None
+
                 if attempt == max_retries:
                     logging.warning("All %d attempts failed. Last error: %s", max_retries + 1, e)
                     return None
