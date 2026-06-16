@@ -73,8 +73,8 @@ spec:
     - mcpuniverse/web_search/info_search_task_0049.json
     - mcpuniverse/web_search/info_search_task_0050.json
     # Notion multi-server tasks require NOTION_API_KEY — skipped until configured:
-    # - mcpuniverse/multi_server/multi-server_task_google_search_notion_0001.json
-    # - mcpuniverse/multi_server/multi-server_task_google_search_notion_0002.json
-    # - mcpuniverse/multi_server/multi-server_task_google_search_notion_0003.json
-    # - mcpuniverse/multi_server/multi-server_task_google_search_notion_0004.json
-    # - mcpuniverse/multi_server/multi-server_task_google_search_notion_0005.json
+    - mcpuniverse/multi_server/multi-server_task_google_search_notion_0001.json
+    - mcpuniverse/multi_server/multi-server_task_google_search_notion_0002.json
+    - mcpuniverse/multi_server/multi-server_task_google_search_notion_0003.json
+    - mcpuniverse/multi_server/multi-server_task_google_search_notion_0004.json
+    - mcpuniverse/multi_server/multi-server_task_google_search_notion_0005.json
