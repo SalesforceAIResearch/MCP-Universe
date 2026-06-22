@@ -365,7 +365,7 @@ class RolloutEngine:
         """Load task definitions from config."""
         for task_path in self.cfg.tasks:
             if os.path.exists(task_path):
-                task = Task(task_path)
+                task = Task(task_path, benchmark_id=self.cfg.benchmark_id)
                 self._tasks[task_path] = task
 
     def _get_sample_servers(self, sample: Dict[str, Any]) -> List[Dict[str, Any]]:

@@ -1,6 +1,6 @@
 import unittest
 import pytest
-from mcpuniverse.evaluator.weather.functions import *
+from mcpuniverse.benchmark.mcpuniverse.evaluators.weather.functions import *
 
 
 class TestFunctionsExtra(unittest.IsolatedAsyncioTestCase):

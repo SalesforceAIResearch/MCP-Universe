@@ -6,7 +6,7 @@ import re
 import os
 import copy
 import json
-from typing import List, Dict, Optional, Any
+from typing import List, Dict, Optional, Any, Union
 from pydantic import BaseModel, Field
 from pydantic_core import from_json
 from jinja2 import Environment, meta
@@ -17,8 +17,9 @@ from mcpuniverse.tracer.types import TraceRecord
 from mcpuniverse.common.logger import get_logger
 from mcpuniverse.mcp.manager import MCPManager
 from mcpuniverse.common.context import Context
-from .cleanups import CLEANUP_FUNCTIONS
-from .configs.mcpmark.prepares import PREPARE_FUNCTIONS
+from .cleanup_registry import CLEANUP_FUNCTIONS
+from .prepare_registry import PREPARE_FUNCTIONS
+# Note: Bundle registration now happens via load_benchmark_package() in BenchmarkRunner
 
 
 class TaskPrepareConfig(BaseModel):
@@ -28,10 +29,11 @@ class TaskPrepareConfig(BaseModel):
     Example:
         {
             "prepare_func": "prepare_vector_database",
-            "prepare_args": {
-                "database": "test_db"
-            }
+            "prepare_args": { "database": "test_db" }
         }
+
+    Resolution uses ``(benchmark_id, prepare_func)`` in :data:`~mcpuniverse.benchmark.prepare_registry.PREPARE_FUNCTIONS`.
+    ``benchmark_id`` is set on :class:`Task` by the caller (e.g. benchmark YAML ``benchmark_id``).
     """
     prepare_func: str = Field(default="", description="The function to prepare task environment")
     prepare_args: dict = Field(default_factory=dict, description="The arguments for preparation")
@@ -91,18 +93,39 @@ class Task(metaclass=AutodocABCMeta):
     The class for an agent task.
     """
 
-    def __init__(self, config: str | Dict, context: Optional[Context] = None):
+    def __init__(
+            self,
+            config: str | Dict,
+            context: Optional[Context] = None,
+            mcp_manager: Optional[MCPManager] = None,
+            mcp_config: Optional[Union[str, Dict[str, Any]]] = None,
+            *,
+            benchmark_id: str,
+    ):
+        resolved_bid = benchmark_id.strip()
+        if not resolved_bid:
+            raise ValueError(
+                "benchmark_id is required and must be non-empty "
+                "(suite id for scoped prepare lookup, e.g. mcpmark or mcpuniverse)."
+            )
         if isinstance(config, str):
             if config.endswith(".json"):
-                with open(config, "r", encoding="utf-8") as f:
+                abs_path = os.path.abspath(config)
+                with open(abs_path, "r", encoding="utf-8") as f:
                     config = f.read()
             config = from_json(config)
+        self._benchmark_id = resolved_bid
         self._config = TaskConfig.model_validate(config)
         self._context = context if context else Context()
         self._config.set_environ_variables(context=self._context)
         self._evaluators = [Evaluator(c, context=self._context) for c in self._config.evaluators]
         self._logger = get_logger("Task")
-        self._mcp_manager = MCPManager(context=self._context)
+        if mcp_manager is not None:
+            self._mcp_manager = mcp_manager
+        elif mcp_config is not None:
+            self._mcp_manager = MCPManager(config=mcp_config, context=self._context)
+        else:
+            self._mcp_manager = MCPManager(context=self._context)
 
     def get_question(self) -> str:
         """Return question prompt."""
@@ -147,18 +170,24 @@ class Task(metaclass=AutodocABCMeta):
         """
         for config in self._config.prepares:
             try:
-                self._logger.info("Running task preparation: prepare_func `%s`", config.prepare_func)
-                if config.prepare_func in PREPARE_FUNCTIONS:
-                    func = PREPARE_FUNCTIONS[config.prepare_func]
-                    input_args = config.prepare_args.copy()
-                    input_args["context"] = self._context
-                    # Automatically pass task category to prepare functions
-                    input_args["category"] = self._config.category
-                    response = await func(**input_args)
-                    if response:
-                        self._logger.info("Task preparation succeeded: %s", str(response))
-                else:
-                    self._logger.warning("Prepare function `%s` not found", config.prepare_func)
+                self._logger.info(
+                    "Running task preparation: benchmark_id `%s`, prepare_func `%s`",
+                    self._benchmark_id,
+                    config.prepare_func,
+                )
+                key = (self._benchmark_id, config.prepare_func)
+                if key not in PREPARE_FUNCTIONS:
+                    raise KeyError(
+                        f"No prepare function registered for {key!r}. "
+                        f"Known keys sample: {list(PREPARE_FUNCTIONS.keys())[:8]!r}"
+                    )
+                func = PREPARE_FUNCTIONS[key]
+                input_args = config.prepare_args.copy()
+                input_args["context"] = self._context
+                input_args["category"] = self._config.category
+                response = await func(**input_args)
+                if response:
+                    self._logger.info("Task preparation succeeded: %s", str(response))
             except Exception as e:
                 self._logger.error("Failed to run task preparation: %s", str(e))
                 raise

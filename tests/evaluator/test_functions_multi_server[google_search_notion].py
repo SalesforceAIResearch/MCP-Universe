@@ -2,20 +2,20 @@ import os
 import unittest
 import pytest
 from mcpuniverse.benchmark.task import Task
-from mcpuniverse.evaluator.github.functions import *
+from mcpuniverse.benchmark.mcpuniverse.evaluators.github.functions import *
 
 
 class TestFunctionsExtra(unittest.IsolatedAsyncioTestCase):
 
     def setUp(self):
         self.folder = os.path.dirname(os.path.realpath(__file__))
-        self.config_folder = os.path.join(self.folder, "../../mcpuniverse/benchmark/configs/mcpuniverse/multi_server")
+        self.config_folder = os.path.join(self.folder, "../../mcpuniverse/benchmark/mcpuniverse/task_configs/multi_server")
 
     @pytest.mark.skip
     async def test_task_0001(self):
         """ this function is for multi-server_task_google_search_notion_0001.json"""
         config_file = os.path.join(self.config_folder, "multi-server_task_google_search_notion_0001.json")
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpuniverse')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -32,7 +32,7 @@ class TestFunctionsExtra(unittest.IsolatedAsyncioTestCase):
     async def test_task_0002(self):
         """ this function is for multi-server_task_google_search_notion_0002.json"""
         config_file = os.path.join(self.config_folder, "multi-server_task_google_search_notion_0002.json")
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpuniverse')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -49,7 +49,7 @@ class TestFunctionsExtra(unittest.IsolatedAsyncioTestCase):
     async def test_task_0003(self):
         """ this function is for multi-server_task_google_search_notion_0003.json"""
         config_file = os.path.join(self.config_folder, "multi-server_task_google_search_notion_0003.json")
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpuniverse')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -66,7 +66,7 @@ class TestFunctionsExtra(unittest.IsolatedAsyncioTestCase):
     async def test_task_0004(self):
         """ this function is for multi-server_task_google_search_notion_0004.json"""
         config_file = os.path.join(self.config_folder, "multi-server_task_google_search_notion_0004.json")
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpuniverse')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -83,7 +83,7 @@ class TestFunctionsExtra(unittest.IsolatedAsyncioTestCase):
     async def test_task_0005(self):
         """ this function is for multi-server_task_google_search_notion_0005.json"""
         config_file = os.path.join(self.config_folder, "multi-server_task_google_search_notion_0005.json")
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpuniverse')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")

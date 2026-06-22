@@ -1,0 +1,64 @@
+{
+  "filesystem_mcpmark": {
+    "stdio": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "{{FILESYSTEM_TEST_DIR}}"
+      ]
+    }
+  },
+
+  "github_mcpmark": {
+    "stdio": {
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "-e",
+        "GITHUB_PERSONAL_ACCESS_TOKEN",
+        "ghcr.io/github/github-mcp-server"
+      ]
+    },
+    "env": {
+      "GITHUB_PERSONAL_ACCESS_TOKEN": "{{GITHUB_TOKENS}}"
+    }
+  },
+
+  "notion_mcpmark": {
+    "stdio": {
+      "command": "npx",
+      "args": [
+        "-y", "@notionhq/notion-mcp-server"
+      ]
+    },
+    "env": {
+      "OPENAPI_MCP_HEADERS": "{\"Authorization\": \"Bearer {{EVAL_NOTION_API_KEY}}\", \"Notion-Version\": \"2022-06-28\" }"
+    }
+  },
+
+  "playwright": {
+    "stdio": {
+      "command": "npx",
+      "args": [
+        "@playwright/mcp@latest",
+        "--headless",
+        "--isolated"
+      ]
+    }
+  },
+
+  "postgres-pro": {
+    "stdio": {
+      "command": "uvx",
+      "args": [
+        "postgres-mcp",
+        "{{POSTGRES_ADDRESS}}",
+        "--access-mode",
+        "unrestricted"
+      ]
+    }
+  }
+}

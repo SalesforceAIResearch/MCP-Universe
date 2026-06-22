@@ -13,7 +13,7 @@ class TestBenchmarkRunnerMCPMarkPostgres(unittest.IsolatedAsyncioTestCase):
 
         print("Running Postgres tasks...")
         trace_collector = FileCollector(log_file="log/mcpmark/mcpmark_postgres.log")
-        benchmark = BenchmarkRunner("mcpmark/configs/mcpmark_postgres.yaml")
+        benchmark = BenchmarkRunner("mcpmark/mcpmark_postgres.yaml")
         benchmark_results = await benchmark.run(trace_collector=trace_collector, callbacks=get_vprint_callbacks())
         report = BenchmarkReport(benchmark, trace_collector=trace_collector)
         report.dump()

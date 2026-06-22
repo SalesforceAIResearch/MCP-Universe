@@ -3,7 +3,7 @@ import os
 import unittest
 import pytest
 from mcpuniverse.benchmark.task import Task
-from mcpuniverse.evaluator.mcpmark.playwright_functions import *
+from mcpuniverse.benchmark.mcpmark.evaluators.playwright_functions import *
 
 
 class TestFunctionsMCPMarkPlaywright(unittest.IsolatedAsyncioTestCase):
@@ -13,11 +13,11 @@ class TestFunctionsMCPMarkPlaywright(unittest.IsolatedAsyncioTestCase):
         self.folder = os.path.dirname(os.path.realpath(__file__))
         self.config_folder_playwright = os.path.join(
             self.folder,
-            "../../mcpuniverse/benchmark/configs/mcpmark/configs/playwright"
+            "../../mcpuniverse/benchmark/mcpmark/task_configs/playwright"
         )
         self.config_folder_webarena = os.path.join(
             self.folder,
-            "../../mcpuniverse/benchmark/configs/mcpmark/configs/playwright_webarena"
+            "../../mcpuniverse/benchmark/mcpmark/task_configs/playwright_webarena"
         )
 
     # Playwright category tests
@@ -28,7 +28,7 @@ class TestFunctionsMCPMarkPlaywright(unittest.IsolatedAsyncioTestCase):
             self.config_folder_playwright,
             "eval_web-extraction_table.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -49,7 +49,7 @@ class TestFunctionsMCPMarkPlaywright(unittest.IsolatedAsyncioTestCase):
             self.config_folder_playwright,
             "eval_web-cloudflare_turnstile_challenge.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -70,7 +70,7 @@ class TestFunctionsMCPMarkPlaywright(unittest.IsolatedAsyncioTestCase):
             self.config_folder_playwright,
             "web_search-birth_of_arvinxu.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -91,7 +91,7 @@ class TestFunctionsMCPMarkPlaywright(unittest.IsolatedAsyncioTestCase):
             self.config_folder_playwright,
             "web_search-r1_arxiv.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -112,7 +112,7 @@ class TestFunctionsMCPMarkPlaywright(unittest.IsolatedAsyncioTestCase):
         config_file = os.path.join(
             self.config_folder_webarena, "reddit/ai_data_analyst.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -132,7 +132,7 @@ class TestFunctionsMCPMarkPlaywright(unittest.IsolatedAsyncioTestCase):
         config_file = os.path.join(
             self.config_folder_webarena, "reddit/budget_europe_travel.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -152,7 +152,7 @@ class TestFunctionsMCPMarkPlaywright(unittest.IsolatedAsyncioTestCase):
         config_file = os.path.join(
             self.config_folder_webarena, "reddit/buyitforlife_research.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -172,7 +172,7 @@ class TestFunctionsMCPMarkPlaywright(unittest.IsolatedAsyncioTestCase):
         config_file = os.path.join(
             self.config_folder_webarena, "reddit/llm_research_summary.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -192,7 +192,7 @@ class TestFunctionsMCPMarkPlaywright(unittest.IsolatedAsyncioTestCase):
         config_file = os.path.join(
             self.config_folder_webarena, "reddit/movie_reviewer_analysis.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -212,7 +212,7 @@ class TestFunctionsMCPMarkPlaywright(unittest.IsolatedAsyncioTestCase):
         config_file = os.path.join(
             self.config_folder_webarena, "reddit/nba_statistics_analysis.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -232,7 +232,7 @@ class TestFunctionsMCPMarkPlaywright(unittest.IsolatedAsyncioTestCase):
         config_file = os.path.join(
             self.config_folder_webarena, "reddit/routine_tracker_forum.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -254,7 +254,7 @@ class TestFunctionsMCPMarkPlaywright(unittest.IsolatedAsyncioTestCase):
             self.config_folder_webarena,
             "shopping/advanced_product_analysis.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -275,7 +275,7 @@ class TestFunctionsMCPMarkPlaywright(unittest.IsolatedAsyncioTestCase):
             self.config_folder_webarena,
             "shopping/gaming_accessories_analysis.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -296,7 +296,7 @@ class TestFunctionsMCPMarkPlaywright(unittest.IsolatedAsyncioTestCase):
             self.config_folder_webarena,
             "shopping/health_routine_optimization.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -317,7 +317,7 @@ class TestFunctionsMCPMarkPlaywright(unittest.IsolatedAsyncioTestCase):
             self.config_folder_webarena,
             "shopping/holiday_baking_competition.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -338,7 +338,7 @@ class TestFunctionsMCPMarkPlaywright(unittest.IsolatedAsyncioTestCase):
             self.config_folder_webarena,
             "shopping/multi_category_budget_analysis.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -359,7 +359,7 @@ class TestFunctionsMCPMarkPlaywright(unittest.IsolatedAsyncioTestCase):
             self.config_folder_webarena,
             "shopping/printer_keyboard_search.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -380,7 +380,7 @@ class TestFunctionsMCPMarkPlaywright(unittest.IsolatedAsyncioTestCase):
             self.config_folder_webarena,
             "shopping/running_shoes_purchase.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -403,7 +403,7 @@ class TestFunctionsMCPMarkPlaywright(unittest.IsolatedAsyncioTestCase):
             self.config_folder_webarena,
             "shopping_admin/customer_segmentation_setup.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -425,7 +425,7 @@ class TestFunctionsMCPMarkPlaywright(unittest.IsolatedAsyncioTestCase):
             self.config_folder_webarena,
             "shopping_admin/fitness_promotion_strategy.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -447,7 +447,7 @@ class TestFunctionsMCPMarkPlaywright(unittest.IsolatedAsyncioTestCase):
             self.config_folder_webarena,
             "shopping_admin/marketing_customer_analysis.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -468,7 +468,7 @@ class TestFunctionsMCPMarkPlaywright(unittest.IsolatedAsyncioTestCase):
             self.config_folder_webarena,
             "shopping_admin/ny_expansion_analysis.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -489,7 +489,7 @@ class TestFunctionsMCPMarkPlaywright(unittest.IsolatedAsyncioTestCase):
             self.config_folder_webarena,
             "shopping_admin/products_sales_analysis.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -510,7 +510,7 @@ class TestFunctionsMCPMarkPlaywright(unittest.IsolatedAsyncioTestCase):
             self.config_folder_webarena,
             "shopping_admin/sales_inventory_analysis.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -532,7 +532,7 @@ class TestFunctionsMCPMarkPlaywright(unittest.IsolatedAsyncioTestCase):
             self.config_folder_webarena,
             "shopping_admin/search_filtering_operations.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")

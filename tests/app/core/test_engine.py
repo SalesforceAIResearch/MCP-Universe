@@ -134,7 +134,7 @@ spec:
         """
         folder = os.path.dirname(os.path.realpath(__file__))
         task_path = os.path.join(folder, "../../data/task/weather_task.json")
-        task = Task(config=task_path)
+        task = Task(config=task_path, benchmark_id="mcpuniverse")
 
         await self._initialize()
         results = await self.engine.run_tasks(

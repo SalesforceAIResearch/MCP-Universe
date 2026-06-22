@@ -2,19 +2,19 @@ import os
 import unittest
 import pytest
 from mcpuniverse.benchmark.task import Task
-from mcpuniverse.evaluator.github.functions import *
+from mcpuniverse.benchmark.mcpuniverse.evaluators.github.functions import *
 
 
 class TestFunctionsExtra(unittest.IsolatedAsyncioTestCase):
 
     def setUp(self):
         self.folder = os.path.dirname(os.path.realpath(__file__))
-        self.config_folder = os.path.join(self.folder, "../../mcpuniverse/benchmark/configs/mcpuniverse/repository_management")
+        self.config_folder = os.path.join(self.folder, "../../mcpuniverse/benchmark/mcpuniverse/task_configs/repository_management")
 
     @pytest.mark.skip
     async def test_task_0001(self):
         config_file = os.path.join(self.config_folder, "github_task_0001.json")
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpuniverse')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")

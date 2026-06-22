@@ -134,10 +134,9 @@ class BenchmarkRunnerWithWrapper(BaseBenchmarkRunner):
                         data=f"Running task: {task_path}"
                     ))
                     self._logger.info("Running task: %s", task_path)
-                    if not os.path.exists(task_path):
-                        task_filepath = os.path.join(self._default_folder, task_path)
-                    else:
-                        task_filepath = task_path
+                    task_filepath = self._resolve_task_filepath(task_path, benchmark.benchmark_id)
+                    if not os.path.isfile(task_filepath):
+                        raise FileNotFoundError(f"Task config not found: {task_path} (resolved: {task_filepath})")
 
                     stored_result = store.load_task_result(
                         benchmark=benchmark, task_config_path=task_filepath)
@@ -148,7 +147,11 @@ class BenchmarkRunnerWithWrapper(BaseBenchmarkRunner):
                         continue
 
                     # Execute the task and the corresponding evaluations
-                    task = Task(task_filepath, context=self._context)
+                    task = Task(
+                        task_filepath,
+                        context=self._context,
+                        benchmark_id=benchmark.benchmark_id,
+                    )
                     if task.use_specified_server() and isinstance(agent, BaseAgent):
                         await agent.change_servers(task.get_mcp_servers())
                     agent.reset()

@@ -13,7 +13,7 @@ class TestBenchmarkRunnerMCPMarkPlaywright(unittest.IsolatedAsyncioTestCase):
 
         print("Running Playwright tasks...")
         trace_collector = FileCollector(log_file="log/mcpmark/mcpmark_playwright.log")
-        benchmark = BenchmarkRunner("mcpmark/configs/mcpmark_playwright.yaml")
+        benchmark = BenchmarkRunner("mcpmark/mcpmark_playwright.yaml")
         benchmark_results = await benchmark.run(trace_collector=trace_collector, callbacks=get_vprint_callbacks())
         report = BenchmarkReport(benchmark, trace_collector=trace_collector)
         report.dump()

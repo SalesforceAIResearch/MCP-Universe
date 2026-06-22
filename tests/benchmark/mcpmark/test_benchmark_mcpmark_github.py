@@ -13,7 +13,7 @@ class TestBenchmarkRunnerMCPMarkGitHub(unittest.IsolatedAsyncioTestCase):
 
         print("Running GitHub tasks...")
         trace_collector = FileCollector(log_file="log/mcpmark/mcpmark_github.log")
-        benchmark = BenchmarkRunner("mcpmark/configs/mcpmark_github.yaml")
+        benchmark = BenchmarkRunner("mcpmark/mcpmark_github.yaml")
         benchmark_results = await benchmark.run(trace_collector=trace_collector,
                                                 callbacks=get_vprint_callbacks())
         report = BenchmarkReport(benchmark, trace_collector=trace_collector)

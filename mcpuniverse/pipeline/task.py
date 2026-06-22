@@ -40,6 +40,10 @@ class TaskInput(BaseModel):
     task_config: TaskConfig
     agent_state: str = ""
     metadata: dict = Field(default_factory=dict)
+    benchmark_id: str = Field(
+        default="mcpuniverse",
+        description="Suite id for scoped prepare lookup; passed to Task.",
+    )
 
 
 class AgentTask(CeleryTask):
@@ -119,7 +123,10 @@ class AgentTask(CeleryTask):
         async with AsyncExitStack():
             await agent.initialize()
             try:
-                task = Task(config=task_input.task_config.model_dump())
+                task = Task(
+                    config=task_input.task_config.model_dump(),
+                    benchmark_id=task_input.benchmark_id,
+                )
                 question = task.get_question()
                 output_format = task.get_output_format()
             except Exception as e:

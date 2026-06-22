@@ -29,7 +29,8 @@ class Benchmark(Task):
             raise RuntimeError("No tasks")
 
         context = Context()
-        tasks = [BenchmarkTask(config) for config in kwargs["tasks"]]
+        bid = str(kwargs.get("benchmark_id", "mcpuniverse")).strip() or "mcpuniverse"
+        tasks = [BenchmarkTask(config, benchmark_id=bid) for config in kwargs["tasks"]]
         if "context" in kwargs:
             Context.model_validate(kwargs["context"])
         results = asyncio.run(app_engine.run_tasks(

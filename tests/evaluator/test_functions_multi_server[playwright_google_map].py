@@ -2,14 +2,14 @@ import os
 import unittest
 import pytest
 from mcpuniverse.benchmark.task import Task
-from mcpuniverse.evaluator.github.functions import *
+from mcpuniverse.benchmark.mcpuniverse.evaluators.github.functions import *
 
 
 class TestFunctionsExtra(unittest.IsolatedAsyncioTestCase):
 
     def setUp(self):
         self.folder = os.path.dirname(os.path.realpath(__file__))
-        self.config_folder = os.path.join(self.folder, "../../mcpuniverse/benchmark/configs/mcpuniverse/multi_server")
+        self.config_folder = os.path.join(self.folder, "../../mcpuniverse/benchmark/mcpuniverse/task_configs/multi_server")
 
     @pytest.mark.skip
     async def test_task_0005(self):
@@ -24,7 +24,7 @@ class TestFunctionsExtra(unittest.IsolatedAsyncioTestCase):
             }
         }
         config_file = os.path.join(self.config_folder, "multi-server_task_playwright_google_map_0005.json")
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpuniverse')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate(json.dumps(llm_response))

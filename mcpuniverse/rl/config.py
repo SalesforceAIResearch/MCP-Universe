@@ -305,8 +305,11 @@ class RolloutConfig:
     # MCP gateway address for SSE transport (e.g., "http://localhost:8000")
     mcp_gateway_address: str = ""
 
-    # Task files (JSON)
+    # Task JSON files (paths); scoped prepare uses ``benchmark_id`` (explicit, no path inference).
     tasks: List[str] = field(default_factory=list)
+
+    # Suite id for :class:`~mcpuniverse.benchmark.task.Task` (scoped prepare registry).
+    benchmark_id: str = "mcpuniverse"
 
     # Generator config
     generator: GeneratorConfig = field(default_factory=GeneratorConfig)
@@ -382,6 +385,7 @@ class RolloutConfig:
             mcp_transport=mcp_transport,
             mcp_gateway_address=d.get("mcp_gateway_address", ""),
             tasks=d.get("tasks", []),
+            benchmark_id=d.get("benchmark_id", "mcpuniverse"),
             generator=generator,
             dispatcher=dispatcher,
             env_pool=env_pool,

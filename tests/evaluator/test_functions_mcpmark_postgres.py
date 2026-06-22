@@ -3,7 +3,7 @@ import os
 import unittest
 import pytest
 from mcpuniverse.benchmark.task import Task
-from mcpuniverse.evaluator.mcpmark.postgres_functions import *
+from mcpuniverse.benchmark.mcpmark.evaluators.postgres_functions import *
 
 
 class TestFunctionsMCPMarkPostgres(unittest.IsolatedAsyncioTestCase):
@@ -13,7 +13,7 @@ class TestFunctionsMCPMarkPostgres(unittest.IsolatedAsyncioTestCase):
         self.folder = os.path.dirname(os.path.realpath(__file__))
         self.config_folder = os.path.join(
             self.folder,
-            "../../mcpuniverse/benchmark/configs/mcpmark/configs/postgres"
+            "../../mcpuniverse/benchmark/mcpmark/task_configs/postgres"
         )
 
     # Chinook category tests
@@ -23,7 +23,7 @@ class TestFunctionsMCPMarkPostgres(unittest.IsolatedAsyncioTestCase):
         config_file = os.path.join(
             self.config_folder, "chinook/customer_data_migration.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -44,7 +44,7 @@ class TestFunctionsMCPMarkPostgres(unittest.IsolatedAsyncioTestCase):
             self.config_folder,
             "chinook/employee_hierarchy_management.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -64,7 +64,7 @@ class TestFunctionsMCPMarkPostgres(unittest.IsolatedAsyncioTestCase):
         config_file = os.path.join(
             self.config_folder, "chinook/sales_and_music_charts.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -85,7 +85,7 @@ class TestFunctionsMCPMarkPostgres(unittest.IsolatedAsyncioTestCase):
         config_file = os.path.join(
             self.config_folder, "dvdrental/customer_analysis_fix.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -106,7 +106,7 @@ class TestFunctionsMCPMarkPostgres(unittest.IsolatedAsyncioTestCase):
             self.config_folder,
             "dvdrental/customer_analytics_optimization.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -126,7 +126,7 @@ class TestFunctionsMCPMarkPostgres(unittest.IsolatedAsyncioTestCase):
         config_file = os.path.join(
             self.config_folder, "dvdrental/film_inventory_management.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -148,7 +148,7 @@ class TestFunctionsMCPMarkPostgres(unittest.IsolatedAsyncioTestCase):
             self.config_folder,
             "employees/employee_demographics_report.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -169,7 +169,7 @@ class TestFunctionsMCPMarkPostgres(unittest.IsolatedAsyncioTestCase):
             self.config_folder,
             "employees/employee_performance_analysis.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -189,7 +189,7 @@ class TestFunctionsMCPMarkPostgres(unittest.IsolatedAsyncioTestCase):
         config_file = os.path.join(
             self.config_folder, "employees/employee_project_tracking.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -209,7 +209,7 @@ class TestFunctionsMCPMarkPostgres(unittest.IsolatedAsyncioTestCase):
         config_file = os.path.join(
             self.config_folder, "employees/employee_retention_analysis.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -230,7 +230,7 @@ class TestFunctionsMCPMarkPostgres(unittest.IsolatedAsyncioTestCase):
             self.config_folder,
             "employees/executive_dashboard_automation.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -251,7 +251,7 @@ class TestFunctionsMCPMarkPostgres(unittest.IsolatedAsyncioTestCase):
             self.config_folder,
             "employees/management_structure_analysis.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -272,7 +272,7 @@ class TestFunctionsMCPMarkPostgres(unittest.IsolatedAsyncioTestCase):
         config_file = os.path.join(
             self.config_folder, "lego/consistency_enforcement.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -292,7 +292,7 @@ class TestFunctionsMCPMarkPostgres(unittest.IsolatedAsyncioTestCase):
         config_file = os.path.join(
             self.config_folder, "lego/database_security_policies.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -313,7 +313,7 @@ class TestFunctionsMCPMarkPostgres(unittest.IsolatedAsyncioTestCase):
             self.config_folder,
             "lego/transactional_inventory_transfer.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -334,7 +334,7 @@ class TestFunctionsMCPMarkPostgres(unittest.IsolatedAsyncioTestCase):
         config_file = os.path.join(
             self.config_folder, "security/rls_business_access.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -354,7 +354,7 @@ class TestFunctionsMCPMarkPostgres(unittest.IsolatedAsyncioTestCase):
         config_file = os.path.join(
             self.config_folder, "security/user_permission_audit.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -375,7 +375,7 @@ class TestFunctionsMCPMarkPostgres(unittest.IsolatedAsyncioTestCase):
         config_file = os.path.join(
             self.config_folder, "sports/baseball_player_analysis.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -396,7 +396,7 @@ class TestFunctionsMCPMarkPostgres(unittest.IsolatedAsyncioTestCase):
             self.config_folder,
             "sports/participant_report_optimization.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -416,7 +416,7 @@ class TestFunctionsMCPMarkPostgres(unittest.IsolatedAsyncioTestCase):
         config_file = os.path.join(
             self.config_folder, "sports/team_roster_management.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")
@@ -437,7 +437,7 @@ class TestFunctionsMCPMarkPostgres(unittest.IsolatedAsyncioTestCase):
         config_file = os.path.join(
             self.config_folder, "vectors/dba_vector_analysis.json"
         )
-        task = Task(config_file)
+        task = Task(config_file, benchmark_id='mcpmark')
         print(task.get_evaluators())
 
         eval_results = await task.evaluate("")

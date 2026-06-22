@@ -13,7 +13,7 @@ class TestBenchmarkRunnerMCPMarkNotion(unittest.IsolatedAsyncioTestCase):
 
         print("Running Notion tasks...")
         trace_collector = FileCollector(log_file="log/mcpmark/mcpmark_notion.log")
-        benchmark = BenchmarkRunner("mcpmark/configs/mcpmark_notion.yaml")
+        benchmark = BenchmarkRunner("mcpmark/mcpmark_notion.yaml")
         benchmark_results = await benchmark.run(trace_collector=trace_collector, callbacks=get_vprint_callbacks())
         report = BenchmarkReport(benchmark, trace_collector=trace_collector)
         report.dump()

@@ -3,7 +3,7 @@
 # Script to run all JSON task files from a folder in parallel using the new config-based test script
 # Usage: ./test_deepresearch_paralell_config.sh [benchmark_yaml] [task_folder] [num_processes] [special_name] [limit|start] [end]
 #   - benchmark_yaml: Path to the benchmark YAML config file (required)
-#   - task_folder: Folder containing JSON task files (default: mcpuniverse/benchmark/configs/deepresearch/task_yamls/browse_comp_2025_11_19)
+#   - task_folder: Folder containing JSON task files (default: mcpuniverse/benchmark/deepresearch/task_yamls/browse_comp_2025_11_19)
 #   - num_processes: Number of parallel processes (default: 10)
 #   - special_name: Special name for the benchmark run (optional)
 #   - Range mode: If both arg 5 and arg 6 are numbers, process files from start to end (inclusive)
@@ -18,7 +18,7 @@ if [ -z "$BENCHMARK_YAML" ]; then
 fi
 
 # Get the task folder path from second argument or use default
-TASK_FOLDER="${2:-mcpuniverse/benchmark/configs/deepresearch/task_yamls/browse_comp_2025_11_19}"
+TASK_FOLDER="${2:-mcpuniverse/benchmark/deepresearch/task_yamls/browse_comp_2025_11_19}"
 # Get the number of parallel processes from third argument (optional, default 10)
 NUM_PROCESSES="${3:-10}"
 # Get the special name from fourth argument (optional)

@@ -1,0 +1,29 @@
+kind: llm
+spec:
+  name: llm-1
+  type: sf_research_gateway
+  config:
+    model_name: gpt-4o-mini
+    api_key: $SALESFORCE_GATEWAY_KEY
+
+---
+kind: agent
+spec:
+  name: ReAct-agent
+  type: react
+  config:
+    llm: llm-1
+    instruction: You are an agent for weather forecasting.
+    summarize_tool_response: true
+    servers:
+      - name: weather
+
+---
+kind: benchmark
+spec:
+  description: Test the agent for weather forecasting
+  benchmark_id: dummy
+  agent: ReAct-agent
+  tasks:
+    - tasks/weather_1.json
+    # - tasks/weather_2.json

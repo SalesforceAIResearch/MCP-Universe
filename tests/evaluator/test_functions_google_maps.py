@@ -1,6 +1,6 @@
 import unittest
 import pytest
-from mcpuniverse.evaluator.google_maps.functions import *
+from mcpuniverse.benchmark.mcpuniverse.evaluators.google_maps.functions import *
 
 
 class TestFunctionsExtra(unittest.IsolatedAsyncioTestCase):
