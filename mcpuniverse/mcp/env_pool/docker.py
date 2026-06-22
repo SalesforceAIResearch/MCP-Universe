@@ -16,6 +16,7 @@ import time
 import hashlib
 import tempfile
 import traceback
+from concurrent.futures import ThreadPoolExecutor
 from typing import Dict, List, Optional, Tuple
 from contextlib import closing
 
@@ -53,6 +54,13 @@ class DockerProvisioner(BaseProvisioner):
         build_context: str = ".",
         auto_build: bool = True,
         image_prefix: str = "mcp-universe/gateway",
+        registry: Optional[str] = None,
+        gc_disk_threshold: float = 0.70,
+        max_docker_workers: int = 32,
+        destroy_workers: int = 8,
+        docker_cmd_timeout: float = 180.0,
+        docker_build_timeout: float = 1800.0,
+        docker_cmd_retries: int = 2,
     ):
         """Initialize Docker provisioner.
 
@@ -88,6 +96,15 @@ class DockerProvisioner(BaseProvisioner):
         self.build_context = build_context
         self.auto_build = auto_build
         self.image_prefix = image_prefix
+        # Optional image registry (e.g. "localhost:5000"). When set, images are
+        # pulled from it before building (fast, persistent library on shared
+        # storage) and pushed to it after a build. Empty/None => unchanged
+        # legacy behavior (build-only). Opt-in so existing envs are unaffected.
+        self.registry = (registry or "").strip().rstrip("/")
+        # When the Docker host's local disk exceeds this fraction, unused images
+        # are garbage-collected (they can be re-pulled from the registry). Only
+        # active when a registry is configured.
+        self.gc_disk_threshold = gc_disk_threshold
 
         self._envs: Dict[str, EnvInfo] = {}
         self._port_map: Dict[str, int] = {}  # env_id -> host port
@@ -98,6 +115,31 @@ class DockerProvisioner(BaseProvisioner):
         self._dockerfile_hash_cache: Dict[str, str] = {}
         self._clean_docker_config_dir: Optional[str] = None
         self._build_broken: bool = False  # set True if build succeeds but image missing
+
+        # Docker CLI calls run in a DEDICATED bounded thread pool (NOT the event
+        # loop's default executor) so a slow/hung daemon endpoint can't starve
+        # other asyncio work. Each call also gets a hard timeout: a hung
+        # ``docker`` process (e.g. behind a 504-ing proxy) otherwise occupies
+        # its worker thread forever — cancelling the awaiting coroutine does NOT
+        # kill the subprocess — which previously saturated the pool and wedged
+        # the whole rollout loop. The timeout kills the child and frees the
+        # thread; transient gateway errors (502/503/504) + timeouts are retried.
+        self._docker_executor = ThreadPoolExecutor(
+            max_workers=max(1, int(max_docker_workers)),
+            thread_name_prefix="docker-cmd",
+        )
+        # SEPARATE pool for destructive ops (rm / stop). Container teardown must
+        # never compete with — and starve — container creation: a slow ``rm``
+        # storm otherwise fills the shared pool and blocks every ``docker run``,
+        # stalling the whole rollout. Isolating them guarantees creates always
+        # have threads regardless of how backed-up teardown gets.
+        self._destroy_executor = ThreadPoolExecutor(
+            max_workers=max(1, int(destroy_workers)),
+            thread_name_prefix="docker-destroy",
+        )
+        self._docker_cmd_timeout = float(docker_cmd_timeout)
+        self._docker_build_timeout = float(docker_build_timeout)
+        self._docker_cmd_retries = max(0, int(docker_cmd_retries))
 
     # ------------------------------------------------------------------
     # Docker config helpers
@@ -289,17 +331,132 @@ class DockerProvisioner(BaseProvisioner):
         """Return ``{image_prefix}:{dockerfile_hash}``."""
         return f"{self.image_prefix}:{self.compute_dockerfile_hash(dockerfile_path)}"
 
+    def _image_name_for_config(self, config: EnvConfig) -> str:
+        """Image name keyed by the dockerfile hash AND build args.
+
+        Build args (e.g. ``R2E_BASE_IMAGE`` per SWE task) change what gets built,
+        so they must be part of the tag — otherwise tasks sharing one Dockerfile
+        but different bases would collide on a single image. With no build args the
+        tag is exactly the dockerfile hash, so existing envs are unaffected.
+        """
+        dockerfile_hash = self.compute_dockerfile_hash(config.dockerfile_path)
+        if not config.build_args:
+            return f"{self.image_prefix}:{dockerfile_hash}"
+        ba = json.dumps(
+            {str(k): str(v) for k, v in sorted(config.build_args.items())},
+            separators=(",", ":"),
+        )
+        tag = hashlib.sha256(f"{dockerfile_hash}|{ba}".encode("utf-8")).hexdigest()
+        return f"{self.image_prefix}:{tag}"
+
     async def _image_exists(self, image_name: str) -> bool:
         """Check whether *image_name* exists on the Docker host."""
         result = await self._run_docker_cmd(["images", "-q", image_name], check=False)
         return bool(result.stdout.strip())
 
-    async def _build_image(self, dockerfile_path: str, image_name: str) -> bool:
+    def _registry_ref(self, image_name: str) -> str:
+        """Registry-qualified ref for *image_name* (``{registry}/{name}``)."""
+        return f"{self.registry}/{image_name}"
+
+    async def _pull_from_registry(self, image_name: str) -> bool:
+        """Pull *image_name* from the registry and tag it locally.
+
+        Returns True if the image is now present locally. No-op (False) when no
+        registry is configured. Best-effort: a miss (image not in registry) or
+        any error returns False so the caller falls back to building.
+        """
+        if not self.registry:
+            return False
+        ref = self._registry_ref(image_name)
+        try:
+            res = await self._run_docker_cmd(
+                ["pull", ref], check=False, timeout=self._docker_build_timeout,
+            )
+            if res.returncode != 0:
+                return False
+            # Tag to the local name the pool builds/runs/looks up by.
+            await self._run_docker_cmd(["tag", ref, image_name], check=False)
+            logger.info("Pulled image {} from registry {}", image_name, self.registry)
+            return True
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Registry pull failed for {}: {}", ref, exc)
+            return False
+
+    async def _push_to_registry(self, image_name: str) -> None:
+        """Tag + push *image_name* to the registry (best-effort, non-fatal)."""
+        if not self.registry:
+            return
+        ref = self._registry_ref(image_name)
+        try:
+            await self._run_docker_cmd(["tag", image_name, ref], check=False)
+            res = await self._run_docker_cmd(
+                ["push", ref], check=False, timeout=self._docker_build_timeout,
+            )
+            if res.returncode == 0:
+                logger.info("Pushed image {} to registry {}", image_name, self.registry)
+            else:
+                logger.warning("Registry push failed for {} (rc={})", ref, res.returncode)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Registry push error for {}: {}", ref, exc)
+
+    async def gc_unused_images(self) -> int:
+        """Remove images not used by any container when local disk is high.
+
+        Prevents the Docker host's (small, local) disk from filling up: images
+        evicted here can be re-pulled from the registry on demand. Only runs when
+        a registry is configured (so eviction is safe). Returns #images removed.
+        """
+        if not self.registry:
+            return 0
+        try:
+            usage = await self._disk_usage_fraction()
+            if usage is None or usage < self.gc_disk_threshold:
+                return 0
+            # Prune dangling first, then all images with no container reference
+            # (these can be re-pulled from the registry). Images used by a
+            # running container (incl. the registry itself) are never touched.
+            await self._run_docker_cmd(["image", "prune", "-f"], check=False)
+            res = await self._run_docker_cmd(
+                ["image", "prune", "-a", "-f"], check=False)
+            removed = res.stdout.count("deleted:") if res.stdout else 0
+            logger.info(
+                "GC: disk at {:.0%} >= {:.0%}, pruned unused images (~{} layers); "
+                "evicted images re-pull from registry on demand.",
+                usage, self.gc_disk_threshold, removed,
+            )
+            return removed
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Image GC failed: {}", exc)
+            return 0
+
+    async def _disk_usage_fraction(self) -> Optional[float]:
+        """Fraction (0-1) of the Docker host's data-root filesystem in use.
+
+        Probes the *host* filesystem (not a container's) by bind-mounting ``/``
+        and running ``df`` on the Docker data-root. Returns None on any error.
+        """
+        try:
+            res = await self._run_docker_cmd(
+                ["run", "--rm", "-v", "/:/host:ro", "busybox",
+                 "df", "-P", "/host/var/lib/docker"],
+                check=False,
+            )
+            for line in reversed((res.stdout or "").splitlines()):
+                for tok in line.split():
+                    if tok.endswith("%") and tok[:-1].isdigit():
+                        return int(tok[:-1]) / 100.0
+            return None
+        except Exception:  # noqa: BLE001
+            return None
+
+    async def _build_image(self, dockerfile_path: str, image_name: str,
+                           build_args: Optional[Dict[str, str]] = None) -> bool:
         """Run ``docker build`` and return True on success.
 
-        After the build command returns, verifies the image actually exists
-        on the Docker host (some remote daemons report success but don't
-        persist the image).
+        ``build_args`` are passed as ``--build-arg k=v`` (e.g. the per-task
+        ``R2E_BASE_IMAGE`` for SWE envs). After the build command returns,
+        verifies the image actually exists on the Docker host (some remote
+        daemons report success but don't persist the image).
         """
         abs_path = self._resolve_dockerfile_path(dockerfile_path)
         abs_context = os.path.abspath(self.build_context)
@@ -315,11 +472,14 @@ class DockerProvisioner(BaseProvisioner):
             logger.error("Dockerfile does not exist: {}", abs_path)
             return False
 
+        build_cmd = ["build", "-f", abs_path, "-t", image_name]
+        for key, value in (build_args or {}).items():
+            build_cmd.extend(["--build-arg", f"{key}={value}"])
+        build_cmd.append(abs_context)
+
         logger.info("This may take several minutes for the first build...")
         try:
-            await self._run_docker_cmd([
-                "build", "-f", abs_path, "-t", image_name, abs_context,
-            ])
+            await self._run_docker_cmd(build_cmd, timeout=self._docker_build_timeout)
         except Exception as e:
             logger.error("Failed to build image {} on {}: {}", image_name, host_label, e)
             return False
@@ -338,7 +498,7 @@ class DockerProvisioner(BaseProvisioner):
         logger.info("Successfully built and verified image {} on {}", image_name, host_label)
         return True
 
-    async def _ensure_image_for_config(self, config: EnvConfig) -> Tuple[str, str]:
+    async def _ensure_image_for_config(self, config: EnvConfig) -> Tuple[str, str]:  # pylint: disable=too-many-return-statements
         """Ensure the image for *config* exists, building if necessary.
 
         Uses a lock + event to prevent parallel builds of the same image.
@@ -350,7 +510,7 @@ class DockerProvisioner(BaseProvisioner):
             return (self.image, "")
 
         dockerfile_hash = self.compute_dockerfile_hash(config.dockerfile_path)
-        image_name = self._get_image_name_for_dockerfile(config.dockerfile_path)
+        image_name = self._image_name_for_config(config)
 
         # Fast path: already built this session
         if image_name in self._built_images:
@@ -387,9 +547,18 @@ class DockerProvisioner(BaseProvisioner):
 
         # This task builds the image
         try:
+            # Prefer the registry (fast local pull, persistent library that
+            # survives Docker-host restarts) before building from scratch.
+            # No-op when no registry is configured (legacy build-only path).
+            if await self._pull_from_registry(image_name):
+                self._built_images.add(image_name)
+                return (image_name, dockerfile_hash)
             if self.auto_build:
-                if await self._build_image(config.dockerfile_path, image_name):
+                if await self._build_image(config.dockerfile_path, image_name, config.build_args):
                     self._built_images.add(image_name)
+                    # Publish to the registry so future pulls (and other hosts /
+                    # post-restart) skip the build. Best-effort, non-fatal.
+                    await self._push_to_registry(image_name)
                     return (image_name, dockerfile_hash)
                 raise RuntimeError(
                     f"Failed to build image from {config.dockerfile_path}\n"
@@ -411,22 +580,51 @@ class DockerProvisioner(BaseProvisioner):
     # Docker command execution
     # ------------------------------------------------------------------
 
+    @staticmethod
+    def _is_transient_docker_error(text: str) -> bool:
+        """Detect transient daemon/proxy errors worth a short retry.
+
+        The Docker endpoint is usually fronted by an HTTP proxy/ingress that
+        can return 502/503/504 (or reset the connection) when the daemon is
+        briefly slow. These are transient and a short retry typically
+        succeeds, so we don't burn the caller's higher-level retry budget.
+        """
+        if not text:
+            return False
+        low = text.lower()
+        return any(s in low for s in (
+            "502 bad gateway", "503 service", "504 gateway",
+            "gateway time-out", "gateway timeout", "bad gateway",
+            "timeout exceeded while awaiting headers",
+            "connection reset by peer", "connection refused",
+            "i/o timeout", "unexpected eof",
+        ))
+
     async def _run_docker_cmd(self, args: List[str],
-                              check: bool = True) -> subprocess.CompletedProcess:
+                              check: bool = True,
+                              timeout: Optional[float] = None,
+                              retries: Optional[int] = None,
+                              ) -> subprocess.CompletedProcess:
         """Run a ``docker`` CLI command asynchronously.
 
-        Uses ``subprocess.run`` in a thread executor instead of
-        ``asyncio.create_subprocess_exec`` to avoid the child-watcher
-        dependency.  Ray sets the global event-loop policy to uvloop,
-        whose policy raises ``NotImplementedError`` on
-        ``get_child_watcher()``, breaking ``create_subprocess_exec``
-        on ``SelectorEventLoop``.
+        Runs ``subprocess.run`` in a DEDICATED bounded thread pool (not the
+        loop's default executor) with a hard ``timeout``. This avoids the
+        ``asyncio.create_subprocess_exec`` child-watcher dependency (Ray's
+        uvloop policy raises ``NotImplementedError`` on ``get_child_watcher``)
+        AND, crucially, keeps a slow/hung Docker endpoint from wedging the
+        whole rollout loop: a hung ``docker`` process otherwise pins its worker
+        thread forever (cancelling the awaiting coroutine does NOT kill the
+        subprocess). The timeout kills the child and frees the thread; transient
+        gateway errors (502/503/504) and timeouts are retried with backoff.
         """
         cmd = ["docker"]
         if self.docker_host:
             cmd.extend(["-H", self.docker_host])
         cmd.extend(args)
-        logger.debug("Running: {}", ' '.join(cmd))
+        # Defensive: a config value may arrive non-str (e.g. hydra parsing
+        # ``cpu_limit=4`` as int). asyncio's subprocess exec and ``' '.join``
+        # below both require str args, so normalize the whole command.
+        cmd = [str(c) for c in cmd]
 
         env = os.environ.copy()
         if self.docker_host:
@@ -438,29 +636,72 @@ class DockerProvisioner(BaseProvisioner):
             clean_cfg_dir = self._get_clean_docker_config()
             env["DOCKER_CONFIG"] = clean_cfg_dir
 
+        timeout = self._docker_cmd_timeout if timeout is None else timeout
+        retries = self._docker_cmd_retries if retries is None else max(0, int(retries))
         loop = asyncio.get_running_loop()
-        result = await loop.run_in_executor(
-            None,
-            lambda: subprocess.run(
-                cmd, capture_output=True, env=env, check=False,
-            ),
+        # Destructive ops run on a DEDICATED pool so a teardown backlog can never
+        # starve container creation (the cause of rollout-wide stalls).
+        executor = (
+            self._destroy_executor
+            if (args and str(args[0]) in ("rm", "stop"))
+            else self._docker_executor
         )
 
-        if check and result.returncode != 0:
-            msg = f"Docker command failed (exit code {result.returncode})"
-            stderr_text = result.stderr.decode() if isinstance(result.stderr, bytes) else result.stderr
-            stdout_text = result.stdout.decode() if isinstance(result.stdout, bytes) else result.stdout
-            if stderr_text:
-                msg += f"\nSTDERR:\n{stderr_text}"
-            if stdout_text:
-                msg += f"\nSTDOUT:\n{stdout_text}"
-            raise RuntimeError(msg)
+        def _run() -> subprocess.CompletedProcess:
+            return subprocess.run(
+                cmd, capture_output=True, env=env, check=False, timeout=timeout,
+            )
 
-        return subprocess.CompletedProcess(
-            cmd, result.returncode,
-            result.stdout.decode() if isinstance(result.stdout, bytes) else result.stdout,
-            result.stderr.decode() if isinstance(result.stderr, bytes) else result.stderr,
-        )
+        for attempt in range(retries + 1):
+            logger.debug("Running (try {}/{}): {}", attempt + 1, retries + 1, ' '.join(cmd))
+            try:
+                result = await loop.run_in_executor(executor, _run)
+            except subprocess.TimeoutExpired as exc:
+                logger.warning(
+                    "Docker cmd timed out after {:.0f}s (attempt {}/{}); killed, {}",
+                    timeout, attempt + 1, retries + 1,
+                    "retrying" if attempt < retries else "giving up",
+                )
+                if attempt < retries:
+                    await asyncio.sleep(min(2.0 * (attempt + 1), 10.0))
+                    continue
+                raise RuntimeError(
+                    f"Docker command timed out after {timeout:.0f}s: {' '.join(cmd)}"
+                ) from exc
+
+            stderr_text = (
+                result.stderr.decode() if isinstance(result.stderr, bytes)
+                else (result.stderr or "")
+            )
+            stdout_text = (
+                result.stdout.decode() if isinstance(result.stdout, bytes)
+                else (result.stdout or "")
+            )
+
+            # Transient proxy/daemon error -> short retry instead of failing.
+            if (result.returncode != 0 and attempt < retries
+                    and self._is_transient_docker_error(stderr_text)):
+                logger.warning(
+                    "Transient docker error (attempt {}/{}), retrying: {}",
+                    attempt + 1, retries + 1, stderr_text.strip()[:200],
+                )
+                await asyncio.sleep(min(2.0 * (attempt + 1), 10.0))
+                continue
+
+            if check and result.returncode != 0:
+                msg = f"Docker command failed (exit code {result.returncode})"
+                if stderr_text:
+                    msg += f"\nSTDERR:\n{stderr_text}"
+                if stdout_text:
+                    msg += f"\nSTDOUT:\n{stdout_text}"
+                raise RuntimeError(msg)
+
+            return subprocess.CompletedProcess(
+                cmd, result.returncode, stdout_text, stderr_text,
+            )
+
+        # Defensive: the loop always returns or raises above.
+        raise RuntimeError(f"Docker command failed: {' '.join(cmd)}")
 
     # ------------------------------------------------------------------
     # Lifecycle: create / destroy / reset / health_check
@@ -658,7 +899,12 @@ class DockerProvisioner(BaseProvisioner):
             return False
         container_name = f"mcp-env-{env_id}"
         try:
-            await self._run_docker_cmd(["stop", container_name], check=False)
+            # ``rm -f`` (SIGKILL + remove) in ONE command — skip the graceful
+            # ``docker stop`` grace period. The container is being discarded, so
+            # a clean shutdown is pointless; the 10s ``stop`` grace under destroy
+            # churn was overrunning ``cleanup_timeout`` and getting the release
+            # cancelled mid-``stop``, leaving half-stopped orphan containers
+            # (and doubling the docker ops per teardown).
             await self._run_docker_cmd(["rm", "-f", container_name], check=False)
             env_info.status = EnvStatus.TERMINATED
             self._port_map.pop(env_id, None)

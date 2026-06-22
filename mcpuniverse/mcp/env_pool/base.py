@@ -2,11 +2,14 @@
 Base classes and types for environment provisioners.
 """
 
+import dataclasses
+import hashlib
+import json
 import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Dict, List, NamedTuple, Optional
+from typing import Any, Dict, List, NamedTuple, Optional
 
 
 class EnvStatus(Enum):
@@ -16,11 +19,12 @@ class EnvStatus(Enum):
     IN_USE = "in_use"        # Assigned to an agent
     RESETTING = "resetting"  # Being reset
     ERROR = "error"          # Error state
+    PENDING_DESTROY = "pending_destroy"  # Released, queued for background destroy
     TERMINATED = "terminated"  # Destroyed
 
 
 @dataclass
-class EnvConfig:
+class EnvConfig:  # pylint: disable=too-many-instance-attributes
     """Configuration for an MCP environment.
 
     Each task can specify its own Dockerfile.  The system uses the Dockerfile
@@ -70,6 +74,62 @@ class EnvConfig:
     # before gateway). The Dockerfile CMD should start the gateway itself after setup.
     # Gateway port/mode/servers are passed via environment variables (MCP_GATEWAY_PORT, etc.)
     use_dockerfile_cmd: bool = False
+
+    # Extra gateway health-check ports and Docker build args. They are optional
+    # per-task env-pool knobs used by RL rollout integrations.
+    health_check_extra_ports: List[int] = field(default_factory=list)
+    build_args: Dict[str, str] = field(default_factory=dict)
+
+    # Optional auxiliary internal port to allocate for this env, injected into the
+    # container under caller-supplied env var name(s) with ``{port}`` formatted in.
+    # Generic mechanism: any env needing a second internal port (shared netns)
+    # uses it; the NAMES are task-specific and supplied by config, so the
+    # provisioner/worker stay task-agnostic. Empty -> no aux port allocated.
+    # Example: {"MY_CTRL_PORT": "{port}", "MY_CTRL_URL": "http://localhost:{port}"}
+    control_port_vars: Dict[str, str] = field(default_factory=dict)
+
+
+def _canonical_env_config(config: Optional[EnvConfig]) -> Dict[str, Any]:
+    """Return a stable plain dict for EnvConfig identity checks."""
+    if config is None:
+        return {}
+    data = dataclasses.asdict(config)
+    data["servers"] = sorted(str(server) for server in data.get("servers", []))
+    data["volumes"] = [str(volume) for volume in data.get("volumes", [])]
+    data["health_check_extra_ports"] = [
+        int(port) for port in data.get("health_check_extra_ports", [])
+    ]
+    data["env_vars"] = {
+        str(key): str(value)
+        for key, value in sorted(data.get("env_vars", {}).items())
+    }
+    data["build_args"] = {
+        str(key): str(value)
+        for key, value in sorted(data.get("build_args", {}).items())
+    }
+    return data
+
+
+def env_config_key(config: Optional[EnvConfig]) -> str:
+    """Return a deterministic key for an environment configuration."""
+    payload = json.dumps(
+        _canonical_env_config(config),
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def env_configs_compatible(
+    existing: Optional[EnvConfig],
+    requested: Optional[EnvConfig],
+) -> bool:
+    """Return whether an existing env can satisfy a requested config."""
+    if requested is None:
+        return True
+    if existing is None:
+        return env_config_key(requested) == env_config_key(EnvConfig())
+    return env_config_key(existing) == env_config_key(requested)
 
 
 @dataclass

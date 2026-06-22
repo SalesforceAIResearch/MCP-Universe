@@ -35,6 +35,8 @@ from .base import (
     EnvConfig,
     EnvInfo,
     EnvStatus,
+    env_config_key,
+    env_configs_compatible,
 )
 from .docker import DockerProvisioner
 from .manager import EnvPoolManager
@@ -45,6 +47,8 @@ __all__ = [
     "EnvConfig",
     "EnvInfo",
     "EnvStatus",
+    "env_config_key",
+    "env_configs_compatible",
     # Provisioners
     "DockerProvisioner",
     # Manager

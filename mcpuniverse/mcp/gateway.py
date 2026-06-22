@@ -23,7 +23,7 @@ import click
 import uvicorn
 from anyio.streams.memory import MemoryObjectReceiveStream, MemoryObjectSendStream
 from starlette.applications import Starlette
-from starlette.responses import JSONResponse
+from starlette.responses import JSONResponse, Response
 from starlette.routing import Mount, Route
 from mcp import stdio_client, StdioServerParameters
 from mcp.server.sse import SseServerTransport
@@ -183,6 +183,18 @@ class ServerConnector(metaclass=AutodocABCMeta):
             ):
                 async for message in self._read_stream:
                     self._last_activity = time.monotonic()
+                    # stdio servers sometimes print non-JSON-RPC lines to stdout
+                    # (startup banners, logs, warnings). The MCP stdio reader
+                    # surfaces those as parse-error Exceptions on this stream.
+                    # Forwarding them to the SSE client crashes the proxy and
+                    # closes the connection, so drop them and keep the session
+                    # alive (be liberal in what we accept). Real protocol errors
+                    # arrive as valid JSON-RPC error responses, not Exceptions.
+                    if isinstance(message, Exception):
+                        self._logger.debug(
+                            "Dropping non-JSON-RPC stdout from MCP server: %s", message
+                        )
+                        continue
                     await write_stream.send(message)
         except Exception as e:
             error_msg = str(e)
@@ -651,6 +663,72 @@ class Gateway(metaclass=AutodocABCMeta):
 
         return self._build_routes(server_name, connect_fn=connect_fn)
 
+    def _build_control_proxy_routes(self) -> List:
+        """Optionally reverse-proxy a path prefix to a sidecar control API.
+
+        Generic single-entry-point routing: when ``GATEWAY_CONTROL_PROXY_URL``
+        is set, the gateway forwards every request under
+        ``GATEWAY_CONTROL_PROXY_PREFIX`` (default ``/control``) to that URL
+        (prefix stripped), so a container that runs a separate control service
+        alongside the MCP gateway is still reachable through the single
+        published gateway port. This keeps the env-pool "one env = one address"
+        model intact.
+
+        Disabled by default: when the env var is unset (e.g. stateless RL
+        envs) no route is registered and behaviour is unchanged.
+        """
+        control_url = os.environ.get("GATEWAY_CONTROL_PROXY_URL", "").strip().rstrip("/")
+        if not control_url:
+            return []
+        prefix = os.environ.get("GATEWAY_CONTROL_PROXY_PREFIX", "/control").strip()
+        if not prefix.startswith("/"):
+            prefix = "/" + prefix
+        prefix = prefix.rstrip("/")
+        timeout = float(os.environ.get("GATEWAY_CONTROL_PROXY_TIMEOUT", "960"))
+
+        async def control_proxy(request):
+            # Lazy import: httpx is only pulled in when the control proxy is enabled.
+            import httpx  # pylint: disable=import-outside-toplevel
+            sub_path = request.path_params.get("path", "")
+            target = f"{control_url}/{sub_path}"
+            if request.url.query:
+                target = f"{target}?{request.url.query}"
+            body = await request.body()
+            fwd_headers = {
+                k: v for k, v in request.headers.items()
+                if k.lower() not in ("host", "content-length")
+            }
+            try:
+                async with httpx.AsyncClient(timeout=timeout) as client:
+                    upstream = await client.request(
+                        request.method, target, content=body, headers=fwd_headers,
+                    )
+            except Exception as exc:  # surface as JSON so callers don't hit a decode error
+                return JSONResponse(
+                    {"ok": False, "error": f"control proxy error: {exc}"},
+                    status_code=502,
+                )
+            hop_by_hop = {"content-length", "transfer-encoding", "connection"}
+            out_headers = {
+                k: v for k, v in upstream.headers.items()
+                if k.lower() not in hop_by_hop
+            }
+            return Response(
+                content=upstream.content,
+                status_code=upstream.status_code,
+                headers=out_headers,
+                media_type=upstream.headers.get("content-type"),
+            )
+
+        self._logger.info("Gateway control proxy enabled: %s/* -> %s", prefix, control_url)
+        return [
+            Route(
+                f"{prefix}/{{path:path}}",
+                endpoint=control_proxy,
+                methods=["GET", "POST", "PUT", "DELETE", "PATCH"],
+            )
+        ]
+
     def build_starlette_app(
             self,
             mode: str = "stdio",
@@ -678,6 +756,9 @@ class Gateway(metaclass=AutodocABCMeta):
         routes = []
         for server_name, process in self._processes.items():
             routes.extend(process["routes"])
+
+        # Env-gated sidecar control proxy (no-op unless GATEWAY_CONTROL_PROXY_URL set)
+        routes.extend(self._build_control_proxy_routes())
 
         @asynccontextmanager
         async def lifespan(_: Starlette):
