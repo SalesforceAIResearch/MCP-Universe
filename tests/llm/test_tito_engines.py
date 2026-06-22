@@ -22,8 +22,14 @@ from mcpuniverse.llm import (
     SGLangEngineConfig,
     VLLMEngineConfig,
 )
+# AsyncVLLMEngine.__init__ hard-requires vllm (raises ImportError if absent),
+# unlike AsyncSGLangEngine (lazy at init_engine()). ``_AsyncLLMEngine`` is the
+# engine module's own "is vllm importable?" sentinel (None when vllm is missing),
+# so this one test skips in CI's core-only env instead of erroring.
+from mcpuniverse.llm.tito.engine import _AsyncLLMEngine as _VLLM_ENGINE_CLS
 
 
+@pytest.mark.skipif(_VLLM_ENGINE_CLS is None, reason="vllm not installed")
 def test_async_vllm_engine_stores_config_without_engine_load():
     engine = AsyncVLLMEngine(
         model_path="/tmp/fake-model",

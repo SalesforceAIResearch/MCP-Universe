@@ -22,12 +22,27 @@ The correct contract — verified against SGLang ``io_struct.py`` —— is
 """
 
 import asyncio
+from types import SimpleNamespace
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from mcpuniverse.llm.tito import TITOLLMWrapper
+
+
+def _patch_ray_get(monkeypatch, fn):
+    """Replace the WHOLE ``wrapper.ray`` object (not ``ray.get``).
+
+    ``ray`` is optional: wrapper.py does ``try: import ray except ImportError:
+    ray = None``. In CI's core-only env (no ray) ``wrapper.ray`` is ``None``, so
+    patching ``wrapper.ray.get`` fails with ``'NoneType' has no attribute 'get'``.
+    Swapping the whole ``ray`` attribute for a stub works with or without ray
+    installed, and ``_call_ray`` only ever calls ``ray.get``.
+    """
+    monkeypatch.setattr(
+        "mcpuniverse.llm.tito.wrapper.ray", SimpleNamespace(get=fn),
+    )
 
 
 class _FakeTokenizer:
@@ -83,9 +98,7 @@ def test_call_ray_always_sends_list_int_not_tensor(backend, monkeypatch):
 
     # Stub ``ray.get`` so it returns a TokenOutput-like result.
     fake_result = _FakeTokenOutput(token_ids=[100, 200, 300])
-    monkeypatch.setattr(
-        "mcpuniverse.llm.tito.wrapper.ray.get", lambda ref: fake_result,
-    )
+    _patch_ray_get(monkeypatch, lambda ref: fake_result)
 
     async def _drive():
         return await wrapper._call_ray(
@@ -117,10 +130,7 @@ def test_call_ray_strips_max_tokens_and_max_new_tokens(backend, monkeypatch):
     based on the rollout config to avoid mid-trajectory context overflow.
     """
     wrapper, engine = _make_wrapper(backend)
-    monkeypatch.setattr(
-        "mcpuniverse.llm.tito.wrapper.ray.get",
-        lambda ref: _FakeTokenOutput(),
-    )
+    _patch_ray_get(monkeypatch, lambda ref: _FakeTokenOutput())
 
     asyncio.run(
         wrapper._call_ray(
@@ -145,10 +155,7 @@ def test_call_ray_token_ids_iterable_other_than_list_is_normalized(monkeypatch):
     misroute (the bug being defended against).
     """
     wrapper, engine = _make_wrapper(backend="sglang")
-    monkeypatch.setattr(
-        "mcpuniverse.llm.tito.wrapper.ray.get",
-        lambda ref: _FakeTokenOutput(),
-    )
+    _patch_ray_get(monkeypatch, lambda ref: _FakeTokenOutput())
 
     asyncio.run(
         wrapper._call_ray(
@@ -168,10 +175,7 @@ def test_call_ray_handles_token_output_result(monkeypatch):
     ``append_response_tokens(...)``.
     """
     wrapper, engine = _make_wrapper(backend="sglang")
-    monkeypatch.setattr(
-        "mcpuniverse.llm.tito.wrapper.ray.get",
-        lambda ref: _FakeTokenOutput(token_ids=[55, 66, 77]),
-    )
+    _patch_ray_get(monkeypatch, lambda ref: _FakeTokenOutput(token_ids=[55, 66, 77]))
 
     # _call_ray returns the 4-tuple (text, tokens, logprobs, routed_experts);
     # _FakeTokenOutput carries neither log_probs nor routed_experts -> both None.
