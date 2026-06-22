@@ -16,9 +16,15 @@ VLLMLocalModel = LocalLLMModel
 from .claude_wr import ClaudeWRModel
 from .sf_llm_express_gateway import SFLLMExpressGatewayModel
 from .sf_research_gateway import SFResearchGatewayModel
-# TITO (Token In Token Out) — vLLM engine, trajectory manager, agent wrapper
+# TITO (Token In Token Out) — direct inference engines, trajectory manager, agent wrapper
+# Three backend options with identical async ``generate`` contract:
+#   - AsyncVLLMEngine: wraps ``vllm.AsyncLLMEngine`` (in-process)
+#   - AsyncSGLangEngine: wraps ``sglang.srt.entrypoints.engine.Engine`` (in-process)
+#   - AsyncSGLangHTTPEngine: HTTP client to a SGLang server owned elsewhere (e.g. slime)
 from .tito import (
     AsyncVLLMEngine, AsyncVLLMBackend, VLLMEngineConfig,
+    AsyncSGLangEngine, SGLangEngineConfig,
+    AsyncSGLangHTTPEngine,
     TokenTrajectoryManager, TokenTrajectory, TokenSegment,
     TITOLLMWrapper, TITOLLMConfig,
 )
@@ -39,10 +45,13 @@ __all__ = [
     "VLLMLocalModel",  # backward compat alias
     "SFLLMExpressGatewayModel",
     "SFResearchGatewayModel",
-    # Direct vLLM engine (no HTTP serve)
+    # Direct inference engines
     "AsyncVLLMEngine",
     "AsyncVLLMBackend",
     "VLLMEngineConfig",
+    "AsyncSGLangEngine",
+    "SGLangEngineConfig",
+    "AsyncSGLangHTTPEngine",  # for HTTP-attached SGLang servers (e.g. slime)
     # TITO (Token In Token Out) for RL training
     "TokenTrajectoryManager",
     "TokenTrajectory",

@@ -34,6 +34,13 @@ class TokenTrajectory:
     token_ids: List[int] = field(default_factory=list)
     segments: List[TokenSegment] = field(default_factory=list)
     prompt_length: int = 0
+    # Per-token rollout log-probs, aligned 1:1 with ``token_ids`` (0.0 for
+    # prompt / tool-result tokens the model did not generate). Used for
+    # train-inference mismatch correction (TIS / bypass) in MoE RL.
+    logprobs: List[float] = field(default_factory=list)
+    # Latest full-sequence routed-experts tensor/list from the rollout engine,
+    # expected to be aligned with token_ids: [seq_len, num_layers, topk].
+    routed_experts: Any = None
 
     def get_prompt_ids(self) -> List[int]:
         """Return prompt token IDs."""
@@ -42,6 +49,18 @@ class TokenTrajectory:
     def get_response_ids(self) -> List[int]:
         """Return response token IDs."""
         return self.token_ids[self.prompt_length:]
+
+    def get_response_logprobs(self) -> List[float]:
+        """Per-token rollout log-probs for the response portion (0.0 where the
+        model did not generate, i.e. tool-result tokens). Aligned with
+        ``get_response_ids()`` / ``get_loss_mask()``."""
+        if not self.logprobs:
+            return [0.0] * (len(self.token_ids) - self.prompt_length)
+        return self.logprobs[self.prompt_length:]
+
+    def get_routed_experts(self) -> Any:
+        """Return latest full-sequence routed experts for R3, if available."""
+        return self.routed_experts
 
     @property
     def text(self) -> str:
@@ -96,6 +115,8 @@ class TokenTrajectoryManager:
         self._tokenizer = tokenizer
         self._skip_special_tokens = skip_special_tokens
         self._token_ids: List[int] = []
+        self._logprobs: List[float] = []  # aligned 1:1 with _token_ids
+        self._routed_experts: Any = None  # latest full-sequence routing table
         self._segments: List[TokenSegment] = []
         self._prompt_length: int = 0
         self._full_text: str = ""
@@ -103,6 +124,8 @@ class TokenTrajectoryManager:
     def reset(self):
         """Reset for a new rollout."""
         self._token_ids.clear()
+        self._logprobs.clear()
+        self._routed_experts = None
         self._segments.clear()
         self._prompt_length = 0
         self._full_text = ""
@@ -116,6 +139,7 @@ class TokenTrajectoryManager:
         self.reset()
         tokens = self._tokenizer.encode(prompt_text, add_special_tokens=add_special_tokens)
         self._token_ids = tokens
+        self._logprobs = [0.0] * len(tokens)  # prompt tokens not generated
         self._prompt_length = len(tokens)
         self._full_text = prompt_text
         self._segments.append(TokenSegment(
@@ -126,9 +150,15 @@ class TokenTrajectoryManager:
 
     def append_response_tokens(
         self, output_tokens: List[int], trainable: bool = True, response_text: str = "",
+        logprobs: Any = None,
     ):
-        """Append LLM response token IDs directly (no tokenization)."""
-        self._append_segment("response", output_tokens, trainable, response_text)
+        """Append LLM response token IDs directly (no tokenization).
+
+        ``logprobs`` (optional) are the rollout engine's per-token log-probs for
+        ``output_tokens`` (same length); stored for train-inference mismatch
+        correction (TIS). Missing/mismatched -> filled with 0.0.
+        """
+        self._append_segment("response", output_tokens, trainable, response_text, logprobs)
         logger.debug(
             "TITO Manager: appended {} response tokens (trainable={})",
             len(output_tokens), trainable,
@@ -144,9 +174,16 @@ class TokenTrajectoryManager:
 
     def _append_segment(
         self, segment_type: str, tokens: List[int], trainable: bool, text: str,
+        logprobs: Any = None,
     ):
         start = len(self._token_ids)
         self._token_ids.extend(tokens)
+        # Keep per-token logprobs aligned 1:1 with token_ids. Only model-generated
+        # (response) tokens carry real logprobs; everything else gets 0.0.
+        if logprobs is not None and len(logprobs) == len(tokens):
+            self._logprobs.extend(float(x) for x in logprobs)
+        else:
+            self._logprobs.extend([0.0] * len(tokens))
         self._segments.append(TokenSegment(
             segment_type=segment_type, start_idx=start, end_idx=len(self._token_ids),
             trainable=trainable, text=text,
@@ -161,12 +198,18 @@ class TokenTrajectoryManager:
         """Current complete token sequence."""
         return list(self._token_ids)
 
+    def set_routed_experts(self, routed_experts: Any) -> None:
+        """Store latest full-sequence routed experts from the rollout engine."""
+        self._routed_experts = routed_experts
+
     def get_trajectory(self) -> TokenTrajectory:
         """Snapshot of the complete trajectory."""
         return TokenTrajectory(
             token_ids=list(self._token_ids),
             segments=list(self._segments),
             prompt_length=self._prompt_length,
+            logprobs=list(self._logprobs),
+            routed_experts=self._routed_experts,
         )
 
     def get_full_text(self) -> str:
