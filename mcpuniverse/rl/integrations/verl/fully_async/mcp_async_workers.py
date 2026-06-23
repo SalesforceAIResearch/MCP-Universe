@@ -8,7 +8,7 @@ to the inference server via ServerAdapter.update_weights() (CUDA IPC),
 since the standard get_inference_model() fails for ServerAdapter
 (ServerAdapter is a client stub with no local inference engine).
 
-Supports both vLLM and SGLang backends — both implement the same
+Supports both vLLM and SGLang backends - both implement the same
 ServerAdapter.update_weights() interface (BaseRollout).
 
 Weight sync flow:
@@ -39,6 +39,11 @@ from verl.experimental.fully_async_policy.fsdp_workers import (
 from verl.single_controller.base.decorator import Dispatch, make_nd_compute_dataproto_dispatch_fn, register
 from verl.utils.device import get_torch_device, is_npu_available
 
+from ..mcp_log_prob_entropy import (
+    fsdp_compute_log_prob_without_entropy,
+    should_skip_entropy_for_log_prob,
+)
+
 logger = logging.getLogger(__name__)
 logger.setLevel(os.getenv("VERL_LOGGING_LEVEL", "WARN"))
 
@@ -53,13 +58,24 @@ class MCPAsyncRolloutWorker(DetachAsyncRolloutWorker):
     has no ``inference_engine`` attribute.
 
     This override:
-      - Streams weights via a generator: NCCL recv → yield → IPC push,
+      - Streams weights via a generator: NCCL recv -> yield -> IPC push,
         one tensor at a time (never accumulates all weights in GPU memory)
       - Pushes to the inference server via ServerAdapter.update_weights()
         which uses CUDA IPC / shared memory to transfer to the server process
 
     Works with both vLLM and SGLang ServerAdapter implementations.
     """
+
+    @register(dispatch_mode=Dispatch.ONE_TO_ALL, blocking=False)
+    def warmup_nccl_group(self, sync_group_name="actor_rollout"):
+        """Dummy broadcast to pre-create the NCCL communicator during init."""
+        dummy = torch.zeros(1, device=get_torch_device().current_device())
+        if is_npu_available:
+            self._weight_sync_group.broadcast(
+                dummy, src=0, stream=get_torch_device().current_stream(),
+            )
+        else:
+            collective.broadcast(dummy, src_rank=0, group_name=sync_group_name)
 
     @register(dispatch_mode=Dispatch.ONE_TO_ALL)
     def free_fsdp_model(self):
@@ -134,7 +150,7 @@ class MCPAsyncRolloutWorker(DetachAsyncRolloutWorker):
 
         print(
             f"[MCPAsyncRolloutWorker] rank={rank} streaming {n_weights} weight "
-            f"tensors: NCCL recv → IPC push (one at a time)"
+            f"tensors: NCCL recv -> IPC push (one at a time)"
         )
 
         # _run_async_safely runs the async ServerAdapter.update_weights() in a
@@ -165,9 +181,49 @@ class MCPDetachActorWorker(DetachActorWorker):
     absent or stalled.
     """
 
+    @register(dispatch_mode=Dispatch.ONE_TO_ALL, blocking=False)
+    def warmup_nccl_group(self, sync_group_name="actor_rollout"):
+        """Dummy broadcast to pre-create the NCCL communicator during init."""
+        dummy = torch.zeros(1, device=get_torch_device().current_device())
+        if is_npu_available:
+            self._weight_sync_group.broadcast(
+                dummy, src=0, stream=get_torch_device().current_stream(),
+            )
+        else:
+            collective.broadcast(dummy, src_rank=0, group_name=sync_group_name)
+
     @register(dispatch_mode=make_nd_compute_dataproto_dispatch_fn(mesh_name="actor"))
     def compute_log_prob(self, data):
-        """Compute log probabilities with entry/exit GPU memory diagnostics."""
+        """Compute log probabilities with entry/exit GPU memory diagnostics.
+
+        Patches ``dp_actor.prepare_dynamic_batch`` to all-reduce
+        ``num_micro_batches`` across DP ranks before slicing. Without this,
+        ``use_dynamic_bsz=true`` on multi-DP FSDP deadlocks inside the
+        sequence-parallel ALLTOALL collective (NCCL watchdog timeout after
+        ~30 min), because each DP rank enqueues a different count of
+        per-layer Ulysses ALLTOALL collectives based on its local
+        ``num_micro_batches``. The patch is idempotent + cheap (early-return
+        after first apply); we call it on every entry so the patch survives
+        any verl re-import during the lifetime of the worker.
+
+        Mirrors ``hybrid/mcp_workers.py::_MCPFSDPLogProbMixin``; failing to
+        wire this here was the cause of the NCCL ALLTOALL timeout on
+        ``mesh_sp`` that killed the worker (Worker exit type: SYSTEM_ERROR,
+        ``OpType=ALLTOALL ran for 1800085 ms before timing out``).
+        """
+        from ..mcp_fsdp_patches import (  # pylint: disable=import-outside-toplevel
+            _patch_fsdp_dynamic_bsz_sync,
+            stash_fsdp_dp_group_from_worker,
+        )
+        _patch_fsdp_dynamic_bsz_sync()
+        stash_fsdp_dp_group_from_worker(self)
+
+        # Clear allocator cache before log_prob forward pass to reclaim
+        # fragmented memory from previous pipeline stages.
+        gc.collect()
+        if torch.cuda.is_available():
+            get_torch_device().empty_cache()
+
         rank = torch.distributed.get_rank() if torch.distributed.is_initialized() else -1
         device = torch.cuda.current_device() if torch.cuda.is_available() else "N/A"
         alloc_gb = torch.cuda.memory_allocated() / (1024 ** 3) if torch.cuda.is_available() else 0
@@ -180,7 +236,10 @@ class MCPDetachActorWorker(DetachActorWorker):
         )
 
         start = time.time()
-        result = super().compute_log_prob(data)
+        if should_skip_entropy_for_log_prob(self.config.actor):
+            result = fsdp_compute_log_prob_without_entropy(self, data)
+        else:
+            result = super().compute_log_prob(data)
         elapsed = time.time() - start
 
         alloc_gb = torch.cuda.memory_allocated() / (1024 ** 3) if torch.cuda.is_available() else 0
@@ -194,10 +253,30 @@ class MCPDetachActorWorker(DetachActorWorker):
 
     @register(dispatch_mode=make_nd_compute_dataproto_dispatch_fn(mesh_name="actor"))
     def update_actor(self, data):
-        """Update actor weights with entry/exit rank diagnostics."""
+        """Update actor weights with entry/exit rank diagnostics.
+
+        Also re-applies the FSDP dynamic-bsz DP-sync patch (see docstring
+        on ``compute_log_prob``). ``update_policy`` in verl's dp_actor
+        calls ``prepare_dynamic_batch`` independently of the log-prob path,
+        so without the patch here we'd hit the same multi-DP NCCL hang on
+        the backward path when ``use_dynamic_bsz=true``.
+        """
+        from ..mcp_fsdp_patches import (  # pylint: disable=import-outside-toplevel
+            _patch_fsdp_dynamic_bsz_sync,
+            stash_fsdp_dp_group_from_worker,
+        )
+        _patch_fsdp_dynamic_bsz_sync()
+        stash_fsdp_dp_group_from_worker(self)
+
         rank = torch.distributed.get_rank() if torch.distributed.is_initialized() else -1
         device = torch.cuda.current_device() if torch.cuda.is_available() else "N/A"
         batch_size = len(data) if hasattr(data, '__len__') else "?"
+
+        # Clear allocator cache before the peak-memory actor update path.
+        gc.collect()
+        if torch.cuda.is_available():
+            get_torch_device().empty_cache()
+
         print(
             f"[MCPDetachActorWorker] update_actor ENTER: "
             f"rank={rank}, cuda_device={device}, batch_size={batch_size}",

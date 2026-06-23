@@ -1,4 +1,4 @@
-# pylint: disable=super-init-not-called,invalid-overridden-method,arguments-renamed
+# pylint: disable=super-init-not-called,invalid-overridden-method,arguments-renamed,too-many-lines
 
 """
 MCP Fully Async Rollouter for VERL Integration.
@@ -17,6 +17,7 @@ pause() waits for in-flight generation via _generation_idle fence.
 import asyncio
 import functools
 import os
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 from pprint import pformat
@@ -42,12 +43,13 @@ from verl.utils.debug import marked_timer
 from verl.utils.fs import local_mkdir_safe
 from verl.utils.tracking import ValidationGenerationsLogger
 
-from ..mcp_dataset import create_mcp_dataset, mcp_collate_fn
+from ..mcp_dataset import MCPDataset, create_mcp_dataset, mcp_collate_fn
 from ..mcp_loop_manager import MCPLoopManager
 from ..mcp_reward_manager import MCPRewardManager
-from ..utils import _LazyLogger
+from ..utils import _LazyLogger, compute_validation_reward_metrics
 
-from .mcp_async_data import MCPRolloutSample
+from .mcp_async_data import MCP_BATCH_END_SENTINEL, MCPRolloutSample
+from ..mcp_batch_sizing import compute_mcp_batch_sizing
 
 logger = _LazyLogger()
 
@@ -57,7 +59,7 @@ logger = _LazyLogger()
 @ray.remote(num_cpus=10, max_concurrency=100)
 class MCPFullyAsyncRollouter(SeparateRayPPOTrainer):  # pylint: disable=too-many-instance-attributes
     # Inherits SeparateRayPPOTrainer for resource pool and worker group init,
-    # but does not use its training logic — Rollouter only does inference.
+    # but does not use its training logic - Rollouter only does inference.
     """Batch-based MCP sample generator for fully async training.
 
     Generates training samples in batches via MCPLoopManager (same code path
@@ -65,7 +67,7 @@ class MCPFullyAsyncRollouter(SeparateRayPPOTrainer):  # pylint: disable=too-many
 
     Unlike the per-instance streaming approach, each batch goes through ONE
     ``generate_sequences()`` call with ONE dispatcher, giving the same
-    concurrency behavior as hybrid mode (``max_parallel_agents`` concurrent
+    concurrency behavior as hybrid mode (``max_init_agents`` concurrent
     trajectory runs, no Docker env pool contention).
 
     The "async" benefit comes from decoupling rollout and training via the
@@ -73,7 +75,7 @@ class MCPFullyAsyncRollouter(SeparateRayPPOTrainer):  # pylint: disable=too-many
     generates the next batch.
     """
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-statements
         self,
         config,
         tokenizer,
@@ -143,7 +145,7 @@ class MCPFullyAsyncRollouter(SeparateRayPPOTrainer):  # pylint: disable=too-many
                 self.config.rollout.total_rollout_steps, self.total_rollout_steps,
             )
         logger.info("Total rollout steps: {}", self.total_rollout_steps)
-        self.total_train_steps = None  # computed in set_max_required_samples()
+        self.total_train_steps = None  # computed in set_max_required_tasks()
 
         self.message_queue_client = None
         self.rollout_wg = None
@@ -153,22 +155,30 @@ class MCPFullyAsyncRollouter(SeparateRayPPOTrainer):  # pylint: disable=too-many
 
         # Backpressure: staleness_threshold controls how far ahead rollouter can run
         self.staleness_threshold: float = config.async_training.get("staleness_threshold", 1)
-        self.require_batches = config.async_training.require_batches
-        self.required_samples = (
-            config.actor_rollout_ref.actor.ppo_mini_batch_size * self.require_batches
-        )
-        self.max_required_samples = None  # computed in set_max_required_samples()
+        # Single source of truth for batch sizing - see MCPBatchSizing docstring.
+        # ``self.<field>`` mirrors stay for backward compat with older launcher
+        # code / log greps; new code should prefer ``self.batch_sizing.<field>``.
+        self.batch_sizing = compute_mcp_batch_sizing(config)
+        self.require_batches = self.batch_sizing.require_batches
+        self.required_tasks = self.batch_sizing.required_tasks
+        self.required_trajectories = self.batch_sizing.required_trajectories
+        self.global_trajectory_minibatch = self.batch_sizing.global_trajectory_minibatch
+        self.local_actor_minibatch = self.batch_sizing.local_actor_minibatch
+        self.alignment_unit = self.batch_sizing.alignment_unit
+        self.actor_dp_size = self.batch_sizing.dp
+        self.max_required_queue_items = None  # computed in set_max_required_tasks()
         self.max_queue_size = None
+        logger.info("Async queue sizing: {}", self.batch_sizing.describe())
 
-        rollout_n = config.actor_rollout_ref.rollout.get("n", 1)
-        self._trajectories_per_queue_item = rollout_n  # updated in _create_dataloader
+        self._trajectories_per_queue_item = self.batch_sizing.rollout_n  # updated in _create_dataloader
 
-        # Counters
+        # Counters with unit-explicit names. One MCPRolloutSample == one
+        # queue item; a queue item carries up to ``rollout.n`` trajectories.
         self.current_param_version = 0
-        self.total_generated_samples = 0
-        self.staleness_samples = 0
-        self.dropped_stale_samples = 0
-        self.failed_sample_count = 0
+        self.total_generated_queue_items = 0      # pushed to MQ since process start
+        self.stale_queue_items = 0                # in MQ produced under older param_version
+        self.dropped_stale_queue_items = 0        # rejected by MQ (backpressure)
+        self.failed_rollout_batches = 0           # continuous generation exceptions
         self.global_steps = 1
 
         self.idle_start_time = None
@@ -188,30 +198,41 @@ class MCPFullyAsyncRollouter(SeparateRayPPOTrainer):  # pylint: disable=too-many
 
         # Blocking generate_sequences() runs in executor to keep Ray event loop responsive
         mcp_cfg = config.get("mcp_agent", {})
-        self.max_parallel_agents = mcp_cfg.get("max_parallel_agents", 16)
+        self.max_init_agents = mcp_cfg.get("max_init_agents", 16)
         self.rollout_executor = ThreadPoolExecutor(max_workers=1)
         self.validate_executor = ThreadPoolExecutor(max_workers=1)
+        self._env_pool_init_lock = threading.Lock()
+        self._shutdown_done = False
         self.parallel_validate_and_rollout = config.async_training.get(
             "parallel_validate_and_rollout", False,
         )
         self.validate_task = None
+
+        # The rollouter runs ONE continuous worker pool (no per-batch
+        # barrier) - instances stream out as they finish. _main_loop is the Ray
+        # actor loop the MQ pushes run on (captured in fit()).
+        self._main_loop = None
+        self._continuous_pipeline = None
 
     async def set_message_queue_client(self, message_queue_client: MessageQueueClient):
         """Set message queue client."""
         async with self.lock:
             self.message_queue_client = message_queue_client
 
-    async def set_max_required_samples(self):
+    async def set_max_required_tasks(self):
         """Compute derived backpressure limits (in queue-item units)."""
         async with self.lock:
             trig = self.config.async_training.trigger_parameter_sync_step
-            queue_items_per_train_step = max(1, -(-self.required_samples // self._trajectories_per_queue_item))
-            self.max_required_samples = int(
+            queue_items_per_train_step = max(
+                1,
+                -(-self.required_trajectories // max(1, self._trajectories_per_queue_item)),
+            )
+            self.max_required_queue_items = int(
                 queue_items_per_train_step
                 * (self.staleness_threshold + 1)
                 * trig
             )
-            self.max_queue_size = self.max_required_samples
+            self.max_queue_size = self.max_required_queue_items
 
             configured_steps = self.config.async_training.get("total_train_steps", None)
             if configured_steps:
@@ -223,10 +244,12 @@ class MCPFullyAsyncRollouter(SeparateRayPPOTrainer):  # pylint: disable=too-many
                 )
 
             logger.info(
-                "required_samples(trajectories): {} trajectories_per_queue_item: {} "
+                "required_tasks: {} required_trajectories: {} "
+                "trajectories_per_queue_item: {} "
                 "queue_items_per_train_step: {} max_queue_size: {} "
                 "total_train_steps: {} (configured={})",
-                self.required_samples, self._trajectories_per_queue_item,
+                self.required_tasks, self.required_trajectories,
+                self._trajectories_per_queue_item,
                 queue_items_per_train_step, self.max_queue_size,
                 self.total_train_steps, configured_steps,
             )
@@ -251,7 +274,7 @@ class MCPFullyAsyncRollouter(SeparateRayPPOTrainer):  # pylint: disable=too-many
     def _create_dataloader(self, train_dataset, val_dataset, collate_fn, train_sampler):
         """Create train and validation dataloaders."""
         mcp_cfg = self.config.get("mcp_agent", {})
-        max_parallel = mcp_cfg.get("max_parallel_agents", 16)
+        max_parallel = mcp_cfg.get("max_init_agents", 16)
         rollout_n = self.config.actor_rollout_ref.rollout.get("n", 1)
         # Default: ceil(max_parallel / n) to fill dispatcher concurrency slots
         default_batch_size = max(1, -(-max_parallel // max(1, rollout_n)))
@@ -260,11 +283,21 @@ class MCPFullyAsyncRollouter(SeparateRayPPOTrainer):  # pylint: disable=too-many
         self._trajectories_per_queue_item = rollout_batch_size * rollout_n
 
         val_batch_size = self.config.data.get("val_batch_size", rollout_batch_size) or rollout_batch_size
-        num_workers = self.config.data.get("num_workers", 8)
+        num_workers = self.config.data.get(
+            "dataloader_num_workers",
+            self.config.data.get("num_workers", 8),
+        )
+        if isinstance(train_dataset, MCPDataset) and int(num_workers or 0) != 0:
+            logger.warning(
+                "MCP JSON dataset is already loaded in memory; setting rollout "
+                "DataLoader num_workers=0 to avoid slow worker fork in the "
+                "fully async rollouter. The launch config is unchanged."
+            )
+            num_workers = 0
 
         logger.info(
             "Rollout batch_size={} (instances), n={} (trajectories/instance), "
-            "total_per_batch={}, max_parallel_agents={}",
+            "total_per_batch={}, max_init_agents={}",
             rollout_batch_size, rollout_n,
             rollout_batch_size * rollout_n, max_parallel,
         )
@@ -326,11 +359,13 @@ class MCPFullyAsyncRollouter(SeparateRayPPOTrainer):  # pylint: disable=too-many
         # Select inference backend: vLLM or SGLang
         rollout_name = rollout_config.get("name", "vllm")
         if rollout_name == "sglang":
-            from verl.experimental.fully_async_policy.sglang_rollout.sglang_async_server import (  # pylint: disable=no-name-in-module
+            # pylint: disable-next=no-name-in-module
+            from verl.experimental.fully_async_policy.sglang_rollout.sglang_async_server import (
                 FullyAsyncSGLangReplica as ReplicaClass,
             )
         elif rollout_name == "vllm":
-            from verl.experimental.fully_async_policy.vllm_rollout.vllm_async_server import (  # pylint: disable=no-name-in-module
+            # pylint: disable-next=no-name-in-module
+            from verl.experimental.fully_async_policy.vllm_rollout.vllm_async_server import (
                 FullyAsyncvLLMReplica as ReplicaClass,
             )
         else:
@@ -392,6 +427,32 @@ class MCPFullyAsyncRollouter(SeparateRayPPOTrainer):  # pylint: disable=too-many
         )
         logger.info("MCPLoopManager initialized with {} backend", rollout_name)
 
+    def _uses_docker_env_pool(self) -> bool:
+        """Return whether this rollouter should initialize MCP docker_pool once."""
+        if self.mcp_loop_manager is None:
+            return False
+        mcp_config = getattr(self.mcp_loop_manager, "mcp_config", None)
+        if mcp_config is None or getattr(mcp_config, "mcp_transport", "stdio") != "docker_pool":
+            return False
+
+        env_pool_cfg = getattr(mcp_config, "env_pool", None)
+        if env_pool_cfg is None:
+            return False
+        enabled = getattr(env_pool_cfg, "enabled", None)
+        if enabled is None and isinstance(env_pool_cfg, dict):
+            enabled = env_pool_cfg.get("enabled", False)
+        return bool(enabled)
+
+    def _ensure_env_pool_for_batch(self, batch: DataProto) -> None:
+        """Reconcile docker_pool capacity before rollout/validation calls."""
+        if not self._uses_docker_env_pool():
+            return
+
+        with self._env_pool_init_lock:
+            max_parallel = self.mcp_loop_manager.mcp_config.dispatcher.max_init_agents
+            parsed_batch = self.mcp_loop_manager._parse_input_batch(batch)  # pylint: disable=protected-access
+            self.mcp_loop_manager.ensure_env_pool(parsed_batch, max_parallel)
+
     async def init_workers(self):
         """Initialize distributed workers."""
         self._init_resource_pools()
@@ -433,17 +494,26 @@ class MCPFullyAsyncRollouter(SeparateRayPPOTrainer):  # pylint: disable=too-many
             },
         )
 
-    def _run_rollout_batch_sync(self, batch_dict: dict) -> DataProto:
-        """Generate trajectories for a batch (blocking).
-
-        Same code path as hybrid mode: one ``generate_sequences()`` call,
-        one dispatcher, ``max_parallel_agents`` concurrent trajectories.
-        """
-        batch = self._batch_dict_to_dataproto(batch_dict)
-        # Blocking call: runs its own asyncio loop for the MCP agent tool-calling loop.
-        # All instances in the batch share one dispatcher, capped at max_parallel_agents.
-        result = self.mcp_loop_manager.generate_sequences(batch)
-        return result
+    async def _push_stream_sample(self, data_proto: DataProto, instance_id, epoch: int) -> bool:
+        """Push one instance's DataProto to the MQ (runs on the Ray actor loop)."""
+        rollout_sample = MCPRolloutSample(
+            data=data_proto,
+            param_version=self.current_param_version,
+            instance_id=f"stream_{epoch}_{self.global_steps}_{instance_id}",
+            sample_id=f"sample_{epoch}_{self.global_steps}_{instance_id}",
+            epoch=epoch,
+            processing_time=0.0,
+        )
+        success = await self.message_queue_client.put_sample(
+            sample=ray.cloudpickle.dumps(rollout_sample),
+            param_version=rollout_sample.param_version,
+        )
+        if success:
+            self.total_generated_queue_items += 1
+            self.stale_queue_items += 1
+        else:
+            self.dropped_stale_queue_items += 1
+        return success
 
     def _parse_batch_to_instances(self, batch_dict: dict) -> list[dict]:
         """Parse a collated batch dict into individual instance dicts."""
@@ -468,127 +538,248 @@ class MCPFullyAsyncRollouter(SeparateRayPPOTrainer):  # pylint: disable=too-many
 
         return instances
 
-    # ==================== Main loop ====================
+    # ==================== continuous worker pool ====================
 
-    async def _batch_generation_main(self):
-        """Main batch-based generation loop.
+    async def _continuous_generation_main(self):  # pylint: disable=too-many-statements
+        """Continuous worker pool - no per-batch barrier.
 
-        Iterates the dataset for total_epochs, generating trajectories via
-        ``generate_sequences()`` one batch at a time and pushing results to the
-        MessageQueue.  Exits when all epochs are exhausted or when ``stop()``
-        sets ``self.running = False``.
-
-        Each batch goes through: running check -> pause check (weight sync) ->
-        backpressure check (queue full) -> generate -> push to queue.
+        Instances stream through ONE long-lived ``RolloutPipeline``; each is
+        pushed to the MQ the moment its trajectories finish. Weight sync stops
+        feeding and drains in-flight via ``pipe.quiesce()`` (the NCCL broadcast
+        needs idle workers), syncs, then resumes. Everything runs on the Ray
+        actor loop, so MQ pushes are direct (no cross-loop). NEEDS POD VALIDATION.
         """
-        logger.info(
-            "Starting batch generation: batch_size={}, max_parallel_agents={}",
-            self.rollout_batch_size, self.max_parallel_agents,
+        from mcpuniverse.rl.core.pipeline import RolloutPipeline  # local import
+        from mcpuniverse.rl.core.rollout import build_rollout_dispatcher_config
+
+        self._main_loop = asyncio.get_running_loop()
+        lm = self.mcp_loop_manager
+        num_traj = max(1, int(lm.num_trajectories or 1))
+
+        # Init the env pool on THIS loop (continuous runs build+dispatch+pool here).
+        # NOTE: _env_pool_active is a READ-ONLY property (true once the pool is
+        # created), so we must NOT assign to it - _init_env_pool flips it.
+        if self._uses_docker_env_pool() and not lm._env_pool_active:  # pylint: disable=protected-access
+            max_parallel = lm.mcp_config.dispatcher.max_init_agents
+            await lm._init_env_pool(max_parallel)  # pylint: disable=protected-access
+
+        dispatcher_cfg = build_rollout_dispatcher_config(
+            lm.mcp_config.dispatcher,
+            num_instances=self.rollout_batch_size,
+            num_trajectories=num_traj,
+            include_init_timeout=True,
         )
 
-        epoch = 0
-        while self.running:
-            for batch_dict in self.train_dataloader:
+        inst_trajs: dict = {}     # iid -> {tid: traj}
+        epoch_box = [0]
+        completed_box = [0]
 
-                # ---- Running check ----
-                if not self.running:
-                    logger.info("Stop signal received at step {}", self.global_steps)
-                    return
+        async def on_done(iid):
+            trajs = inst_trajs.pop(iid, None)
+            if not trajs:
+                return
+            # >=2 guard: GRPO needs >=2 trajectories WITH results in a group
+            # (group-relative advantage = mean+std). Drop degenerate groups
+            # instead of pushing a 0/1-sample group that would corrupt training.
+            valid = sum(1 for t in trajs.values() if getattr(t, "result", None) is not None)
+            if valid < 2:
+                logger.warning(
+                    "Dropping instance {}: only {}/{} trajectories have results (<2)",
+                    iid, valid, len(trajs),
+                )
+                return
+            pushed_any = False
+            for data_proto in lm.build_instance_dataproto(iid, trajs, num_traj):
+                if await self._push_stream_sample(data_proto, iid, epoch_box[0]):
+                    pushed_any = True
+            if pushed_any:
+                completed_box[0] += 1
+                # Periodic batch-end sentinel for trainer alignment.
+                if completed_box[0] % max(1, self.rollout_batch_size) == 0:
+                    await self.message_queue_client.put_sample(
+                        sample=MCP_BATCH_END_SENTINEL,
+                        param_version=self.current_param_version,
+                    )
 
-                # ---- Pause check ----
-                # Wait if paused for weight sync. Record idle_start_time on first
-                # entry to measure how long the rollouter is idle (for idle_ratio).
-                async with self.lock:
-                    while self.paused and self.running:
+        pipe = RolloutPipeline(dispatcher_cfg, on_instance_complete=on_done)
+        self._continuous_pipeline = pipe
+        pipe.start()
+        self._generation_idle.clear()  # generating
+        max_env_inflight = max(1, self.max_init_agents)
+        max_inflight = max_env_inflight * 2
+
+        logger.info(
+            "Continuous generation started: batch_size={}, num_traj={}, "
+            "max_inflight={}, max_env_inflight={}",
+            self.rollout_batch_size, num_traj, max_inflight, max_env_inflight,
+        )
+        try:  # pylint: disable=too-many-nested-blocks
+            while self.running:
+                for batch_dict in self.train_dataloader:
+                    if not self.running:
+                        break
+                    # Weight-sync handshake: drain in-flight if paused.
+                    await self._continuous_pause_check(pipe)
+                    if not self.running:
+                        break
+                    # Queue backpressure (too far ahead of trainer).
+                    while await self._should_pause_generation():
+                        if not self.running:
+                            break
+                        # Service a weight-sync pause requested *while* we are
+                        # backpressured. Without this the two pause mechanisms
+                        # deadlock: the trainer's pause() blocks on
+                        # _generation_idle (only set by the pause check below),
+                        # but the pause check (top of the outer loop) is never
+                        # reached because _should_pause_generation() stays True --
+                        # the weight sync never runs, so update_param_version never
+                        # resets stale_queue_items, so backpressure never clears.
+                        # Draining here lets the sync proceed; after resume the
+                        # param version bumps, stale_queue_items resets, and this
+                        # loop re-evaluates on-policy. (No-op when not paused.)
+                        await self._continuous_pause_check(pipe)
+                        if not self.running:
+                            break
                         if self.idle_start_time is None:
                             self.idle_start_time = time.time()
-                        await self.condition.wait()
-                if not self.running:
-                    return
-
-                # ---- Queue backpressure ----
-                # If queue is full or too many stale samples, wait for Trainer to
-                # consume. Also counts toward idle time for idle_ratio.
-                # idle_start_time check is inside the loop so it gets re-set after
-                # update_param_version() resets it mid-loop for the new version.
-                while await self._should_pause_generation():
+                        await asyncio.sleep(1.0)
                     if not self.running:
-                        return
-                    if self.idle_start_time is None:
-                        self.idle_start_time = time.time()
-                    await asyncio.sleep(1.0)
-
-                # ---- Generate (blocking, in executor thread) ----
-                # clear() fence: signals pause() that generation is in progress
-                self._generation_idle.clear()
-                start_time = time.time()
-                loop = asyncio.get_running_loop()
-
-                try:
-                    # Run blocking generate_sequences() in executor thread so
-                    # the Ray async actor event loop remains responsive to control calls
-                    result = await loop.run_in_executor(
-                        self.rollout_executor,
-                        functools.partial(self._run_rollout_batch_sync, batch_dict),
-                    )
-                except Exception:  # pylint: disable=broad-exception-caught
-                    self.failed_sample_count += 1
-                    logger.exception("Batch generation failed at step {}", self.global_steps)
-                    continue
-                finally:
-                    # set() fence: generation done, safe to proceed with NCCL weight sync
-                    self._generation_idle.set()
-
-                processing_time = time.time() - start_time
-
-                # ---- Push to message queue ----
-                # Wrap result in MCPRolloutSample with param_version for staleness tracking
-                rollout_sample = MCPRolloutSample(
-                    data=result,
-                    param_version=self.current_param_version,
-                    instance_id=f"batch_{epoch}_{self.global_steps}",
-                    sample_id=f"sample_{epoch}_{self.global_steps}",
-                    epoch=epoch,
-                    processing_time=processing_time,
-                )
-
-                # put_sample returns False if the sample is rejected as stale
-                success = await self.message_queue_client.put_sample(
-                    sample=ray.cloudpickle.dumps(rollout_sample),
-                    param_version=rollout_sample.param_version,
-                )
-                if success:
-                    self.total_generated_samples += 1
-                    self.staleness_samples += 1
-                else:
-                    self.dropped_stale_samples += 1
-
+                        break
+                    # Build + submit this batch's instances into the pipeline.
+                    batch = self._batch_dict_to_dataproto(batch_dict)
+                    parsed = lm._parse_input_batch(batch)  # pylint: disable=protected-access
+                    trajectories, _ = lm.build_trajectories_for_instances(parsed)
+                    for iid, inner in trajectories.items():
+                        inst_trajs[iid] = inner
+                        size = len(inner)
+                        # Submit whole instance groups when capacity allows.
+                        # This keeps GRPO groups compact while the pipeline's
+                        # env/run credits maintain a bounded prefetch window.
+                        group_need = min(size, max_inflight, max_env_inflight)
+                        while self.running:
+                            try:
+                                await asyncio.wait_for(
+                                    pipe.wait_for_capacity(
+                                        max_total=max_inflight,
+                                        max_env=max_env_inflight,
+                                        need=group_need,
+                                    ),
+                                    timeout=1.0,
+                                )
+                                break
+                            except asyncio.TimeoutError:
+                                continue
+                        if not self.running:
+                            break
+                        for tid, traj in inner.items():
+                            while self.running:
+                                try:
+                                    await asyncio.wait_for(
+                                        pipe.wait_for_capacity(
+                                            max_total=max_inflight,
+                                            max_env=max_env_inflight,
+                                            need=1,
+                                        ),
+                                        timeout=1.0,
+                                    )
+                                    break
+                                except asyncio.TimeoutError:
+                                    continue
+                            if not self.running:
+                                break
+                            await pipe.submit(iid, tid, traj, size)
+                        if not self.running:
+                            break
+                    self.global_steps += 1
+                epoch_box[0] += 1
                 logger.info(
-                    "Batch step={} done in {:.1f}s, total_generated={}, queue_push={}",
-                    self.global_steps, processing_time,
-                    self.total_generated_samples, "ok" if success else "dropped",
+                    "Continuous epoch {} complete, {} steps", epoch_box[0], self.global_steps,
                 )
-                self.global_steps += 1
+        finally:
+            self._generation_idle.set()
+            try:
+                await pipe.quiesce()
+                await pipe.aclose()
+            except Exception:  # pylint: disable=broad-exception-caught
+                logger.exception("Continuous pipeline close failed")
+            self._continuous_pipeline = None
+        logger.info("Continuous generation stopped after {} steps", self.global_steps)
 
-            epoch += 1
-            logger.info("Epoch {} complete, {} steps so far", epoch, self.global_steps)
+    async def _continuous_pause_check(self, pipe) -> None:
+        """Weight-sync handshake: when paused, stop feeding, drain in-flight,
+        signal idle (so pause() can run the NCCL sync), then wait for resume."""
+        async with self.lock:
+            paused = self.paused
+        if not paused:
+            return
+        if self.idle_start_time is None:
+            self.idle_start_time = time.time()
+        await pipe.quiesce()            # drain in-flight (NCCL needs idle workers)
+        self._generation_idle.set()     # signal pause(): safe to sync now
+        async with self.lock:
+            while self.paused and self.running:
+                await self.condition.wait()
+        self._generation_idle.clear()   # resumed -> generating again
 
-        logger.info("Generation stopped after {} epochs, {} steps", epoch, self.global_steps)
+    async def shutdown(self):
+        """Explicitly release rollout-side resources."""
+        if self._shutdown_done:
+            return
+        self._shutdown_done = True
+
+        async with self.lock:
+            self.running = False
+            self.paused = False
+            self.condition.notify_all()
+
+        if self.validate_task and not self.validate_task.done():
+            self.validate_task.cancel()
+            await asyncio.gather(self.validate_task, return_exceptions=True)
+        self.validate_task = None
+
+        await self._generation_idle.wait()
+
+        if self.mcp_loop_manager is not None:
+            close = getattr(self.mcp_loop_manager, "close", None)
+            if callable(close):
+                await close()
+            self.mcp_loop_manager = None
+
+        self.rollout_executor.shutdown(wait=False, cancel_futures=True)
+        self.validate_executor.shutdown(wait=False, cancel_futures=True)
 
     async def fit(self):
-        """Start the async rollouter — main entry point."""
+        """Start the async rollouter - main entry point."""
         logger.info("Starting...")
 
         if self.message_queue_client is None:
             raise ValueError("MessageQueue client not set. Call set_message_queue_client() first.")
 
+        # The loop the per-instance streaming push must run on (the Ray actor
+        # event loop). The dispatch runs in the executor thread on a different
+        # loop and schedules pushes here via run_coroutine_threadsafe.
+        self._main_loop = asyncio.get_running_loop()
+
         async with self.lock:
             self.paused = False
             self.running = True
 
-        # Two concurrent tasks: generation loop + periodic monitor
-        generation_task = asyncio.create_task(self._batch_generation_main())
+        # Two concurrent tasks: the continuous generation pool + periodic monitor.
+        generation_task = asyncio.create_task(self._continuous_generation_main())
         monitor_task = asyncio.create_task(self._async_monitor_loop())
+
+        # Surface a generation crash immediately: gather() below waits on the
+        # never-ending monitor, so a swallowed exception in generation would
+        # otherwise look like a silent hang (rollout produces nothing).
+        def _surface_generation_crash(task: asyncio.Task) -> None:
+            if task.cancelled():
+                return
+            exc = task.exception()
+            if exc is not None:
+                logger.opt(exception=exc).error(
+                    "Continuous generation task CRASHED - rollout produces nothing"
+                )
+        generation_task.add_done_callback(_surface_generation_crash)
 
         try:
             await asyncio.gather(generation_task, monitor_task, return_exceptions=True)
@@ -609,6 +800,8 @@ class MCPFullyAsyncRollouter(SeparateRayPPOTrainer):  # pylint: disable=too-many
 
         async with self.lock:
             self.running = False
+
+        await self.shutdown()
 
         logger.info("fit completed")
 
@@ -641,7 +834,7 @@ class MCPFullyAsyncRollouter(SeparateRayPPOTrainer):  # pylint: disable=too-many
         async with self.lock:
             self.paused = False
             self.monitor_loop_trigger = True
-            # Wake up _batch_generation_main waiting on condition.wait()
+            # Wake up _continuous_generation_main waiting on condition.wait()
             self.condition.notify_all()
 
     async def stop(self):
@@ -664,8 +857,8 @@ class MCPFullyAsyncRollouter(SeparateRayPPOTrainer):  # pylint: disable=too-many
         async with self.lock:
             old_version = self.current_param_version
             self.current_param_version = version
-            # Reset staleness_samples to current queue size (all old-version data)
-            self.staleness_samples = await self.message_queue_client.get_queue_size()
+            # Reset stale_queue_items to current queue size (all old-version data)
+            self.stale_queue_items = await self.message_queue_client.get_queue_size()
 
             # Compute idle ratio: fraction of time rollouter spent waiting
             # (both weight-sync pause and queue backpressure).
@@ -682,8 +875,8 @@ class MCPFullyAsyncRollouter(SeparateRayPPOTrainer):  # pylint: disable=too-many
                 timing_raw["rollouter/idle_ratio"] = idle_ratio
                 self.idle_start_time = None
             logger.info(
-                "update_param_version: {} -> {}, staleness_samples={}, idle_ratio={}",
-                old_version, version, self.staleness_samples, idle_ratio,
+                "update_param_version: {} -> {}, stale_queue_items={}, idle_ratio={}",
+                old_version, version, self.stale_queue_items, idle_ratio,
             )
 
             # Determine if validation should run based on test_freq
@@ -752,7 +945,7 @@ class MCPFullyAsyncRollouter(SeparateRayPPOTrainer):  # pylint: disable=too-many
         """Run validation using MCPLoopManager.
 
         Collects all validation instances into a single batch and calls
-        ``generate_sequences()`` — same code path as training rollout.
+        ``generate_sequences()`` - same code path as training rollout.
         """
         if self.val_dataloader is None:
             return {}
@@ -773,7 +966,7 @@ class MCPFullyAsyncRollouter(SeparateRayPPOTrainer):  # pylint: disable=too-many
             return {}
 
         logger.info(
-            "[Validation] {} instances × {} trajectories = {} total",
+            "[Validation] {} instances x {} trajectories = {} total",
             len(all_instances), val_num_trajectories,
             len(all_instances) * val_num_trajectories,
         )
@@ -791,7 +984,27 @@ class MCPFullyAsyncRollouter(SeparateRayPPOTrainer):  # pylint: disable=too-many
             "validate": True,
             "val_mode": True,
         })
-        val_output = self.mcp_loop_manager.generate_sequences(val_batch)
+        self._ensure_env_pool_for_batch(val_batch)
+        val_output = self.mcp_loop_manager.generate_sequences(
+            val_batch, manage_pool=False,
+        )
+
+        # Empty val_output guard:
+        # When upstream rollout returns 0 trajectories (env-pool failure /
+        # all MCP servers unreachable), val_output.batch is None. Continuing
+        # would crash with a NoneType error in reward_fn / np.array() / various
+        # tensor ops and take the whole training run down. Return empty metrics
+        # early so training continues instead of dying because validation failed.
+        if val_output.batch is None or len(val_output) == 0:
+            logger.warning(
+                "[Validation] Empty val_output (batch={}, len={}). "
+                "Likely cause: env-pool docker daemon unreachable or all MCP "
+                "servers failed to initialize. Skipping validation metrics; "
+                "training will continue but val/* metrics will be missing.",
+                "None" if val_output.batch is None else "set",
+                len(val_output),
+            )
+            return {}
 
         # Merge original fields (e.g. ground_truth) back into output, repeated
         # val_num_trajectories times per instance to align with generated trajectories
@@ -806,19 +1019,26 @@ class MCPFullyAsyncRollouter(SeparateRayPPOTrainer):  # pylint: disable=too-many
         result = val_reward_fn(val_output, return_dict=True)
         reward_tensor = result["reward_tensor"]
         scores = reward_tensor.sum(-1).cpu().tolist()
+        rollout_metrics = val_output.meta_info.get("rollout_metrics", {})
+        num_requested = int(
+            rollout_metrics.get("num_trajectories")
+            or rollout_metrics.get("num_requested")
+            or len(all_instances) * val_num_trajectories
+        )
 
         # Aggregate validation metrics
-        metric_dict = {}
-        if scores:
-            scores_arr = np.array(scores)
-            success_rate = float((scores_arr > 0).mean())
-            mean_reward = float(scores_arr.mean())
-            metric_dict["val/success_rate"] = success_rate
-            metric_dict["val/mean_reward"] = mean_reward
-            metric_dict["val/num_samples"] = len(scores_arr)
+        metric_dict = compute_validation_reward_metrics(
+            scores, num_requested=num_requested, prefix="val",
+        )
+        if metric_dict:
             logger.info(
-                "[Validation] success_rate={:.2%}, mean_reward={:.4f}, num_samples={}",
-                success_rate, mean_reward, len(scores_arr),
+                "[Validation] success_rate={:.2%}, mean_reward={:.4f}, "
+                "num_samples={}, collected={}, missing={}",
+                metric_dict["val/success_rate"],
+                metric_dict["val/mean_reward"],
+                metric_dict["val/num_samples"],
+                metric_dict["val/num_collected"],
+                metric_dict["val/num_missing"],
             )
 
         return metric_dict
@@ -862,25 +1082,56 @@ class MCPFullyAsyncRollouter(SeparateRayPPOTrainer):  # pylint: disable=too-many
 
         # Condition 2: too many items generated under current version.
         # Even if queue is not full, producing more only creates staler data.
-        if self.staleness_samples >= self.max_required_samples:
+        if self.stale_queue_items >= self.max_required_queue_items:
             return True
 
         return False
 
     async def get_statistics(self) -> dict:
-        """Get rollouter statistics."""
+        """Get rollouter statistics with unit-explicit metric keys."""
         queue_stats = self.message_queue_client.get_statistics_sync()
+        pipe = getattr(self, "_continuous_pipeline", None)
+        pipe_stats = pipe.stats() if pipe is not None else {}
+
+        env_pool_stats = {}
+        runtime = getattr(self.mcp_loop_manager, "_env_pool_runtime", None)
+        pool = getattr(runtime, "env_pool", None)
+        if pool is not None:
+            stats = pool.get_stats()
+            env_pool_stats = {
+                "env_pool/total_envs": stats.total_envs,
+                "env_pool/ready_envs": stats.ready_envs,
+                "env_pool/in_use_envs": stats.in_use_envs,
+                "env_pool/error_envs": stats.error_envs,
+                "env_pool/in_flight_provisions": getattr(pool, "_in_flight", 0),
+                "env_pool/reuse_policy": getattr(pool, "reuse_policy", "cache"),
+                "env_pool/max_pool_size": getattr(pool, "max_pool_size", 0),
+                "env_pool/max_ready_envs": getattr(pool, "max_ready_envs", 0),
+                "env_pool/max_ready_per_key": getattr(pool, "max_ready_per_key", 0),
+            }
 
         return {
             "monitor/queue/mq_queue_size": queue_stats["queue_size"],
+            "continuous/in_flight": pipe_stats.get("in_flight", 0),
+            "continuous/env_inflight": pipe_stats.get("env_inflight", 0),
+            "continuous/run_inflight": pipe_stats.get("run_inflight", 0),
+            "continuous/env_queue_size": pipe_stats.get("env_queue_size", 0),
+            "continuous/run_queue_size": pipe_stats.get("run_queue_size", 0),
+            "continuous/eval_queue_size": pipe_stats.get("eval_queue_size", 0),
+            "continuous/active_instances": pipe_stats.get("active_instances", 0),
+            **env_pool_stats,
             "count/current_param_version": self.current_param_version,
-            "count/total_generated_samples": self.total_generated_samples,
-            "count/staleness_samples": self.staleness_samples,
-            "count/dropped_stale_samples": self.dropped_stale_samples,
-            "count/failed_samples": self.failed_sample_count,
+            "count/total_generated_queue_items": self.total_generated_queue_items,
+            "count/stale_queue_items": self.stale_queue_items,
+            "count/dropped_stale_queue_items": self.dropped_stale_queue_items,
+            "count/failed_rollout_batches": self.failed_rollout_batches,
             "count/global_steps": self.global_steps,
-            "static/max_required_samples": self.max_required_samples,
-            "static/required_samples": self.required_samples,
+            "static/max_required_queue_items": self.max_required_queue_items,
+            "static/required_tasks": self.required_tasks,
+            "static/required_trajectories": self.required_trajectories,
+            "static/global_trajectory_minibatch": self.global_trajectory_minibatch,
+            "static/local_actor_minibatch": self.local_actor_minibatch,
+            "static/alignment_unit": self.alignment_unit,
             "static/trajectories_per_queue_item": self._trajectories_per_queue_item,
             "static/staleness_threshold": self.staleness_threshold,
             "static/max_queue_size": self.max_queue_size,
@@ -933,14 +1184,26 @@ class MCPFullyAsyncRollouter(SeparateRayPPOTrainer):  # pylint: disable=too-many
 
         logger.info("Loading checkpoint from: {}", global_step_folder)
 
-        # Derive Rollouter's global_steps from Trainer's global_step in checkpoint path.
-        # Conversion: each Trainer step consumes queue_items_per_train_step items,
-        # and every trig steps triggers a weight sync.
-        trainer_global_steps = int(global_step_folder.split("global_step_")[-1])
-        queue_items_per_train_step = max(1, -(-self.required_samples // self._trajectories_per_queue_item))
+        # Checkpoint folder names use current_param_version. Each synced
+        # param version covers trigger_parameter_sync_step trainer updates,
+        # and each trainer update consumes enough batch queue items to reach
+        # required_trajectories.
+        checkpoint_param_version = int(global_step_folder.split("global_step_")[-1])
+        queue_items_per_train_step = max(
+            1,
+            -(-self.required_trajectories // max(1, self._trajectories_per_queue_item)),
+        )
         trig = self.config.async_training.trigger_parameter_sync_step
-        self.global_steps = trainer_global_steps * queue_items_per_train_step * trig + 1
-        logger.info("Setting global_steps to {}", self.global_steps)
+        consumed_queue_items = checkpoint_param_version * queue_items_per_train_step * trig
+        consumed_rollout_steps = consumed_queue_items
+        self.global_steps = consumed_rollout_steps + 1
+        logger.info(
+            "Setting global_steps to {} from checkpoint_param_version={}, "
+            "queue_items_per_train_step={}, trigger_parameter_sync_step={}, "
+            "trajectories_per_queue_item={}",
+            self.global_steps, checkpoint_param_version,
+            queue_items_per_train_step, trig, self._trajectories_per_queue_item,
+        )
 
         dataloader_local_path = os.path.join(global_step_folder, "data.pt")
         if os.path.exists(dataloader_local_path):

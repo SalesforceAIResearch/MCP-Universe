@@ -44,8 +44,10 @@ fully_async/
 ├── mcp_async_main.py        # Orchestrator: wires Rollouter + Trainer + MessageQueue + ParamSync
 ├── mcp_async_rollouter.py   # MCPFullyAsyncRollouter — continuous trajectory generation
 ├── mcp_async_trainer.py     # MCPFullyAsyncTrainer — queue-consuming PPO pipeline
-├── mcp_async_workers.py     # MCPDetachActorWorker, MCPAsyncRolloutWorker (weight sync overrides)
+├── mcp_async_workers.py     # MCPDetachActorWorker, MCPAsyncRolloutWorker (FSDP weight sync)
+├── mcp_megatron_async_workers.py  # Megatron variants of the async workers
 ├── mcp_async_data.py        # MCPRolloutSample, padding helpers, assemble_mcp_training_batch
+├── mcp_async_queue.py       # MessageQueue consumption helpers
 ├── mcp_param_sync.py        # MCPParameterSynchronizer (NCCL broadcast)
 └── README.md                # This file
 ```
@@ -72,7 +74,8 @@ A Ray actor that continuously generates trajectories:
 ### mcp_async_trainer.py — MCPFullyAsyncTrainer
 
 A Ray actor that consumes batches from the queue:
-- Pulls `require_batches` mini-batches per training step
+- Pulls `actor.ppo_mini_batch_size * require_batches` task items per training step
+  (nominally `actor.ppo_mini_batch_size * rollout.n * require_batches` trajectories)
 - Calls `assemble_mcp_training_batch()` to concatenate samples with re-padding
 - Runs the full PPO pipeline: log_prob → advantage → critic update → actor update
 - Triggers `MCPParameterSynchronizer` every `trigger_parameter_sync_step` steps
@@ -80,11 +83,13 @@ A Ray actor that consumes batches from the queue:
 
 ### mcp_async_workers.py — Custom Workers
 
-**MCPDetachActorWorker**: Extends VERL's `FSDPActorWorker`. Used for the training-side actor. No special overrides beyond proper initialization.
+**MCPDetachActorWorker**: Extends VERL's `DetachActorWorker` (FSDP). Used for the training-side actor. No special overrides beyond proper initialization.
 
 **MCPAsyncRolloutWorker**: Extends VERL's `DetachAsyncRolloutWorker`. Key override:
 - `sync_rollout_weights()`: Receives NCCL broadcast from trainer, then pushes weights to vLLM HTTP server via `ServerAdapter.update_weights()` (CUDA IPC transfer)
 - Uses COLOCATED mode with `load_format=auto` (not `dummy`) for initial weight loading
+
+> **Megatron backend**: `mcp_megatron_async_workers.py` provides the equivalent `MCPMegatronDetachActorWorker` and `MCPMegatronAsyncRolloutWorker`, used when the actor strategy is `megatron`.
 
 ### mcp_async_data.py — Data Classes & Batch Assembly
 
@@ -147,7 +152,7 @@ Default config: `../config/mcp_fully_async.yaml`
 ```yaml
 async_training:
   trigger_parameter_sync_step: 1  # sync weights every N training steps (higher = more off-policy)
-  require_batches: 1              # mini-batches to pull per training step
+  require_batches: 1              # PPO prompt/task mini-batches per training step
   staleness_threshold: 1          # max allowed stale sample ratio
   partial_rollout: true           # cancel in-progress trajectories on pause
   use_trainer_do_validate: false  # who runs validation (false = rollouter)
@@ -158,11 +163,12 @@ async_training:
 ```yaml
 mcp_agent:
   agent_mode: harmony           # harmony, react_train, etc.
-  rollout_mode: text            # text (HTTP API) or token (TITO)
+  rollout_mode: token           # token (TITO, default) or text (HTTP API)
   mcp_transport: stdio          # stdio, sse, or docker_pool
-  num_trajectories: 1           # per prompt (GRPO needs > 1)
+  val_num_trajectories: 1       # validation trajectories per prompt
   max_iterations: 12            # max tool-call rounds per trajectory
-  max_parallel_agents: 16       # concurrent MCP agent tasks
+  max_init_agents: 16           # init-stage concurrency (env / container setup)
+  max_run_agents: null          # run-stage (generation) concurrency; null = auto (~2x max_init_agents)
   llm_config:
     model_name: /path/to/model
     temperature: 0.7

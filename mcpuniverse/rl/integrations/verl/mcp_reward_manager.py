@@ -42,7 +42,7 @@ class MCPRewardManager:  # pylint: disable=too-few-public-methods
         self.reward_fn_key = reward_fn_key
         self._examined_count = 0
 
-    def __call__(self, data: DataProto, return_dict: bool = False) -> Any:
+    def __call__(self, data: DataProto, return_dict: bool = False) -> Any:  # pylint: disable=too-many-return-statements
         """
         Compute or retrieve rewards for the batch.
 
@@ -54,7 +54,29 @@ class MCPRewardManager:  # pylint: disable=too-few-public-methods
         Returns:
             reward_tensor [B, S] or dict with reward_tensor and extra_info
         """
-        # Check for pre-computed rm_scores
+        # Empty batch guard:
+        # Upstream rollout may return 0 trajectories (e.g. the env-pool docker
+        # daemon is unreachable, or all MCP server inits failed). In that case
+        # ``data.batch`` is None or length 0, and accessing ``.keys()`` /
+        # ``["responses"]`` would raise AttributeError / KeyError, masking the
+        # real upstream error (e.g. an unreachable MCP server) as a downstream
+        # NoneType crash. Return an empty 0x0 reward tensor so the caller gets a
+        # structured empty result, and log a warning to keep the upstream
+        # failure visible.
+        if data is None or data.batch is None or len(data) == 0:
+            logger.warning(
+                "MCPRewardManager received empty batch (data={}, batch={}, "
+                "len={}). Returning empty reward tensor. Check upstream "
+                "rollout / env-pool / MCP server health.",
+                "None" if data is None else "set",
+                "None" if data is None or data.batch is None else "set",
+                0 if data is None else len(data),
+            )
+            empty_tensor = torch.zeros((0, 0), dtype=torch.float32)
+            if return_dict:
+                return {"reward_tensor": empty_tensor, "reward_extra_info": {}}
+            return empty_tensor
+
         if "rm_scores" in data.batch.keys():
             if return_dict:
                 return {"reward_tensor": data.batch["rm_scores"]}
@@ -64,6 +86,72 @@ class MCPRewardManager:  # pylint: disable=too-few-public-methods
         response_length = data.batch["responses"].shape[1]
         reward_tensor = torch.zeros((batch_size, response_length), dtype=torch.float32)
         reward_extra_info = defaultdict(list)
+
+        if "rewards" in data.non_tensor_batch:
+            rewards = data.non_tensor_batch["rewards"]
+            if hasattr(rewards, "tolist"):
+                rewards = rewards.tolist()
+            if not isinstance(rewards, list):
+                rewards = [rewards]
+            if len(rewards) != batch_size:
+                raise ValueError(
+                    "Reward batch size mismatch: "
+                    f"got {len(rewards)} rewards for batch_size={batch_size}"
+                )
+
+            reward_values = torch.tensor(
+                [float(reward) for reward in rewards],
+                dtype=torch.float32,
+            )
+            if "response_lengths" in data.non_tensor_batch:
+                response_lengths = data.non_tensor_batch["response_lengths"]
+                if hasattr(response_lengths, "tolist"):
+                    response_lengths = response_lengths.tolist()
+                if not isinstance(response_lengths, list):
+                    response_lengths = [response_lengths]
+                if len(response_lengths) != batch_size:
+                    raise ValueError(
+                        "Response length batch size mismatch: "
+                        f"got {len(response_lengths)} response lengths for batch_size={batch_size}"
+                    )
+                valid_response_lengths = torch.tensor(
+                    [
+                        min(max(int(response_length_item), 0), response_length)
+                        for response_length_item in response_lengths
+                    ],
+                    dtype=torch.long,
+                )
+            else:
+                prompt_length = data.batch["prompts"].shape[-1]
+                valid_response_lengths = (
+                    data.batch["attention_mask"][:, prompt_length:prompt_length + response_length]
+                    .sum(dim=-1)
+                    .to(dtype=torch.long, device="cpu")
+                )
+            valid_rows = valid_response_lengths > 0
+            if bool(valid_rows.any().item()):
+                row_idx = torch.arange(batch_size, dtype=torch.long)[valid_rows]
+                col_idx = valid_response_lengths[valid_rows] - 1
+                reward_tensor[row_idx, col_idx] = reward_values[valid_rows]
+
+            reward_extra_info["reward"].extend(reward_values.tolist())
+
+            if self._examined_count < self.num_examine and batch_size > 0:
+                logger.debug(
+                    "RewardManager sample {}: reward={}, "
+                    "valid_response_tokens={} (precomputed reward, decode skipped)",
+                    0,
+                    float(reward_values[0]),
+                    int(valid_response_lengths[0]),
+                )
+                self._examined_count += 1
+
+            if return_dict:
+                return {
+                    "reward_tensor": reward_tensor,
+                    "reward_extra_info": dict(reward_extra_info),
+                }
+            return reward_tensor
 
         for i in range(batch_size):
             data_item = data[i]
@@ -128,7 +216,7 @@ class MCPEvaluatorRewardManager(MCPRewardManager):  # pylint: disable=too-few-pu
     def __init__(
         self,
         tokenizer: Any,
-        evaluators: List[Any] = None,
+        evaluators: Optional[List[Any]] = None,
         num_examine: int = 0,
     ):
         super().__init__(tokenizer, num_examine)

@@ -15,7 +15,7 @@ from actor workers to rollout workers.  It works because MCPAsyncRolloutWorker
 overrides sync_rollout_weights() to use ServerAdapter.update_weights() (CUDA IPC)
 instead of get_inference_model().load_weights().
 
-Works with both vLLM and SGLang backends — both ServerAdapter implementations
+Works with both vLLM and SGLang backends - both ServerAdapter implementations
 expose the same update_weights() interface.
 """
 
@@ -54,6 +54,7 @@ class MCPParameterSynchronizer:
         self.wait_last_update = None
         self.wait_last_resume = None
         self.validate_task = None
+        self._actor_sync_future = None
 
         # Incremented on each sync; used to track which model version rollout is using.
         self.current_version = 0
@@ -112,6 +113,18 @@ class MCPParameterSynchronizer:
                 group_name=self.sync_group_name,
             )
 
+        # Pre-warm NCCL communicator: Ray collective lazily creates the
+        # NCCL communicator on the first broadcast, with a hard 180s
+        # rendezvous timeout.  During sync_weights, the actor side may
+        # exceed 180s preparing weights (offload reload + Bridge conversion),
+        # causing the rollout side to timeout.  A tiny warmup broadcast
+        # while all workers are idle avoids this.
+        print("[MCPParameterSynchronizer] Warming up NCCL communicator...")
+        actor_warmup = self.actor_wg.warmup_nccl_group(self.sync_group_name)
+        ray.get(self.rollout_wg.warmup_nccl_group(self.sync_group_name))
+        ray.get(actor_warmup)
+        print("[MCPParameterSynchronizer] NCCL communicator ready")
+
     def _init_actor_rollout_checkpoint_engine(self):
         # Checkpoint engine syncs weights via filesystem instead of NCCL.
         # rank_offset separates actor and rollout checkpoint files.
@@ -164,12 +177,15 @@ class MCPParameterSynchronizer:
         #   (CUDA IPC), bypassing the upstream get_inference_model() path that fails.
         use_checkpoint_engine = self.config.async_training.checkpoint_engine.enable
         if use_checkpoint_engine:
-            self.actor_wg.sync_rollout_weights_by_checkpoint(self.sync_group_name)
+            self._actor_sync_future = self.actor_wg.sync_rollout_weights_by_checkpoint(self.sync_group_name)
             ray.get(self.rollout_wg.sync_rollout_weights_by_checkpoint(self.sync_group_name))
         else:
-            # actor_wg call is not awaited so actor and rollout can overlap;
-            # rollout_wg is awaited to ensure all weights are received before resuming.
-            self.actor_wg.sync_rollout_weights(self.sync_group_name)
+            # Store actor future so we can check for errors in wait_last_valid.
+            # NCCL broadcast requires both sender and receiver to participate,
+            # so rollout_wg.get() implicitly waits for the actor side too.
+            # But if actor raises an exception, this future is the only way
+            # to surface it - without it the error becomes an orphan task.
+            self._actor_sync_future = self.actor_wg.sync_rollout_weights(self.sync_group_name)
             ray.get(self.rollout_wg.sync_rollout_weights(self.sync_group_name))
 
         end_time = time.time()
@@ -199,6 +215,9 @@ class MCPParameterSynchronizer:
         to avoid overlapping pause/resume cycles."""
         print("[MCPParameterSynchronizer] Waiting last sync and validate...")
         start_time = time.time()
+        if self._actor_sync_future:
+            ray.get(self._actor_sync_future)
+            self._actor_sync_future = None
         if self.wait_last_update:
             ray.get(self.wait_last_update)
         if self.wait_last_resume:

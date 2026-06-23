@@ -8,14 +8,14 @@ MessageQueue and ParameterSynchronizer. Both run concurrently as Ray
 actors, communicating through the queue.
 
 Architecture:
-    ┌──────────────┐    MessageQueue    ┌──────────────┐
-    │  Rollouter   │ ──── (push) ────→  │   Trainer    │
-    │ (rollout GPU)│ ←── (weights) ──── │ (train GPU)  │
-    └──────────────┘  ParameterSync     └──────────────┘
+    +--------------+    MessageQueue    +--------------+
+    |  Rollouter   | ---- (push) ---->  |   Trainer    |
+    | (rollout GPU)| <-- (weights) ---- | (train GPU)  |
+    +--------------+  ParameterSync     +--------------+
 
     - Rollouter: runs inference engine (vLLM/SGLang) on rollout GPUs,
       generates MCP agent multi-turn trajectories, pushes to MessageQueue
-    - Trainer: pulls rollout data from MessageQueue, runs PPO training (FSDP),
+    - Trainer: pulls rollout data from MessageQueue, runs PPO training (FSDP/Megatron),
       triggers NCCL weight broadcast back to Rollouter via ParameterSynchronizer
     - MessageQueue: Ray actor, data buffer from Rollouter to Trainer
     - ParameterSynchronizer: handles weight sync from Trainer to Rollouter
@@ -40,7 +40,7 @@ from pprint import pprint
 
 import hydra
 import ray
-from omegaconf import DictConfig, OmegaConf
+from omegaconf import DictConfig, OmegaConf, open_dict
 
 from verl.experimental.fully_async_policy.message_queue import MessageQueue, MessageQueueClient
 from verl.single_controller.ray import RayWorkerGroup
@@ -49,6 +49,7 @@ from verl.trainer.ppo.utils import Role, need_reference_policy
 from verl.utils import hf_processor, hf_tokenizer
 from verl.utils.fs import copy_to_local
 
+from ..mcp_batch_sizing import compute_mcp_batch_sizing, validate_mcp_batch_sizing
 from ..utils import _LazyLogger, init_ray
 
 from .mcp_async_rollouter import MCPFullyAsyncRollouter
@@ -58,12 +59,18 @@ from .mcp_param_sync import MCPParameterSynchronizer
 
 logger = _LazyLogger()
 
-# Only FSDP/FSDP2 is supported; see todo.md for Megatron support plan.
 try:
     from verl.workers.fsdp_workers import CriticWorker as FSDPCriticWorker
     _HAS_VERL_FSDP_WORKERS = True
 except ImportError:
     _HAS_VERL_FSDP_WORKERS = False
+
+try:
+    from verl.workers.megatron_workers import CriticWorker as MegatronCriticWorker
+    from .mcp_megatron_async_workers import MCPMegatronAsyncRolloutWorker, MCPMegatronDetachActorWorker
+    _HAS_VERL_MEGATRON_WORKERS = True
+except ImportError:
+    _HAS_VERL_MEGATRON_WORKERS = False
 
 CONFIG_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config")
 
@@ -111,6 +118,13 @@ def create_role_worker_mapping(config):
       sync_rollout_weights() to push NCCL-received weights to inference engine
       via ServerAdapter.update_weights() (CUDA IPC).
     - FSDPCriticWorker: upstream CriticWorker, no MCP customization needed.
+
+    Worker classes under Megatron strategy:
+    - MCPMegatronDetachActorWorker: extends Megatron DetachActorWorker with
+      Bridge-based weight conversion (mcore -> HF format) and debug logging.
+    - MCPMegatronAsyncRolloutWorker: extends Megatron DetachAsyncRolloutWorker,
+      same streaming ServerAdapter.update_weights() pattern as FSDP version.
+    - MegatronCriticWorker: upstream Megatron CriticWorker, no MCP customization.
     """
     strategy = config.actor_rollout_ref.actor.get("strategy", "fsdp2")
 
@@ -122,14 +136,27 @@ def create_role_worker_mapping(config):
             critic_cls = FSDPCriticWorker
         else:
             raise ImportError(
-                "Could not import worker classes. "
+                "Could not import FSDP worker classes. "
                 "Make sure veRL fully_async_policy is available."
+            )
+
+    elif strategy == "megatron":
+        if _HAS_VERL_MEGATRON_WORKERS:
+            logger.info("Using veRL fully_async_policy Megatron workers + MCPMegatronAsyncRolloutWorker")
+            actor_cls = MCPMegatronDetachActorWorker
+            rollout_cls = MCPMegatronAsyncRolloutWorker
+            critic_cls = MegatronCriticWorker
+        else:
+            raise ImportError(
+                "Could not import Megatron worker classes. "
+                "Make sure veRL is installed with Megatron support "
+                "(megatron-core, transformer-engine, apex)."
             )
 
     else:
         raise NotImplementedError(
             f"Strategy {strategy!r} not supported. "
-            f"MCP currently supports 'fsdp' and 'fsdp2' only."
+            f"MCP fully async supports 'fsdp', 'fsdp2', and 'megatron'."
         )
 
     role_worker_mapping = {
@@ -152,6 +179,7 @@ def validate_async_config(config: DictConfig):
     - hybrid_engine must be False (separate GPU pools required)
     - async_training and rollout config sections must exist
     - GPU counts must be specified for both trainer and rollout pools
+    - Megatron: TP must divide n_gpus_per_node, TP*PP must not exceed total GPUs
     """
     errors = []
 
@@ -170,13 +198,145 @@ def validate_async_config(config: DictConfig):
     if not hasattr(config.trainer, "n_gpus_per_node"):
         errors.append("trainer.n_gpus_per_node is required")
 
+    strategy = config.actor_rollout_ref.actor.get("strategy", "fsdp2")
+    if strategy == "megatron":
+        _validate_megatron_async_config(config, errors)
+    if strategy in {"fsdp", "fsdp2", "megatron"}:
+        errors.extend(validate_mcp_batch_sizing(config))
+
     if errors:
         error_msg = "Configuration errors:\n" + "\n".join(f"  - {e}" for e in errors)
         raise ValueError(error_msg)
 
-    logger.info("Async config validated")
+    logger.info("Async config validated (strategy={})", strategy)
     logger.info(f"  Training: {config.trainer.n_gpus_per_node} GPUs x {config.trainer.nnodes} nodes")
     logger.info(f"  Rollout:  {config.rollout.n_gpus_per_node} GPUs x {config.rollout.nnodes} nodes")
+    sizing = compute_mcp_batch_sizing(config)
+    logger.info("  Batch sizing: {}", sizing.describe())
+
+
+def _validate_megatron_async_config(config: DictConfig, errors: list):
+    """Validate Megatron-specific config for fully async mode."""
+    megatron_cfg = config.actor_rollout_ref.actor.get("megatron", {})
+    tp = megatron_cfg.get("tensor_model_parallel_size", 1)
+    pp = megatron_cfg.get("pipeline_model_parallel_size", 1)
+    ep = megatron_cfg.get("expert_model_parallel_size", 1)
+    etp = megatron_cfg.get("expert_tensor_parallel_size", tp)
+    cp = megatron_cfg.get("context_parallel_size", 1)
+
+    for name, value in (
+        ("tensor_model_parallel_size", tp),
+        ("pipeline_model_parallel_size", pp),
+        ("expert_model_parallel_size", ep),
+        ("expert_tensor_parallel_size", etp),
+        ("context_parallel_size", cp),
+    ):
+        if not isinstance(value, int) or value < 1:
+            errors.append(f"Megatron {name} must be a positive integer, got: {value!r}")
+            return
+
+    trainer_gpus_per_node = config.trainer.n_gpus_per_node
+    trainer_total_gpus = trainer_gpus_per_node * config.trainer.nnodes
+    # Megatron-Core has two distinct DP concepts:
+    # - ordinary DP for dense/attention layers and actor PPO batch splitting:
+    #   world / (TP * CP * PP)
+    # - expert DP for MoE expert groups:
+    #   world / (ETP * EP * PP)
+    # See megatron.core.parallel_state.initialize_model_parallel().
+    model_parallel_product = tp * cp * pp
+    expert_parallel_product = etp * ep * pp
+
+    if trainer_gpus_per_node % tp != 0:
+        errors.append(
+            f"trainer.n_gpus_per_node ({trainer_gpus_per_node}) must be divisible by "
+            f"Megatron TP ({tp}) for intra-node NVLink bandwidth"
+        )
+
+    if model_parallel_product > trainer_total_gpus:
+        errors.append(
+            f"Megatron TP*CP*PP ({model_parallel_product}) exceeds trainer total GPUs ({trainer_total_gpus})"
+        )
+    elif trainer_total_gpus % model_parallel_product != 0:
+        errors.append(
+            f"trainer total GPUs ({trainer_total_gpus}) must be divisible by "
+            f"TP*CP*PP ({model_parallel_product})"
+        )
+    elif expert_parallel_product > trainer_total_gpus:
+        errors.append(
+            f"Megatron ETP*EP*PP ({expert_parallel_product}) exceeds trainer total GPUs ({trainer_total_gpus})"
+        )
+    elif trainer_total_gpus % expert_parallel_product != 0:
+        errors.append(
+            f"trainer total GPUs ({trainer_total_gpus}) must be divisible by "
+            f"ETP*EP*PP ({expert_parallel_product})"
+        )
+    else:
+        dp = trainer_total_gpus // model_parallel_product
+        expert_dp = trainer_total_gpus // expert_parallel_product
+        logger.info(
+            "Megatron async topology: TP={}, PP={}, CP={}, DP={}, ETP={}, EP={}, expert_DP={}, trainer_gpus={}",
+            tp, pp, cp, dp, etp, ep, expert_dp, trainer_total_gpus,
+        )
+
+    # moe_grouped_gemm=false breaks Bridge weight export to vLLM.
+    override_cfg = megatron_cfg.get("override_transformer_config", {})
+    moe_grouped_gemm = override_cfg.get("moe_grouped_gemm", None)
+    if moe_grouped_gemm is False or str(moe_grouped_gemm).lower() == "false":
+        errors.append(
+            "moe_grouped_gemm must be true for Megatron async mode. "
+            "Bridge weight export with moe_grouped_gemm=false produces HF weight "
+            "names that vLLM silently skips, causing garbage generation. "
+            "See Megatron_Issues/2026-04-01_moe_grouped_gemm_weight_sync.md"
+        )
+
+    # TP=1 with MoE causes OOM in actor backward - each GPU holds full
+    # expert weights and unsharded activations.
+    if tp == 1 and ep > 0:
+        logger.warning(
+            "TP=1 with MoE (EP={}) is prone to OOM in actor backward. "
+            "Each GPU holds unsharded activations and Sequence Parallel "
+            "cannot be enabled (requires TP>=2). Consider TP=2.",
+            ep,
+        )
+
+
+def _inject_total_training_steps(config: DictConfig, total_train_steps: int):
+    """Inject total_training_steps into optimizer configs before worker init.
+
+    Megatron's OptimizerParamScheduler requires lr_decay_steps > 0. When
+    lr_decay_steps is not explicitly set, it falls back to total_training_steps
+    from the optimizer config. The standard veRL PPO trainer sets this in
+    _setup_data(), but fully async mode has no dataloader on the trainer side.
+    """
+    if total_train_steps is None or total_train_steps <= 0:
+        total_train_steps = 100_000
+        logger.warning(
+            "total_train_steps is not set or invalid; using fallback={} "
+            "for Megatron optimizer scheduler. Set trainer.total_training_steps "
+            "or async_training.total_train_steps to override.",
+            total_train_steps,
+        )
+
+    try:
+        OmegaConf.set_struct(config, True)
+        with open_dict(config):
+            if OmegaConf.select(config, "actor_rollout_ref.actor.optim"):
+                config.actor_rollout_ref.actor.optim.total_training_steps = total_train_steps
+                logger.info(
+                    "Injected actor optim total_training_steps={}",
+                    total_train_steps,
+                )
+            if OmegaConf.select(config, "critic.optim"):
+                config.critic.optim.total_training_steps = total_train_steps
+                logger.info(
+                    "Injected critic optim total_training_steps={}",
+                    total_train_steps,
+                )
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        logger.warning(
+            "Could not inject total_training_steps into config: {}. "
+            "If using Megatron, the optimizer scheduler may fail.", e,
+        )
 
 
 @ray.remote(num_cpus=1)
@@ -209,7 +369,7 @@ class MCPAsyncTaskRunner:
         pprint(OmegaConf.to_container(config, resolve=True))
         OmegaConf.resolve(config)
 
-        # ── 1. Load model and tokenizer ───────────────────────────────────
+        # -- 1. Load model and tokenizer -----------------------------------
         # copy_to_local: pull from remote storage (S3/HDFS) to local/shared memory
         logger.info("[MCP ASYNC MAIN] Loading model and tokenizer...")
         local_path = copy_to_local(
@@ -224,28 +384,36 @@ class MCPAsyncTaskRunner:
         self.components["processor"] = processor
         self.components["config"] = config
 
-        # ── 2. Create worker mapping ──────────────────────────────────────
-        # Select worker classes based on strategy (fsdp/fsdp2), wrap with ray.remote()
+        # -- 2. Create worker mapping --------------------------------------
+        # Select worker classes based on strategy (fsdp/fsdp2/megatron), wrap with ray.remote()
         logger.info("[MCP ASYNC MAIN] Creating worker mapping...")
         role_worker_mapping, ray_worker_group_cls = create_role_worker_mapping(config)
         self.components["role_worker_mapping"] = role_worker_mapping
         self.components["ray_worker_group_cls"] = ray_worker_group_cls
 
-        # ── 3. Create Rollouter and Trainer ───────────────────────────────
+        # -- 3. Create Rollouter and Trainer -------------------------------
         # Created sequentially to avoid GPU resource contention
         logger.info("[MCP ASYNC MAIN] Creating rollouter...")
         self._create_rollouter(config)
+
+        # -- 3.5. Inject total_training_steps into optimizer configs -------
+        # Megatron's OptimizerParamScheduler requires lr_decay_steps > 0.
+        # When lr_decay_steps is null, it falls back to total_training_steps.
+        # The standard veRL PPO trainer sets this in _setup_data() before
+        # worker init, but fully async mode has no dataloader on the trainer
+        # side. We fetch the estimate from the rollouter and inject it before
+        # the trainer builds the Megatron optimizer.
+        total_train_steps = ray.get(self.components["rollouter"].get_total_train_steps.remote())
+        logger.info(f"[MCP ASYNC MAIN] total_train_steps={total_train_steps}")
+        _inject_total_training_steps(config, total_train_steps)
+
         logger.info("[MCP ASYNC MAIN] Creating trainer...")
         self._create_trainer(config)
 
-        # ── 4. Sync total_train_steps (for tqdm progress bar only) ────────
-        # Rollouter estimates total_train_steps from dataset size.
-        # This is approximate — actual stopping is controlled by queue closure.
-        total_train_steps = ray.get(self.components["rollouter"].get_total_train_steps.remote())
-        logger.info(f"[MCP ASYNC MAIN] total_train_steps={total_train_steps}")
+        # -- 4. Sync total_train_steps (for tqdm progress bar) -------------
         ray.get(self.components["trainer"].set_total_train_steps.remote(total_train_steps))
 
-        # ── 5. Create MessageQueue ────────────────────────────────────────
+        # -- 5. Create MessageQueue ----------------------------------------
         # Shared data buffer: Rollouter pushes rollout DataProto, Trainer pulls.
         # max_queue_size caps the buffer to prevent memory issues if Rollouter
         # produces faster than Trainer consumes.
@@ -262,16 +430,16 @@ class MCPAsyncTaskRunner:
         ray.get(self.components["rollouter"].set_message_queue_client.remote(message_queue_client))
         ray.get(self.components["trainer"].set_message_queue_client.remote(message_queue_client))
 
-        # ── 6. Create MCPParameterSynchronizer ────────────────────────────
+        # -- 6. Create MCPParameterSynchronizer ----------------------------
         # Handles post-training weight sync:
-        #   Actor FSDP -> NCCL broadcast -> MCPAsyncRolloutWorker -> ServerAdapter -> inference engine
+        #   Actor (FSDP/Megatron) -> NCCL broadcast -> MCP*RolloutWorker -> ServerAdapter -> inference engine
         #
         # Why MCPParameterSynchronizer instead of upstream ParameterSynchronizer:
         # Upstream has the actual NCCL sync code commented out (sync_weights is a no-op).
         # This is because upstream's sync_rollout_weights() calls get_inference_model()
-        # which fails on ServerAdapter (no local engine). MCPAsyncRolloutWorker bypasses
+        # which fails on ServerAdapter (no local engine). MCP*RolloutWorker bypasses
         # this by using ServerAdapter.update_weights() (CUDA IPC), so we can safely
-        # re-enable the NCCL sync calls.
+        # re-enable the NCCL sync calls. This is strategy-agnostic.
         logger.info("[MCP ASYNC MAIN] Setting up MCPParameterSynchronizer...")
         param_synchronizer = MCPParameterSynchronizer.remote(
             config=config,
@@ -282,7 +450,7 @@ class MCPAsyncTaskRunner:
         ray.get(self.components["trainer"].set_parameter_synchronizer.remote(param_synchronizer))
         self.components["param_synchronizer"] = param_synchronizer
 
-        # ── 7. Load checkpoint + initial weight sync ──────────────────────
+        # -- 7. Load checkpoint + initial weight sync ----------------------
         # Before training starts, ensure inference engine weights match training side.
         # - load_checkpoint: resume from previous checkpoint if available
         # - sync_weights: NCCL broadcast trainer weights to all rollout workers
@@ -319,7 +487,7 @@ class MCPAsyncTaskRunner:
         )
 
         ray.get(rollouter.init_workers.remote())
-        ray.get(rollouter.set_max_required_samples.remote())
+        ray.get(rollouter.set_max_required_tasks.remote())
 
         self.components["rollouter"] = rollouter
         logger.info("[MCP ASYNC MAIN] Rollouter created and initialized")
@@ -400,6 +568,12 @@ class MCPAsyncTaskRunner:
                 ray.cancel(future)
             raise
         finally:
+            rollouter = self.components.get("rollouter")
+            if rollouter is not None:
+                try:
+                    ray.get(rollouter.shutdown.remote())
+                except Exception as exc:  # pylint: disable=broad-exception-caught
+                    logger.warning("[MCP ASYNC MAIN] Rollouter shutdown failed: {}", exc)
             asyncio.run(self.components["message_queue_client"].clear_queue())
             logger.info("[MCP ASYNC MAIN] Training completed")
 

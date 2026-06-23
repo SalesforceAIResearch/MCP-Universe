@@ -3,7 +3,6 @@ MCP Dataset for VERL integration.
 
 Loads MCP training data with evaluators and MCP server configs.
 """
-# pylint: disable=fixme
 
 import json
 from typing import Any, Dict, List
@@ -41,8 +40,8 @@ class MCPDataset(Dataset):
             is_train: Whether this is training data
         """
         self.data_path = data_path
-        self.tokenizer = tokenizer  # TODO: add optional pre-tokenization support
-        self.max_length = max_length  # TODO: add optional length filtering
+        self.tokenizer = tokenizer  # reserved for optional pre-tokenization support
+        self.max_length = max_length  # reserved for optional length filtering
         self.is_train = is_train
 
         with open(data_path, 'r', encoding='utf-8') as f:

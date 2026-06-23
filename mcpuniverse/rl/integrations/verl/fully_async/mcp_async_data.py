@@ -1,9 +1,9 @@
 """
 Data classes and batch assembly for MCP Fully Async Training.
 
-Provides MCPRolloutSample (wrapping a single instance's rollout output)
-and assemble_mcp_training_batch (concatenating multiple samples into one
-training batch with re-padding and async meta_info).
+Provides MCPRolloutSample (wrapping a single instance's rollout output) and
+assemble_mcp_training_batch (concatenating multiple samples into one training
+batch with re-padding and async meta_info).
 """
 
 # pylint: disable=broad-exception-caught,unused-argument
@@ -14,27 +14,30 @@ from typing import Any, Optional
 
 import numpy as np
 import torch
-from tensordict import TensorDict
 
 from verl import DataProto
 from verl.trainer.ppo.ray_trainer import compute_response_mask
 
+from ..data_proto_padding import repad_data_protos
 from ..utils import _LazyLogger
 
 logger = _LazyLogger()
+
+MCP_BATCH_END_SENTINEL = b"__mcp_batch_end__"
 
 
 @dataclass
 class MCPRolloutSample:
     """A single instance's rollout output ready for queue transmission.
 
-    Each sample wraps the DataProto produced by MCPLoopManager for one
-    instance (with its ``num_trajectories`` trajectories).
+    Each sample wraps the DataProto produced by fully async per-instance
+    postprocess for one task instance (with its ``num_trajectories``
+    trajectories).
 
     Attributes:
         data: DataProto from MCPLoopManager._postprocess() containing
             prompts, responses, attention_mask, position_ids, response_mask,
-            uid, rewards, etc.  Shape is [num_trajectories, seq_len].
+            uid, rewards, etc. Shape is [num_trajectories, seq_len].
         param_version: The rollouter's parameter version when this sample
             was generated.
         instance_id: Original instance identifier for GRPO grouping.
@@ -59,199 +62,81 @@ class MCPRolloutSample:
     rollout_status: dict = field(default_factory=dict)
 
 
-def _repad_data_protos(
+def _truncate_overlength_protos(
     data_protos: list[DataProto],
-    pad_token_id: int = 0,
+    max_seq_len: int,
 ) -> list[DataProto]:
-    """Re-pad DataProtos to uniform sequence length for concatenation.
+    """Drop trajectories whose full sequence length exceeds max_seq_len.
 
-    Different ``generate_sequences()`` calls use dynamic padding, so each
-    DataProto may have a different seq_len.  Three groups of tensors exist:
-
-    * **Prompt-group** (``prompts``): left-padded to ``max_prompt_len``.
-    * **Response-group** (``responses``, ``response_mask``, and any key
-      whose last dim equals the current response length): *right*-padded
-      to ``max_response_len``.
-    * **Full-seq-group** (``input_ids``, ``attention_mask``,
-      ``position_ids``, and any key whose last dim equals the current
-      full-seq length): left-padded by ``max_prompt_len - cur_prompt_len``
-      and right-padded by ``max_response_from_input - cur_response_from_input``
-      so that the prompt/response split point (``prompts.shape[-1]``) stays
-      aligned with ``attention_mask``.
-
-    This ensures ``no_padding_2_padding()`` in the downstream training
-    pipeline correctly splits ``attention_mask`` at ``prompts.shape[-1]``
-    to recover per-token prompt/response lengths.
+    Rather than silently truncating token content (which would corrupt
+    attention_mask / position_ids alignment), we drop the entire trajectory.
+    This is safe because PPO batches contain many trajectories and losing
+    a few outliers is preferable to OOM or assertion failures.
     """
-    if len(data_protos) <= 1:
-        return data_protos
-
-    has_pr = all(
-        "prompts" in dp.batch and "responses" in dp.batch
-        for dp in data_protos
-    )
-    if not has_pr:
-        # Fallback: simple left-pad every key to its own max.
-        return _repad_simple(data_protos, pad_token_id)
-
-    prompt_dims = [dp.batch["prompts"].shape[-1] for dp in data_protos]
-    response_dims = [dp.batch["responses"].shape[-1] for dp in data_protos]
-    full_seq_dims = [dp.batch["input_ids"].shape[-1] for dp in data_protos]
-
-    max_prompt = max(prompt_dims)
-    max_response = max(response_dims)
-    # resp_from_input: response columns within input_ids (= full_seq_len - prompt_len).
-    # May differ from responses.shape[-1] because responses is stored independently.
-    resp_from_input = [f - p for f, p in zip(full_seq_dims, prompt_dims)]
-    max_resp_from_input = max(resp_from_input)
-    # target_full aligns the split point to max_prompt across all full-seq tensors.
-    target_full = max_prompt + max_resp_from_input
-
-    if (min(prompt_dims) == max_prompt
-            and min(response_dims) == max_response
-            and min(full_seq_dims) == target_full):
-        return data_protos
-
-    logger.info(
-        "Re-padding {} DataProtos: prompt→{}, response→{}, full_seq→{}",
-        len(data_protos), max_prompt, max_response, target_full,
-    )
-
-    result: list[DataProto] = []
-    for i, dp in enumerate(data_protos):
-        left_pad = max_prompt - prompt_dims[i]
-        right_pad = max_resp_from_input - resp_from_input[i]
-        resp_pad = max_response - response_dims[i]
-
-        if left_pad == 0 and right_pad == 0 and resp_pad == 0:
-            result.append(dp)
+    kept: list[DataProto] = []
+    dropped = 0
+    for dp in data_protos:
+        seq_len = dp.batch["input_ids"].shape[-1]
+        if seq_len > max_seq_len:
+            dropped += dp.batch["input_ids"].shape[0]  # number of trajectories
+            logger.warning(
+                "Dropping {} trajectories with seq_len={} > max_seq_len={}",
+                dp.batch["input_ids"].shape[0], seq_len, max_seq_len,
+            )
             continue
-
-        cur_prompt_dim = prompt_dims[i]
-        cur_resp_dim = response_dims[i]
-        cur_full_dim = full_seq_dims[i]
-
-        new_tensors: dict[str, torch.Tensor] = {}
-        for key in dp.batch.keys():
-            tensor = dp.batch[key]
-            if tensor.dim() < 2:
-                new_tensors[key] = tensor
-                continue
-
-            seq_len = tensor.shape[-1]
-
-            # Key name takes priority; dimension matching is the fallback for unknown keys.
-            if key == "prompts" or (seq_len == cur_prompt_dim
-                                     and seq_len != cur_resp_dim
-                                     and seq_len != cur_full_dim):
-                new_tensors[key] = _left_pad(tensor, left_pad, pad_token_id)
-
-            elif key in ("responses", "response_mask") or (
-                    seq_len == cur_resp_dim
-                    and seq_len != cur_prompt_dim
-                    and seq_len != cur_full_dim):
-                new_tensors[key] = _right_pad(tensor, resp_pad)
-
-            elif seq_len == cur_full_dim:
-                # input_ids uses pad_token_id; attention_mask / position_ids use 0.
-                pv = pad_token_id if key == "input_ids" else 0
-                new_tensors[key] = _lr_pad(tensor, left_pad, right_pad, pv)
-
-            else:
-                # Unknown dim: keep as-is; a dim mismatch during concat will give a clear error.
-                new_tensors[key] = tensor
-
-        result.append(DataProto(
-            batch=TensorDict(new_tensors, batch_size=dp.batch.batch_size),
-            non_tensor_batch=dp.non_tensor_batch,
-            meta_info=dp.meta_info,
-        ))
-
-    return result
+        kept.append(dp)
+    if dropped:
+        logger.warning("Total dropped trajectories due to overlength: {}", dropped)
+    return kept
 
 
-def _left_pad(tensor: torch.Tensor, pad_len: int, pad_val: int = 0) -> torch.Tensor:
-    if pad_len <= 0:
-        return tensor
-    ps = list(tensor.shape)
-    ps[-1] = pad_len
-    return torch.cat([torch.full(ps, pad_val, dtype=tensor.dtype, device=tensor.device),
-                      tensor], dim=-1)
-
-
-def _right_pad(tensor: torch.Tensor, pad_len: int, pad_val: int = 0) -> torch.Tensor:
-    if pad_len <= 0:
-        return tensor
-    ps = list(tensor.shape)
-    ps[-1] = pad_len
-    return torch.cat([tensor,
-                      torch.full(ps, pad_val, dtype=tensor.dtype, device=tensor.device)], dim=-1)
-
-
-def _lr_pad(tensor: torch.Tensor, left: int, right: int, pad_val: int = 0) -> torch.Tensor:
-    parts = []
-    if left > 0:
-        ps = list(tensor.shape)
-        ps[-1] = left
-        parts.append(torch.full(ps, pad_val, dtype=tensor.dtype, device=tensor.device))
-    parts.append(tensor)
-    if right > 0:
-        ps = list(tensor.shape)
-        ps[-1] = right
-        parts.append(torch.full(ps, pad_val, dtype=tensor.dtype, device=tensor.device))
-    return torch.cat(parts, dim=-1) if len(parts) > 1 else tensor
-
-
-def _repad_simple(
+def _enforce_token_budget(
     data_protos: list[DataProto],
-    pad_token_id: int = 0,
+    max_total_tokens: int,
 ) -> list[DataProto]:
-    """Fallback: left-pad every 2D+ key to its own global max (no alignment)."""
-    all_keys = list(data_protos[0].batch.keys())
-    key_lens: dict[str, list[int]] = {}
-    max_lens: dict[str, int] = {}
-    for key in all_keys:
-        if data_protos[0].batch[key].dim() < 2:
-            continue
-        lens = [dp.batch[key].shape[-1] for dp in data_protos]
-        mx = max(lens)
-        if min(lens) < mx:
-            key_lens[key] = lens
-            max_lens[key] = mx
+    """Drop the longest DataProtos until total token count fits the budget.
 
-    if not max_lens:
+    After re-padding, all DataProtos share the same seq_len (the global max).
+    A single outlier trajectory can inflate every other trajectory's memory
+    via padding.  This function drops DataProtos from longest to shortest
+    (by their *original* trajectory count x padded seq_len) until the total
+    token count is within budget.
+
+    This prevents OOM caused by re-padding amplification: e.g. 1 trajectory
+    at 35K tokens padding 63 trajectories from 200 to 35K each.
+    """
+    if max_total_tokens <= 0 or not data_protos:
         return data_protos
 
-    logger.info("Re-padding (simple) {} DataProtos, max_lens: {}", len(data_protos), max_lens)
+    def _token_count(dp: DataProto) -> int:
+        return dp.batch["input_ids"].shape[0] * dp.batch["input_ids"].shape[-1]
 
-    result = []
-    for i, dp in enumerate(data_protos):
-        needs = any(lens_list[i] < max_lens[k] for k, lens_list in key_lens.items())
-        if not needs:
-            result.append(dp)
-            continue
-        new_tensors = {}
-        for key in dp.batch.keys():
-            tensor = dp.batch[key]
-            if key in max_lens:
-                pad_amount = max_lens[key] - tensor.shape[-1]
-                # responses / response_mask are right-padded; everything else left-padded.
-                if key in ("responses", "response_mask"):
-                    new_tensors[key] = _right_pad(tensor, pad_amount, 0)
-                else:
-                    pv = pad_token_id if key == "input_ids" else 0
-                    new_tensors[key] = _left_pad(tensor, pad_amount, pv)
-            else:
-                new_tensors[key] = tensor
-        result.append(DataProto(
-            batch=TensorDict(new_tensors, batch_size=dp.batch.batch_size),
-            non_tensor_batch=dp.non_tensor_batch,
-            meta_info=dp.meta_info,
-        ))
-    return result
+    total = sum(_token_count(dp) for dp in data_protos)
+    if total <= max_total_tokens:
+        return data_protos
+
+    # Sort by per-proto seq_len descending (drop longest padded protos first).
+    indexed = sorted(enumerate(data_protos), key=lambda x: x[1].batch["input_ids"].shape[-1], reverse=True)
+
+    drop_indices: set[int] = set()
+    for idx, dp in indexed:
+        if total <= max_total_tokens:
+            break
+        total -= _token_count(dp)
+        drop_indices.add(idx)
+
+    if drop_indices:
+        dropped_traj = sum(data_protos[i].batch["input_ids"].shape[0] for i in drop_indices)
+        logger.warning(
+            "Token budget enforcement: dropped {} DataProtos ({} trajectories) "
+            "to fit budget {}. Remaining total tokens: {}",
+            len(drop_indices), dropped_traj, max_total_tokens, total,
+        )
+
+    return [dp for i, dp in enumerate(data_protos) if i not in drop_indices]
 
 
-def assemble_mcp_training_batch(
+def assemble_mcp_training_batch(  # pylint: disable=too-many-branches
     samples: list[MCPRolloutSample],
     tokenizer: Any,
     config: Any,
@@ -293,10 +178,33 @@ def assemble_mcp_training_batch(
 
     data_protos = [s.data for s in valid_samples]
 
+    # Overlength drop DISABLED: rollout side (vLLM max_model_len) already caps
+    # trajectory length. Megatron handles variable-length sequences via packing
+    # (use_remove_padding + flash attn THD + CP). Pre-dropping here is lossy
+    # and wrong -- it throws away 80%+ of legitimate long multi-turn G4 traj.
+    # Keeping the call commented for reference.
+    # max_token_len = getattr(config.actor_rollout_ref.actor, "ppo_max_token_len_per_gpu", None)
+    # megatron_cfg = getattr(config.actor_rollout_ref.actor, "megatron", None)
+    # cp_size = getattr(megatron_cfg, "context_parallel_size", 1) if megatron_cfg is not None else 1
+    # if max_token_len is not None:
+    #     effective_max = int(max_token_len) * int(cp_size)
+    #     data_protos = _truncate_overlength_protos(data_protos, effective_max)
+
     # Re-pad: different generate_sequences() calls use dynamic padding, so
     # DataProtos may have different seq_len and cannot be torch.cat'd directly.
     pad_id = getattr(tokenizer, "pad_token_id", 0) or 0
-    data_protos = _repad_data_protos(data_protos, pad_token_id=pad_id)
+    data_protos = repad_data_protos(data_protos, pad_token_id=pad_id)
+
+    # Note: token budget enforcement was removed - Megatron with TP>=2 + SP
+    # and use_dynamic_bsz=true can handle long sequences (100K+) without
+    # dropping.  Re-padding inflation is acceptable because dynamic batching
+    # packs sequences by total token count, not by count x max_seq_len.
+
+    global_token_num: list[int] = []
+    for dp in data_protos:
+        values = dp.meta_info.get("global_token_num")
+        if values is not None:
+            global_token_num.extend(int(value) for value in values)
 
     # Strip conflicting meta_info keys before concat: DataProto.concat() asserts
     # that all non-"metrics" keys are identical, but per-sample rollout_metrics
@@ -323,12 +231,52 @@ def assemble_mcp_training_batch(
                 for k in conflicting:
                     dp.meta_info.pop(k, None)
 
+    # Reconcile tensor (batch) keys before concat. DataProto.concat() -> torch.cat
+    # over TensorDicts requires IDENTICAL batch keys on every proto (strict
+    # _check_keys). Optional keys -- notably `routed_experts` for R3 routing replay
+    # -- can be present on some trajectories and absent on others: SGLang
+    # occasionally fails to return routing for a turn, so _build_routed_experts_tensor
+    # drops that whole instance's key (any(x is None) -> return None). Mixed presence
+    # crashed the run mid-training (KeyError in tensordict._check_keys after 10 good
+    # steps). Intersect to the common key set: a key missing from any proto is dropped
+    # from all. This is safe -- the Megatron R3 replay (REPLAY_FORWARD) falls back to
+    # natural routing when `routed_experts` is absent (router_replay_patch.py), so the
+    # worst case is ONE step trained without routing replay, never a crash. Batch size
+    # is preserved (no trajectories dropped), and it self-heals next step.
+    if len(data_protos) > 1:
+        key_sets = [set(dp.batch.keys()) for dp in data_protos if dp.batch is not None]
+        if key_sets:
+            common_keys = set.intersection(*key_sets)
+            extra_keys = set.union(*key_sets) - common_keys
+            if extra_keys:
+                missing_count = {
+                    k: sum(1 for ks in key_sets if k not in ks) for k in extra_keys
+                }
+                logger.warning(
+                    "Inconsistent batch tensor keys across trajectories; dropping {} "
+                    "before concat (missing on N/{} protos: {}). R3 replay falls back "
+                    "to natural routing for any dropped 'routed_experts' this step.",
+                    sorted(extra_keys), len(key_sets), missing_count,
+                )
+                for dp in data_protos:
+                    if dp.batch is None:
+                        continue
+                    for k in extra_keys:
+                        if k in dp.batch.keys():
+                            dp.batch.pop(k, None)
+
     final_batch = DataProto.concat(data_protos)
 
     if final_batch.batch is not None and "response_mask" not in final_batch.batch.keys():
         final_batch.batch["response_mask"] = compute_response_mask(final_batch)
 
-    if final_batch.batch is not None and "attention_mask" in final_batch.batch:
+    if (
+        final_batch.batch is not None
+        and global_token_num
+        and len(global_token_num) == int(final_batch.batch.batch_size[0])
+    ):
+        final_batch.meta_info["global_token_num"] = global_token_num
+    elif final_batch.batch is not None and "attention_mask" in final_batch.batch:
         final_batch.meta_info["global_token_num"] = (
             torch.sum(final_batch.batch["attention_mask"], dim=-1).tolist()
         )

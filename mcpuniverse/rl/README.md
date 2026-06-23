@@ -29,7 +29,7 @@ The training algorithm is **GRPO** (Group Relative Policy Optimization): multipl
 The core of the rollout pipeline. Drives the multi-turn tool-call loop for a batch of instances in parallel. Supports two rollout modes:
 
 - **Text mode**: calls the model via HTTP API (vLLM/sglang server); works with both Hybrid and Fully Async training.
-- **TITO mode** (Token In Token Out) — passes token IDs directly to the vLLM engine, skipping redundant tokenization/detokenization. More efficient when the model and rollout engine are co-located.
+- **TITO mode** (Token In Token Out) — passes token IDs directly to the vLLM/SGLang engine, skipping redundant tokenization/detokenization. More efficient when the model and rollout engine are co-located.
 
 ### MCPRewardManager
 
@@ -44,7 +44,7 @@ Controls how the agent's tool calls reach MCP server processes:
 | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `stdio`       | Spawns a fresh MCP server process per trajectory. Simple and isolated; good for most cases.                                                                                                                                                                              |
 | `sse`         | Routes tool calls through a shared MCP Gateway. Lower per-call overhead when many trajectories run in parallel.                                                                                                                                                          |
-| `docker_pool` | Each trajectory gets its own Docker container as its execution environment. The container runs an MCP server inside, so the agent's tools execute in a fully isolated, reproducible environment. Useful for tasks where trajectories must not interfere with each other. |
+| `docker_pool` | Each trajectory gets its own isolated container from an environment pool (backend: **Docker** or **Apptainer**), running an MCP server inside. Tools execute in a fully isolated, reproducible environment. Useful for stateful tasks where trajectories must not interfere with each other (e.g. filesystem/database tasks). |
 
 
 ### Agent Modes & Formatters
@@ -52,7 +52,7 @@ Controls how the agent's tool calls reach MCP server processes:
 - **Harmony** (`agent_mode: harmony`) — HarmonyReAct agent with `<think>` / tool-call interleaving. Requires `formatter_type: gpt_oss` and a `reasoning` sampling parameter.
 - **ReAct** (`agent_mode: react_train`) — standard ReAct-style agent.
 
-Formatters (`gpt_oss`, `qwen3`) handle model-specific prompt construction and output parsing.
+Formatters (`gpt_oss`, `qwen3`, `gemma4`) handle model-specific prompt construction and output parsing.
 
 [WIP] More Agent modes and formats will be supported.
 
@@ -145,31 +145,46 @@ python -m mcpuniverse.rl.integrations.verl.fully_async.mcp_async_main \
 bash integrations/verl/scripts/start_multinode_async.sh
 ```
 
+### Standalone rollout (evaluation / data generation)
+
+To run rollouts without a trainer — e.g. for evaluation or trajectory collection — drive the engine directly. See the runnable notebooks in [`examples/`](examples/) for end-to-end vLLM / SGLang usage.
+
+```python
+from mcpuniverse.rl import RolloutEngine
+
+engine = RolloutEngine.from_config("rollout_config.yaml")
+output = await engine.run([{"instruction": "What's the weather in Tokyo?"}])
+```
+
 ## Directory Structure
 
 ```
 mcpuniverse/rl/
 │
-├── config.py              # MCPAgentConfig and related dataclasses
-├── dispatcher.py          # Async task dispatcher for parallel agent execution
-├── runner.py              # Single-trajectory agent runner
-├── trace_logger.py        # JSONL trace logging for trajectory inspection
-├── trajectory.py          # Trajectory data structures
+├── __init__.py            # Public API (RolloutEngine, RolloutConfig, RolloutPipeline, ...)
+├── runner.py              # RolloutEngine - in-process rollout entry point
 │
-├── formatters/            # Model-specific prompt/output formatters
-│   ├── base.py
-│   ├── gpt_oss.py         # GPT-OSS / HarmonyReAct format
-│   └── qwen3.py
+├── core/                  # Framework-agnostic rollout core
+│   ├── config.py          # RolloutConfig and related dataclasses
+│   ├── pipeline.py        # RolloutPipeline - three-stage init -> run -> eval
+│   ├── rollout.py         # Rollout orchestration helpers
+│   ├── trajectory.py      # Trajectory - one multi-turn agent episode
+│   ├── types.py           # Core data types (RolloutSample, TokenizedRolloutBatch, ...)
+│   ├── env_pool_runtime.py  # Docker / Apptainer environment-pool runtime
+│   ├── postprocess.py     # Tokenization + metrics collection
+│   ├── trace_logger.py    # JSONL trace logging for trajectory inspection
+│   └── formatters/        # Model-specific prompt/output formatters
+│       ├── base.py
+│       ├── gpt_oss.py     # GPT-OSS / HarmonyReAct format
+│       ├── qwen3.py
+│       └── gemma4.py
+│
+├── data/                  # Dataset-prep scripts + sample data
+├── examples/              # Runnable notebooks (vLLM / SGLang, text & TITO)
 │
 └── integrations/
-    └── verl/              # VERL framework integration
-        ├── config/        # Hydra YAML configs (example configs to copy & modify)
-        ├── hybrid/        # Hybrid training mode
-        ├── fully_async/   # Fully Async training mode
-        ├── scripts/       # Launch scripts for single/multi-node training
-        ├── mcp_loop_manager.py   # Multi-turn tool-call loop (shared)
-        ├── mcp_reward_manager.py # Evaluator-based reward computation (shared)
-        └── mcp_dataset.py        # JSON dataset loader (shared)
+    ├── verl/              # VERL integration (Hybrid + Fully Async PPO)
+    └── slime/             # slime integration
 ```
 
 For detailed documentation on each training mode, see:
