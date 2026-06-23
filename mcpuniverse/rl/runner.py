@@ -4,14 +4,19 @@ RolloutEngine - Main entry point for MCP-Universe rollout engine.
 Uses MCP-Universe's native Agent and LLM components for rollout.
 
 Supports three MCP transport modes:
-- "stdio": Each agent creates new MCP process (original mode)
+- "stdio": Each agent creates new MCP process (not recommended)
 - "sse": All agents share a single Gateway via SSE
-- "docker_pool": Each agent gets isolated Docker container with Gateway (Env Pool)
+- "docker_pool": Each agent gets isolated Docker container with Gateway (recommended)
+
+Framework-neutral rollout orchestration helpers (sample materialization,
+dispatcher config building, trajectory construction/dispatch, metric
+aggregation) live in ``mcpuniverse.rl.core.rollout`` so they can be
+reused by integrations (veRL, slime, ...) without depending on this
+user-facing runner.
 """
 # pylint: disable=broad-exception-caught
-from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Union, Iterable
+from typing import Any, Dict, Iterable, List, Optional, Union
 import os
 
 from loguru import logger
@@ -23,13 +28,21 @@ from mcpuniverse.mcp.manager import MCPManager
 from mcpuniverse.benchmark.task import Task
 from mcpuniverse.evaluator import Evaluator
 
-from .config import (
+from .core.config import (
     RolloutConfig, TrajectoryConfig,
     MCP_TRANSPORT_SSE, MCP_TRANSPORT_DOCKER_POOL
 )
-from .trace_logger import TrajectoryTraceLogger
-from .trajectory import create_trajectory, create_llm, Trajectory, TrajectoryResult
-from .dispatcher import get_dispatcher
+from .core.trace_logger import TrajectoryTraceLogger
+from .core.trajectory import create_llm, Trajectory
+from .core.types import RolloutBatchResult, TrajectoryResult
+from .core.rollout import (
+    build_rollout_dispatcher_config,
+    build_rollout_trajectories,
+    collect_rollout_batch_result,
+    compute_rollout_metrics,
+    dispatch_rollout_trajectories,
+    prepare_mcp_servers_for_sample,
+)
 
 
 @dataclass
@@ -92,6 +105,42 @@ class RolloutOutput:
             List of message lists, one per trajectory.
         """
         return [t.get("messages", []) for t in self.trajectories]
+
+
+def rollout_batch_result_to_output(result: RolloutBatchResult) -> RolloutOutput:
+    """Convert a framework-neutral rollout batch result to legacy output."""
+    def _get_value(trajectory: Any, key: str, default: Any) -> Any:
+        if isinstance(trajectory, dict):
+            return trajectory.get(key, default)
+        return getattr(trajectory, key, default)
+
+    def _to_record(trajectory: Any) -> Dict[str, Any]:
+        if hasattr(trajectory, "to_rollout_record"):
+            return trajectory.to_rollout_record()
+        if hasattr(trajectory, "to_dict"):
+            return trajectory.to_dict()
+        if isinstance(trajectory, dict):
+            return dict(trajectory)
+        return {}
+
+    trajectories = [_to_record(trajectory) for trajectory in result.trajectories]
+
+    return RolloutOutput(
+        responses=[
+            _get_value(trajectory, "response", "")
+            for trajectory in result.trajectories
+        ],
+        rewards=[
+            _get_value(trajectory, "reward", 0.0)
+            for trajectory in result.trajectories
+        ],
+        finish_reasons=[
+            _get_value(trajectory, "finish_reason", "")
+            for trajectory in result.trajectories
+        ],
+        trajectories=trajectories,
+        rollout_metrics=result.metrics,
+    )
 
 
 class RolloutEngine:
@@ -377,19 +426,11 @@ class RolloutEngine:
         Returns:
             List of MCP server configuration dictionaries.
         """
-        servers = sample.get("mcp_servers", [])
-        if not servers and not self.cfg.use_sample_servers:
-            # Use config-level servers
-            servers = [
-                {
-                    "name": s.name,
-                    "tools": s.tools,
-                    "permissions": s.permissions,
-                    "transport": s.transport
-                }
-                for s in self.cfg.mcp_servers
-            ]
-        return servers
+        return prepare_mcp_servers_for_sample(
+            sample,
+            default_servers=self.cfg.mcp_servers,
+            use_default_servers=not self.cfg.use_sample_servers,
+        )
 
     def _get_evaluators(self, instance: Dict[str, Any]) -> List[Evaluator]:
         """Get evaluators for an instance.
@@ -412,6 +453,89 @@ class RolloutEngine:
 
         return []
 
+    def _get_num_trajectories(self, val_mode: bool = False) -> int:
+        """Return the configured trajectory count for train or validation rollout."""
+        return (
+            self.cfg.generator.val_num_trajectories if val_mode
+            else self.cfg.generator.num_trajectories
+        )
+
+    def _build_rollout_trajectory_kwargs(
+        self,
+        val_mode: bool = False,
+    ) -> Dict[str, Any]:
+        """Build shared trajectory-construction kwargs for this engine."""
+        # Determine MCP gateway address based on transport mode.
+        # For docker_pool mode, each trajectory will get its own address later.
+        base_gateway_address = ""
+        if self.cfg.mcp_transport == MCP_TRANSPORT_SSE:
+            base_gateway_address = self.cfg.mcp_gateway_address
+
+        def _trajectory_config_kwargs(_instance, _instance_id, _traj_id):
+            # For token mode, forward sampling params from llm_config to
+            # TrajectoryConfig so TITOLLMWrapper gets the expected generation params.
+            traj_kwargs = {"mcp_gateway_address": base_gateway_address}
+            if self.cfg.rollout_mode == "token":
+                _sampling_keys = (
+                    "temperature", "top_p", "max_tokens", "stop",
+                    "include_stop_str_in_output", "skip_special_tokens",
+                )
+                overrides = {
+                    k: v for k, v in self._llm_config.items()
+                    if k in _sampling_keys
+                }
+                if overrides:
+                    sp = dict(TrajectoryConfig().sampling_params)
+                    sp.update(overrides)
+                    traj_kwargs["sampling_params"] = sp
+            return traj_kwargs
+
+        def _build_env_callbacks(instance_id, traj_id, _instance, _mcp_servers):
+            if self._env_pool is None:
+                return None, None
+            _iid, _tid = instance_id, traj_id
+
+            async def _acquire(_iid=_iid, _tid=_tid):
+                return await self._acquire_env_for_trajectory(_iid, _tid)
+
+            async def _release(_iid=_iid, _tid=_tid):
+                key = f"{_iid}-{_tid}"
+                env_id = self._env_assignments.pop(key, None)
+                if env_id:
+                    await self._env_pool.release(env_id)
+
+            return _acquire, _release
+
+        return {
+            "num_trajectories": self._get_num_trajectories(val_mode),
+            "mcp_manager": self.mcp_manager,
+            "agent_mode": self.cfg.agent_mode,
+            "max_iterations": self.cfg.generator.max_iterations,
+            "formatter_type": self.cfg.formatter_type,
+            "rollout_mode": self.cfg.rollout_mode,
+            "agent_config": self.cfg.agent_config,
+            "val_mode": val_mode,
+            "trace_logger": self._trace_logger,
+            "get_mcp_servers": self._get_sample_servers,
+            "get_evaluators": self._get_evaluators,
+            "create_llm_for_trajectory": lambda _val_mode: self.llm,
+            "build_env_callbacks": _build_env_callbacks,
+            "trajectory_config_kwargs": _trajectory_config_kwargs,
+        }
+
+    def _build_dispatcher_config(
+        self,
+        batch_size: int,
+        val_mode: bool = False,
+    ) -> Dict[str, Any]:
+        """Build dispatcher config for a standalone rollout batch."""
+        return build_rollout_dispatcher_config(
+            self.cfg.dispatcher,
+            num_instances=batch_size,
+            num_trajectories=self._get_num_trajectories(val_mode),
+            include_max_eval_parallel_agents=True,
+        )
+
     def _initialize_trajectories(
         self,
         batch: List[Dict[str, Any]],
@@ -426,97 +550,10 @@ class RolloutEngine:
         self.trajectories = {}
         self._env_assignments = {}  # Reset env assignments
 
-        num_trajectories = (
-            self.cfg.generator.val_num_trajectories if val_mode
-            else self.cfg.generator.num_trajectories
+        self.trajectories = build_rollout_trajectories(
+            batch,
+            **self._build_rollout_trajectory_kwargs(val_mode),
         )
-
-        # Determine MCP gateway address based on transport mode
-        # For docker_pool mode, each trajectory will get its own address later
-        base_gateway_address = ""
-        if self.cfg.mcp_transport == MCP_TRANSPORT_SSE:
-            base_gateway_address = self.cfg.mcp_gateway_address
-
-        for batch_idx, instance in enumerate(batch):
-            instance_id = instance.get("instance_id", batch_idx)
-            self.trajectories[instance_id] = {}
-
-            # Get evaluators
-            evaluators = self._get_evaluators(instance)
-
-            # Get MCP servers for this sample
-            mcp_servers = self._get_sample_servers(instance)
-
-            # Prepare data
-            data = {
-                **instance,
-                "instruction": instance.get("instruction") or instance.get("question", "")
-            }
-
-            for traj_id in range(num_trajectories):
-                # For token mode, forward sampling params from llm_config
-                # to TrajectoryConfig so that TITOLLMWrapper gets the
-                # correct temperature, stop tokens, etc.
-                traj_kwargs = {}
-                if self.cfg.rollout_mode == "token":
-                    _sampling_keys = (
-                        "temperature", "top_p", "max_tokens", "stop",
-                        "include_stop_str_in_output", "skip_special_tokens",
-                    )
-                    overrides = {
-                        k: v for k, v in self._llm_config.items()
-                        if k in _sampling_keys
-                    }
-                    if overrides:
-                        # Start from TrajectoryConfig defaults, then overlay
-                        sp = dict(TrajectoryConfig().sampling_params)
-                        sp.update(overrides)
-                        traj_kwargs["sampling_params"] = sp
-
-                traj_cfg = TrajectoryConfig(
-                    instance_id=instance_id,
-                    trajectory_id=traj_id,
-                    max_iterations=self.cfg.generator.max_iterations,
-                    agent_mode=self.cfg.agent_mode,
-                    formatter_type=self.cfg.formatter_type,
-                    rollout_mode=self.cfg.rollout_mode,
-                    mcp_gateway_address=base_gateway_address,  # Will be updated for docker_pool
-                    **traj_kwargs,
-                )
-
-                # Build env pool closures if pool is active
-                acquire_env_fn = None
-                release_env_fn = None
-                if self._env_pool is not None:
-                    _iid, _tid = instance_id, traj_id
-
-                    async def _acquire(_iid=_iid, _tid=_tid):
-                        return await self._acquire_env_for_trajectory(_iid, _tid)
-
-                    async def _release(_iid=_iid, _tid=_tid):
-                        key = f"{_iid}-{_tid}"
-                        env_id = self._env_assignments.pop(key, None)
-                        if env_id:
-                            await self._env_pool.release(env_id)
-
-                    acquire_env_fn, release_env_fn = _acquire, _release
-
-                traj = create_trajectory(
-                    cfg=traj_cfg,
-                    data=data,
-                    agent_mode=self.cfg.agent_mode,
-                    llm=self.llm,
-                    mcp_manager=self.mcp_manager,
-                    mcp_servers=mcp_servers,
-                    agent_config=self.cfg.agent_config,
-                    evaluators=evaluators,
-                    val_mode=val_mode,
-                    acquire_env=acquire_env_fn,
-                    release_env=release_env_fn,
-                    trace_logger=self._trace_logger,
-                )
-
-                self.trajectories[instance_id][traj_id] = traj
 
     @staticmethod
     def _compute_rollout_metrics(
@@ -524,78 +561,22 @@ class RolloutEngine:
         num_instances: int,
     ) -> Dict[str, Any]:
         """Compute aggregated rollout metrics from a flat list of results."""
-        n = len(results)
-        safe_n = max(n, 1)
+        return compute_rollout_metrics(results, num_instances)
 
-        total_reward = sum(r.reward for r in results)
-        success_count = sum(1 for r in results if r.reward > 0)
-        error_count = sum(1 for r in results if r.error)
-        total_steps = sum(r.num_steps for r in results)
-        total_tool_calls = sum(r.num_tool_calls for r in results)
-        total_running_time = sum(r.running_time for r in results)
-
-        # Finish reason breakdown
-        finish_reason_counts: Dict[str, int] = defaultdict(int)
-        for r in results:
-            finish_reason_counts[r.finish_reason] += 1
-
-        # Instance-level resolution
-        instance_rewards: Dict[Any, List[float]] = defaultdict(list)
-        for r in results:
-            instance_rewards[r.instance_id].append(r.reward)
-        num_all_resolved = sum(
-            1 for rws in instance_rewards.values() if all(r > 0 for r in rws)
+    def _collect_batch_result(self) -> RolloutBatchResult:
+        """Collect completed trajectories into the generic rollout result."""
+        return collect_rollout_batch_result(
+            self.trajectories,
+            num_instances=len(self.trajectories),
         )
-        num_none_resolved = sum(
-            1 for rws in instance_rewards.values() if all(r == 0 for r in rws)
-        )
-
-        metrics: Dict[str, Any] = {
-            "rollout_metrics/num_instances": num_instances,
-            "rollout_metrics/num_trajectories": n,
-            "rollout_metrics/total_reward": total_reward,
-            "rollout_metrics/mean_reward": total_reward / safe_n,
-            "rollout_metrics/success_rate": success_count / safe_n,
-            "rollout_metrics/error_rate": error_count / safe_n,
-            "rollout_metrics/total_steps": total_steps,
-            "rollout_metrics/mean_steps": total_steps / safe_n,
-            "rollout_metrics/total_tool_calls": total_tool_calls,
-            "rollout_metrics/mean_tool_calls": total_tool_calls / safe_n,
-            "rollout_metrics/total_running_time": total_running_time,
-            "rollout_metrics/mean_running_time": total_running_time / safe_n,
-            "rollout_metrics/num_all_resolved": num_all_resolved,
-            "rollout_metrics/num_none_resolved": num_none_resolved,
-        }
-
-        for reason, count in finish_reason_counts.items():
-            safe_reason = str(reason).lower().replace(" ", "_")
-            metrics[f"rollout_metrics/finish_{safe_reason}"] = count
-            metrics[f"rollout_metrics/finish_{safe_reason}_ratio"] = count / safe_n
-
-        return metrics
 
     def _postprocess_results(self) -> RolloutOutput:
-        """Collect trajectory results and compute metrics.
+        """Collect trajectory results into the legacy output container.
 
         Returns:
             RolloutOutput containing all processed results and metrics.
         """
-        results = [
-            traj.result
-            for trajs in self.trajectories.values()
-            for traj in trajs.values()
-            if traj.result is not None
-        ]
-
-        metrics = self._compute_rollout_metrics(results, len(self.trajectories))
-
-        return RolloutOutput(
-            responses=[r.response for r in results],
-            rewards=[r.reward for r in results],
-            finish_reasons=[r.finish_reason for r in results],
-            trajectories=[r.to_dict() for r in results],
-            rollout_metrics=metrics,
-        )
+        return rollout_batch_result_to_output(self._collect_batch_result())
 
     async def _provision_env_pool(
         self,
@@ -662,12 +643,28 @@ class RolloutEngine:
 
         self._env_assignments = {}
 
-    async def run(
+    @staticmethod
+    def _normalize_input_batch(
+        input_batch: Union[List[Dict[str, Any]], Dict[str, Any], Iterable[Dict[str, Any]]],
+    ) -> List[Dict[str, Any]]:
+        """Normalize user-provided rollout input into a list of samples."""
+        if isinstance(input_batch, dict):
+            if "batch" in input_batch:
+                batch = input_batch["batch"]
+                if hasattr(batch, "tolist"):
+                    batch = batch.tolist()
+                return list(batch)
+            return [input_batch]
+        if hasattr(input_batch, "__iter__"):
+            return list(input_batch)
+        return [input_batch]
+
+    async def run_batch_result(
         self,
         input_batch: Union[List[Dict[str, Any]], Dict[str, Any], Iterable[Dict[str, Any]]],
         val_mode: bool = False
-    ) -> RolloutOutput:
-        """Run rollout on a batch of inputs.
+    ) -> RolloutBatchResult:
+        """Run rollout and return a framework-neutral batch result.
 
         Args:
             input_batch: List of instances, each containing:
@@ -678,20 +675,9 @@ class RolloutEngine:
             val_mode: Whether to use validation settings.
 
         Returns:
-            RolloutOutput with rollout results.
+            RolloutBatchResult with trajectory results and metrics.
         """
-        # Parse input batch
-        if isinstance(input_batch, dict):
-            if "batch" in input_batch:
-                batch = input_batch["batch"]
-                if hasattr(batch, "tolist"):
-                    batch = batch.tolist()
-            else:
-                batch = [input_batch]
-        elif hasattr(input_batch, "__iter__"):
-            batch = list(input_batch)
-        else:
-            batch = [input_batch]
+        batch = self._normalize_input_batch(input_batch)
 
         mode = "dynamic" if self.cfg.use_sample_servers else "static"
         transport = self.cfg.mcp_transport
@@ -703,41 +689,29 @@ class RolloutEngine:
         self._initialize_trajectories(batch, val_mode)
 
         try:
-            # For docker_pool mode: provision environments based on max_parallel_agents
+            # For docker_pool mode: provision environments based on max_init_agents
             # Trajectories will acquire/release environments dynamically during execution
             if self._env_pool is not None:
-                # Only provision max_parallel_agents environments (not total_trajectories)
+                # Only provision max_init_agents environments (not total_trajectories)
                 # This allows environment reuse across batches
-                max_parallel = self.cfg.dispatcher.max_parallel_agents
+                max_parallel = self.cfg.dispatcher.max_init_agents
                 await self._provision_env_pool(num_envs=max_parallel)
 
-            # Get dispatcher
-            dispatcher = get_dispatcher(self.cfg.dispatcher.type)
-
-            # Build dispatcher config
-            num_trajectories = (
-                self.cfg.generator.val_num_trajectories if val_mode
-                else self.cfg.generator.num_trajectories
+            dispatcher_cfg = self._build_dispatcher_config(
+                batch_size=len(batch),
+                val_mode=val_mode,
             )
 
-            dispatcher_cfg = {
-                "max_parallel_agents": self.cfg.dispatcher.max_parallel_agents,
-                "max_eval_parallel_agents": self.cfg.dispatcher.max_eval_parallel_agents,
-                "max_init_retries": self.cfg.dispatcher.max_init_retries,
-                "init_retry_delay": self.cfg.dispatcher.init_retry_delay,
-                "num_instances": len(batch),
-                "num_trajectories": num_trajectories,
-            }
+            await dispatch_rollout_trajectories(
+                self.trajectories,
+                dispatcher_cfg=dispatcher_cfg,
+            )
 
-            # Run dispatcher
-            await dispatcher(dispatcher_cfg, self.trajectories)
+            result = self._collect_batch_result()
 
-            # Postprocess results
-            output = self._postprocess_results()
+            logger.info(f"Rollout complete: {result.metrics}")
 
-            logger.info(f"Rollout complete: {output.rollout_metrics}")
-
-            return output
+            return result
 
         finally:
             # Release all environments back to pool
@@ -745,6 +719,16 @@ class RolloutEngine:
                 await self._release_all_envs()
 
             self.trajectories = {}
+
+    async def run(
+        self,
+        input_batch: Union[List[Dict[str, Any]], Dict[str, Any], Iterable[Dict[str, Any]]],
+        val_mode: bool = False
+    ) -> RolloutOutput:
+        """Run rollout on a batch of inputs and return legacy output."""
+        return rollout_batch_result_to_output(
+            await self.run_batch_result(input_batch, val_mode=val_mode)
+        )
 
 
 # ============================================================================

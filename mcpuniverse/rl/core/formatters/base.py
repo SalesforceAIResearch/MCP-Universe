@@ -34,7 +34,7 @@ class FormatterOutput:
         tags are also trained for assistant messages.
 
         Returns:
-            (output_token_ids, loss_mask) — both List[int].
+            (output_token_ids, loss_mask) - both List[int].
         """
         output_tokens = []
         loss_mask = []

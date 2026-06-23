@@ -1,7 +1,7 @@
 """Tests for config.py — RolloutConfig.from_dict parsing."""
 
 import pytest
-from mcpuniverse.rl.config import RolloutConfig
+from mcpuniverse.rl.core.config import RolloutConfig
 
 
 class TestFromDict:
@@ -37,6 +37,13 @@ class TestFromDict:
 
     def test_env_pool_auto_enabled_for_docker_pool(self):
         cfg = RolloutConfig.from_dict({"mcp_transport": "docker_pool"})
+        assert cfg.env_pool.enabled is True
+
+    def test_env_pool_null_enabled_uses_transport_default(self):
+        cfg = RolloutConfig.from_dict({
+            "mcp_transport": "docker_pool",
+            "env_pool": {"enabled": None},
+        })
         assert cfg.env_pool.enabled is True
 
     def test_env_pool_not_auto_enabled_for_stdio(self):

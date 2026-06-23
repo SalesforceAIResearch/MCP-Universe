@@ -7,6 +7,7 @@ and build loss masks.
 """
 
 from .base import BaseFormatter, FormatterOutput
+from .gemma4 import Gemma4Formatter
 from .gpt_oss import GptOssFormatter
 from .qwen3 import Qwen3Formatter
 
@@ -19,16 +20,18 @@ FORMATTERS = {
     "qwen": Qwen3Formatter,  # Alias
     "chatml": Qwen3Formatter,  # Alias
     "react_train": Qwen3Formatter,  # Alias
+    "gemma4": Gemma4Formatter,
+    "gemma-4": Gemma4Formatter,
 }
 
 
 def get_formatter(model_type: str) -> BaseFormatter:
     """
     Get formatter for a model type.
-    
+
     Args:
         model_type: Model type name (e.g., "gpt_oss", "llama", "qwen")
-        
+
     Returns:
         Formatter instance
     """
@@ -41,7 +44,8 @@ def get_formatter(model_type: str) -> BaseFormatter:
 
 __all__ = [
     "BaseFormatter",
-    "FormatterOutput", 
+    "FormatterOutput",
+    "Gemma4Formatter",
     "GptOssFormatter",
     "Qwen3Formatter",
     "get_formatter",

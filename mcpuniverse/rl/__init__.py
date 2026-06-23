@@ -5,14 +5,14 @@ Uses MCP-Universe's native Agent and LLM components.
 
 Quick Start:
 ```python
-from mcpuniverse.rl import RolloutEngine, rollout
+from mcpuniverse.rl import RolloutEngine
 
 engine = RolloutEngine.from_config("config.yaml")
 output = await engine.run([{"instruction": "What's the weather?"}])
 ```
 """
 
-from .config import (
+from .core.config import (
     RolloutConfig,
     TrajectoryConfig,
     GeneratorConfig,
@@ -24,28 +24,30 @@ from .config import (
     ContainerResourceConfig,
 )
 
-from .trajectory import (
+from .core.trajectory import (
     Trajectory,
-    TrajectoryResult,
-    TrajectoryStep,
-    TraceData,
-    TokenData,
     create_trajectory,
     create_llm
 )
 
-from .dispatcher import (
-    get_dispatcher,
-    DISPATCHER_REGISTRY
-)
+from .core.pipeline import RolloutPipeline
 
 from .runner import (
     RolloutEngine,
     RolloutOutput,
     rollout
 )
+from .core.types import (
+    RolloutBatchResult,
+    RolloutSample,
+    TokenizedRolloutBatch,
+    TrajectoryResult,
+    TrajectoryStep,
+    TraceData,
+    TokenData,
+)
 
-from .formatters import (
+from .core.formatters import (
     BaseFormatter,
     FormatterOutput,
     GptOssFormatter,
@@ -75,13 +77,15 @@ __all__ = [
     "create_trajectory",
     "create_llm",
 
-    # Dispatcher
-    "get_dispatcher",
-    "DISPATCHER_REGISTRY",
+    # Pipeline (unified batch + continuous dispatcher engine)
+    "RolloutPipeline",
 
     # Runner
     "RolloutEngine",
     "RolloutOutput",
+    "RolloutBatchResult",
+    "RolloutSample",
+    "TokenizedRolloutBatch",
     "rollout",
 
     # Formatters (model-specific prompt/output splitting)

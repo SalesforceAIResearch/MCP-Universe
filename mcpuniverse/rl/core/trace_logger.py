@@ -7,8 +7,8 @@ One training run = one timestamped folder. Files auto-rotate every 10k traces.
 
     trace_log_dir/
       traces_20260302_143025/
-        traces_000000.jsonl   (lines 0–9999)
-        traces_000001.jsonl   (lines 10000–19999)
+        traces_000000.jsonl   (lines 0-9999)
+        traces_000001.jsonl   (lines 10000-19999)
         ...
 
 Each JSONL line contains:
@@ -22,7 +22,7 @@ Token IDs and trace_records are intentionally excluded.
 Usage:
     trace_logger = TrajectoryTraceLogger("/path/to/trace_logs")
     # Pass to Trajectory via create_trajectory(..., trace_logger=trace_logger)
-    # Logging happens automatically after evaluate_trajectory()
+    # Logging happens automatically after evaluate()
 """
 # pylint: disable=broad-exception-caught
 
@@ -104,6 +104,12 @@ class TrajectoryTraceLogger:
             "num_tool_calls": result.num_tool_calls,
             "running_time": result.running_time,
             "rollout_mode": result.rollout_mode,
+            # Verifier breakdown (added in TrajectoryResult; see core/trajectory.py).
+            # Mirrors the field set in TrajectoryResult.to_dict() so a trace JSONL
+            # line carries the same evaluator signal that's exposed elsewhere.
+            "verifier_pass_rate": result.verifier_pass_rate,
+            "verifier_passed": result.verifier_passed,
+            "verifier_total": result.verifier_total,
             # Text data
             "full_trace_text": result.trace.full_text,
             "prompt_text": result.trace.prompt_text,

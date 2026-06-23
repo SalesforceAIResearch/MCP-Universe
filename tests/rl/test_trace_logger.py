@@ -5,7 +5,7 @@ import os
 from unittest.mock import MagicMock
 
 import pytest
-from mcpuniverse.rl.trace_logger import TrajectoryTraceLogger, TRACES_PER_FILE
+from mcpuniverse.rl.core.trace_logger import TrajectoryTraceLogger, TRACES_PER_FILE
 
 
 @pytest.fixture
@@ -32,6 +32,9 @@ class TestTrajectoryTraceLogger:
         result.num_tool_calls = 2
         result.running_time = 1.5
         result.rollout_mode = "text"
+        result.verifier_pass_rate = 0.5
+        result.verifier_passed = 1
+        result.verifier_total = 2
         result.response = "hello"
         result.trace = MagicMock()
         result.trace.full_text = "full"
@@ -50,6 +53,9 @@ class TestTrajectoryTraceLogger:
             record = json.loads(f.readline())
         assert record["instance_id"] == "inst_001"
         assert record["reward"] == 1.0
+        assert record["verifier_pass_rate"] == 0.5
+        assert record["verifier_passed"] == 1
+        assert record["verifier_total"] == 2
 
     def test_close_idempotent(self, logger_dir):
         tl = TrajectoryTraceLogger(logger_dir)
