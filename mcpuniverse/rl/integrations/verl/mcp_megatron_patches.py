@@ -152,6 +152,7 @@ def _patch_gpt_oss_sink_attention() -> None:
             dropout_p,
             deterministic,
         ):
+            """Forward: varlen attention scaled by a learnable per-head softmax sink."""
             out_vanilla, softmax_lse, _ = flash_attn_varlen_func(
                 q,
                 k,
@@ -196,6 +197,7 @@ def _patch_gpt_oss_sink_attention() -> None:
 
         @staticmethod
         def backward(ctx, d_out):
+            """Backward: gradients for q/k/v and the learnable softmax_offset (sink)."""
             (
                 q,
                 k,
@@ -434,6 +436,7 @@ def _patch_gpt_oss_sink_attention() -> None:
         class _ShardSoftmaxOffset(torch.autograd.Function):
             @staticmethod
             def forward(ctx, tensor):
+                """Forward: keep this CP rank's shard of the per-head softmax offset."""
                 ctx.cp_group = cp_group
                 ctx.orig_shape = tensor.shape
                 rank = dist.get_rank(group=cp_group)
@@ -441,6 +444,7 @@ def _patch_gpt_oss_sink_attention() -> None:
 
             @staticmethod
             def backward(ctx, grad_output):
+                """Backward: all-gather the offset grads back to the full per-head shape."""
                 grad = grad_output.contiguous().view(-1)
                 full = torch.empty(
                     cp_size * grad.numel(), dtype=grad.dtype, device=grad.device
@@ -1060,6 +1064,7 @@ class _FusedVPLogprobEntropy(torch.autograd.Function):
 
     @staticmethod
     def forward(ctx, logits, labels, chunk, tp_group, tp_rank):
+        """Forward: chunked, TP-vocab-parallel token log-prob and entropy."""
         leading = tuple(logits.shape[:-1])
         vocab_shard = logits.shape[-1]
         flat = logits.reshape(-1, vocab_shard)
@@ -1110,6 +1115,7 @@ class _FusedVPLogprobEntropy(torch.autograd.Function):
 
     @staticmethod
     def backward(ctx, g_logp, g_ent):
+        """Backward: recompute per-chunk softmax to produce logits gradients."""
         flat, lab, lse_rows, spz_rows = ctx.saved_tensors
         chunk = ctx.chunk
         vocab_start = ctx.vocab_start

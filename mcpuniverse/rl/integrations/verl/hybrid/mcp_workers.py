@@ -1,4 +1,8 @@
 """Hybrid veRL worker subclasses used by MCP training."""
+# Every class here is a thin mixin / worker subclass that pairs one log-prob
+# override with an upstream worker base, so they intentionally expose few public
+# methods. The check below flags that intended design, not a real defect.
+# pylint: disable=too-few-public-methods
 
 import os
 import socket
@@ -87,7 +91,7 @@ def _emit_log_prob_diag(stage: str, data, t0: float | None = None) -> float:
     return now
 
 
-class _MCPFSDPLogProbMixin:  # pylint: disable=too-few-public-methods
+class _MCPFSDPLogProbMixin:
     @register(dispatch_mode=make_nd_compute_dataproto_dispatch_fn(mesh_name="actor"))
     def compute_log_prob(self, data):
         """Compute log-probs with the FSDP cross-DP num_micro_batches sync patch.
@@ -110,7 +114,7 @@ class _MCPFSDPLogProbMixin:  # pylint: disable=too-few-public-methods
             _emit_log_prob_diag("EXIT", data, t0=t0)
 
 
-class _MCPMegatronLogProbMixin:  # pylint: disable=too-few-public-methods
+class _MCPMegatronLogProbMixin:
     @register(dispatch_mode=make_nd_compute_dataproto_dispatch_fn(mesh_name="actor"))
     def compute_log_prob(self, data):
         """Compute log-probs with the Megatron vocab-parallel entropy memory patch."""

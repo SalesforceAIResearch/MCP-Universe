@@ -566,7 +566,8 @@ class MCPLoopManager(AgentLoopManager):  # pylint: disable=too-many-instance-att
 
         async def _setup_hook(*, context, gateway_address, **_kwargs):
             import importlib
-            from mcpuniverse.benchmark.prepares import PREPARE_FUNCTIONS
+            # Lazy intra-package import; pylint cannot introspect the submodule here.
+            from mcpuniverse.benchmark.prepares import PREPARE_FUNCTIONS  # pylint: disable=no-name-in-module
             for spec in specs:
                 module = spec.get("module")
                 if module:
