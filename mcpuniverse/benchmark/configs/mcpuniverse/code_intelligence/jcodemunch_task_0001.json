@@ -1,0 +1,23 @@
+{
+    "category": "code-intelligence",
+    "question": "Using jcodemunch, index the GitHub repository jgravelle/jcodemunch-mcp. Then search for all symbols named 'parse_file'. Report the file path where this function is defined.",
+    "output_format": {
+        "file_path": "[path to the file containing parse_file]"
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "jcodemunch"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "jcodemunch.llm_as_a_judge",
+            "op_args": {
+                "question": "In the jgravelle/jcodemunch-mcp repository, what file contains the function named 'parse_file'?",
+                "correct_answer": "src/jcodemunch_mcp/parser/extractor.py"
+            }
+        }
+    ]
+}

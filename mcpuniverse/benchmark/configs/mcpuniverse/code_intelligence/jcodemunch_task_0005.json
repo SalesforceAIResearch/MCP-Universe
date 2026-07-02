@@ -1,0 +1,24 @@
+{
+    "category": "code-intelligence",
+    "question": "Using jcodemunch, index the GitHub repository jgravelle/jcodemunch-mcp. Then use get_dependency_graph to get the imports for the file 'src/jcodemunch_mcp/server.py'. Report whether 'security' or 'config' modules are among its direct imports.",
+    "output_format": {
+        "imports_security": "[yes or no]",
+        "imports_config": "[yes or no]"
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "jcodemunch"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "jcodemunch.llm_as_a_judge",
+            "op_args": {
+                "question": "Does src/jcodemunch_mcp/server.py in jgravelle/jcodemunch-mcp import from both the security module and the config module?",
+                "correct_answer": "Yes, server.py imports from both security.py (for path validation) and config.py (for configuration management)."
+            }
+        }
+    ]
+}

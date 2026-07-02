@@ -374,5 +374,14 @@
         "-m", "mcpuniverse.mcp.servers.python_code_sandbox"
       ]
     }
+  },
+
+  "jcodemunch": {
+    "stdio": {
+      "command": "uvx",
+      "args": [
+        "jcodemunch-mcp"
+      ]
+    }
   }
 }

@@ -1,0 +1,24 @@
+{
+    "category": "code-intelligence",
+    "question": "Using jcodemunch, index the GitHub repository jgravelle/jcodemunch-mcp. Then use search_symbols to find all symbols of type 'class' in the repository. Report the total number of classes found and name at least three of them.",
+    "output_format": {
+        "total_classes": "[number of classes found]",
+        "sample_classes": "[comma-separated list of at least three class names]"
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "jcodemunch"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "jcodemunch.llm_as_a_judge",
+            "op_args": {
+                "question": "Does jgravelle/jcodemunch-mcp contain multiple Python classes, including CodeIndex?",
+                "correct_answer": "Yes, the repository contains multiple classes. CodeIndex is one of them (in sqlite_store.py). Others include configuration classes, summarizer classes, and language specification classes like LanguageSpec."
+            }
+        }
+    ]
+}

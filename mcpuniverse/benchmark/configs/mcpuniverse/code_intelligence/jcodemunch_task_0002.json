@@ -1,0 +1,23 @@
+{
+    "category": "code-intelligence",
+    "question": "Using jcodemunch, index the GitHub repository jgravelle/jcodemunch-mcp. Then get the file outline for 'src/jcodemunch_mcp/storage/sqlite_store.py'. Report the name of the main class defined in that file.",
+    "output_format": {
+        "class_name": "[name of the main class]"
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "jcodemunch"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "jcodemunch.llm_as_a_judge",
+            "op_args": {
+                "question": "What is the name of the main class defined in src/jcodemunch_mcp/storage/sqlite_store.py in the jgravelle/jcodemunch-mcp repository?",
+                "correct_answer": "CodeIndex"
+            }
+        }
+    ]
+}
