@@ -308,15 +308,15 @@ class BlenderMCPServer:
             
             # Create the object based on type
             if type == "CUBE":
-                bpy.ops.mesh.primitive_cube_add(location=location, rotation=rotation, scale=scale)
+                bpy.ops.mesh.primitive_cube_add(location=location, rotation=rotation)
             elif type == "SPHERE":
-                bpy.ops.mesh.primitive_uv_sphere_add(location=location, rotation=rotation, scale=scale)
+                bpy.ops.mesh.primitive_uv_sphere_add(location=location, rotation=rotation)
             elif type == "CYLINDER":
-                bpy.ops.mesh.primitive_cylinder_add(location=location, rotation=rotation, scale=scale)
+                bpy.ops.mesh.primitive_cylinder_add(location=location, rotation=rotation)
             elif type == "PLANE":
-                bpy.ops.mesh.primitive_plane_add(location=location, rotation=rotation, scale=scale)
+                bpy.ops.mesh.primitive_plane_add(location=location, rotation=rotation)
             elif type == "CONE":
-                bpy.ops.mesh.primitive_cone_add(location=location, rotation=rotation, scale=scale)
+                bpy.ops.mesh.primitive_cone_add(location=location, rotation=rotation)
             elif type == "TORUS":
                 bpy.ops.mesh.primitive_torus_add(
                     align=align,
@@ -332,11 +332,11 @@ class BlenderMCPServer:
                     generate_uvs=generate_uvs
                 )
             elif type == "EMPTY":
-                bpy.ops.object.empty_add(location=location, rotation=rotation, scale=scale)
+                bpy.ops.object.empty_add(location=location, rotation=rotation)
             elif type == "CAMERA":
                 bpy.ops.object.camera_add(location=location, rotation=rotation)
             elif type == "LIGHT":
-                bpy.ops.object.light_add(type='POINT', location=location, rotation=rotation, scale=scale)
+                bpy.ops.object.light_add(type='POINT', location=location, rotation=rotation)
             else:
                 raise ValueError(f"Unsupported object type: {type}")
             
@@ -352,6 +352,9 @@ class BlenderMCPServer:
             
             # Make sure it's selected
             obj.select_set(True)
+
+            if type != "TORUS":
+                obj.scale = mathutils.Vector(scale)
             
             # Rename if name is provided
             if name:
