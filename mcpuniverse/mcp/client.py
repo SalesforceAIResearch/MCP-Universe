@@ -385,11 +385,21 @@ class MCPClient(metaclass=AutodocABCMeta):
         Note:
             This method sets up the connection and initializes the client session.
         """
-        command = (
-            shutil.which(config.stdio.command)
-            if config.stdio.command in ["npx", "docker", "python", "python3"]
-            else config.stdio.command
-        )
+        def _resolve_command(command: str) -> str:
+            """Resolve command with platform-aware fallbacks."""
+            if command in ["npx", "docker", "python", "python3"]:
+                resolved = shutil.which(command)
+                # Fallback: python3 -> python (for Windows)
+                if resolved is None and command == "python3":
+                    resolved = shutil.which("python")
+                # Fallback: python -> python3 (for some Unix systems)       
+                if resolved is None and command == "python":
+                    resolved = shutil.which("python3")
+                return resolved
+            return command
+
+        command = _resolve_command(config.stdio.command)
+
         if command is None or command == "":
             raise ValueError("The command must be a valid string")
 
