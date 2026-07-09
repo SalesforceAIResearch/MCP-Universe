@@ -9,7 +9,7 @@
 
 > **📊 [MCPMark Evaluation](#mcpmark-benchmark)** - MCP-Universe now supports evaluating the MCPMark tasks
 >
-> **🚀 [MCP+](#mcp-precision-context-management-for-mcp-agents)** - Agentic wrapper on MCP clients which reduce token costs by up to 75% 
+> **🚀 [MCP+](#mcp-precision-context-management-for-mcp-agents)** - Agentic wrapper on MCP clients which reduces token costs by up to 75% 
 >
 > **🔬 [Deep Research Agent](#deep-research-agent-wide--deep-wd-research)** - Scale the Width of Deep Research Agents with parallel tool calling, improving performance and efficiency
 
