@@ -155,6 +155,28 @@ class ReAct(BaseAgent):
                     response = response[4:].strip()
                 parsed_response = json.loads(response)
                 if "thought" not in parsed_response:
+                    if parsed_response:
+                        self._add_history(
+                            history_type=f"Step {iter_num + 1}",
+                            message="",
+                        )
+                        answer_str = json.dumps(parsed_response)
+                        self._add_history(
+                            history_type="answer",
+                            message=answer_str
+                        )
+                        await self._send_callback_message(
+                            callbacks=callbacks,
+                            iter_num=iter_num,
+                            thought="",
+                            answer=answer_str
+                        )
+                        return AgentResponse(
+                            name=self._name,
+                            class_name=self.__class__.__name__,
+                            response=answer_str,
+                            trace_id=tracer.trace_id
+                        )
                     raise ValueError("Invalid response format")
                 self._add_history(
                     history_type=f"Step {iter_num + 1}",
@@ -253,6 +275,30 @@ class ReAct(BaseAgent):
                         result=parsed_response["result"]
                     )
                 else:
+                    answer_data = {k: v for k, v in parsed_response.items()
+                                   if k != "thought"}
+                    if answer_data:
+                        answer_str = json.dumps(answer_data)
+                        self._add_history(
+                            history_type="thought",
+                            message=parsed_response["thought"]
+                        )
+                        self._add_history(
+                            history_type="answer",
+                            message=answer_str
+                        )
+                        await self._send_callback_message(
+                            callbacks=callbacks,
+                            iter_num=iter_num,
+                            thought=parsed_response["thought"],
+                            answer=answer_str
+                        )
+                        return AgentResponse(
+                            name=self._name,
+                            class_name=self.__class__.__name__,
+                            response=answer_str,
+                            trace_id=tracer.trace_id
+                        )
                     raise ValueError("Invalid response format")
 
             except json.JSONDecodeError as e:

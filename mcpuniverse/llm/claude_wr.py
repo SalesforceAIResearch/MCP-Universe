@@ -31,7 +31,8 @@ class ClaudeWRConfig(BaseConfig):
         api_key (str): The Anthropic API key. Defaults to the value of the ANTHROPIC_API_KEY variable.
         model_name (str): The name of the Claude model to use. Defaults to "claude-sonnet-4".
         temperature (float): Controls randomness in output generation. Defaults to 1.0.
-        top_p (float): Controls diversity of output generation. Defaults to 1.0.
+        top_p (Optional[float]): Controls diversity of output generation. Defaults to None.
+            Cannot be specified together with temperature for newer Claude models.
         max_completion_tokens (int): Maximum number of tokens to generate. Defaults to 2048.
         thinking_budget_tokens (int): Token budget for thinking mode. Defaults to 4000.
         timeout (int): Request timeout in seconds (default: 60).
@@ -40,7 +41,7 @@ class ClaudeWRConfig(BaseConfig):
     api_key: str = os.getenv("ANTHROPIC_API_KEY", "")
     model_name: str = "claude-sonnet-4-5"
     temperature: float = 1.0
-    top_p: float = 1.0
+    top_p: Optional[float] = None
     max_completion_tokens: int = 10000
     thinking_budget_tokens: int = 8000
     timeout: int = 60

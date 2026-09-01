@@ -50,8 +50,9 @@ class ClaudeGatewayConfig(BaseConfig):
         model_name (str): The name of the Claude model to use. Defaults to "claude-sonnet-4".
         api_key (str): The Salesforce gateway API key.
             Defaults to the value of the SALESFORCE_GATEWAY_KEY environment variable.
-        temperature (float): Controls randomness in output generation. Defaults to 1.0.
-        top_p (float): Controls diversity of output generation. Defaults to 1.0.
+        temperature (float): Controls randomness in output generation. Defaults to 0.0.
+        top_p (Optional[float]): Controls diversity of output generation. Defaults to None.
+            Cannot be specified together with temperature for newer Claude models.
         max_completion_tokens (int): Maximum number of tokens to generate. Defaults to 2048.
         thinking_enabled (bool): Whether to enable thinking mode. Defaults to False.
         thinking_budget_tokens (int): Token budget for thinking mode. Defaults to 4000.
@@ -60,7 +61,7 @@ class ClaudeGatewayConfig(BaseConfig):
     model_name: str = "claude-sonnet-4"
     api_key: str = os.getenv("SALESFORCE_GATEWAY_KEY", "")
     temperature: float = 0.0
-    top_p: float = 1.0
+    top_p: Optional[float] = None
     max_completion_tokens: int = 10000
     thinking_budget_tokens: int = 4000
 
@@ -138,9 +139,10 @@ class ClaudeGatewayModel(BaseLLM):
                         "temperature": self.config.temperature,
                         "max_tokens": self.config.max_completion_tokens,
                         "system": system_message,
-                        "top_p": self.config.top_p,
                         "timeout": int(kwargs.get("timeout", 30))
                     }
+                    if self.config.top_p is not None:
+                        data["top_p"] = self.config.top_p
 
                     # Handle thinking parameter
                     if thinking_enabled:
