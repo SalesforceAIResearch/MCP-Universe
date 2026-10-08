@@ -224,7 +224,9 @@ class BenchmarkRunner(metaclass=AutodocABCMeta):
                     stored_result = store.load_task_result(
                         benchmark=benchmark, task_config_path=task_filepath)
                     if not overwrite and stored_result is not None:
-                        task_results[task_path] = stored_result["results"]
+                        task_results[task_path] = {
+                            "evaluation_results": stored_result["results"]
+                        }
                         task_trace_ids[task_path] = stored_result["trace_id"]
                         self._logger.info("Loaded stored results for task: %s", task_path)
                         continue
