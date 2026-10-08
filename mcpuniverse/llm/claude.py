@@ -27,13 +27,14 @@ class ClaudeConfig(BaseConfig):
         model_name (str): The name of the Claude model to use. Defaults to "claude-3-5-sonnet-20241022".
         api_key (str): The Anthropic API key. Defaults to the value of the ANTHROPIC_API_KEY environment variable.
         temperature (float): Controls randomness in output generation. Defaults to 1.0.
-        top_p (float): Controls diversity of output generation. Defaults to 1.0.
+        top_p (Optional[float]): Controls diversity of output generation. Defaults to None.
+            Cannot be specified together with temperature for newer Claude models.
         max_completion_tokens (int): Maximum number of tokens to generate. Defaults to 2048.
     """
     model_name: str = "claude-3-5-sonnet-20241022"
     api_key: str = os.getenv("ANTHROPIC_API_KEY", "")
     temperature: float = 1.0
-    top_p: float = 1.0
+    top_p: Optional[float] = None
     max_completion_tokens: int = 2048
 
 
@@ -97,24 +98,25 @@ class ClaudeModel(BaseLLM):
         system_message = "\n".join(system_messages)
 
         if response_format is None:
-            chat = client.messages.create(
+            create_kwargs = dict(
                 model=self.config.model_name,
                 max_tokens=self.config.max_completion_tokens,
                 temperature=self.config.temperature,
-                top_p=self.config.top_p,
                 timeout=int(kwargs.get("timeout", 30)),
                 system=system_message,
                 messages=formatted_messages,
                 **kwargs
             )
+            if self.config.top_p is not None:
+                create_kwargs["top_p"] = self.config.top_p
+            chat = client.messages.create(**create_kwargs)
             return chat.content[0].text
 
         schema = response_format.model_json_schema()
-        chat = client.messages.create(
+        create_kwargs = dict(
             model=self.config.model_name,
             max_tokens=self.config.max_completion_tokens,
             temperature=self.config.temperature,
-            top_p=self.config.top_p,
             timeout=int(kwargs.get("timeout", 30)),
             system=system_message,
             messages=formatted_messages,
@@ -128,6 +130,9 @@ class ClaudeModel(BaseLLM):
             tool_choice={"type": "tool", "name": "revise_output"},
             **kwargs
         )
+        if self.config.top_p is not None:
+            create_kwargs["top_p"] = self.config.top_p
+        chat = client.messages.create(**create_kwargs)
         try:
             return response_format.model_validate(chat.content[0].input)
         except Exception:
