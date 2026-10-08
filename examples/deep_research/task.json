@@ -1,0 +1,7 @@
+{
+  "category": "research",
+  "question": "Who received the 2024 Nobel Prize in Physics, and what contributions did the prize recognize? Cite the Nobel Prize website.",
+  "use_specified_server": true,
+  "mcp_servers": [{"name": "research-primitives", "tools": ["run_research_program"]}],
+  "evaluators": []
+}

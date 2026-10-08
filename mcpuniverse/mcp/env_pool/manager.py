@@ -344,12 +344,9 @@ class EnvPoolManager:
         # like destroy, which is useful for SWE/R2E-style one-shot envs.
         if self.max_ready_envs <= 0 and self.max_ready_per_key <= 0:
             return False
-        if self.max_ready_envs > 0 and self._stats.ready_envs >= self.max_ready_envs:
+        if 0 < self.max_ready_envs <= self._stats.ready_envs:
             return False
-        if (
-            self.max_ready_per_key > 0
-            and self._ready_count_for_config(env_info.config) >= self.max_ready_per_key
-        ):
+        if 0 < self.max_ready_per_key <= self._ready_count_for_config(env_info.config):
             return False
         return True
 

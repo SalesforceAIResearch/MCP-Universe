@@ -1,4 +1,25 @@
 {
+  "research-primitives": {
+    "stdio": {
+      "command": "python3",
+      "args": [
+        "-m",
+        "mcpuniverse.mcp.servers.research_primitives"
+      ]
+    },
+    "sse": {
+      "command": "python3",
+      "args": [
+        "-m",
+        "mcpuniverse.mcp.servers.research_primitives",
+        "--transport",
+        "sse",
+        "--port",
+        "{{PORT}}"
+      ]
+    }
+  },
+
   "date": {
     "stdio": {
       "command": "python3",

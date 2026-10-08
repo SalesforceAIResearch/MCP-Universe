@@ -1,0 +1,29 @@
+kind: llm
+spec:
+  name: researcher
+  type: openai
+  config:
+    model_name: gpt-4.1
+    max_completion_tokens: 8192
+    timeout: 300
+---
+kind: agent
+spec:
+  name: research-agent
+  type: function_call
+  config:
+    llm: researcher
+    instruction: Answer the question using reliable web sources and cite their URLs.
+    system_prompt: mcpuniverse/agent/configs/function_call_prompt_primitives.j2
+    max_iterations: 30
+    summarize_tool_response: false
+    servers:
+      - name: research-primitives
+        tools: [run_research_program]
+---
+kind: benchmark
+spec:
+  description: Programmatic deep-research example
+  agent: research-agent
+  tasks:
+    - examples/deep_research/task.json

@@ -17,6 +17,8 @@
 
 ---
 
+For programmatic web research, see the [deep-research harness quickstart](docs/programmatic-deep-research.md).
+
 ## What is MCP-Universe?
 
 MCP-Universe is a comprehensive ecosystem for building, optimizing, and evaluating AI agents that interact with the Model Context Protocol (MCP). Beyond our industry-leading benchmark for real-world MCP server interactions, MCP-Universe provides production-ready tools for agent development including specialized research agents ([**Deep Research Agent**](#deep-research-agent-wide--deep-wd-research)), intelligent context management ([**MCP+**](#mcp-precision-context-management-for-mcp-agents)), and sophisticated orchestration workflows.
