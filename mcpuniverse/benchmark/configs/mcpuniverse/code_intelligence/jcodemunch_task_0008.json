@@ -1,0 +1,23 @@
+{
+    "category": "code-intelligence",
+    "question": "Using jcodemunch, index the GitHub repository jgravelle/jcodemunch-mcp. Then use find_importers to find all files that import from 'src/jcodemunch_mcp/storage/sqlite_store.py'. Report the names of at least two files that import from it.",
+    "output_format": {
+        "importing_files": "[comma-separated list of at least two files that import from sqlite_store.py]"
+    },
+    "use_specified_server": true,
+    "mcp_servers": [
+        {
+            "name": "jcodemunch"
+        }
+    ],
+    "evaluators": [
+        {
+            "func": "raw",
+            "op": "jcodemunch.llm_as_a_judge",
+            "op_args": {
+                "question": "In jgravelle/jcodemunch-mcp, do multiple files import from sqlite_store.py?",
+                "correct_answer": "Yes, multiple files import CodeIndex or other symbols from sqlite_store.py, including server.py and various tool files under the tools/ directory."
+            }
+        }
+    ]
+}

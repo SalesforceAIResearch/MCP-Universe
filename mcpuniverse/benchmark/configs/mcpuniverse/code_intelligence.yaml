@@ -1,0 +1,42 @@
+kind: llm
+spec:
+  name: llm-1
+  type: openai
+  config:
+    model_name: gpt-4.1
+
+---
+kind: agent
+spec:
+  name: ReAct-agent
+  type: react
+  config:
+    llm: llm-1
+    instruction: >
+      You are a code intelligence agent. Use jcodemunch tools to explore and
+      analyze codebases efficiently. Always index a repository before querying
+      it. Prefer targeted symbol search, outlines, and ranked context retrieval
+      over reading full files. Return structured answers in the requested format.
+    max_iterations: 20
+    summarize_tool_response: false
+
+---
+kind: benchmark
+spec:
+  description: >
+    Code intelligence tasks using jcodemunch-mcp — an MCP server that provides
+    symbol search, file outlines, cross-repo dependency mapping, blast radius
+    analysis, and ranked context retrieval with >99% token reduction vs. naive
+    file reading. Tasks target the jgravelle/jcodemunch-mcp repository itself.
+  agent: ReAct-agent
+  tasks:
+    - mcpuniverse/code_intelligence/jcodemunch_task_0001.json
+    - mcpuniverse/code_intelligence/jcodemunch_task_0002.json
+    - mcpuniverse/code_intelligence/jcodemunch_task_0003.json
+    - mcpuniverse/code_intelligence/jcodemunch_task_0004.json
+    - mcpuniverse/code_intelligence/jcodemunch_task_0005.json
+    - mcpuniverse/code_intelligence/jcodemunch_task_0006.json
+    - mcpuniverse/code_intelligence/jcodemunch_task_0007.json
+    - mcpuniverse/code_intelligence/jcodemunch_task_0008.json
+    - mcpuniverse/code_intelligence/jcodemunch_task_0009.json
+    - mcpuniverse/code_intelligence/jcodemunch_task_0010.json
