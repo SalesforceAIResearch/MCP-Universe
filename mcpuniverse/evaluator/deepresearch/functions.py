@@ -65,7 +65,7 @@ class HLEExtractedAnswer(BaseModel):
 
 def deepresearch__call_gpt_hle(
         prompt: str,
-        model="o3-mini-2025-01-31",
+        model="gpt-5.6-sol",
         **kwargs
 ) -> str:
     """
