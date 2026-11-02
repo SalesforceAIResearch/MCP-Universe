@@ -5,6 +5,7 @@ https://github.com/MiroMindAI/MiroThinker/blob/main/libs/miroflow-tools
 """
 
 import os
+import sys
 from typing import Any, Dict
 
 import click
@@ -170,7 +171,7 @@ def build_server(port: int) -> FastMCP:
                 if query_without_quotes:  # Make sure we still have a valid query
                     print(
                         f"No results found for query with quotes: '{original_query}'. "
-                        f"Retrying with query without quotes: '{query_without_quotes}'"
+                        f"Retrying with query without quotes: '{query_without_quotes}'", file=sys.stderr
                     )
                     organic_results, search_params = await perform_search(
                         query_without_quotes
@@ -210,7 +211,7 @@ def main(transport: str, port: str):
     :param port: Port for SSE.
     :param transport: The transport type, e.g., `stdio` or `sse`.
     """
-    print(f"Starting the MCP server on port {port} with transport {transport}")
+    print(f"Starting the MCP server on port {port} with transport {transport}", file=sys.stderr)
     assert transport.lower() in ["stdio", "sse"], \
         "Transport should be `stdio` or `sse`"
     logger = get_logger("Service:serper_search")

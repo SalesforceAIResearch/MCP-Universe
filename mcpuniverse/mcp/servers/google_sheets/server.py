@@ -7,6 +7,7 @@ Inspired from:
 # pylint: disable=broad-exception-caught,unused-argument,redefined-builtin
 import os
 import json
+import sys
 from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
 from contextlib import asynccontextmanager
@@ -50,16 +51,16 @@ async def spreadsheet_lifespan(server: FastMCP) -> AsyncIterator[SpreadsheetCont
                 SERVICE_ACCOUNT_PATH,
                 scopes=SCOPES
             )
-            print("Using service account authentication")
-            print(f"Working with Google Drive folder ID: {DRIVE_FOLDER_ID or 'Not specified'}")
+            print("Using service account authentication", file=sys.stderr)
+            print(f"Working with Google Drive folder ID: {DRIVE_FOLDER_ID or 'Not specified'}", file=sys.stderr)
         except Exception as e:
-            print(f"Error using service account authentication: {e}")
-            print("Falling back to OAuth flow")
+            print(f"Error using service account authentication: {e}", file=sys.stderr)
+            print("Falling back to OAuth flow", file=sys.stderr)
             creds = None
 
     # Fall back to OAuth flow if service account auth failed or not configured
     if not creds:
-        print("Using OAuth authentication flow")
+        print("Using OAuth authentication flow", file=sys.stderr)
         if os.path.exists(TOKEN_PATH):
             with open(TOKEN_PATH, "r", encoding="utf-8") as token:
                 creds = Credentials.from_authorized_user_info(json.load(token), SCOPES)
@@ -531,7 +532,7 @@ async def create_spreadsheet(title: str, ctx: Context = None) -> Dict[str, Any]:
     ).execute()
 
     spreadsheet_id = spreadsheet.get('spreadsheetId')
-    print(f"Spreadsheet created with ID: {spreadsheet_id}")
+    print(f"Spreadsheet created with ID: {spreadsheet_id}", file=sys.stderr)
 
     # If a folder_id is specified, move the spreadsheet to that folder
     if folder_id:
@@ -552,9 +553,9 @@ async def create_spreadsheet(title: str, ctx: Context = None) -> Dict[str, Any]:
                 fields='id, parents'
             ).execute()
 
-            print(f"Spreadsheet moved to folder with ID: {folder_id}")
+            print(f"Spreadsheet moved to folder with ID: {folder_id}", file=sys.stderr)
         except Exception as e:
-            print(f"Warning: Could not move spreadsheet to folder: {e}")
+            print(f"Warning: Could not move spreadsheet to folder: {e}", file=sys.stderr)
 
     return {
         'spreadsheetId': spreadsheet_id,
@@ -628,9 +629,9 @@ async def list_spreadsheets(ctx: Context = None) -> List[Dict[str, str]]:
     # If a specific folder is configured, search only in that folder
     if folder_id:
         query += f" and '{folder_id}' in parents"
-        print(f"Searching for spreadsheets in folder: {folder_id}")
+        print(f"Searching for spreadsheets in folder: {folder_id}", file=sys.stderr)
     else:
-        print("Searching for spreadsheets in 'My Drive'")
+        print("Searching for spreadsheets in 'My Drive'", file=sys.stderr)
 
     # List spreadsheets
     results = drive_service.files().list(
