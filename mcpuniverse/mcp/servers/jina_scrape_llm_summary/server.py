@@ -10,6 +10,7 @@ import asyncio
 import json
 import os
 import subprocess
+import sys
 from typing import Any, Dict
 
 import click
@@ -81,7 +82,7 @@ def build_server(port: int) -> FastMCP:
 
         if not scrape_result["success"]:
             print(
-                f"Jina Scrape and Extract Info: Scraping failed: {scrape_result['error']}"
+                f"Jina Scrape and Extract Info: Scraping failed: {scrape_result['error']}", file=sys.stderr
             )
             return {
                 "success": False,
@@ -215,12 +216,13 @@ def build_server(port: int) -> FastMCP:
                     if attempt < len(retry_delays):
                         delay = retry_delays[attempt]
                         print(
-                            f"Jina Scrape: Connection timeout, {delay}s before next attempt (attempt {attempt + 1})"
+                            f"Jina Scrape: Connection timeout, {delay}s before next attempt (attempt {attempt + 1})",
+                            file=sys.stderr
                         )
                         await asyncio.sleep(delay)
                         continue
                     print(
-                        f"Jina Scrape: Connection retry attempts exhausted, url: {url}"
+                        f"Jina Scrape: Connection retry attempts exhausted, url: {url}", file=sys.stderr
                     )
                     raise e
 
@@ -229,12 +231,12 @@ def build_server(port: int) -> FastMCP:
                     if attempt < len(retry_delays):
                         delay = retry_delays[attempt]
                         print(
-                            f"Jina Scrape: Connection error: {e}, {delay}s before next attempt"
+                            f"Jina Scrape: Connection error: {e}, {delay}s before next attempt", file=sys.stderr
                         )
                         await asyncio.sleep(delay)
                         continue
                     print(
-                        f"Jina Scrape: Connection retry attempts exhausted, url: {url}"
+                        f"Jina Scrape: Connection retry attempts exhausted, url: {url}", file=sys.stderr
                     )
                     raise e
 
@@ -243,12 +245,13 @@ def build_server(port: int) -> FastMCP:
                     if attempt < len(retry_delays):
                         delay = retry_delays[attempt]
                         print(
-                            f"Jina Scrape: Read timeout, {delay}s before next attempt (attempt {attempt + 1})"
+                            f"Jina Scrape: Read timeout, {delay}s before next attempt (attempt {attempt + 1})",
+                            file=sys.stderr
                         )
                         await asyncio.sleep(delay)
                         continue
                     print(
-                        f"Jina Scrape: Read timeout retry attempts exhausted, url: {url}"
+                        f"Jina Scrape: Read timeout retry attempts exhausted, url: {url}", file=sys.stderr
                     )
                     raise e
 
@@ -256,12 +259,12 @@ def build_server(port: int) -> FastMCP:
                     if attempt < len(retry_delays):
                         print(
                             f"Jina Scrape: HTTP error: {e}, response.text: {response.text}, url: {url}, "
-                            f"{delay}s before next attempt (attempt {attempt + 1})"
+                            f"{delay}s before next attempt (attempt {attempt + 1})", file=sys.stderr
                         )
                         await asyncio.sleep(delay)
                         continue
                     print(
-                        f"Jina Scrape: HTTP error retry attempts exhausted, url: {url}"
+                        f"Jina Scrape: HTTP error retry attempts exhausted, url: {url}", file=sys.stderr
                     )
                     raise e
 
@@ -269,18 +272,18 @@ def build_server(port: int) -> FastMCP:
                     if attempt < len(retry_delays):
                         print(
                             f"Jina Scrape: Unknown request exception: {e}, url: {url}, "
-                            f"{delay}s before next attempt (attempt {attempt + 1})"
+                            f"{delay}s before next attempt (attempt {attempt + 1})", file=sys.stderr
                         )
                         await asyncio.sleep(delay)
                         continue
                     print(
-                        f"Jina Scrape: Unknown request exception retry attempts exhausted, url: {url}"
+                        f"Jina Scrape: Unknown request exception retry attempts exhausted, url: {url}", file=sys.stderr
                     )
                     raise e
 
         except Exception as e:
             error_msg = f"Jina Scrape: Unexpected error occurred: {str(e)}"
-            print(error_msg)
+            print(error_msg, file=sys.stderr)
             return {
                 "success": False,
                 "filename": "",
@@ -518,7 +521,7 @@ def build_server(port: int) -> FastMCP:
                             tail_50 = response.text[-50:]
                             repeat_count = response.text.count(tail_50)
                             if repeat_count > 5:
-                                print("Repeat detected in extract_info_with_llm")
+                                print("Repeat detected in extract_info_with_llm", file=sys.stderr)
                                 continue
 
                     # Check if the request was successful
@@ -544,12 +547,12 @@ def build_server(port: int) -> FastMCP:
                         delay = connect_retry_delays[attempt]
                         print(
                             f"Jina Scrape and Extract Info: Connection timeout, {delay}s before next attempt "
-                            f"(attempt {attempt + 1})"
+                            f"(attempt {attempt + 1})", file=sys.stderr
                         )
                         await asyncio.sleep(delay)
                         continue
                     print(
-                        "Jina Scrape and Extract Info: Connection retry attempts exhausted"
+                        "Jina Scrape and Extract Info: Connection retry attempts exhausted", file=sys.stderr
                     )
                     raise e
 
@@ -559,12 +562,12 @@ def build_server(port: int) -> FastMCP:
                         delay = connect_retry_delays[attempt]
                         print(
                             f"Jina Scrape and Extract Info: Connection error: {e}, "
-                            f"{delay}s before next attempt"
+                            f"{delay}s before next attempt", file=sys.stderr
                         )
                         await asyncio.sleep(delay)
                         continue
                     print(
-                        "Jina Scrape and Extract Info: Connection retry attempts exhausted"
+                        "Jina Scrape and Extract Info: Connection retry attempts exhausted", file=sys.stderr
                     )
                     raise e
 
@@ -572,19 +575,20 @@ def build_server(port: int) -> FastMCP:
                     # read timeout, LLM API is too slow, no need to retry
                     if attempt < len(connect_retry_delays):
                         print(
-                            f"Jina Scrape and Extract Info: LLM API attempt {attempt} read timeout"
+                            f"Jina Scrape and Extract Info: LLM API attempt {attempt} read timeout", file=sys.stderr
                         )
                         continue
                     print(
                         f"Jina Scrape and Extract Info: LLM API read timeout retry attempts exhausted, "
                         f"please check the request complexity, information to extract: {info_to_extract}, "
-                        f"length of content: {len(content)}, url: {url}"
+                        f"length of content: {len(content)}, url: {url}", file=sys.stderr
                     )
                     raise e
 
                 except httpx.HTTPStatusError as e:
                     print(
-                        f"Jina Scrape and Extract Info: HTTP error for LLM API: {e}, response.text: {response.text}"
+                        f"Jina Scrape and Extract Info: HTTP error for LLM API: {e}, response.text: {response.text}",
+                        file=sys.stderr
                     )
                     raise httpx.HTTPStatusError(
                         f"response.text: {response.text}",
@@ -594,13 +598,13 @@ def build_server(port: int) -> FastMCP:
 
                 except httpx.RequestError as e:
                     print(
-                        f"Jina Scrape and Extract Info: Unknown request exception: {e}"
+                        f"Jina Scrape and Extract Info: Unknown request exception: {e}", file=sys.stderr
                     )
                     raise e
 
         except Exception as e:
             error_msg = f"Jina Scrape and Extract Info: Unexpected error during LLM API call: {str(e)}"
-            print(error_msg)
+            print(error_msg, file=sys.stderr)
             return {
                 "success": False,
                 "extracted_info": "",
@@ -617,8 +621,8 @@ def build_server(port: int) -> FastMCP:
             error_msg = (
                 f"Jina Scrape and Extract Info: Failed to parse LLM API response: {str(e)}"
             )
-            print(error_msg)
-            print(f"Raw response: {response.text}")
+            print(error_msg, file=sys.stderr)
+            print(f"Raw response: {response.text}", file=sys.stderr)
             return {
                 "success": False,
                 "extracted_info": "",
@@ -629,7 +633,7 @@ def build_server(port: int) -> FastMCP:
 
         print(
             f"Jina Scrape and Extract Info: Info to extract: {info_to_extract}, "
-            f"LLM Response data: {response_data}"
+            f"LLM Response data: {response_data}", file=sys.stderr
         )
 
         # Extract summary from response
@@ -638,7 +642,7 @@ def build_server(port: int) -> FastMCP:
                 summary = response_data["choices"][0]["message"]["content"]
             except Exception as e:
                 error_msg = f"Jina Scrape and Extract Info: Failed to get summary from LLM API response: {str(e)}"
-                print(error_msg)
+                print(error_msg, file=sys.stderr)
                 return {
                     "success": False,
                     "extracted_info": "",
@@ -664,7 +668,7 @@ def build_server(port: int) -> FastMCP:
                 summary = response_data["candidates"][0]["content"]["parts"][0]["text"]
             except Exception as e:
                 error_msg = f"Jina Scrape and Extract Info: Failed to get summary from LLM API response: {str(e)}"
-                print(error_msg)
+                print(error_msg, file=sys.stderr)
                 return {
                     "success": False,
                     "extracted_info": "",
@@ -684,7 +688,7 @@ def build_server(port: int) -> FastMCP:
             error_msg = (
                 f"Jina Scrape and Extract Info: LLM API error: {response_data['error']}"
             )
-            print(error_msg)
+            print(error_msg, file=sys.stderr)
             return {
                 "success": False,
                 "extracted_info": "",
@@ -696,7 +700,7 @@ def build_server(port: int) -> FastMCP:
             f"Jina Scrape and Extract Info: No valid response from LLM API, "
             f"response data: {response_data}"
         )
-        print(error_msg)
+        print(error_msg, file=sys.stderr)
         return {
             "success": False,
             "extracted_info": "",
@@ -723,7 +727,7 @@ def main(transport: str, port: str):
     :param port: Port for SSE.
     :param transport: The transport type, e.g., `stdio` or `sse`.
     """
-    print(f"Starting the MCP server on port {port} with transport {transport}")
+    print(f"Starting the MCP server on port {port} with transport {transport}", file=sys.stderr)
     assert transport.lower() in ["stdio", "sse"], "Transport should be stdio or sse"
     logger = get_logger("Service:jina_scrape_llm_summary")
     logger.info("Starting the MCP server")

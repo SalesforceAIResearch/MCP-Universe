@@ -4,6 +4,7 @@ Adapted from https://github.com/shzhiqi/yahoo-finance-mcp/blob/main/server.py.
 """
 # pylint: disable=broad-exception-caught,too-many-statements,line-too-long,too-many-return-statements,invalid-name
 import json
+import sys
 from enum import Enum
 
 import click
@@ -105,10 +106,10 @@ def build_server(port: int) -> FastMCP:
         company = yf.Ticker(ticker)
         try:
             if company.isin is None:
-                print(f"Company ticker {ticker} not found.")
+                print(f"Company ticker {ticker} not found.", file=sys.stderr)
                 return f"Company ticker {ticker} not found."
         except Exception as e:
-            print(f"Error: getting historical stock prices for {ticker}: {e}")
+            print(f"Error: getting historical stock prices for {ticker}: {e}", file=sys.stderr)
             return f"Error: getting historical stock prices for {ticker}: {e}"
 
         # If the company is found, get the historical data
@@ -132,10 +133,10 @@ def build_server(port: int) -> FastMCP:
         company = yf.Ticker(ticker)
         try:
             if company.isin is None:
-                print(f"Company ticker {ticker} not found.")
+                print(f"Company ticker {ticker} not found.", file=sys.stderr)
                 return f"Company ticker {ticker} not found."
         except Exception as e:
-            print(f"Error: getting stock information for {ticker}: {e}")
+            print(f"Error: getting stock information for {ticker}: {e}", file=sys.stderr)
             return f"Error: getting stock information for {ticker}: {e}"
         info = company.info
         return json.dumps(info)
@@ -159,17 +160,17 @@ def build_server(port: int) -> FastMCP:
         company = yf.Ticker(ticker)
         try:
             if company.isin is None:
-                print(f"Company ticker {ticker} not found.")
+                print(f"Company ticker {ticker} not found.", file=sys.stderr)
                 return f"Company ticker {ticker} not found."
         except Exception as e:
-            print(f"Error: getting news for {ticker}: {e}")
+            print(f"Error: getting news for {ticker}: {e}", file=sys.stderr)
             return f"Error: getting news for {ticker}: {e}"
 
         # If the company is found, get the news
         try:
             news = company.news
         except Exception as e:
-            print(f"Error: getting news for {ticker}: {e}")
+            print(f"Error: getting news for {ticker}: {e}", file=sys.stderr)
             return f"Error: getting news for {ticker}: {e}"
 
         news_list = []
@@ -183,7 +184,7 @@ def build_server(port: int) -> FastMCP:
                     f"Title: {title}\nSummary: {summary}\nDescription: {description}\nURL: {url}"
                 )
         if not news_list:
-            print(f"No news found for company that searched with {ticker} ticker.")
+            print(f"No news found for company that searched with {ticker} ticker.", file=sys.stderr)
             return f"No news found for company that searched with {ticker} ticker."
         return "\n\n".join(news_list)
 
@@ -201,7 +202,7 @@ def build_server(port: int) -> FastMCP:
         try:
             company = yf.Ticker(ticker)
         except Exception as e:
-            print(f"Error: getting stock actions for {ticker}: {e}")
+            print(f"Error: getting stock actions for {ticker}: {e}", file=sys.stderr)
             return f"Error: getting stock actions for {ticker}: {e}"
         actions_df = company.actions
         actions_df = actions_df.reset_index(names="Date")
@@ -224,10 +225,10 @@ def build_server(port: int) -> FastMCP:
         company = yf.Ticker(ticker)
         try:
             if company.isin is None:
-                print(f"Company ticker {ticker} not found.")
+                print(f"Company ticker {ticker} not found.", file=sys.stderr)
                 return f"Company ticker {ticker} not found."
         except Exception as e:
-            print(f"Error: getting financial statement for {ticker}: {e}")
+            print(f"Error: getting financial statement for {ticker}: {e}", file=sys.stderr)
             return f"Error: getting financial statement for {ticker}: {e}"
 
         if financial_type == FinancialType.income_stmt:
@@ -284,10 +285,10 @@ def build_server(port: int) -> FastMCP:
         company = yf.Ticker(ticker)
         try:
             if company.isin is None:
-                print(f"Company ticker {ticker} not found.")
+                print(f"Company ticker {ticker} not found.", file=sys.stderr)
                 return f"Company ticker {ticker} not found."
         except Exception as e:
-            print(f"Error: getting holder info for {ticker}: {e}")
+            print(f"Error: getting holder info for {ticker}: {e}", file=sys.stderr)
             return f"Error: getting holder info for {ticker}: {e}"
 
         if holder_type == HolderType.major_holders:
@@ -319,10 +320,10 @@ def build_server(port: int) -> FastMCP:
         company = yf.Ticker(ticker)
         try:
             if company.isin is None:
-                print(f"Company ticker {ticker} not found.")
+                print(f"Company ticker {ticker} not found.", file=sys.stderr)
                 return f"Company ticker {ticker} not found."
         except Exception as e:
-            print(f"Error: getting option expiration dates for {ticker}: {e}")
+            print(f"Error: getting option expiration dates for {ticker}: {e}", file=sys.stderr)
             return f"Error: getting option expiration dates for {ticker}: {e}"
         return json.dumps(company.options)
 
@@ -354,10 +355,10 @@ def build_server(port: int) -> FastMCP:
         company = yf.Ticker(ticker)
         try:
             if company.isin is None:
-                print(f"Company ticker {ticker} not found.")
+                print(f"Company ticker {ticker} not found.", file=sys.stderr)
                 return f"Company ticker {ticker} not found."
         except Exception as e:
-            print(f"Error: getting option chain for {ticker}: {e}")
+            print(f"Error: getting option chain for {ticker}: {e}", file=sys.stderr)
             return f"Error: getting option chain for {ticker}: {e}"
 
         # Check if the expiration date is valid
@@ -394,10 +395,10 @@ def build_server(port: int) -> FastMCP:
         company = yf.Ticker(ticker)
         try:
             if company.isin is None:
-                print(f"Company ticker {ticker} not found.")
+                print(f"Company ticker {ticker} not found.", file=sys.stderr)
                 return f"Company ticker {ticker} not found."
         except Exception as e:
-            print(f"Error: getting recommendations for {ticker}: {e}")
+            print(f"Error: getting recommendations for {ticker}: {e}", file=sys.stderr)
             return f"Error: getting recommendations for {ticker}: {e}"
         try:
             if recommendation_type == RecommendationType.recommendations:
@@ -414,7 +415,7 @@ def build_server(port: int) -> FastMCP:
                 latest_by_firm = upgrades_downgrades.drop_duplicates(subset=["Firm"])
                 return latest_by_firm.to_json(orient="records", date_format="iso")
         except Exception as e:
-            print(f"Error: getting recommendations for {ticker}: {e}")
+            print(f"Error: getting recommendations for {ticker}: {e}", file=sys.stderr)
             return f"Error: getting recommendations for {ticker}: {e}"
 
     return yfinance_server
