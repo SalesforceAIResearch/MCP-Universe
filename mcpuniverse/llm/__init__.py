@@ -5,6 +5,7 @@ from .mistral import MistralModel
 from .claude import ClaudeModel
 from .ollama import OllamaModel
 from .deepseek import DeepSeekModel
+from .affine_earth import AffineEarthModel
 from .claude_gateway import ClaudeGatewayModel
 from .grok import GrokModel
 from .openai_agent import OpenAIAgentModel
@@ -35,6 +36,7 @@ __all__ = [
     "ClaudeModel",
     "OllamaModel",
     "DeepSeekModel",
+    "AffineEarthModel",
     "ClaudeGatewayModel",
     "ClaudeWRModel",
     "GrokModel",
